@@ -2,30 +2,21 @@
 
 import "./premium-header.css";
 
-import { useState, useEffect, useRef } from "react";
+import { Suspense, useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useDispatch } from "react-redux";
-import { IoLocationSharp } from "react-icons/io5";
 
 import { useTokenCheck } from "@/hooks/useTokenCheck";
-
-import {
-  getAppType,
-  getAppHomeUrl,
-  getCustomerDomain,
-  getDistributorDomain,
-} from "@/lib/appConfig";
+import { getAppType } from "@/lib/appConfig";
 
 import {
   Heart,
   ShoppingBag,
   Menu,
   X,
-  ShoppingCart,
-  PackageOpen,
   LogOut,
   UserCircle,
   Search,
@@ -38,17 +29,13 @@ import {
   Home,
   Tag,
   UserCircle as UserCircleIcon,
-  CheckCircle,
   MapPin,
   LifeBuoy,
   ChevronRight,
   Mic,
-  Truck,
   BadgeCheck,
-  RotateCcw,
   Headphones,
   ChevronDown,
-  Settings,
 } from "lucide-react";
 
 import Logo from "../../../public/indiekonnect-web/images/logo.png";
@@ -65,44 +52,30 @@ import { useGetCategoriesQuery } from "@/lib/redux/api/categoryApi";
 import { useGetHeaderQuery } from "@/lib/redux/api/headerApi";
 
 /* =========================================================
-   SPEECH TYPES
+   SPEECH / LOCATION TYPES
 ========================================================= */
 
 interface SpeechRecognitionEventLike {
-  results: {
-    [index: number]: {
-      [index: number]: {
-        transcript: string;
-      };
-    };
-  };
+  results: { [index: number]: { [index: number]: { transcript: string } } };
 }
-
 interface SpeechRecognitionErrorEventLike {
   error: string;
 }
-
 interface SpeechRecognitionLike {
   lang: string;
   continuous: boolean;
   interimResults: boolean;
   maxAlternatives: number;
-
   start: () => void;
   stop: () => void;
   abort?: () => void;
-
   onstart: (() => void) | null;
   onresult: ((event: SpeechRecognitionEventLike) => void) | null;
   onerror: ((event: SpeechRecognitionErrorEventLike) => void) | null;
   onend: (() => void) | null;
 }
-
-/* =========================================================
-   LOCATION TYPES
-========================================================= */
-
 interface LocationInfo {
+  locality: string | null;
   state: string | null;
   city: string | null;
   district: string | null;
@@ -138,23 +111,10 @@ const LogoutModal = ({
             className="fixed inset-0 z-[100] bg-black/35 backdrop-blur-[2px]"
             onClick={onClose}
           />
-
           <motion.div
-            initial={{
-              opacity: 0,
-              scale: 0.98,
-              y: 12,
-            }}
-            animate={{
-              opacity: 1,
-              scale: 1,
-              y: 0,
-            }}
-            exit={{
-              opacity: 0,
-              scale: 0.98,
-              y: 12,
-            }}
+            initial={{ opacity: 0, scale: 0.98, y: 12 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.98, y: 12 }}
             className="fixed inset-0 z-[100] flex items-center justify-center p-4 font-lato"
             onClick={(e) => e.stopPropagation()}
           >
@@ -163,26 +123,21 @@ const LogoutModal = ({
                 <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#F1F1F0]">
                   <LogOutIcon className="h-7 w-7 text-[#111111]" />
                 </div>
-
                 <h3 className="mb-2 text-[20px] font-semibold text-[#171717]">
                   Logout Confirmation
                 </h3>
-
                 <p className="text-[13px] leading-relaxed text-[#888888]">
-                  Are you sure you want to logout? You'll need to login again to
-                  access your account.
+                  Are you sure you want to logout? You&apos;ll need to login
+                  again to access your account.
                 </p>
               </div>
-
               <div className="mx-6 flex items-start gap-3 rounded-[7px] border border-[#E4E4E2] bg-[#FAFAF9] p-3.5">
                 <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-[#777777]" />
-
                 <p className="text-[12px] leading-relaxed text-[#666666]">
-                  Your session will be ended and you'll be redirected to the
-                  current application home page.
+                  Your session will be ended and you&apos;ll be redirected to
+                  the current application home page.
                 </p>
               </div>
-
               <div className="flex gap-3 border-t border-[#E6E6E4] bg-white px-6 py-5">
                 <button
                   onClick={onClose}
@@ -191,7 +146,6 @@ const LogoutModal = ({
                 >
                   Cancel
                 </button>
-
                 <button
                   onClick={onConfirm}
                   disabled={isLoading}
@@ -219,136 +173,91 @@ const LogoutModal = ({
 };
 
 /* =========================================================
-   HEADER
+   HEADER INNER  (यहाँ useSearchParams / usePathname हैं)
 ========================================================= */
 
-export default function Header({
+function HeaderInner({
   hideAnnouncement = false,
   hideMenu = false,
-  showSidebarMenu = false,
-  onSidebarMenuClick,
 }: {
   hideAnnouncement?: boolean;
   hideMenu?: boolean;
-  showSidebarMenu?: boolean;
-  onSidebarMenuClick?: () => void;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const dispatch = useDispatch();
   const { logout } = useLogout();
-  /* =========================================================
-     APP / AUTH
-  ========================================================= */
 
+  /* APP / AUTH */
   const { hasToken, appType } = useTokenCheck();
 
-  const currentAppType = typeof window !== "undefined" ? getAppType() : appType;
+  const currentAppType = (() => {
+    if (typeof window === "undefined") return appType;
+    const websitePath = window.location.pathname.toLowerCase();
+    if (websitePath.startsWith("/indiekonnect-distributor"))
+      return "distributor";
+    if (websitePath.startsWith("/indiekonnect-web")) return "customer";
+    return getAppType();
+  })();
 
   const isDistributor = currentAppType === "distributor";
 
-  /* =========================================================
-     STATES
-  ========================================================= */
-
+  /* STATES */
   const [showLogoutModal, setShowLogoutModal] = useState(false);
-
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAllCategoriesOpen, setIsAllCategoriesOpen] = useState(false);
-
   const [mobileExpandedCategoryId, setMobileExpandedCategoryId] = useState<
     number | null
   >(null);
-
   const [isCartOpen, setIsCartOpen] = useState(false);
-
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-
   const [searchQuery, setSearchQuery] = useState("");
-
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
-
   const [searchCategory, setSearchCategory] = useState("all");
-
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-
   const [isSearchHovered, setIsSearchHovered] = useState(false);
-
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
-
   const [isVoiceSearching, setIsVoiceSearching] = useState(false);
-
   const [voiceSupported, setVoiceSupported] = useState(false);
-
-  /* CATEGORY HOVER */
-
   const [hoveredCategoryId, setHoveredCategoryId] = useState<number | null>(
     null,
   );
 
-  /* =========================================================
-     LOCATION STATES
-  ========================================================= */
-
+  /* LOCATION STATES */
   const [locationLoading, setLocationLoading] = useState(false);
-
   const [locationName, setLocationName] = useState<string | null>(null);
-
   const [locationError, setLocationError] = useState<string | null>(null);
-
   const [deliveryAvailable, setDeliveryAvailable] = useState(false);
-
   const [locationCoordinates, setLocationCoordinates] = useState<{
     latitude: number;
     longitude: number;
   } | null>(null);
 
-  /* =========================================================
-     REFS
-  ========================================================= */
-
+  /* REFS */
   const cartCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   const profileCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   const searchCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   const categoryCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   const searchRef = useRef<HTMLDivElement>(null);
-
   const searchInputRef = useRef<HTMLInputElement>(null);
-
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   const voiceRecognitionRef = useRef<SpeechRecognitionLike | null>(null);
 
-  /* =========================================================
-     API
-  ========================================================= */
-
-  const { data: cartData, isLoading: isCartLoading } = useGetCartQuery(
-    undefined,
-    {
-      skip: hasToken !== true,
-    },
-  );
-
+  /* API */
+  const { data: cartData } = useGetCartQuery(undefined, {
+    skip: hasToken !== true,
+  });
   const { data: wishlistData } = useGetWishlistQuery(undefined, {
     skip: hasToken !== true,
   });
-
   const { data: userProfileData } = useGetUserProfileQuery(undefined, {
     skip: hasToken !== true,
   });
-
   const { data: categoriesData } = useGetCategoriesQuery();
-
   const { data: headerData } = useGetHeaderQuery();
-
   const { data: productsData, isLoading: isProductsLoading } =
     useGetProductsQuery(
       {
@@ -356,488 +265,344 @@ export default function Header({
           debouncedSearchQuery.length >= 1 ? debouncedSearchQuery : undefined,
         limit: 5,
       },
-      {
-        skip: debouncedSearchQuery.length < 1,
-      },
+      { skip: debouncedSearchQuery.length < 1 },
     );
 
   /* =========================================================
      RESTORE SAVED LOCATION
   ========================================================= */
-
   useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
+    if (typeof window === "undefined") return;
     try {
       const savedLocation = localStorage.getItem(
         "indiekonnect_delivery_location",
       );
-
-      if (!savedLocation) {
-        return;
-      }
-
+      if (!savedLocation) return;
       const parsed = JSON.parse(savedLocation);
-
       const savedLatitude = Number(parsed?.latitude);
-
       const savedLongitude = Number(parsed?.longitude);
-
       if (
         parsed?.name &&
         Number.isFinite(savedLatitude) &&
         Number.isFinite(savedLongitude)
       ) {
-        setLocationName(parsed.name);
-
+        if (
+          String(parsed?.state || "")
+            .trim()
+            .toLowerCase() === "telangana"
+        ) {
+          setLocationName(null);
+          setDeliveryAvailable(false);
+          localStorage.removeItem("indiekonnect_delivery_location");
+          return;
+        }
+        setLocationName(parsed.locality || parsed.name);
         setLocationCoordinates({
           latitude: savedLatitude,
           longitude: savedLongitude,
         });
-
         setDeliveryAvailable(parsed.deliveryAvailable !== false);
       }
     } catch {
-      // Ignore malformed location.
+      /* ignore */
     }
   }, []);
 
-  /* =========================================================
-     VOICE SUPPORT
-  ========================================================= */
-
+  /* VOICE SUPPORT */
   useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
+    if (typeof window === "undefined") return;
     const SpeechRecognition =
       (window as any).SpeechRecognition ||
       (window as any).webkitSpeechRecognition;
-
     setVoiceSupported(!!SpeechRecognition);
   }, []);
 
-  /* =========================================================
-     SEARCH DEBOUNCE
-  ========================================================= */
-
+  /* SEARCH DEBOUNCE */
   useEffect(() => {
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-    }
-
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
     debounceTimerRef.current = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery);
     }, 300);
-
     return () => {
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
     };
   }, [searchQuery]);
 
-  /* =========================================================
-     DATA
-  ========================================================= */
-
+  /* DATA */
   const cartItems = cartData?.data?.items || [];
-
   const cartCount = cartData?.data?.total_items || 0;
-
   const cartSubtotalFormatted = cartData?.data?.total_formatted || "0.00";
-
   const wishlistItems = wishlistData?.data || [];
-
   const wishlistCount = wishlistItems.length;
-
   const productSuggestions = productsData?.data || [];
 
-  /* =========================================================
-     PRICE HELPERS
-  ========================================================= */
-
-  const isValidPrice = (value: any) => {
-    if (value === null || value === undefined || value === "") {
-      return false;
-    }
-
-    const numericValue = Number(value);
-
-    return Number.isFinite(numericValue) && numericValue > 0;
+  const getProductSearchImage = (product: any): string => {
+    const fallback =
+      typeof PlaceholderImage === "string"
+        ? PlaceholderImage
+        : PlaceholderImage.src;
+    const images = Array.isArray(product?.images) ? product.images : [];
+    const primaryImage =
+      images.find(
+        (image: any) =>
+          image?.is_primary === true ||
+          image?.is_primary === 1 ||
+          image?.is_primary === "1",
+      ) || images[0];
+    const candidates = [
+      primaryImage?.url,
+      primaryImage?.image_url,
+      primaryImage?.image,
+      primaryImage?.path,
+      product?.primary_image_url,
+      product?.image_url,
+      product?.image,
+    ];
+    return (
+      candidates.find(
+        (v): v is string => typeof v === "string" && v.trim().length > 0,
+      ) || fallback
+    );
   };
 
+  const isValidPrice = (value: any) =>
+    value !== null &&
+    value !== undefined &&
+    value !== "" &&
+    Number.isFinite(Number(value)) &&
+    Number(value) > 0;
+
   const formatProductPrice = (product: any) => {
+    const fmt = (v: any) =>
+      new Intl.NumberFormat("en-IN", {
+        style: "currency",
+        currency: "INR",
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+      }).format(Number(v));
+
     if (isDistributor) {
-      if (isValidPrice(product?.distributor_price)) {
+      if (isValidPrice(product?.distributor_price))
         return (
-          product?.distributor_price_formatted ||
-          new Intl.NumberFormat("en-IN", {
-            style: "currency",
-            currency: "INR",
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 2,
-          }).format(Number(product.distributor_price))
+          product?.distributor_price_formatted || fmt(product.distributor_price)
         );
-      }
-
-      if (isValidPrice(product?.retail_price)) {
-        return (
-          product?.retail_price_formatted ||
-          new Intl.NumberFormat("en-IN", {
-            style: "currency",
-            currency: "INR",
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 2,
-          }).format(Number(product.retail_price))
-        );
-      }
-
+      if (isValidPrice(product?.retail_price))
+        return product?.retail_price_formatted || fmt(product.retail_price);
       return "₹0";
     }
-
-    if (isValidPrice(product?.retail_price)) {
-      return (
-        product?.retail_price_formatted ||
-        new Intl.NumberFormat("en-IN", {
-          style: "currency",
-          currency: "INR",
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 2,
-        }).format(Number(product.retail_price))
-      );
-    }
-
+    if (isValidPrice(product?.retail_price))
+      return product?.retail_price_formatted || fmt(product.retail_price);
     return "₹0";
   };
 
   const hasSuggestions = productSuggestions.length > 0;
-
   const isSearching = isProductsLoading && debouncedSearchQuery.length >= 1;
-
   const userProfile = userProfileData?.user;
 
-  const userName = userProfile?.full_name || "User";
-
-  const userEmail = userProfile?.email || "";
-
-  const userInitial = userName.charAt(0).toUpperCase();
-
-  const userProfilePicture = userProfileData?.user?.profile_picture || null;
-
-  /* =========================================================
-     ACTIVE CATEGORIES
-  ========================================================= */
-
   const categories = (categoriesData?.data || []).filter(
-    (category: any) => category.status === "active",
+    (c: any) => c.status === "active",
   );
-
   const headerMenus = headerData?.data?.menus || [];
-
   const topFiveCategories = categories.slice(0, 5);
-
   const allSubcategories = (categoriesData?.subcategories || []).filter(
-    (subcategory: any) => subcategory.status === true,
+    (s: any) => s.status === true,
   );
-
-  /* =========================================================
-     GET CATEGORY SUBCATEGORIES
-  ========================================================= */
 
   const getCategorySubcategories = (categoryId: number) => {
-    if (!categoryId) {
-      return [];
-    }
-
-    return allSubcategories.filter(
-      (subcategory: any) =>
-        Number(subcategory?.category_id) === Number(categoryId),
+    if (!categoryId) return [];
+    const category = categories.find(
+      (i: any) => Number(i.id) === Number(categoryId),
     );
-  };
-
-  /* =========================================================
-     MEN / WOMEN
-  ========================================================= */
-
-  const getSubcategoryType = (subcategory: any) => {
-    const name = String(subcategory?.name || "")
+    const name = String(category?.title || category?.name || "")
       .trim()
       .toLowerCase();
+    const isAllWatch = name === "all watch" || name === "all watches";
+    return allSubcategories.filter((s: any) => {
+      if (Number(s?.category_id) !== Number(categoryId)) return false;
+      if (isAllWatch) {
+        const n = String(s?.title || s?.name || "")
+          .trim()
+          .toLowerCase()
+          .replace(/\s+/g, " ");
+        if (["for him", "for her"].includes(n)) return false;
+      }
+      return true;
+    });
+  };
 
+  const getSubcategoryType = (s: any) => {
+    const n = String(s?.name || "")
+      .trim()
+      .toLowerCase();
     if (
-      name.includes("for her") ||
-      name === "woman" ||
-      name === "women" ||
-      name.includes("women") ||
-      name.includes("girl")
-    ) {
+      n.includes("for her") ||
+      n === "woman" ||
+      n === "women" ||
+      n.includes("women") ||
+      n.includes("girl")
+    )
       return "women";
-    }
-
     if (
-      name.includes("for him") ||
-      name === "man" ||
-      name === "men" ||
-      name.includes("men") ||
-      name.includes("boy")
-    ) {
+      n.includes("for him") ||
+      n === "man" ||
+      n === "men" ||
+      n.includes("men") ||
+      n.includes("boy")
+    )
       return "men";
-    }
-
     return null;
   };
 
   const menSubcategory =
-    allSubcategories.find((subcategory: any) => {
-      const type = getSubcategoryType(subcategory);
-
+    allSubcategories.find((s: any) => {
+      const t = getSubcategoryType(s);
       return (
-        type === "men" &&
-        String(subcategory.name || "")
+        t === "men" &&
+        String(s.name || "")
           .toLowerCase()
           .includes("for him")
       );
-    }) ||
-    allSubcategories.find(
-      (subcategory: any) => getSubcategoryType(subcategory) === "men",
-    );
+    }) || allSubcategories.find((s: any) => getSubcategoryType(s) === "men");
 
   const womenSubcategory =
-    allSubcategories.find((subcategory: any) => {
-      const type = getSubcategoryType(subcategory);
-
+    allSubcategories.find((s: any) => {
+      const t = getSubcategoryType(s);
       return (
-        type === "women" &&
-        String(subcategory.name || "")
+        t === "women" &&
+        String(s.name || "")
           .toLowerCase()
           .includes("for her")
       );
-    }) ||
-    allSubcategories.find(
-      (subcategory: any) => getSubcategoryType(subcategory) === "women",
-    );
+    }) || allSubcategories.find((s: any) => getSubcategoryType(s) === "women");
 
-  /* =========================================================
-     DIRECT CATEGORY MENUS
-  ========================================================= */
-
-  const directCategoryMenus = topFiveCategories.map((category: any) => ({
-    label: category.title,
-
-    href: `/products?category=${encodeURIComponent(
-      category.slug || category.title,
-    )}`,
-
+  const directCategoryMenus = topFiveCategories.map((c: any) => ({
+    label: c.title,
+    href: `/products?category=${encodeURIComponent(c.slug || c.title)}`,
     icon: Grid3x3,
-
     isCategory: true,
-
-    categoryId: category.id,
-
-    subcategories: getCategorySubcategories(category.id),
+    categoryId: c.id,
+    subcategories: getCategorySubcategories(c.id),
   }));
 
-  /* =========================================================
-     MEN / WOMEN NAVIGATION
-  ========================================================= */
-
   const directSubcategoryMenus: any[] = [];
-
-  if (menSubcategory) {
+  if (menSubcategory)
     directSubcategoryMenus.push({
       label: "Men",
-
-      href: `/products?subcategory_ids=${menSubcategory.id}`,
-
+      href: `/products?subcategory_ids=${menSubcategory.id}&nav=men`,
       icon: UserCircleIcon,
-
       isSubcategory: true,
-
       subcategoryId: menSubcategory.id,
     });
-  }
-
-  if (womenSubcategory) {
+  if (womenSubcategory)
     directSubcategoryMenus.push({
       label: "Women",
-
-      href: `/products?subcategory_ids=${womenSubcategory.id}`,
-
+      href: `/products?subcategory_ids=${womenSubcategory.id}&nav=women`,
       icon: UserCircleIcon,
-
       isSubcategory: true,
-
       subcategoryId: womenSubcategory.id,
     });
-  }
 
-  /* =========================================================
-     CATEGORY HOVER HANDLERS
-  ========================================================= */
-
-  const handleCategoryMouseEnter = (categoryId: number) => {
+  /* CATEGORY HOVER */
+  const handleCategoryMouseEnter = (id: number) => {
     if (categoryCloseTimer.current) {
       clearTimeout(categoryCloseTimer.current);
-
       categoryCloseTimer.current = null;
     }
-
-    setHoveredCategoryId(categoryId);
+    setHoveredCategoryId(id);
   };
-
   const handleCategoryMouseLeave = () => {
-    if (categoryCloseTimer.current) {
-      clearTimeout(categoryCloseTimer.current);
-    }
-
-    categoryCloseTimer.current = setTimeout(() => {
-      setHoveredCategoryId(null);
-    }, 150);
+    if (categoryCloseTimer.current) clearTimeout(categoryCloseTimer.current);
+    categoryCloseTimer.current = setTimeout(
+      () => setHoveredCategoryId(null),
+      150,
+    );
   };
-
-  const handleCategoryPopupEnter = (categoryId: number) => {
+  const handleCategoryPopupEnter = (id: number) => {
     if (categoryCloseTimer.current) {
       clearTimeout(categoryCloseTimer.current);
-
       categoryCloseTimer.current = null;
     }
-
-    setHoveredCategoryId(categoryId);
+    setHoveredCategoryId(id);
   };
-
   const handleCategoryPopupLeave = () => {
-    if (categoryCloseTimer.current) {
-      clearTimeout(categoryCloseTimer.current);
-    }
-
-    categoryCloseTimer.current = setTimeout(() => {
-      setHoveredCategoryId(null);
-    }, 150);
+    if (categoryCloseTimer.current) clearTimeout(categoryCloseTimer.current);
+    categoryCloseTimer.current = setTimeout(
+      () => setHoveredCategoryId(null),
+      150,
+    );
   };
 
-  /* =========================================================
-     ROLE BASED MENUS
-  ========================================================= */
-
+  /* ROLE BASED MENUS */
   const getRoleBasedMenus = () => {
     const menus: any[] = [];
+    if (
+      headerMenus.some(
+        (m: any) =>
+          m.status === true && (m.slug === "home" || m.title === "Home"),
+      )
+    )
+      menus.push({ label: "Home", href: "/home", icon: Home });
+    if (
+      headerMenus.some(
+        (m: any) =>
+          m.status === true && (m.slug === "shop" || m.title === "Shop"),
+      )
+    )
+      menus.push({ label: "Shop", href: "/products", icon: Grid3x3 });
 
-    const homeExists = headerMenus.some(
-      (menu: any) =>
-        menu.status === true && (menu.slug === "home" || menu.title === "Home"),
-    );
-
-    if (homeExists) {
-      menus.push({
-        label: "Home",
-        href: "/home",
-        icon: Home,
-        isCategory: false,
-      });
-    }
-
-    const shopExists = headerMenus.some(
-      (menu: any) =>
-        menu.status === true && (menu.slug === "shop" || menu.title === "Shop"),
-    );
-
-    if (shopExists) {
-      menus.push({
-        label: "Shop",
-        href: "/products",
-        icon: Grid3x3,
-        isCategory: false,
-      });
-    }
-
-    const menMenu = directSubcategoryMenus.find(
-      (item: any) => item.label === "Men",
-    );
-
-    if (menMenu) {
-      menus.push(menMenu);
-    }
-
+    const menMenu = directSubcategoryMenus.find((i: any) => i.label === "Men");
+    if (menMenu) menus.push(menMenu);
     const womenMenu = directSubcategoryMenus.find(
-      (item: any) => item.label === "Women",
+      (i: any) => i.label === "Women",
     );
+    if (womenMenu) menus.push(womenMenu);
 
-    if (womenMenu) {
-      menus.push(womenMenu);
-    }
-
-    const newArrivalsExists = headerMenus.some(
-      (menu: any) =>
-        menu.status === true &&
-        (menu.slug === "new-arrivals" || menu.title === "New arrivals"),
-    );
-
-    if (newArrivalsExists) {
+    if (
+      headerMenus.some(
+        (m: any) =>
+          m.status === true &&
+          (m.slug === "new-arrivals" || m.title === "New arrivals"),
+      )
+    )
       menus.push({
         label: "New arrivals",
         href: "/products?new-arrivals=true",
         icon: Tag,
-        isCategory: false,
       });
-    }
 
     menus.push(...directCategoryMenus.slice(0, 5));
-
     menus.push({
       label: "Support",
       href: "/contact",
       icon: LifeBuoy,
-      isCategory: false,
       isSupport: true,
     });
-
     return menus;
   };
 
   const desktopNavItems = getRoleBasedMenus();
-
   const mobileNavItems = getRoleBasedMenus();
 
-  /* =========================================================
-     CLOSE OVERLAYS
-  ========================================================= */
-
+  /* CLOSE OVERLAYS */
   const closeHeaderOverlays = () => {
     setIsMobileMenuOpen(false);
-
     setIsAllCategoriesOpen(false);
-
     setMobileExpandedCategoryId(null);
-
     setIsSearchFocused(false);
-
     setIsSearchHovered(false);
-
     setIsSearchExpanded(false);
-
     setHoveredCategoryId(null);
-
     if (searchCloseTimer.current) {
       clearTimeout(searchCloseTimer.current);
-
       searchCloseTimer.current = null;
     }
-
     if (categoryCloseTimer.current) {
       clearTimeout(categoryCloseTimer.current);
-
       categoryCloseTimer.current = null;
     }
   };
 
-  /* =========================================================
-     OUTSIDE CLICK
-  ========================================================= */
-
+  /* OUTSIDE CLICK */
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -845,60 +610,37 @@ export default function Header({
         !searchRef.current.contains(event.target as Node)
       ) {
         setIsSearchFocused(false);
-
         setIsSearchHovered(false);
-
         setIsSearchExpanded(false);
-
         if (searchCloseTimer.current) {
           clearTimeout(searchCloseTimer.current);
-
           searchCloseTimer.current = null;
         }
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
-
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  /* =========================================================
-     MOBILE DRAWER
-  ========================================================= */
-
+  /* MOBILE DRAWER */
   useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
+    if (typeof window === "undefined") return;
     const previousOverflow = document.body.style.overflow;
-
-    if (isMobileMenuOpen) {
-      document.body.style.overflow = "hidden";
-    }
-
+    if (isMobileMenuOpen) document.body.style.overflow = "hidden";
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setIsMobileMenuOpen(false);
-
         setMobileExpandedCategoryId(null);
       }
     };
-
     window.addEventListener("keydown", handleKeyDown);
-
     return () => {
       document.body.style.overflow = previousOverflow;
-
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [isMobileMenuOpen]);
 
-  /* =========================================================
-     BIGDATACLOUD
-  ========================================================= */
-
+  /* LOCATION FETCHERS */
   const fetchFromBigDataCloud = async (
     latitude: number,
     longitude: number,
@@ -909,28 +651,19 @@ export default function Header({
         `?latitude=${encodeURIComponent(latitude)}` +
         `&longitude=${encodeURIComponent(longitude)}` +
         "&localityLanguage=en";
-
       const response = await fetch(url, {
         method: "GET",
-        headers: {
-          Accept: "application/json",
-        },
+        headers: { Accept: "application/json" },
         cache: "no-store",
       });
-
-      if (!response.ok) {
-        return null;
-      }
-
+      if (!response.ok) return null;
       const json = await response.json();
-
       const administrative = Array.isArray(json?.localityInfo?.administrative)
         ? json.localityInfo.administrative
         : [];
-
       const city =
-        json?.city ||
         json?.locality ||
+        json?.city ||
         json?.principalArea ||
         administrative.find(
           (item: any) =>
@@ -939,7 +672,6 @@ export default function Header({
               item?.description?.toLowerCase()?.includes("town")),
         )?.name ||
         null;
-
       const state =
         json?.principalSubdivision ||
         json?.principalSubdivisionCode?.replace(/^IN-/i, "")?.trim() ||
@@ -950,7 +682,6 @@ export default function Header({
               item?.description?.toLowerCase()?.includes("province")),
         )?.name ||
         null;
-
       const district =
         json?.county ||
         json?.district ||
@@ -961,38 +692,24 @@ export default function Header({
               item?.description?.toLowerCase()?.includes("county")),
         )?.name ||
         null;
-
       const postcode =
         json?.postcode || json?.postCode || json?.postalCode || null;
-
       const country = json?.countryName || json?.countryCode || null;
-
       const result: LocationInfo = {
+        locality: json?.locality || null,
         state,
         city,
         district,
         postcode,
         country,
       };
-
-      if (
-        !result.city &&
-        !result.state &&
-        !result.district &&
-        !result.country
-      ) {
+      if (!result.city && !result.state && !result.district && !result.country)
         return null;
-      }
-
       return result;
     } catch {
       return null;
     }
   };
-
-  /* =========================================================
-     NOMINATIM FALLBACK
-  ========================================================= */
 
   const fetchFromNominatim = async (
     latitude: number,
@@ -1007,26 +724,24 @@ export default function Header({
         "&accept-language=en" +
         "&zoom=14" +
         "&addressdetails=1";
-
       const response = await fetch(url, {
         method: "GET",
-        headers: {
-          Accept: "application/json",
-        },
+        headers: { Accept: "application/json" },
         cache: "no-store",
       });
-
-      if (!response.ok) {
-        return null;
-      }
-
+      if (!response.ok) return null;
       const json = await response.json();
-
       const address = json?.address || {};
-
       const result: LocationInfo = {
+        locality:
+          address?.suburb ||
+          address?.neighbourhood ||
+          address?.quarter ||
+          address?.city_district ||
+          address?.town ||
+          address?.city ||
+          null,
         state: address?.state || address?.state_district || null,
-
         city:
           address?.city ||
           address?.town ||
@@ -1035,133 +750,79 @@ export default function Header({
           address?.suburb ||
           address?.county ||
           null,
-
         district: address?.state_district || address?.county || null,
-
         postcode: address?.postcode || null,
-
         country: address?.country || null,
       };
-
-      if (
-        !result.city &&
-        !result.state &&
-        !result.district &&
-        !result.country
-      ) {
+      if (!result.city && !result.state && !result.district && !result.country)
         return null;
-      }
-
       return result;
     } catch {
       return null;
     }
   };
 
-  /* =========================================================
-     LOCATION RESOLVER
-  ========================================================= */
-
   const getLocationFromCoords = async (
     latitude: number,
     longitude: number,
   ): Promise<LocationInfo | null> => {
     const bigDataCloudResult = await fetchFromBigDataCloud(latitude, longitude);
-
     if (
       bigDataCloudResult &&
       (bigDataCloudResult.city ||
         bigDataCloudResult.state ||
         bigDataCloudResult.district)
-    ) {
+    )
       return bigDataCloudResult;
-    }
-
     return fetchFromNominatim(latitude, longitude);
   };
 
-  /* =========================================================
-     LOCATION / DELIVERY
-  ========================================================= */
-
+  /* LOCATION / DELIVERY */
   const handleCheckAvailability = () => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
+    if (typeof window === "undefined") return;
     setLocationError(null);
-
     if (!navigator.geolocation) {
       const message = "Location is not supported by your browser.";
-
       setLocationError(message);
-
-      dispatch(
-        showToast({
-          message,
-          type: "error",
-        }),
-      );
-
+      dispatch(showToast({ message, type: "error" }));
       return;
     }
-
     setLocationLoading(true);
-
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const latitude = position.coords.latitude;
-
         const longitude = position.coords.longitude;
-
-        setLocationCoordinates({
-          latitude,
-          longitude,
-        });
-
+        setLocationCoordinates({ latitude, longitude });
         try {
           const location = await getLocationFromCoords(latitude, longitude);
-
-          if (!location) {
-            throw new Error("Unable to determine place name.");
-          }
-
-          const city = location.city || location.district || "";
-
+          if (!location) throw new Error("Unable to determine place name.");
+          const city =
+            location.locality || location.city || location.district || "";
           const state = location.state || "";
-
           const district = location.district || "";
-
           const postcode = location.postcode || "";
-
           const country = location.country || "";
-
-          let formattedLocation = "";
-
-          if (city && state) {
-            formattedLocation = `${city}, ${state}`;
-          } else if (city) {
-            formattedLocation = city;
-          } else if (district && state) {
-            formattedLocation = `${district}, ${state}`;
-          } else if (state) {
-            formattedLocation = state;
-          } else if (country) {
-            formattedLocation = country;
-          } else {
-            formattedLocation = "your location";
+          if (state.trim().toLowerCase() === "telangana") {
+            setLocationName(null);
+            setDeliveryAvailable(false);
+            localStorage.removeItem("indiekonnect_delivery_location");
+            setLocationError("Delivery is currently unavailable in Telangana.");
+            dispatch(
+              showToast({
+                message: "Sorry, delivery is not available in Telangana.",
+                type: "error",
+              }),
+            );
+            return;
           }
-
-          const isAvailable = true;
-
+          const formattedLocation = city || state || country || "Your location";
           setLocationName(formattedLocation);
-
-          setDeliveryAvailable(isAvailable);
-
+          setDeliveryAvailable(false);
           localStorage.setItem(
             "indiekonnect_delivery_location",
             JSON.stringify({
               name: formattedLocation,
+              locality: location.locality || "",
               city: location.city || "",
               state: location.state || "",
               district: location.district || "",
@@ -1169,93 +830,58 @@ export default function Header({
               country: country || "",
               latitude,
               longitude,
-              deliveryAvailable: isAvailable,
+              deliveryAvailable: false,
               updatedAt: new Date().toISOString(),
             }),
           );
-
           dispatch(
             showToast({
-              message: `📍 Delivery available in ${formattedLocation}`,
+              message: `Location set to ${formattedLocation}. Delivery eligibility is subject to confirmation.`,
               type: "success",
             }),
           );
         } catch {
           setLocationName(null);
-
           setDeliveryAvailable(false);
-
           const message =
             "We found your location but could not determine the place name.";
-
           setLocationError(message);
-
-          dispatch(
-            showToast({
-              message,
-              type: "error",
-            }),
-          );
+          dispatch(showToast({ message, type: "error" }));
         } finally {
           setLocationLoading(false);
         }
       },
-
       (error) => {
         setLocationLoading(false);
-
         let message = "Unable to detect your location.";
-
         switch (error.code) {
           case error.PERMISSION_DENIED:
             message =
               "Location permission was denied. Please allow location access.";
             break;
-
           case error.POSITION_UNAVAILABLE:
             message =
               "Your location is currently unavailable. Please try again.";
             break;
-
           case error.TIMEOUT:
             message = "Location request timed out. Please try again.";
             break;
-
           default:
             message = "Unable to detect your location. Please try again.";
         }
-
         setLocationError(message);
-
-        dispatch(
-          showToast({
-            message,
-            type: "error",
-          }),
-        );
+        dispatch(showToast({ message, type: "error" }));
       },
-
-      {
-        enableHighAccuracy: true,
-        maximumAge: 60000,
-        timeout: 15000,
-      },
+      { enableHighAccuracy: true, maximumAge: 60000, timeout: 15000 },
     );
   };
 
-  /* =========================================================
-     VOICE SEARCH
-  ========================================================= */
-
+  /* VOICE SEARCH */
   const handleVoiceSearch = () => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
+    if (typeof window === "undefined") return;
     const SpeechRecognition =
       (window as any).SpeechRecognition ||
       (window as any).webkitSpeechRecognition;
-
     if (!SpeechRecognition) {
       dispatch(
         showToast({
@@ -1263,118 +889,72 @@ export default function Header({
           type: "error",
         }),
       );
-
       return;
     }
-
     if (isVoiceSearching) {
       try {
         voiceRecognitionRef.current?.stop();
       } catch {
-        // Ignore.
+        /* ignore */
       }
-
       setIsVoiceSearching(false);
-
       return;
     }
-
     const recognition = new SpeechRecognition() as SpeechRecognitionLike;
-
     voiceRecognitionRef.current = recognition;
-
     recognition.lang = "en-IN";
-
     recognition.continuous = false;
-
     recognition.interimResults = false;
-
     recognition.maxAlternatives = 1;
-
     recognition.onstart = () => {
       setIsVoiceSearching(true);
-
       setIsSearchOpen(true);
-
       setIsSearchFocused(true);
-
       setIsSearchHovered(true);
-
       setIsSearchExpanded(true);
-
-      setTimeout(() => {
-        searchInputRef.current?.focus();
-      }, 50);
+      setTimeout(() => searchInputRef.current?.focus(), 50);
     };
-
     recognition.onresult = (event) => {
       const transcript = event.results?.[0]?.[0]?.transcript?.trim() || "";
-
       if (transcript) {
         setSearchQuery(transcript);
-
         setDebouncedSearchQuery(transcript);
-
         setIsSearchOpen(true);
-
         setIsSearchExpanded(true);
-
         setIsSearchFocused(true);
-
         setIsSearchHovered(true);
-
         setTimeout(() => {
           const input = searchInputRef.current;
-
           if (input) {
             input.focus();
-
             input.setSelectionRange(transcript.length, transcript.length);
           }
         }, 50);
       }
     };
-
     recognition.onerror = (event) => {
       setIsVoiceSearching(false);
-
-      if (event.error === "aborted") {
-        return;
-      }
-
+      if (event.error === "aborted") return;
       let message = "Unable to hear you. Please try again.";
-
-      if (event.error === "not-allowed") {
+      if (event.error === "not-allowed")
         message = "Please allow microphone permission for voice search.";
-      } else if (event.error === "no-speech") {
+      else if (event.error === "no-speech")
         message = "No speech detected. Please try again.";
-      } else if (event.error === "audio-capture") {
+      else if (event.error === "audio-capture")
         message = "No microphone was found on this device.";
-      } else if (event.error === "network") {
+      else if (event.error === "network")
         message = "Voice search network error. Please try again.";
-      }
-
-      dispatch(
-        showToast({
-          message,
-          type: "error",
-        }),
-      );
+      dispatch(showToast({ message, type: "error" }));
     };
-
     recognition.onend = () => {
       setIsVoiceSearching(false);
-
       voiceRecognitionRef.current = null;
     };
-
     try {
       recognition.start();
     } catch {
       setIsVoiceSearching(false);
-
       voiceRecognitionRef.current = null;
-
       dispatch(
         showToast({
           message: "Unable to start voice search. Please try again.",
@@ -1384,321 +964,136 @@ export default function Header({
     }
   };
 
-  /* =========================================================
-     CLEANUP
-  ========================================================= */
-
+  /* CLEANUP */
   useEffect(() => {
     return () => {
       try {
         voiceRecognitionRef.current?.stop();
       } catch {
-        // Ignore.
+        /* ignore */
       }
-
       voiceRecognitionRef.current = null;
-
-      if (categoryCloseTimer.current) {
-        clearTimeout(categoryCloseTimer.current);
-      }
-
-      if (cartCloseTimer.current) {
-        clearTimeout(cartCloseTimer.current);
-      }
-
-      if (profileCloseTimer.current) {
-        clearTimeout(profileCloseTimer.current);
-      }
-
-      if (searchCloseTimer.current) {
-        clearTimeout(searchCloseTimer.current);
-      }
-
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
+      if (categoryCloseTimer.current) clearTimeout(categoryCloseTimer.current);
+      if (cartCloseTimer.current) clearTimeout(cartCloseTimer.current);
+      if (profileCloseTimer.current) clearTimeout(profileCloseTimer.current);
+      if (searchCloseTimer.current) clearTimeout(searchCloseTimer.current);
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
     };
   }, []);
 
-  /* =========================================================
-     AUTH / LOGIN HELPERS
-  ========================================================= */
-
-  const getLoginPath = () => {
-    return currentAppType === "distributor"
+  /* AUTH / LOGIN */
+  const getLoginPath = () =>
+    currentAppType === "distributor"
       ? "/auth/distributor/login"
       : "/auth/customer/login";
-  };
-
-  /*
-   * IMPORTANT:
-   *
-   * router.push() must NOT be used for cross-app navigation.
-   *
-   * Customer:
-   * /indiekonnect-web/
-   *
-   * Distributor:
-   * /indiekonnect-distributor/
-   *
-   * Because both apps use different basePath values.
-   */
-
-  const goToDistributorLogin = () => {
-    const distributorLoginUrl = `${getDistributorDomain()}/auth/distributor/login/`;
-
-    window.location.href = distributorLoginUrl;
-  };
-
-  const goToCustomerLogin = () => {
-    const customerLoginUrl = `${getCustomerDomain()}/auth/customer/login/`;
-
-    window.location.href = customerLoginUrl;
-  };
 
   const goToLogin = () => {
-    /*
-     * Normal login stays within
-     * the current application.
-     */
     router.push(getLoginPath());
-
     closeHeaderOverlays();
   };
 
-  /*
-   * Cross-app login helper.
-   *
-   * Customer app -> Distributor app
-   * Distributor app -> Customer app
-   */
-  const goToOtherAppLogin = () => {
-    if (currentAppType === "customer") {
-      goToDistributorLogin();
-    } else {
-      goToCustomerLogin();
-    }
-  };
-
-  /* =========================================================
-     NAVIGATION
-  ========================================================= */
-
+  /* NAVIGATION */
   const goToHome = () => {
     router.push("/home");
-
     closeHeaderOverlays();
   };
-
   const goToProducts = (category?: string) => {
     let url = "/products";
-
     if (category && category !== "all") {
       const params = new URLSearchParams();
-
       params.append("category", category);
-
       url += `?${params.toString()}`;
     }
-
     router.push(url);
-
     closeHeaderOverlays();
   };
-
-  const goToSubcategory = (subcategory: any) => {
+  const goToSubcategory = (sub: any) => {
     const params = new URLSearchParams();
-
-    params.append("subcategory_ids", String(subcategory.id));
-
+    params.append("subcategory_ids", String(sub.id));
+    params.set("nav", "category");
     router.push(`/products?${params.toString()}`);
-
     closeHeaderOverlays();
   };
-
   const goToNewArrivals = () => {
     router.push("/products?new-arrivals=true");
-
     closeHeaderOverlays();
   };
-
-  /* =========================================================
-     WISHLIST
-  ========================================================= */
-
   const goToWishlist = () => {
-    if (hasToken !== true) {
-      goToLogin();
-      return;
-    }
-
+    if (hasToken !== true) return goToLogin();
     router.push("/wishlist");
-
     closeHeaderOverlays();
   };
-
-  /* =========================================================
-     CART
-  ========================================================= */
-
   const goToCart = () => {
     setIsCartOpen(false);
-
-    if (hasToken !== true) {
-      goToLogin();
-      return;
-    }
-
+    if (hasToken !== true) return goToLogin();
     router.push("/cart");
-
     closeHeaderOverlays();
   };
-
-  /* =========================================================
-     TRACK ORDER
-  ========================================================= */
-
   const goToTrackOrder = () => {
-    if (hasToken !== true) {
-      goToLogin();
-      return;
-    }
-
-    if (currentAppType === "distributor") {
+    if (hasToken !== true) return goToLogin();
+    if (currentAppType === "distributor")
       router.push("/distributor/order-history/");
-    } else {
-      router.push("/profile/?tab=orders");
-    }
-
+    else router.push("/profile/?tab=orders");
     closeHeaderOverlays();
   };
-
-  /* =========================================================
-     DASHBOARD
-  ========================================================= */
-
-  const goToDashboard = () => {
-    if (hasToken !== true) {
-      goToLogin();
-      return;
-    }
-
-    if (currentAppType === "distributor") {
-      router.push("/distributor/dashboard/");
-    } else {
-      router.push("/profile/");
-    }
-
-    closeHeaderOverlays();
-  };
-
-  /* =========================================================
-     PROFILE
-  ========================================================= */
-
   const goToProfile = () => {
     if (hasToken !== true) {
       setIsProfileOpen(false);
-
-      goToLogin();
-
-      return;
+      return goToLogin();
     }
-
-    if (currentAppType === "distributor") {
+    if (currentAppType === "distributor")
       router.push("/distributor/dashboard/");
-    } else {
-      router.push("/profile/");
-    }
-
+    else router.push("/profile/");
     setIsProfileOpen(false);
-
     closeHeaderOverlays();
   };
-
-  /* =========================================================
-     PRODUCT DETAIL
-  ========================================================= */
-
   const goToProductDetail = (slug: string) => {
     router.push(`/product/${slug}`);
-
     setSearchQuery("");
-
     setDebouncedSearchQuery("");
-
     closeHeaderOverlays();
   };
-
-  /* =========================================================
-     NAVIGATION HANDLER
-  ========================================================= */
 
   const handleNavigation = (item: any) => {
     if (item.isSubcategory) {
-      const subcategory = allSubcategories.find(
-        (subcategory: any) => subcategory.id === item.subcategoryId,
-      );
-
-      if (subcategory) {
-        goToSubcategory(subcategory);
-      }
-
+      const navSource = String(item.label || "")
+        .trim()
+        .toLowerCase();
+      const params = new URLSearchParams();
+      params.set("subcategory_ids", String(item.subcategoryId));
+      if (navSource === "men" || navSource === "women")
+        params.set("nav", navSource);
+      router.push(`/products?${params.toString()}`);
+      closeHeaderOverlays();
       return;
     }
-
     if (item.isCategory) {
       const category = categories.find(
         (cat: any) => cat.id === item.categoryId,
       );
-
-      goToProducts(category?.slug || item.label);
-
-      return;
+      return goToProducts(category?.slug || item.label);
     }
-
-    if (item.label === "Home") {
-      goToHome();
-      return;
-    }
-
-    if (item.label === "Shop") {
-      goToProducts();
-      return;
-    }
-
-    if (item.label === "New arrivals") {
-      goToNewArrivals();
-      return;
-    }
-
+    if (item.label === "Home") return goToHome();
+    if (item.label === "Shop") return goToProducts();
+    if (item.label === "New arrivals") return goToNewArrivals();
     if (item.label === "Support") {
       router.push("/contact");
-
       closeHeaderOverlays();
-
       return;
     }
-
     router.push(item.href);
-
     closeHeaderOverlays();
   };
 
-  /* =========================================================
-     LOGOUT
-  ========================================================= */
-
+  /* LOGOUT */
   const handleLogoutConfirm = async () => {
     setIsLoggingOut(true);
-
     try {
       await logout({
         callApi: true,
         clearReduxState: true,
         clearPersistedState: true,
         redirectTo: "/",
-
         onSuccess: () => {
           dispatch(
             showToast({
@@ -1706,13 +1101,11 @@ export default function Header({
               type: "success",
             }),
           );
-
           setIsLoggingOut(false);
           setShowLogoutModal(false);
           setIsProfileOpen(false);
           setIsMobileMenuOpen(false);
         },
-
         onError: () => {
           dispatch(
             showToast({
@@ -1720,218 +1113,110 @@ export default function Header({
               type: "error",
             }),
           );
-
           setIsLoggingOut(false);
           setShowLogoutModal(false);
         },
       });
     } catch (error) {
       console.error("Logout error:", error);
-
       dispatch(
         showToast({
           message: "Something went wrong. Please try again.",
           type: "error",
         }),
       );
-
       setIsLoggingOut(false);
       setShowLogoutModal(false);
     }
   };
-
   const openLogoutModal = () => {
     setShowLogoutModal(true);
-
     setIsProfileOpen(false);
   };
-
   const closeLogoutModal = () => {
-    if (!isLoggingOut) {
-      setShowLogoutModal(false);
-    }
+    if (!isLoggingOut) setShowLogoutModal(false);
   };
 
-  /* =========================================================
-     CART / PROFILE DROPDOWNS
-  ========================================================= */
-
+  /* CART / PROFILE DROPDOWNS */
   const openCartDropdown = () => {
-    if (cartCloseTimer.current) {
-      clearTimeout(cartCloseTimer.current);
-    }
-
+    if (cartCloseTimer.current) clearTimeout(cartCloseTimer.current);
     setIsCartOpen(true);
   };
-
   const scheduleCloseCartDropdown = () => {
-    if (cartCloseTimer.current) {
-      clearTimeout(cartCloseTimer.current);
-    }
-
-    cartCloseTimer.current = setTimeout(() => {
-      setIsCartOpen(false);
-    }, 200);
+    if (cartCloseTimer.current) clearTimeout(cartCloseTimer.current);
+    cartCloseTimer.current = setTimeout(() => setIsCartOpen(false), 200);
   };
-
   const openProfileDropdown = () => {
-    if (profileCloseTimer.current) {
-      clearTimeout(profileCloseTimer.current);
-    }
-
+    if (profileCloseTimer.current) clearTimeout(profileCloseTimer.current);
     setIsProfileOpen(true);
   };
-
   const scheduleCloseProfileDropdown = () => {
-    if (profileCloseTimer.current) {
-      clearTimeout(profileCloseTimer.current);
-    }
-
-    profileCloseTimer.current = setTimeout(() => {
-      setIsProfileOpen(false);
-    }, 200);
+    if (profileCloseTimer.current) clearTimeout(profileCloseTimer.current);
+    profileCloseTimer.current = setTimeout(() => setIsProfileOpen(false), 200);
   };
 
-  /* =========================================================
-     MOBILE MENU TOGGLE
-  ========================================================= */
-
+  /* MOBILE MENU */
   const handleMobileMenuToggle = () => {
     setIsSearchOpen(false);
-
     setIsSearchFocused(false);
-
     setIsSearchHovered(false);
-
     setIsSearchExpanded(false);
-
     setIsMobileMenuOpen((prev) => !prev);
-
-    if (isMobileMenuOpen) {
-      setMobileExpandedCategoryId(null);
-    }
+    if (isMobileMenuOpen) setMobileExpandedCategoryId(null);
   };
 
-  /* =========================================================
-     SEARCH
-  ========================================================= */
-
-  const openSearchOnHover = () => {
-    if (searchCloseTimer.current) {
-      clearTimeout(searchCloseTimer.current);
-
-      searchCloseTimer.current = null;
-    }
-
-    setIsSearchHovered(true);
-
-    setIsSearchExpanded(true);
-
-    setTimeout(() => {
-      searchInputRef.current?.focus();
-    }, 100);
-  };
-
-  const scheduleCloseSearchOnHover = () => {
-    if (searchCloseTimer.current) {
-      clearTimeout(searchCloseTimer.current);
-
-      searchCloseTimer.current = null;
-    }
-
-    if (!isSearchFocused) {
-      searchCloseTimer.current = setTimeout(() => {
-        setIsSearchHovered(false);
-
-        setIsSearchExpanded(false);
-
-        searchCloseTimer.current = null;
-      }, 500);
-    }
-  };
-
+  /* SEARCH */
   const toggleSearch = () => {
     if (isSearchExpanded) {
       if (isVoiceSearching) {
         try {
           voiceRecognitionRef.current?.stop();
         } catch {
-          // Ignore.
+          /* ignore */
         }
-
         setIsVoiceSearching(false);
       }
-
       setIsSearchExpanded(false);
-
       setIsSearchFocused(false);
-
       setIsSearchHovered(false);
-
       setIsSearchOpen(false);
-
       setSearchQuery("");
-
       setDebouncedSearchQuery("");
-
       if (searchCloseTimer.current) {
         clearTimeout(searchCloseTimer.current);
-
         searchCloseTimer.current = null;
       }
     } else {
       setIsSearchOpen(true);
-
       setIsSearchExpanded(true);
-
       setIsSearchFocused(true);
-
       setIsSearchHovered(true);
-
-      setTimeout(() => {
-        searchInputRef.current?.focus();
-      }, 100);
+      setTimeout(() => searchInputRef.current?.focus(), 100);
     }
   };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!searchQuery.trim()) {
-      return;
-    }
-
+    if (!searchQuery.trim()) return;
     const params = new URLSearchParams();
-
     params.append("search", searchQuery.trim());
-
-    if (searchCategory && searchCategory !== "all") {
+    if (searchCategory && searchCategory !== "all")
       params.append("category", searchCategory);
-    }
-
     router.push(`/products?${params.toString()}`);
-
     setSearchQuery("");
-
     setDebouncedSearchQuery("");
-
     closeHeaderOverlays();
   };
 
-  /* =========================================================
-     PROFILE MENU
-  ========================================================= */
-
-  const getProfileMenuItems = () => {
+  /* PROFILE MENU */
+  const profileMenuItems = (() => {
     const items: any[] = [];
-
     if (hasToken === true) {
       items.push({
         icon: UserCircle,
         label: isDistributor ? "Dashboard" : "My Profile",
         onClick: goToProfile,
       });
-
       items.push({
         icon: LogOutIcon,
         label: "Logout",
@@ -1939,9 +1224,6 @@ export default function Header({
         isDanger: true,
       });
     } else {
-      /*
-       * Current app login
-       */
       items.push({
         icon: UserCircle,
         label:
@@ -1950,29 +1232,93 @@ export default function Header({
             : "Customer Login",
         onClick: goToLogin,
       });
-
-      /*
-       * CROSS APP LOGIN
-       *
-       * Customer -> Distributor
-       * Distributor -> Customer
-       */
-      items.push({
-        icon: ArrowRight,
-        label:
-          currentAppType === "customer"
-            ? "Distributor Login"
-            : "Customer Login",
-        onClick: goToOtherAppLogin,
-      });
     }
-
     return items;
-  };
-
-  const profileMenuItems = getProfileMenuItems();
+  })();
 
   const navClass = "premium-header-nav-button";
+
+  /* ACTIVE NAV LOGIC */
+  const activeSubcategoryIds = searchParams
+    .getAll("subcategory_ids")
+    .flatMap((value) => value.split(","))
+    .map((value) => value.trim())
+    .filter(Boolean);
+  const currentPath = (pathname || "/").replace(/\/+$/, "") || "/";
+  const isProductsRoute = currentPath === "/products";
+  const activeCategoryParam = (searchParams.get("category") || "")
+    .trim()
+    .toLowerCase();
+  const selectedSubcategories = allSubcategories.filter((sub: any) =>
+    activeSubcategoryIds.includes(String(sub.id)),
+  );
+  const activeNavSource = (searchParams.get("nav") || "").toLowerCase();
+  const isSubmenuActive = (sub: any): boolean =>
+    isProductsRoute &&
+    activeNavSource !== "women" &&
+    activeNavSource !== "men" &&
+    activeSubcategoryIds.includes(String(sub.id));
+  const isParentCategoryActive = (item: any): boolean => {
+    if (
+      !item.isCategory ||
+      !isProductsRoute ||
+      activeNavSource === "women" ||
+      activeNavSource === "men"
+    )
+      return false;
+    const matchingCategory = categories.find(
+      (category: any) => String(category.id) === String(item.categoryId),
+    );
+    const categoryLabels = [
+      item.label,
+      matchingCategory?.slug,
+      matchingCategory?.title,
+      matchingCategory?.name,
+      String(item.categoryId),
+    ]
+      .filter(Boolean)
+      .map((v) => String(v).trim().toLowerCase());
+    if (activeCategoryParam && categoryLabels.includes(activeCategoryParam))
+      return true;
+    return (
+      selectedSubcategories.some(
+        (sub: any) =>
+          String(sub.category_id ?? sub.category?.id ?? "") ===
+          String(item.categoryId),
+      ) || (item.subcategories || []).some((sub: any) => isSubmenuActive(sub))
+    );
+  };
+  const isNavItemActive = (item: any): boolean => {
+    const label = String(item.label || "")
+      .trim()
+      .toLowerCase();
+    if (label === "home") return currentPath === "/" || currentPath === "/home";
+    if (label === "support") return currentPath === "/contact";
+    if (label === "new arrivals")
+      return isProductsRoute && searchParams.get("new-arrivals") === "true";
+    if (item.isSubcategory)
+      return (
+        isProductsRoute &&
+        activeNavSource === label &&
+        activeSubcategoryIds.includes(String(item.subcategoryId))
+      );
+    if (item.isCategory) return isParentCategoryActive(item);
+    if (label === "shop")
+      return (
+        isProductsRoute &&
+        !activeCategoryParam &&
+        !activeSubcategoryIds.length &&
+        searchParams.get("new-arrivals") !== "true"
+      );
+    const hrefPath = String(item.href || "")
+      .split("?")[0]
+      .replace(/\/+$/, "");
+    return !!hrefPath && currentPath === hrefPath;
+  };
+
+  /* =========================================================
+     RENDER
+  ========================================================= */
 
   return (
     <>
@@ -1982,51 +1328,57 @@ export default function Header({
         onConfirm={handleLogoutConfirm}
         isLoading={isLoggingOut}
       />
-      <header className="premium-header sticky top-0 z-40 w-full font-lato">
+      <header className="premium-header sticky top-0 z-[999] w-full font-lato">
         {!hideAnnouncement && (
-          <div className="premium-benefits">
-            <div className="premium-shell premium-benefit-inner">
-              <div>
-                <Truck size={23} />
-                <span style={{fontSize:'12px'}}>
-                  Free Shipping on Orders Above <strong>₹999</strong>
-                </span>
+          <div className="premium-benefits premium-benefits-refreshed">
+            <div
+              className="premium-benefits-marquee"
+              aria-label="Store benefits"
+            >
+              <div className="premium-benefits-track">
+                {[0, 1].map((copy) => (
+                  <div
+                    className="premium-benefits-group"
+                    key={copy}
+                    aria-hidden={copy === 1}
+                  >
+                    <span className="premium-benefit-item">
+                      <Grid3x3 size={15} /> Explore premium collections
+                    </span>
+                    <span className="premium-benefit-item">
+                      <BadgeCheck size={15} /> 100% genuine products
+                    </span>
+                    <span className="premium-benefit-item">
+                      <Tag size={15} /> Discover new arrivals
+                    </span>
+                    <span className="premium-benefit-item">
+                      <Headphones size={15} /> Dedicated customer support
+                    </span>
+                  </div>
+                ))}
               </div>
-              <div>
-                <BadgeCheck size={23} />
-                <span style={{fontSize:'12px'}}>100% Genuine Products</span>
-              </div>
-              <div>
-                <RotateCcw size={23} />
-                <span style={{fontSize:'12px'}}>Easy 7 Days Returns</span>
-              </div>
-              <div>
-                <Headphones size={23} />
-                <span style={{fontSize:'12px'}}>Dedicated Customer Support</span>
-              </div>
-              <button
-                type="button"
-                onClick={handleCheckAvailability}
-                disabled={locationLoading}
-                className="premium-deliver"
-              >
-                {locationLoading ? (
-                  <Loader2 size={20} className="animate-spin" />
-                ) : (
-                  <MapPin size={20} />
-                )}
-                <span>
-                  <small>Deliver to</small>
-                  <b>{locationName || "Select location"}</b>
-                </span>
-                <ChevronDown size={17} />
-              </button>
             </div>
+            <button
+              type="button"
+              onClick={handleCheckAvailability}
+              disabled={locationLoading}
+              className="premium-deliver premium-deliver-refreshed"
+              title={locationError || "Detect delivery location"}
+            >
+              {locationLoading ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <MapPin size={16} />
+              )}
+              <span>
+                <small>DELIVER TO</small>
+                <b>{locationName || "Select location"}</b>
+              </span>
+              <ChevronDown size={13} />
+            </button>
           </div>
         )}
         <div className="premium-main">
-          <div className="premium-main-left-decor" aria-hidden="true" />
-          <div className="premium-main-right-decor" aria-hidden="true" />
           <div className="premium-shell premium-main-content">
             <button
               type="button"
@@ -2054,12 +1406,15 @@ export default function Header({
                 className="premium-brand-logo"
               />
               <span className="premium-brand-divider" />
-              <span style={{fontSize: '8px'}} className="premium-brand-tagline">
-                DISCOVER
+              <span
+                style={{ fontSize: "8px" }}
+                className="premium-brand-tagline"
+              >
+                CONNECT
                 <br />
-                EXTRAORDINARY
+                BEYOND
                 <br />
-                LIVING
+                BOUNDARIES
               </span>
             </Link>
             <div className="premium-search-wrap" ref={searchRef}>
@@ -2122,14 +1477,21 @@ export default function Header({
                           onClick={() => goToProductDetail(product.slug)}
                         >
                           <img
-                            src={
-                              product?.primary_image_url ||
-                              product?.image ||
-                              (typeof PlaceholderImage === "string"
-                                ? PlaceholderImage
-                                : PlaceholderImage.src)
-                            }
-                            alt=""
+                            src={getProductSearchImage(product)}
+                            alt={product.name || "Product"}
+                            loading="lazy"
+                            onError={(event) => {
+                              const fallback =
+                                typeof PlaceholderImage === "string"
+                                  ? PlaceholderImage
+                                  : PlaceholderImage.src;
+                              if (
+                                event.currentTarget.getAttribute("src") !==
+                                fallback
+                              ) {
+                                event.currentTarget.src = fallback;
+                              }
+                            }}
                           />
                           <span>
                             <b>{product.name}</b>
@@ -2148,7 +1510,9 @@ export default function Header({
                     type="submit"
                     onClick={() => {
                       router.push(
-                        `/products?search=${encodeURIComponent(searchQuery.trim())}`,
+                        `/products?search=${encodeURIComponent(
+                          searchQuery.trim(),
+                        )}`,
                       );
                       closeHeaderOverlays();
                     }}
@@ -2176,8 +1540,8 @@ export default function Header({
                   <div className="premium-popover premium-profile-popover">
                     {hasToken && (
                       <div className="premium-profile-name">
-                        Hello, {userName}
-                        <small>{userEmail}</small>
+                        Hello, {userProfile?.full_name || "User"}
+                        <small>{userProfile?.email || ""}</small>
                       </div>
                     )}
                     {profileMenuItems.map((item: any, index: number) => (
@@ -2279,7 +1643,10 @@ export default function Header({
         {!hideMenu && (
           <nav className="premium-nav">
             <div className="premium-shell premium-nav-inner">
-              <div className="premium-nav-category" onMouseLeave={() => setIsAllCategoriesOpen(false)}>
+              <div
+                className="premium-nav-category"
+                onMouseLeave={() => setIsAllCategoriesOpen(false)}
+              >
                 <button
                   type="button"
                   className="premium-all-categories"
@@ -2289,7 +1656,10 @@ export default function Header({
                 >
                   <Menu size={22} /> ALL CATEGORIES
                 </button>
-                <div className="premium-all-dropdown" style={isAllCategoriesOpen ? { display: "block" } : undefined}>
+                <div
+                  className="premium-all-dropdown"
+                  style={isAllCategoriesOpen ? { display: "block" } : undefined}
+                >
                   {categories.map((category: any) => (
                     <button
                       key={category.id}
@@ -2321,7 +1691,10 @@ export default function Header({
                     <button
                       type="button"
                       onClick={() => handleNavigation(item)}
-                      className={`${navClass} ${item.label === "Home" ? "premium-nav-active" : ""}`}
+                      aria-current={isNavItemActive(item) ? "page" : undefined}
+                      className={`${navClass} ${
+                        isNavItemActive(item) ? "premium-nav-active" : ""
+                      }`}
                     >
                       {item.label}
                     </button>
@@ -2339,6 +1712,14 @@ export default function Header({
                             <button
                               type="button"
                               key={sub.id}
+                              className={
+                                isSubmenuActive(sub)
+                                  ? "premium-submenu-active"
+                                  : ""
+                              }
+                              aria-current={
+                                isSubmenuActive(sub) ? "page" : undefined
+                              }
                               onClick={() => goToSubcategory(sub)}
                             >
                               {sub.title || sub.name}
@@ -2369,16 +1750,21 @@ export default function Header({
             >
               All Categories <ChevronDown size={15} />
             </button>
-            {isAllCategoriesOpen && categories.map((category: any) => (
-              <button
-                className="premium-mobile-sub"
-                key={`all-category-${category.id}`}
-                type="button"
-                onClick={() => goToProducts(category.slug || category.title || category.name)}
-              >
-                {category.title || category.name}
-              </button>
-            ))}
+            {isAllCategoriesOpen &&
+              categories.map((category: any) => (
+                <button
+                  className="premium-mobile-sub"
+                  key={`all-category-${category.id}`}
+                  type="button"
+                  onClick={() =>
+                    goToProducts(
+                      category.slug || category.title || category.name,
+                    )
+                  }
+                >
+                  {category.title || category.name}
+                </button>
+              ))}
             {mobileNavItems.map((item: any, index: number) => (
               <div key={`${item.label}-${index}`}>
                 <button
@@ -2396,16 +1782,28 @@ export default function Header({
                     }
                   }}
                 >
-                  {item.label}
+                  <span
+                    className={
+                      isNavItemActive(item)
+                        ? "premium-mobile-parent-active"
+                        : ""
+                    }
+                  >
+                    {item.label}
+                  </span>
                   {item.isCategory && item.subcategories?.length > 0 && (
                     <ChevronDown size={15} />
                   )}
                 </button>
                 {item.isCategory &&
-                  mobileExpandedCategoryId === item.categoryId &&
+                  (mobileExpandedCategoryId === item.categoryId ||
+                    isParentCategoryActive(item)) &&
                   item.subcategories?.map((sub: any) => (
                     <button
-                      className="premium-mobile-sub"
+                      className={`premium-mobile-sub ${
+                        isSubmenuActive(sub) ? "premium-submenu-active" : ""
+                      }`}
+                      aria-current={isSubmenuActive(sub) ? "page" : undefined}
                       key={sub.id}
                       onClick={() => {
                         goToSubcategory(sub);
@@ -2421,5 +1819,42 @@ export default function Header({
         )}
       </header>
     </>
+  );
+}
+
+/* =========================================================
+   DEFAULT EXPORT — Suspense wrapper
+   IMPORTANT: `useSearchParams()` is inside HeaderInner,
+   which is a direct child of <Suspense>. This satisfies
+   Next.js 16's requirement and keeps all static pages
+   prerenderable.
+========================================================= */
+
+function HeaderSkeleton() {
+  return (
+    <header
+      style={{
+        height: 112,
+        background: "#fff",
+        borderBottom: "1px solid #EAEAEA",
+      }}
+      aria-hidden="true"
+    />
+  );
+}
+
+export default function Header(props: {
+  hideAnnouncement?: boolean;
+  hideMenu?: boolean;
+  showSidebarMenu?: boolean;
+  onSidebarMenuClick?: () => void;
+}) {
+  return (
+    <Suspense fallback={<HeaderSkeleton />}>
+      <HeaderInner
+        hideAnnouncement={props.hideAnnouncement}
+        hideMenu={props.hideMenu}
+      />
+    </Suspense>
   );
 }

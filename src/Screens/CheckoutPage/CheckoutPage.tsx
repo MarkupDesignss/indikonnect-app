@@ -12,6 +12,8 @@ import {
   LockKeyhole,
   CreditCard,
   Truck,
+  Building2,
+  Landmark,
 } from "lucide-react";
 
 import Header from "@/components/common/Header";
@@ -54,8 +56,6 @@ import {
 import { useGetCouponsQuery } from "@/lib/redux/api/cartApi";
 
 import AddressFormModal from "./AddressFormModal";
-
-import Razorpay from "../../../public/indiekonnect-web/images/rozarpay.jpeg";
 
 export interface Address {
   id: number;
@@ -328,6 +328,12 @@ interface PlaceOrderResponseShape {
 
   razorpay_key?: string;
 
+  hdfc_order_id?: string;
+
+  hdfc_payment_link?: string;
+
+  hdfc_gateway_key?: "hdfc_sg" | "hdfc_ie";
+
   status?: string;
 
   checkout_type?: string;
@@ -374,6 +380,25 @@ declare global {
 }
 
 const INK = "#111111";
+
+// The merchant names must be passed exactly as provided by the business.
+// Backend must map the chosen name to its configured HDFC merchant credentials.
+const HDFC_MERCHANTS = [
+  {
+    id: "sg",
+    display: "IndieKonnect SG",
+    legalName: "INDIEKONNECT ENTERPRISES PVT LTD SG",
+  },
+  {
+    id: "india",
+    display: "IndieKonnect India",
+    legalName: "INDIEKONNECT ENTERPRISES PRIVATE LIMITED",
+  },
+] as const;
+
+type PaymentChoice =
+  { gateway: "razorpay" } | { gateway: "hdfc"; merchantName: string };
+
 const poppins = Poppins({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
@@ -1005,13 +1030,11 @@ function CartSummary({
             </>
           ) : (
             <>
-              <span>Pay with</span>
-
-              <span className="font-bold">Razorpay</span>
-
-              <span>•</span>
-
+              <CreditCard className="h-4 w-4" />
+              <span>Choose payment method</span>
+              <span className="opacity-60">·</span>
               <span>{formatPrice(summaryData.grand_total)}</span>
+              <ChevronRight className="h-4 w-4" />
             </>
           )}
         </button>
@@ -1024,27 +1047,253 @@ function CartSummary({
       </div>
 
       <div className="border-t border-[#F0F0F0] bg-[#FAFAFA] px-6 py-4">
-        <div className="flex items-center justify-center gap-2">
-          <span className="text-[9px] text-[#777777]">
-            Secure payment powered by
-          </span>
-
-          <div className="relative h-5 w-16 overflow-hidden">
-            <Image
-              src={Razorpay}
-
-              alt="Razorpay"
-
-              fill
-
-              className="object-contain"
-            />
-          </div>
+        <div className="flex items-center justify-center gap-2 text-[10px] text-[#737373]">
+          <LockKeyhole className="h-3.5 w-3.5" />
+          Secure checkout · Choose Razorpay or HDFC Bank
         </div>
       </div>
     </div>
   );
 }
+
+function PaymentMethodModal({
+  open,
+  amount,
+  busy,
+  onClose,
+  onConfirm,
+}: {
+  open: boolean;
+  amount: number;
+  busy: boolean;
+  onClose: () => void;
+  onConfirm: (choice: PaymentChoice) => void;
+}) {
+  const [gateway, setGateway] = useState<"razorpay" | "hdfc">("razorpay");
+  const [merchantName, setMerchantName] = useState<string>(
+    HDFC_MERCHANTS[0].legalName,
+  );
+
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !busy) onClose();
+    };
+    const oldOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = oldOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open, busy, onClose]);
+
+  if (!open) return null;
+
+  const optionClass = (selected: boolean) =>
+    `group relative w-full rounded-2xl border p-4 text-left transition-all duration-200 sm:p-5 ${
+      selected
+        ? "border-[#191919] bg-[#F9F9F8] shadow-[0_0_0_1px_#191919]"
+        : "border-[#E7E7E5] bg-white hover:border-[#999] hover:bg-[#FCFCFC]"
+    }`;
+
+  return (
+    <div
+      className="fixed inset-0 z-[100000] flex items-center justify-center overflow-y-auto bg-black/60 p-3 backdrop-blur-[5px] sm:p-6"
+      role="presentation"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget && !busy) onClose();
+      }}
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="payment-choice-title"
+        className="my-auto w-full max-w-[540px] overflow-hidden rounded-[24px] bg-white shadow-[0_35px_110px_rgba(0,0,0,.3)]"
+      >
+        <div className="relative overflow-hidden bg-[#151515] px-6 pb-7 pt-7 text-white sm:px-8">
+          <div className="pointer-events-none absolute -right-14 -top-24 h-64 w-64 rounded-full border border-white/10" />
+          <div className="pointer-events-none absolute -right-4 -top-12 h-44 w-44 rounded-full border border-white/10" />
+          <div className="relative flex items-start justify-between gap-4">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/15 bg-white/10">
+              <LockKeyhole className="h-5 w-5" />
+            </div>
+            <button
+              type="button"
+              aria-label="Close payment options"
+              onClick={onClose}
+              disabled={busy}
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/10 transition hover:bg-white/20 disabled:opacity-50"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <p className="relative mt-5 text-[10px] font-semibold uppercase tracking-[0.25em] text-white/60">
+            IndieKonnect · Secure checkout
+          </p>
+          <h2
+            id="payment-choice-title"
+            className="relative mt-2 text-[24px] font-semibold tracking-tight sm:text-[27px]"
+          >
+            How would you like to pay?
+          </h2>
+          <p className="relative mt-2 text-[12px] leading-5 text-white/65">
+            Choose your preferred payment partner to continue.
+          </p>
+          <div className="relative mt-5 flex items-center justify-between rounded-xl border border-white/15 bg-white/10 px-4 py-3">
+            <span className="text-[11px] text-white/70">Order total</span>
+            <strong className="text-[21px] font-semibold tracking-tight">
+              {formatPrice(amount)}
+            </strong>
+          </div>
+        </div>
+
+        <div className="max-h-[58vh] space-y-3 overflow-y-auto px-5 py-6 sm:px-8">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => setGateway("razorpay")}
+            aria-pressed={gateway === "razorpay"}
+            className={optionClass(gateway === "razorpay")}
+          >
+            <div className="flex items-center gap-3">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#F0F0F0] text-[#242424]">
+                <CreditCard className="h-5 w-5" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-[14px] font-semibold text-[#202020]">
+                  Razorpay
+                </p>
+                <p className="mt-1 text-[10px] text-[#777]">
+                  Continue through Razorpay secure checkout
+                </p>
+              </div>
+              <span
+                className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${gateway === "razorpay" ? "border-black bg-black text-white" : "border-[#C8C8C8]"}`}
+              >
+                {gateway === "razorpay" && <Check className="h-3 w-3" />}
+              </span>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => setGateway("hdfc")}
+            aria-pressed={gateway === "hdfc"}
+            className={optionClass(gateway === "hdfc")}
+          >
+            <div className="flex items-center gap-3">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#F1F2F4] text-[#222]">
+                <Landmark className="h-5 w-5" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-[14px] font-semibold text-[#202020]">
+                  HDFC Bank
+                </p>
+                <p className="mt-1 text-[10px] text-[#777]">
+                  Choose one of the two IndieKonnect merchant accounts
+                </p>
+              </div>
+              <span
+                className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${gateway === "hdfc" ? "border-black bg-black text-white" : "border-[#C8C8C8]"}`}
+              >
+                {gateway === "hdfc" && <Check className="h-3 w-3" />}
+              </span>
+            </div>
+          </button>
+
+          {gateway === "hdfc" && (
+            <div className="rounded-2xl border border-[#E9E9E9] bg-[#FAFAFA] p-4">
+              <div className="mb-3 flex items-center gap-2">
+                <Building2 className="h-4 w-4 text-[#555]" />
+                <h3 className="text-[12px] font-semibold text-[#333]">
+                  Select IndieKonnect account
+                </h3>
+              </div>
+              <div className="space-y-2">
+                {HDFC_MERCHANTS.map((merchant) => {
+                  const selected = merchantName === merchant.legalName;
+                  return (
+                    <button
+                      key={merchant.id}
+                      type="button"
+                      disabled={busy}
+                      onClick={() => setMerchantName(merchant.legalName)}
+                      aria-pressed={selected}
+                      className={`flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left transition ${selected ? "border-[#191919] bg-white shadow-sm" : "border-[#E5E5E5] bg-white/70 hover:border-[#AAAAAA]"}`}
+                    >
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#F2F2F2] text-[#424242]">
+                        <Building2 className="h-4 w-4" />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-[12px] font-semibold text-[#202020]">
+                          {merchant.display}
+                        </span>
+                        <span className="mt-1 block break-words text-[9px] leading-4 text-[#888]">
+                          {merchant.legalName}
+                        </span>
+                      </span>
+                      <span
+                        className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border ${selected ? "border-black bg-black text-white" : "border-[#C8C8C8]"}`}
+                      >
+                        {selected && <Check className="h-3 w-3" />}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="border-t border-[#ECECEC] bg-white px-5 pb-6 pt-5 sm:px-8">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() =>
+              onConfirm(
+                gateway === "razorpay"
+                  ? { gateway }
+                  : { gateway, merchantName },
+              )
+            }
+            className="flex h-[52px] w-full items-center justify-center gap-2 rounded-xl bg-[#191919] px-5 text-[12px] font-semibold text-white transition hover:bg-[#303030] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {busy ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" /> Processing...
+              </>
+            ) : (
+              <>
+                <ShieldCheck className="h-4 w-4" /> Continue to{" "}
+                {gateway === "hdfc" ? "HDFC Bank" : "Razorpay"}{" "}
+                <ArrowLeft className="h-4 w-4 rotate-180" />
+              </>
+            )}
+          </button>
+          <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-[10px] text-[#888]">
+            <LockKeyhole className="h-3 w-3" /> Payment processing is handled by
+            your selected gateway
+          </p>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+// HDFC hosted checkout must be opened as a top-level navigation.
+// A merchant server must verify payment status using its gateway credentials
+// (webhook or server-to-server status API) before marking the order paid.
+type PendingHdfcOrder = {
+  orderId: number;
+  orderReference: string;
+  gatewayOrderId: string;
+  paymentUrl: string;
+  amount: number;
+  createdAt: number;
+};
+
+const PENDING_HDFC_ORDER_KEY = "indiekonnect_pending_hdfc_order";
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -1069,6 +1318,23 @@ export default function CheckoutPage() {
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [pendingHdfcOrder, setPendingHdfcOrder] =
+    useState<PendingHdfcOrder | null>(null);
+
+  useEffect(() => {
+    try {
+      const stored = sessionStorage.getItem(PENDING_HDFC_ORDER_KEY);
+      if (stored) {
+        const pending = JSON.parse(stored) as PendingHdfcOrder;
+        if (pending?.orderReference && pending?.createdAt) {
+          setPendingHdfcOrder(pending);
+        }
+      }
+    } catch {
+      sessionStorage.removeItem(PENDING_HDFC_ORDER_KEY);
+    }
+  }, []);
 
   const [couponInput, setCouponInput] = useState(urlCouponCode);
 
@@ -1630,7 +1896,7 @@ export default function CheckoutPage() {
     }
   };
 
-  const handlePayNow = async () => {
+  const handlePayNow = async (paymentChoice: PaymentChoice) => {
     if (!selectedDeliveryAddress?.id) {
       dispatch(
         showToast({
@@ -1681,7 +1947,15 @@ export default function CheckoutPage() {
 
         grand_total: grandTotal,
 
-        payment_gateway: "razorpay",
+        // Send the exact gateway identifier expected by the backend.
+        // UI keeps the merchant names for display only.
+        payment_gateway:
+          paymentChoice.gateway === "razorpay"
+            ? "razorpay"
+            : paymentChoice.merchantName ===
+                "INDIEKONNECT ENTERPRISES PVT LTD SG"
+              ? "hdfc_sg"
+              : "hdfc_ie",
 
         summary_data: {
           subtotal: summaryData.subtotal,
@@ -1708,7 +1982,7 @@ export default function CheckoutPage() {
 
       const response = await placeOrder(orderPayload).unwrap();
 
-      console.log("Place order response:", response);
+      // Avoid logging gateway response: it may contain short-lived checkout tokens.
 
       const rawResponse = response as
         | PlaceOrderResponseShape
@@ -1768,6 +2042,50 @@ export default function CheckoutPage() {
         anyData?.total_amount ?? firstOrder?.total_payable ?? grandTotal,
       );
 
+      if (paymentChoice.gateway === "hdfc") {
+        // HDFC hosted checkout URL returned by the place-order API.
+        // SDK client tokens are not needed when using the hosted payment page.
+        const hdfcUrl = anyData?.hdfc_payment_link;
+
+        if (typeof hdfcUrl !== "string" || !hdfcUrl.trim()) {
+          throw new Error("HDFC payment link was not returned by the server.");
+        }
+
+        let verifiedPaymentUrl: URL;
+        try {
+          verifiedPaymentUrl = new URL(hdfcUrl);
+        } catch {
+          throw new Error("HDFC payment URL is invalid.");
+        }
+
+        if (
+          verifiedPaymentUrl.protocol !== "https:" ||
+          verifiedPaymentUrl.hostname !== "smartgateway.hdfc.bank.in"
+        ) {
+          throw new Error("Unexpected HDFC payment destination.");
+        }
+
+        // Preserve the order context before leaving our application.
+        // This does NOT mean that a payment has succeeded.
+        const pending: PendingHdfcOrder = {
+          orderId,
+          orderReference:
+            orderReference || String(anyData?.hdfc_order_id || ""),
+          gatewayOrderId: String(anyData?.hdfc_order_id || ""),
+          paymentUrl: verifiedPaymentUrl.href,
+          amount,
+          createdAt: Date.now(),
+        };
+        sessionStorage.setItem(PENDING_HDFC_ORDER_KEY, JSON.stringify(pending));
+        setPendingHdfcOrder(pending);
+        setIsPaymentModalOpen(false);
+
+        // HDFC prevents embedding the hosted payment page in an iframe.
+        // Direct top-level navigation is supported by standard browsers.
+        window.location.assign(verifiedPaymentUrl.href);
+        return;
+      }
+
       if (!orderReference) {
         throw new Error("Order reference was not returned by the server.");
       }
@@ -1782,6 +2100,7 @@ export default function CheckoutPage() {
         throw new Error("Invalid payment amount returned by the server.");
       }
 
+      setIsPaymentModalOpen(false);
       await openRazorpay({
         orderId,
 
@@ -1812,10 +2131,72 @@ export default function CheckoutPage() {
 
   return (
     <>
+      <PaymentMethodModal
+        open={isPaymentModalOpen}
+        amount={Number(summaryData?.grand_total || 0)}
+        busy={isSubmitting}
+        onClose={() => setIsPaymentModalOpen(false)}
+        onConfirm={handlePayNow}
+      />
       <Header />
       <main
         className={`${poppins.className} min-h-screen bg-[#FAFAFA] px-4 pb-20 pt-8 text-[#171717] sm:px-6 sm:pt-11`}
       >
+        {pendingHdfcOrder && (
+          <div className="mx-auto mb-6 max-w-[1160px] rounded-xl border border-[#dedede] bg-white p-4 shadow-sm">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-[#171717]">
+                  HDFC payment awaiting verification
+                </p>
+                <p className="mt-1 text-xs leading-5 text-[#666]">
+                  Order {pendingHdfcOrder.orderReference} ·{" "}
+                  {formatPrice(pendingHdfcOrder.amount)}. Returning to checkout
+                  is not confirmation of payment. Check your order status with
+                  the merchant before placing another order.
+                </p>
+              </div>
+              <div className="flex shrink-0 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    try {
+                      const url = new URL(pendingHdfcOrder.paymentUrl);
+                      if (
+                        url.protocol !== "https:" ||
+                        url.hostname !== "smartgateway.hdfc.bank.in"
+                      ) {
+                        throw new Error("Untrusted bank URL");
+                      }
+                      window.location.assign(url.href);
+                    } catch {
+                      dispatch(
+                        showToast({
+                          message: "Invalid stored payment link",
+                          type: "error",
+                        }),
+                      );
+                    }
+                  }}
+                  className="rounded-lg bg-[#171717] px-4 py-2 text-xs font-semibold text-white"
+                >
+                  Resume HDFC checkout
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    sessionStorage.removeItem(PENDING_HDFC_ORDER_KEY);
+                    setPendingHdfcOrder(null);
+                  }}
+                  className="rounded-lg border border-[#ddd] px-3 py-2 text-xs font-medium"
+                  aria-label="Dismiss pending payment notice"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         <div className="mx-auto w-full max-w-[1160px]">
           <nav
             aria-label="Breadcrumb"
@@ -2003,7 +2384,7 @@ export default function CheckoutPage() {
               <CartSummary
                 summaryData={summaryData}
                 loading={isLoadingCheckoutSummary || isFetchingCheckoutSummary}
-                onPay={handlePayNow}
+                onPay={() => setIsPaymentModalOpen(true)}
                 isSubmitting={isSubmitting}
                 disabled={
                   !selectedDeliveryAddress?.id ||
