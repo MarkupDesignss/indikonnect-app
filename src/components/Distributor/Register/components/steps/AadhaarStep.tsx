@@ -2,7 +2,7 @@
 
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   PlusCircle,
   AlertTriangle,
@@ -49,13 +49,11 @@ const IS_SANDBOX = process.env.NEXT_PUBLIC_KYC_ENV === "sandbox";
 // ✅ Helper: Convert "2008-10-01 00:00:00" → "01/10/2008"
 const formatDateToDDMMYYYY = (dateStr: string): string => {
   if (!dateStr) return "";
-  // Handle ISO format like "2008-10-01 00:00:00" or "2008-10-01T00:00:00.000000Z"
   const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (match) {
     const [, year, month, day] = match;
     return `${day}/${month}/${year}`;
   }
-  // Already in DD/MM/YYYY?
   if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) return dateStr;
   return "";
 };
@@ -69,8 +67,12 @@ export const AadhaarStep: React.FC<StepProps> = ({
   onBackToMobile,
 }) => {
   const dispatch = useAppDispatch();
+
+  // API Loading States
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
+
+  // UI States
   const [aadhaarError, setAadhaarError] = useState("");
   const [otpError, setOtpError] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -78,9 +80,14 @@ export const AadhaarStep: React.FC<StepProps> = ({
   const [isDataLoadedFromAPI, setIsDataLoadedFromAPI] = useState(false);
   const [aadhaarLast4, setAadhaarLast4] = useState("");
 
+  // Step States
   const [subStep, setSubStep] = useState<AadhaarSubStep>("enter_aadhaar");
   const [referenceId, setReferenceId] = useState("");
   const [otp, setOtp] = useState("");
+
+  // ✅ FIX: Navigation locks to prevent double-clicks / double API calls
+  const [isNavigating, setIsNavigating] = useState(false);
+  const hasNavigatedRef = useRef(false);
 
   const [step3Aadhaar] = useStep3AadhaarMutation();
   const [getStepData, { isLoading: isLoadingStepData }] =
@@ -89,7 +96,6 @@ export const AadhaarStep: React.FC<StepProps> = ({
   // ==========================================
   // LOAD PHONE
   // ==========================================
-
   useEffect(() => {
     const savedPhone =
       localStorage.getItem("distributor_verified_phone") ||
@@ -107,7 +113,6 @@ export const AadhaarStep: React.FC<StepProps> = ({
   // ==========================================
   // RESTORE PENDING REFERENCE
   // ==========================================
-
   useEffect(() => {
     if (data.aadhaar_verified) return;
     const savedRef = localStorage.getItem(REFERENCE_ID_KEY);
@@ -115,13 +120,11 @@ export const AadhaarStep: React.FC<StepProps> = ({
       setReferenceId(savedRef);
       setSubStep("enter_otp");
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ==========================================
-  // BACKFILL masked aadhaar if verified but state empty
+  // BACKFILL MASKED AADHAAR
   // ==========================================
-
   useEffect(() => {
     if (!data.aadhaar_verified) return;
     if (aadhaarLast4) return;
@@ -137,13 +140,11 @@ export const AadhaarStep: React.FC<StepProps> = ({
     if (digits.length === 12) {
       setAadhaarLast4("****" + digits.slice(-4));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data.aadhaar_verified, data.aadhaar_number]);
 
   // ==========================================
   // FETCH STEP DATA
   // ==========================================
-
   const fetchStepData = async () => {
     const email = data.email || localStorage.getItem("distributor_email") || "";
     if (!email) return;
@@ -155,7 +156,7 @@ export const AadhaarStep: React.FC<StepProps> = ({
         const userData = response.step_data.user;
         const profileData = response.step_data.distributor_profile;
 
-        // ✅ AUTO-FILL Name as per PAN (from full_name)
+        // ✅ AUTO-FILL Name as per PAN
         if (userData?.full_name && !data.aadhaar_name_as_per_pan) {
           const savedName = localStorage.getItem(NAME_KEY);
           const nameToFill = savedName || userData.full_name;
@@ -163,14 +164,14 @@ export const AadhaarStep: React.FC<StepProps> = ({
             target: { name: "aadhaar_name_as_per_pan", value: nameToFill },
           } as any);
         } else if (userData?.full_name && !localStorage.getItem(NAME_KEY)) {
-          // Also stash it for later steps
           localStorage.setItem(NAME_KEY, userData.full_name);
         }
 
-        // ✅ AUTO-FILL Date of Birth (convert to DD/MM/YYYY)
+        // ✅ AUTO-FILL Date of Birth
         if (userData?.date_of_birth && !data.aadhaar_date_of_birth) {
           const savedDob = localStorage.getItem(DOB_KEY);
-          const dobToFill = savedDob || formatDateToDDMMYYYY(userData.date_of_birth);
+          const dobToFill =
+            savedDob || formatDateToDDMMYYYY(userData.date_of_birth);
           if (dobToFill) {
             onChange({
               target: { name: "aadhaar_date_of_birth", value: dobToFill },
@@ -196,14 +197,8 @@ export const AadhaarStep: React.FC<StepProps> = ({
           onChange({
             target: { name: "aadhaar_verified", value: true },
           } as any);
-
-          onChange({
-            target: { name: "aadhaar_consent", value: true },
-          } as any);
-
-          onChange({
-            target: { name: "aadhaar_number", value: last4 },
-          } as any);
+          onChange({ target: { name: "aadhaar_consent", value: true } } as any);
+          onChange({ target: { name: "aadhaar_number", value: last4 } } as any);
 
           setIsDataLoadedFromAPI(true);
           setAadhaarError("");
@@ -218,7 +213,6 @@ export const AadhaarStep: React.FC<StepProps> = ({
             }),
           );
         } else {
-          // ✅ Even if not verified, data was loaded from API
           setIsDataLoadedFromAPI(true);
         }
       }
@@ -241,13 +235,11 @@ export const AadhaarStep: React.FC<StepProps> = ({
       if (email) await fetchStepData();
     };
     loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data.email]);
 
   // ==========================================
   // CLEAR REGISTRATION DATA
   // ==========================================
-
   const clearAllRegistrationData = () => {
     const itemsToRemove = [
       "verified_phone",
@@ -297,7 +289,6 @@ export const AadhaarStep: React.FC<StepProps> = ({
   // ==========================================
   // STEP 3A: SEND OTP
   // ==========================================
-
   const handleSendOTP = async () => {
     const cleanNumber = data.aadhaar_number?.replace(/\D/g, "") || "";
 
@@ -359,33 +350,29 @@ export const AadhaarStep: React.FC<StepProps> = ({
     try {
       const payload = IS_SANDBOX
         ? {
-          phone: "+918800880088",
-          encrypted_aadhaar: "123456789012",
-          aadhaar_consent: 1,
-          name_as_per_pan: "JOHN DOE",
-          date_of_birth: "01/01/1990",
-          aadhaar_number: "123456789012",
-        }
+            phone: "+918800880088",
+            encrypted_aadhaar: "123456789012",
+            aadhaar_consent: 1,
+            name_as_per_pan: "JOHN DOE",
+            date_of_birth: "01/01/1990",
+            aadhaar_number: "123456789012",
+          }
         : {
-          phone: phoneNumber,
-          encrypted_aadhaar: cleanNumber,
-          aadhaar_consent: data.aadhaar_consent ? 1 : 0,
-          name_as_per_pan: data.aadhaar_name_as_per_pan.trim(),
-          date_of_birth: data.aadhaar_date_of_birth,
-          aadhaar_number: cleanNumber,
-        };
-
-      console.log("📡 [Step 3A] Send OTP payload:", payload);
+            phone: phoneNumber,
+            encrypted_aadhaar: cleanNumber,
+            aadhaar_consent: data.aadhaar_consent ? 1 : 0,
+            name_as_per_pan: data.aadhaar_name_as_per_pan.trim(),
+            date_of_birth: data.aadhaar_date_of_birth,
+            aadhaar_number: cleanNumber,
+          };
 
       const response = await step3Aadhaar(payload).unwrap();
-
-      console.log("✅ [Step 3A] Send OTP response:", response);
 
       if (response.status) {
         const refId = String(
           (response as any)?.reference_id ??
-          (response as any)?.data?.reference_id ??
-          "",
+            (response as any)?.data?.reference_id ??
+            "",
         );
 
         if (!refId) {
@@ -397,7 +384,6 @@ export const AadhaarStep: React.FC<StepProps> = ({
 
         setReferenceId(refId);
         localStorage.setItem(REFERENCE_ID_KEY, refId);
-
         localStorage.setItem(VERIFIED_AADHAAR_KEY, cleanNumber);
         localStorage.setItem(NAME_KEY, data.aadhaar_name_as_per_pan.trim());
         localStorage.setItem(DOB_KEY, data.aadhaar_date_of_birth);
@@ -419,7 +405,6 @@ export const AadhaarStep: React.FC<StepProps> = ({
         dispatch(showToast({ message: errorMsg, type: "error" }));
       }
     } catch (error: any) {
-      console.error("❌ [Step 3A] Send OTP error:", error);
       const errorMsg =
         error?.data?.message ||
         error?.message ||
@@ -432,9 +417,8 @@ export const AadhaarStep: React.FC<StepProps> = ({
   };
 
   // ==========================================
-  // STEP 3B: VERIFY OTP
+  // STEP 3B: VERIFY OTP (WITH RACE CONDITION FIX)
   // ==========================================
-
   const handleVerifyOTP = async () => {
     const cleanOtp = otp.replace(/\D/g, "");
 
@@ -466,31 +450,27 @@ export const AadhaarStep: React.FC<StepProps> = ({
 
       const payload = IS_SANDBOX
         ? {
-          phone: "8800880088",
-          encrypted_aadhaar: "123456789012",
-          aadhaar_consent: "1" as const,
-          reference_id: activeRef,
-          otp: cleanOtp,
-          name_as_per_pan: "JOHN DOE",
-          date_of_birth: "01/01/1990",
-          aadhaar_number: "123456789012",
-        }
+            phone: "8800880088",
+            encrypted_aadhaar: "123456789012",
+            aadhaar_consent: "1" as const,
+            reference_id: activeRef,
+            otp: cleanOtp,
+            name_as_per_pan: "JOHN DOE",
+            date_of_birth: "01/01/1990",
+            aadhaar_number: "123456789012",
+          }
         : {
-          phone: phoneNumber,
-          encrypted_aadhaar: cleanNumber,
-          aadhaar_consent: data.aadhaar_consent ? 1 : 0,
-          reference_id: activeRef,
-          otp: cleanOtp,
-          name_as_per_pan: nameAsPerPan,
-          date_of_birth: dateOfBirth,
-          aadhaar_number: cleanNumber,
-        };
-
-      console.log("📡 [Step 3B] Verify OTP payload:", payload);
+            phone: phoneNumber,
+            encrypted_aadhaar: cleanNumber,
+            aadhaar_consent: data.aadhaar_consent ? 1 : 0,
+            reference_id: activeRef,
+            otp: cleanOtp,
+            name_as_per_pan: nameAsPerPan,
+            date_of_birth: dateOfBirth,
+            aadhaar_number: cleanNumber,
+          };
 
       const response = await step3Aadhaar(payload).unwrap();
-
-      console.log("✅ [Step 3B] Verify OTP response:", response);
 
       if (response.status) {
         localStorage.setItem(VERIFIED_AADHAAR_KEY, cleanNumber);
@@ -500,9 +480,7 @@ export const AadhaarStep: React.FC<StepProps> = ({
         const maskedFromFull = "****" + cleanNumber.slice(-4);
         setAadhaarLast4(maskedFromFull);
 
-        onChange({
-          target: { name: "aadhaar_verified", value: true },
-        } as any);
+        onChange({ target: { name: "aadhaar_verified", value: true } } as any);
 
         dispatch(
           showToast({
@@ -514,20 +492,25 @@ export const AadhaarStep: React.FC<StepProps> = ({
         localStorage.removeItem(REFERENCE_ID_KEY);
         setReferenceId("");
         setOtp("");
-
         setSubStep("verified");
+
+        // ✅ LOCK UI: Disable the continue button while loading data
+        setIsNavigating(true);
+
+        // ✅ Await API before navigating so UI is in sync
         await fetchStepData();
 
-        setTimeout(() => {
+        // ✅ Navigate only once
+        if (!hasNavigatedRef.current) {
+          hasNavigatedRef.current = true;
           onNext?.();
-        }, 1000);
+        }
       } else {
         const errorMsg = response.message || "Invalid OTP. Please try again.";
         setOtpError(errorMsg);
         dispatch(showToast({ message: errorMsg, type: "error" }));
       }
     } catch (error: any) {
-      console.error("❌ [Step 3B] Verify OTP error:", error);
       const errorMsg =
         error?.data?.message ||
         error?.message ||
@@ -536,24 +519,34 @@ export const AadhaarStep: React.FC<StepProps> = ({
       dispatch(showToast({ message: errorMsg, type: "error" }));
     } finally {
       setIsVerifying(false);
+      // Do NOT reset isNavigating so that the button stays locked on unmount
     }
   };
 
   // ==========================================
-  // HANDLE CONTINUE
+  // HANDLE CONTINUE (WITH DOUBLE-CLICK GUARD)
   // ==========================================
-
   const handleContinue = () => {
+    // 🛑 Guard: Prevent navigation if already in progress
+    if (hasNavigatedRef.current || isNavigating) {
+      return;
+    }
+
+    // If already verified (e.g. from API load), just move forward
     if (data.aadhaar_verified) {
+      hasNavigatedRef.current = true;
+      setIsNavigating(true);
       onNext?.();
       return;
     }
-    if (subStep === "enter_aadhaar") {
-      void handleSendOTP();
-      return;
-    }
+
     if (subStep === "enter_otp") {
       void handleVerifyOTP();
+      return;
+    }
+
+    if (subStep === "enter_aadhaar") {
+      void handleSendOTP();
       return;
     }
   };
@@ -567,19 +560,12 @@ export const AadhaarStep: React.FC<StepProps> = ({
   };
 
   // ==========================================
-  // CHANGE AADHAAR (reset verification)
+  // CHANGE AADHAAR (RESET)
   // ==========================================
-
   const handleChangeAadhaar = () => {
-    onChange({
-      target: { name: "aadhaar_verified", value: false },
-    } as any);
-    onChange({
-      target: { name: "aadhaar_number", value: "" },
-    } as any);
-    onChange({
-      target: { name: "aadhaar_consent", value: false },
-    } as any);
+    onChange({ target: { name: "aadhaar_verified", value: false } } as any);
+    onChange({ target: { name: "aadhaar_number", value: "" } } as any);
+    onChange({ target: { name: "aadhaar_consent", value: false } } as any);
 
     setSubStep("enter_aadhaar");
     setAadhaarLast4("");
@@ -588,15 +574,17 @@ export const AadhaarStep: React.FC<StepProps> = ({
     setOtpError("");
     setOtp("");
 
+    // Reset navigation guards so user can try again
+    hasNavigatedRef.current = false;
+    setIsNavigating(false);
+
     localStorage.removeItem(REFERENCE_ID_KEY);
     localStorage.removeItem(VERIFIED_AADHAAR_KEY);
-    // Keep name/DOB so user doesn't retype them
   };
 
   // ==========================================
   // INPUT HANDLERS
   // ==========================================
-
   const handleAadhaarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.value.includes("*")) return;
     let value = e.target.value.replace(/\D/g, "");
@@ -650,9 +638,8 @@ export const AadhaarStep: React.FC<StepProps> = ({
   };
 
   // ==========================================
-  // DERIVED
+  // DERIVED VALUES
   // ==========================================
-
   const isAadhaarFromAPI = isFromAPI(data.aadhaar_number);
   const getCleanAadhaarForValidation = () => {
     if (isAadhaarFromAPI) return "123456789012";
@@ -661,6 +648,7 @@ export const AadhaarStep: React.FC<StepProps> = ({
   const cleanAadhaar = getCleanAadhaarForValidation();
 
   const isContinueEnabled = () => {
+    if (isNavigating) return false; // Lock while navigating
     if (data.aadhaar_verified) return true;
     if (isAadhaarFromAPI) return true;
 
@@ -679,6 +667,7 @@ export const AadhaarStep: React.FC<StepProps> = ({
   };
 
   const getButtonLabel = () => {
+    if (isNavigating) return "Loading...";
     if (data.aadhaar_verified) return "Continue";
     if (isSendingOtp) return "Sending OTP...";
     if (isVerifying) return "Verifying OTP...";
@@ -695,13 +684,13 @@ export const AadhaarStep: React.FC<StepProps> = ({
   const fieldDisabled =
     isSendingOtp ||
     isVerifying ||
+    isNavigating ||
     data.aadhaar_verified ||
     (isDataLoadedFromAPI && data.aadhaar_verified);
 
   // ==========================================
-  // OTP SCREEN
+  // RENDER: OTP SCREEN
   // ==========================================
-
   const renderOtpStep = () => (
     <div className="space-y-3 sm:space-y-4">
       <div className="flex items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-blue-50/70 border border-blue-100 rounded-xl sm:rounded-2xl">
@@ -740,7 +729,7 @@ export const AadhaarStep: React.FC<StepProps> = ({
               : "border-gray-200") +
             " bg-white focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 outline-none placeholder:text-gray-400 placeholder:tracking-normal placeholder:font-normal placeholder:text-sm"
           }
-          disabled={isVerifying}
+          disabled={isVerifying || isNavigating}
         />
         {otpError && (
           <p className="text-[10px] sm:text-xs text-red-500 mt-1 font-medium">
@@ -754,7 +743,7 @@ export const AadhaarStep: React.FC<StepProps> = ({
           <button
             type="button"
             onClick={handleResendOTP}
-            disabled={isVerifying || isSendingOtp}
+            disabled={isVerifying || isSendingOtp || isNavigating}
             className="text-[10px] sm:text-xs font-semibold text-[var(--gold-deep)] hover:text-[var(--gold-dark)] disabled:opacity-50 transition-colors"
           >
             {isSendingOtp ? "Sending..." : "Resend OTP"}
@@ -772,7 +761,8 @@ export const AadhaarStep: React.FC<StepProps> = ({
             setReferenceId("");
             localStorage.removeItem(REFERENCE_ID_KEY);
           }}
-          className="w-full sm:w-auto text-center text-gray-600 hover:text-[var(--navy)] font-semibold text-xs sm:text-sm transition-colors py-2 sm:py-0"
+          disabled={isVerifying || isNavigating}
+          className="w-full sm:w-auto text-center text-gray-600 hover:text-[var(--navy)] font-semibold text-xs sm:text-sm transition-colors py-2 sm:py-0 disabled:opacity-50"
         >
           ← Change Aadhaar Number
         </button>
@@ -782,10 +772,10 @@ export const AadhaarStep: React.FC<StepProps> = ({
           disabled={!isContinueEnabled()}
           className="w-full sm:w-auto bg-gradient-to-b from-[var(--gold)] to-[var(--gold-dark)] hover:brightness-105 active:brightness-95 text-[var(--navy)] font-semibold px-6 sm:px-8 py-2.5 sm:py-3 rounded-xl transition-all duration-200 shadow-[0_8px_20px_-6px_rgba(249,199,68,0.55)] flex items-center justify-center gap-2 text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isVerifying ? (
+          {isVerifying || isNavigating ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
-              Verifying...
+              {isNavigating ? "Loading next step..." : "Verifying..."}
             </>
           ) : (
             <>
@@ -799,9 +789,8 @@ export const AadhaarStep: React.FC<StepProps> = ({
   );
 
   // ==========================================
-  // MAIN AADHAAR FORM
+  // RENDER: AADHAAR FORM
   // ==========================================
-
   const renderAadhaarForm = () => (
     <div className="space-y-3 sm:space-y-4">
       {/* Aadhaar Number */}
@@ -839,7 +828,7 @@ export const AadhaarStep: React.FC<StepProps> = ({
         </p>
       </div>
 
-      {/* ✅ Name as per PAN - Auto-filled from API */}
+      {/* Name as per PAN */}
       <div className="space-y-1.5">
         <label className="text-xs sm:text-sm font-semibold text-gray-700 flex items-center gap-1.5">
           <User className="w-3.5 h-3.5 text-gray-400" />
@@ -864,7 +853,7 @@ export const AadhaarStep: React.FC<StepProps> = ({
         </p>
       </div>
 
-      {/* ✅ Date of Birth - Auto-filled from API */}
+      {/* Date of Birth */}
       <div className="space-y-1.5">
         <label className="text-xs sm:text-sm font-semibold text-gray-700 flex items-center gap-1.5">
           <Calendar className="w-3.5 h-3.5 text-gray-400" />
@@ -918,7 +907,7 @@ export const AadhaarStep: React.FC<StepProps> = ({
         onBack={onBack}
         onSubmit={handleContinue}
         isSubmitDisabled={!isContinueEnabled()}
-        isLoading={isSendingOtp}
+        isLoading={isSendingOtp || isNavigating}
         submitLabel={getButtonLabel()}
         nextLabel="Continue"
       />
@@ -926,9 +915,8 @@ export const AadhaarStep: React.FC<StepProps> = ({
   );
 
   // ==========================================
-  // VERIFIED STATE
+  // RENDER: VERIFIED STATE
   // ==========================================
-
   const renderVerifiedState = () => {
     const maskedForDisplay =
       aadhaarLast4 ||
@@ -969,14 +957,16 @@ export const AadhaarStep: React.FC<StepProps> = ({
             <button
               type="button"
               onClick={onBack}
-              className="w-full sm:w-auto text-center text-gray-600 hover:text-[var(--navy)] font-semibold text-xs sm:text-sm transition-colors py-2 sm:py-0"
+              disabled={isNavigating}
+              className="w-full sm:w-auto text-center text-gray-600 hover:text-[var(--navy)] font-semibold text-xs sm:text-sm transition-colors py-2 sm:py-0 disabled:opacity-50"
             >
               Back
             </button>
             <button
               type="button"
               onClick={handleChangeAadhaar}
-              className="w-full sm:w-auto text-center text-[10px] sm:text-xs font-semibold text-[var(--gold-deep)] hover:text-[var(--gold-dark)] underline underline-offset-2 transition-colors py-1 sm:py-0"
+              disabled={isNavigating}
+              className="w-full sm:w-auto text-center text-[10px] sm:text-xs font-semibold text-[var(--gold-deep)] hover:text-[var(--gold-dark)] underline underline-offset-2 transition-colors py-1 sm:py-0 disabled:opacity-50"
             >
               Change Aadhaar number
             </button>
@@ -984,22 +974,32 @@ export const AadhaarStep: React.FC<StepProps> = ({
           <button
             type="button"
             onClick={handleContinue}
-            className="w-full sm:w-auto bg-gradient-to-b from-[var(--gold)] to-[var(--gold-dark)] hover:brightness-105 active:brightness-95 text-[var(--navy)] font-semibold px-6 sm:px-8 py-2.5 sm:py-3 rounded-xl transition-all duration-200 shadow-[0_8px_20px_-6px_rgba(249,199,68,0.55)] flex items-center justify-center gap-2 text-sm sm:text-base"
+            disabled={isNavigating}
+            className="w-full sm:w-auto bg-gradient-to-b from-[var(--gold)] to-[var(--gold-dark)] hover:brightness-105 active:brightness-95 text-[var(--navy)] font-semibold px-6 sm:px-8 py-2.5 sm:py-3 rounded-xl transition-all duration-200 shadow-[0_8px_20px_-6px_rgba(249,199,68,0.55)] flex items-center justify-center gap-2 text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <span>Continue</span>
-            <svg
-              className="w-3.5 sm:w-4 h-3.5 sm:h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
+            {isNavigating ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Loading next step...</span>
+              </>
+            ) : (
+              <>
+                <span>Continue</span>
+                <svg
+                  className="w-3.5 sm:w-4 h-3.5 sm:h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -1007,9 +1007,8 @@ export const AadhaarStep: React.FC<StepProps> = ({
   };
 
   // ==========================================
-  // RENDER
+  // MAIN RENDER
   // ==========================================
-
   return (
     <>
       <div
@@ -1062,7 +1061,8 @@ export const AadhaarStep: React.FC<StepProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowConfirmModal(true)}
-                  className="group flex-shrink-0 flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-[var(--gold)]/40 bg-[#FFFBEF] text-xs sm:text-sm font-semibold text-[var(--gold-deep)] hover:bg-[var(--gold)] hover:text-[var(--navy)] hover:border-[var(--gold)] shadow-sm hover:shadow-md transition-all duration-200 whitespace-nowrap"
+                  disabled={isNavigating}
+                  className="group flex-shrink-0 flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-[var(--gold)]/40 bg-[#FFFBEF] text-xs sm:text-sm font-semibold text-[var(--gold-deep)] hover:bg-[var(--gold)] hover:text-[var(--navy)] hover:border-[var(--gold)] shadow-sm hover:shadow-md transition-all duration-200 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <PlusCircle className="w-3 sm:w-4 h-3 sm:h-4 transition-transform duration-300 group-hover:rotate-90" />
                   <span className="hidden xs:inline">New Registration</span>

@@ -2,7 +2,7 @@
 
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   PlusCircle,
   AlertTriangle,
@@ -54,6 +54,10 @@ export const BankStep: React.FC<StepProps> = ({
   const [isDataLoadedFromAPI, setIsDataLoadedFromAPI] = useState(false);
   const [hasBankData, setHasBankData] = useState(false);
 
+  // ✅ FIX: Navigation locks
+  const [isNavigating, setIsNavigating] = useState(false);
+  const hasNavigatedRef = useRef(false);
+
   const [step5Bank] = useStep5BankMutation();
   const [getStepData, { isLoading: isLoadingStepData }] =
     useLazyGetStepDataQuery();
@@ -61,7 +65,6 @@ export const BankStep: React.FC<StepProps> = ({
   /* ==========================================
      PREVENT BODY SCROLL WHEN MODAL IS OPEN
   ========================================== */
-
   useEffect(() => {
     if (!showConfirmModal) {
       document.body.style.overflow = "";
@@ -87,7 +90,6 @@ export const BankStep: React.FC<StepProps> = ({
   /* ==========================================
      PHONE NUMBER HELPERS
   ========================================== */
-
   const formatPhoneNumber = (phone: string) => {
     const cleanPhone = String(phone || "").trim();
     if (!cleanPhone) return "";
@@ -98,7 +100,6 @@ export const BankStep: React.FC<StepProps> = ({
   /* ==========================================
      FETCH STEP DATA FROM API
   ========================================== */
-
   const fetchStepData = async () => {
     const email = data.email || localStorage.getItem("distributor_email") || "";
     if (!email) return;
@@ -221,7 +222,6 @@ export const BankStep: React.FC<StepProps> = ({
   /* ==========================================
      CLEAR REGISTRATION DATA
   ========================================== */
-
   const clearAllRegistrationData = () => {
     const itemsToRemove = [
       "verified_phone",
@@ -266,12 +266,17 @@ export const BankStep: React.FC<StepProps> = ({
   };
 
   /* ==========================================
-     BANK VERIFICATION
+     BANK VERIFICATION (WITH RACE CONDITION FIX)
   ========================================== */
-
   const handleBankVerify = async () => {
     setBankError("");
     setConfirmError("");
+
+    // Guard: Agar already navigating hai, toh kuch mat karo
+    if (hasNavigatedRef.current || isNavigating) {
+      console.log("⏭️ Navigation already in progress, ignoring");
+      return;
+    }
 
     if (!data.bank_title?.trim()) {
       const message = "Please select a title";
@@ -380,18 +385,17 @@ export const BankStep: React.FC<StepProps> = ({
     setIsVerifying(true);
 
     try {
-      // Use phone from API/localStorage — never fall back to email
       const phoneForApi =
         phoneNumber ||
         formatPhoneNumber(
           (data as any).phone ||
-          (data as any).mobile ||
-          (data as any).phone_number ||
-          localStorage.getItem("distributor_verified_phone") ||
-          localStorage.getItem("distributor_mobile") ||
-          localStorage.getItem("verified_phone") ||
-          localStorage.getItem("distributor_phone") ||
-          "",
+            (data as any).mobile ||
+            (data as any).phone_number ||
+            localStorage.getItem("distributor_verified_phone") ||
+            localStorage.getItem("distributor_mobile") ||
+            localStorage.getItem("verified_phone") ||
+            localStorage.getItem("distributor_phone") ||
+            "",
         );
 
       const response = await step5Bank({
@@ -417,10 +421,18 @@ export const BankStep: React.FC<StepProps> = ({
         setBankError("");
         setConfirmError("");
         onChange({ target: { name: "bank_verified", value: true } } as any);
+
+        // ✅ LOCK UI FIRST so user cannot click Continue
+        setIsNavigating(true);
+
+        // ✅ Await API before navigating so UI is in sync
         await fetchStepData();
-        setTimeout(() => {
+
+        // ✅ Navigate only once, no setTimeout
+        if (!hasNavigatedRef.current) {
+          hasNavigatedRef.current = true;
           onNext?.();
-        }, 800);
+        }
       } else {
         const errorMsg =
           response.message || "Bank verification failed. Please try again.";
@@ -436,37 +448,49 @@ export const BankStep: React.FC<StepProps> = ({
       dispatch(showToast({ message: errorMsg, type: "error" }));
     } finally {
       setIsVerifying(false);
+      // Don't reset isNavigating so button stays locked
     }
   };
 
   /* ==========================================
-     HANDLE NEXT
+     HANDLE NEXT (WITH DOUBLE-CLICK GUARD)
   ========================================== */
-
   const handleNext = () => {
+    // 🛑 Guard: Agar already navigate ho chuka hai, toh kuch mat karo
+    if (hasNavigatedRef.current || isNavigating) {
+      console.log("⏭️ Navigation already in progress, ignoring click");
+      return;
+    }
+
+    // If data was already verified from API, just move forward
     if (isFromAPI) {
+      hasNavigatedRef.current = true;
+      setIsNavigating(true);
       dispatch(
         showToast({
-          message: "Bank details already saved. Proceeding to next step.",
+          message: "Bank details already saved. Proceeding...",
           type: "success",
         }),
       );
-      setTimeout(() => {
-        onNext?.();
-      }, 300);
+      onNext?.();
       return;
     }
+
+    // If not verified yet, run verify (which will navigate on success)
     if (!data.bank_verified) {
       void handleBankVerify();
       return;
     }
+
+    // Already verified but not from API (manual verify flow)
+    hasNavigatedRef.current = true;
+    setIsNavigating(true);
     onNext?.();
   };
 
   /* ==========================================
      ACCOUNT INPUT HANDLER
   ========================================== */
-
   const handleAccountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     if (isDataLoadedFromAPI && hasBankData) {
@@ -594,7 +618,6 @@ export const BankStep: React.FC<StepProps> = ({
   /* ==========================================
      DERIVED VALUES
   ========================================== */
-
   const cleanAccountNumber = String(data.bank_account_number || "").replace(
     /\D/g,
     "",
@@ -605,6 +628,7 @@ export const BankStep: React.FC<StepProps> = ({
   const isFromAPI = isDataLoadedFromAPI && hasBankData;
 
   const isContinueEnabled = () => {
+    if (isNavigating) return false; // Lock while navigating
     if (isFromAPI) return true;
     const title = String(data.bank_title || "").trim();
     const holderName = String(data.bank_account_holder_name || "").trim();
@@ -630,18 +654,18 @@ export const BankStep: React.FC<StepProps> = ({
   };
 
   const getButtonLabel = () => {
+    if (isNavigating) return "Loading...";
     if (isFromAPI) return "Continue →";
     if (isVerifying) return "Verifying...";
     if (data.bank_verified) return "Continue →";
     return "Verify Bank Details";
   };
 
-  const fieldDisabled = isVerifying || isFromAPI;
+  const fieldDisabled = isVerifying || isNavigating || isFromAPI;
 
   /* ==========================================
      RENDER
   ========================================== */
-
   return (
     <>
       <div
@@ -693,7 +717,8 @@ export const BankStep: React.FC<StepProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowConfirmModal(true)}
-                  className="group flex-shrink-0 flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-[var(--gold)]/40 bg-[#FFFBEF] text-xs sm:text-sm font-semibold text-[var(--gold-deep)] hover:bg-[var(--gold)] hover:text-[var(--navy)] hover:border-[var(--gold)] shadow-sm hover:shadow-md transition-all duration-200 whitespace-nowrap"
+                  disabled={isNavigating}
+                  className="group flex-shrink-0 flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-[var(--gold)]/40 bg-[#FFFBEF] text-xs sm:text-sm font-semibold text-[var(--gold-deep)] hover:bg-[var(--gold)] hover:text-[var(--navy)] hover:border-[var(--gold)] shadow-sm hover:shadow-md transition-all duration-200 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <PlusCircle className="w-3 sm:w-4 h-3 sm:h-4" />
                   <span className="hidden xs:inline">New Registration</span>
@@ -939,7 +964,8 @@ export const BankStep: React.FC<StepProps> = ({
                     <button
                       type="button"
                       onClick={onBack}
-                      className="w-full sm:w-auto text-center text-gray-600 hover:text-gray-800 font-medium text-xs sm:text-sm transition-colors duration-200 py-2 sm:py-0"
+                      disabled={isNavigating}
+                      className="w-full sm:w-auto text-center text-gray-600 hover:text-gray-800 font-medium text-xs sm:text-sm transition-colors duration-200 py-2 sm:py-0 disabled:opacity-50"
                     >
                       ← Back
                     </button>
@@ -949,10 +975,12 @@ export const BankStep: React.FC<StepProps> = ({
                       disabled={!isContinueEnabled()}
                       className="w-full sm:w-auto bg-[var(--gold)] hover:bg-[var(--gold-dark)] text-[var(--navy)] font-semibold px-6 sm:px-8 py-2.5 sm:py-3 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all duration-200 shadow-[0_8px_20px_-6px_rgba(249,199,68,0.5)] hover:shadow-[0_12px_28px_-8px_rgba(249,199,68,0.6)] text-sm sm:text-base"
                     >
-                      {isVerifying ? (
+                      {isVerifying || isNavigating ? (
                         <>
                           <Loader2 className="w-4 sm:w-5 h-4 sm:h-5 animate-spin" />
-                          Verifying...
+                          {isNavigating
+                            ? "Loading next step..."
+                            : "Verifying..."}
                         </>
                       ) : (
                         getButtonLabel()
@@ -1032,7 +1060,6 @@ export const BankStep: React.FC<StepProps> = ({
 /* ==========================================
    TITLE SELECTOR
 ========================================== */
-
 interface TitleSelectorProps {
   value: string;
   onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
@@ -1088,7 +1115,6 @@ const TitleSelector: React.FC<TitleSelectorProps> = ({
 /* ==========================================
    ENTITY TYPE SELECTOR
 ========================================== */
-
 interface EntityTypeSelectorProps {
   value: string;
   onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
@@ -1139,7 +1165,6 @@ const EntityTypeSelector: React.FC<EntityTypeSelectorProps> = ({
 /* ==========================================
    BANK ACCOUNT TYPE SELECTOR
 ========================================== */
-
 interface BankAccountTypeSelectorProps {
   value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;

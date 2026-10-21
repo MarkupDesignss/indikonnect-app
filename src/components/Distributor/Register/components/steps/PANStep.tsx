@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   PlusCircle,
   AlertTriangle,
@@ -30,12 +30,13 @@ import {
 } from "../../../../../lib/redux/api/distributor/distributorauthApis";
 import authApi from "@/lib/redux/api/authApi";
 
-// Type-safe enum (must match backend)
 type CorrectionReason =
   | "wrong_name_at_signup"
   | "wrong_dob_at_signup"
   | "both_wrong_at_signup"
- 
+  | "typo_mistake"
+  | "legal_name_change"
+  | "dob_data_entry_error";
 
 const theme = {
   font: "'Inter', 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, sans-serif",
@@ -46,43 +47,16 @@ const theme = {
   navySoft: "#0B1B2E",
 };
 
-/**
- * Normalize any date string to DD/MM/YYYY.
- */
 const normalizeDOB = (raw: string): string => {
   const s = String(raw || "").trim();
   if (!s) return "";
-
   if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) return s;
   if (/^\d{2}-\d{2}-\d{4}$/.test(s)) return s.replace(/-/g, "/");
-
   const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (iso) return `${iso[3]}/${iso[2]}/${iso[1]}`;
-
   return "";
 };
 
-/**
- * Convert DD/MM/YYYY → YYYY-MM-DD (for native date input)
- */
-const toISODate = (ddmmyyyy: string): string => {
-  if (!/^\d{2}\/\d{2}\/\d{4}$/.test(ddmmyyyy)) return "";
-  const [dd, mm, yyyy] = ddmmyyyy.split("/");
-  return `${yyyy}-${mm}-${dd}`;
-};
-
-/**
- * Convert YYYY-MM-DD → DD/MM/YYYY
- */
-const fromISODate = (iso: string): string => {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return "";
-  const [yyyy, mm, dd] = iso.split("-");
-  return `${dd}/${mm}/${yyyy}`;
-};
-
-/**
- * Auto-format DOB input as user types: DD/MM/YYYY
- */
 const formatDOBInput = (raw: string): string => {
   const digits = String(raw || "")
     .replace(/\D/g, "")
@@ -92,96 +66,28 @@ const formatDOBInput = (raw: string): string => {
   return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
 };
 
-/**
- * Validate DD/MM/YYYY — real calendar date.
- */
 const isValidDOB = (value: string): boolean => {
   if (!/^\d{2}\/\d{2}\/\d{4}$/.test(value)) return false;
   const [dd, mm, yyyy] = value.split("/").map((x) => parseInt(x, 10));
   if (dd < 1 || dd > 31) return false;
   if (mm < 1 || mm > 12) return false;
   if (yyyy < 1900 || yyyy > new Date().getFullYear()) return false;
-
   const d = new Date(yyyy, mm - 1, dd);
   return (
     d.getDate() === dd && d.getMonth() === mm - 1 && d.getFullYear() === yyyy
   );
 };
 
-/**
- * Age check — at least 18 years old.
- */
-const isAtLeast18 = (value: string): boolean => {
-  if (!isValidDOB(value)) return false;
-  const [dd, mm, yyyy] = value.split("/").map((x) => parseInt(x, 10));
-  const dob = new Date(yyyy, mm - 1, dd);
-  const today = new Date();
-  let age = today.getFullYear() - dob.getFullYear();
-  const m = today.getMonth() - dob.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
-    age--;
-  }
-  return age >= 18;
-};
-
-/**
- * Return maximum allowed DOB (18 years ago) in YYYY-MM-DD.
- */
-const getMaxDOB = (): string => {
-  const d = new Date();
-  d.setFullYear(d.getFullYear() - 18);
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
-};
-
-/**
- * Return minimum sensible DOB (100 years ago) in YYYY-MM-DD.
- */
-const getMinDOB = (): string => {
-  const d = new Date();
-  d.setFullYear(d.getFullYear() - 100);
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
-};
-
 const isMaskedPAN = (value: string): boolean => {
   return String(value || "").includes("*");
 };
 
-/**
- * Format a raw phone string into +91XXXXXXXXXX
- */
 const normalizePhone = (raw: string): string => {
   const digits = String(raw || "")
     .replace(/\D/g, "")
     .replace(/^0+/, "");
   const tenDigit = digits.length > 10 ? digits.slice(-10) : digits;
   return tenDigit.length === 10 ? `+91${tenDigit}` : "";
-};
-
-/**
- * Which fields should be shown based on reason.
- */
-const reasonNeedsName = (r: CorrectionReason): boolean => {
-  return (
-    r === "wrong_name_at_signup" ||
-
-    r === "both_wrong_at_signup" 
-
-  );
-};
-
-const reasonNeedsDOB = (r: CorrectionReason): boolean => {
-  return (
-    r === "wrong_dob_at_signup" ||
-
-    r === "both_wrong_at_signup" 
-
-  );
 };
 
 export const PANStep: React.FC<StepProps> = ({
@@ -203,23 +109,18 @@ export const PANStep: React.FC<StepProps> = ({
   const [phoneNumber, setPhoneNumber] = useState("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
-  // Modal States
   const [showContactModal, setShowContactModal] = useState(false);
   const [isSubmittingCorrection, setIsSubmittingCorrection] = useState(false);
-
   const [correctionReason, setCorrectionReason] = useState<CorrectionReason>(
     "wrong_name_at_signup",
   );
-  const [correctionName, setCorrectionName] = useState("");
-  const [correctionDOB, setCorrectionDOB] = useState(""); // DD/MM/YYYY
-  const [correctionDOBError, setCorrectionDOBError] = useState("");
+  const [correctionEmail, setCorrectionEmail] = useState("");
 
   const [isDataLoadedFromAPI, setIsDataLoadedFromAPI] = useState(false);
   const [panLast4, setPanLast4] = useState("");
 
   const [verifiedAadhaar, setVerifiedAadhaar] = useState("");
 
-  // Locked fallback values
   const [lockedName, setLockedName] = useState("");
   const [lockedDOB, setLockedDOB] = useState("");
   const [nameSource, setNameSource] = useState<"step3" | "api" | "manual" | "">(
@@ -232,10 +133,14 @@ export const PANStep: React.FC<StepProps> = ({
   const lockedNameRef = useRef("");
   const lockedDOBRef = useRef("");
   const verifiedAadhaarRef = useRef("");
-
   const apiNameRef = useRef("");
   const apiDobRef = useRef("");
+  const apiEmailRef = useRef("");
   const phoneRef = useRef("");
+
+  // ✅ FIX: Navigation locks to prevent double-clicks
+  const [isNavigating, setIsNavigating] = useState(false);
+  const hasNavigatedRef = useRef(false);
 
   useEffect(() => {
     lockedNameRef.current = lockedName;
@@ -258,21 +163,16 @@ export const PANStep: React.FC<StepProps> = ({
   const [getStepData, { isLoading: isLoadingStepData }] =
     useLazyGetStepDataQuery();
 
-  // -------------------------------------------------------
-  // Which correction fields to show
-  // -------------------------------------------------------
-  const showNameField = useMemo(
-    () => reasonNeedsName(correctionReason),
-    [correctionReason],
-  );
-  const showDOBField = useMemo(
-    () => reasonNeedsDOB(correctionReason),
-    [correctionReason],
-  );
+  const resolveEmail = (): string => {
+    return (
+      String(data.email || "").trim() ||
+      apiEmailRef.current ||
+      (typeof window !== "undefined"
+        ? localStorage.getItem("distributor_email") || ""
+        : "")
+    );
+  };
 
-  // ==========================================
-  // LOAD PHONE
-  // ==========================================
   useEffect(() => {
     const candidates: Array<string | null | undefined> = [
       (data as any)?.phone,
@@ -297,12 +197,10 @@ export const PANStep: React.FC<StepProps> = ({
         ? localStorage.getItem("customer_phone")
         : null,
     ];
-
     const raw = candidates.find(
       (v) => typeof v === "string" && v.trim().length > 0,
     );
     if (!raw) return;
-
     const formatted = normalizePhone(raw);
     if (formatted) {
       setPhoneNumber(formatted);
@@ -314,9 +212,6 @@ export const PANStep: React.FC<StepProps> = ({
     (data as any)?.phone_number,
   ]);
 
-  // ==========================================
-  // INITIAL RESOLVE
-  // ==========================================
   useEffect(() => {
     const aadhaarFromProps = String(data.aadhaar_number || "").replace(
       /\D/g,
@@ -328,9 +223,8 @@ export const PANStep: React.FC<StepProps> = ({
       const aadhaarFromStorage = String(
         localStorage.getItem("distributor_verified_aadhaar") || "",
       ).replace(/\D/g, "");
-      if (aadhaarFromStorage.length === 12) {
+      if (aadhaarFromStorage.length === 12)
         setVerifiedAadhaar(aadhaarFromStorage);
-      }
     }
 
     if (data.pan_name_as_per_pan?.trim()) {
@@ -371,14 +265,11 @@ export const PANStep: React.FC<StepProps> = ({
     }
   }, [data.aadhaar_number, data.pan_name_as_per_pan, data.pan_date_of_birth]);
 
-  // ==========================================
-  // FETCH STEP DATA
-  // ==========================================
   const fetchStepData = async (): Promise<{
     name: string;
     dob: string;
   } | null> => {
-    const email = data.email || localStorage.getItem("distributor_email") || "";
+    const email = resolveEmail();
     if (!email) return null;
 
     try {
@@ -387,6 +278,11 @@ export const PANStep: React.FC<StepProps> = ({
 
       const userData: any = response.step_data.user || {};
       const profileData: any = response.step_data.distributor_profile || {};
+
+      if (userData?.email) {
+        apiEmailRef.current = String(userData.email).trim();
+        setCorrectionEmail(String(userData.email).trim());
+      }
 
       const apiName = String(
         userData?.full_name ||
@@ -463,16 +359,13 @@ export const PANStep: React.FC<StepProps> = ({
 
   useEffect(() => {
     const loadData = async () => {
-      const email =
-        data.email || localStorage.getItem("distributor_email") || "";
+      const email = resolveEmail();
       if (email) await fetchStepData();
     };
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data.email]);
 
-  // ==========================================
-  // CLEAR REGISTRATION DATA
-  // ==========================================
   const clearAllRegistrationData = () => {
     const itemsToRemove = [
       "verified_phone",
@@ -517,31 +410,21 @@ export const PANStep: React.FC<StepProps> = ({
     onBackToMobile?.();
   };
 
-  // ==========================================
-  // RESOLVE AADHAAR FOR PAYLOAD
-  // ==========================================
   const resolveAadhaarForPayload = (): { value: string; isFull: boolean } => {
     const fromRef = String(verifiedAadhaarRef.current || "").replace(/\D/g, "");
     if (fromRef.length === 12) return { value: fromRef, isFull: true };
-
     const fromState = String(verifiedAadhaar || "").replace(/\D/g, "");
     if (fromState.length === 12) return { value: fromState, isFull: true };
-
     const fromStorage = String(
       localStorage.getItem("distributor_verified_aadhaar") || "",
     ).replace(/\D/g, "");
     if (fromStorage.length === 12) return { value: fromStorage, isFull: true };
-
     const fromProps = String(data.aadhaar_number || "").replace(/\D/g, "");
-    if (fromProps.length === 4 && data.aadhaar_verified) {
+    if (fromProps.length === 4 && data.aadhaar_verified)
       return { value: fromProps, isFull: false };
-    }
     return { value: "", isFull: false };
   };
 
-  // ==========================================
-  // RESOLVE PHONE FOR PAYLOAD
-  // ==========================================
   const resolvePhoneForPayload = (): string => {
     if (phoneRef.current) return phoneRef.current;
     if (phoneNumber) return phoneNumber;
@@ -554,7 +437,6 @@ export const PANStep: React.FC<StepProps> = ({
       ),
     );
     if (fromProps) return fromProps;
-
     const keys = [
       "distributor_verified_phone",
       "distributor_mobile",
@@ -574,13 +456,19 @@ export const PANStep: React.FC<StepProps> = ({
   };
 
   // ==========================================
-  // PAN VERIFY
+  // PAN VERIFY (WITH RACE CONDITION FIX)
   // ==========================================
   const handlePANVerify = async () => {
     setPanFieldError("");
     setNameFieldError("");
     setDobFieldError("");
     setPageError("");
+
+    // Guard: Agar already navigating hai, toh kuch mat karo
+    if (hasNavigatedRef.current || isNavigating) {
+      console.log("⏭️ Navigation already in progress, ignoring");
+      return;
+    }
 
     const rawPan = String(data.pan_number || "").toUpperCase();
 
@@ -708,11 +596,20 @@ export const PANStep: React.FC<StepProps> = ({
             type: "success",
           }),
         );
+
+        // ✅ LOCK UI FIRST so user cannot click Continue
+        setIsNavigating(true);
+
+        // ✅ Await API before navigating so UI is in sync
         await fetchStepData();
-        setTimeout(() => onNext?.(), 1000);
+
+        // ✅ Navigate only once, no setTimeout
+        if (!hasNavigatedRef.current) {
+          hasNavigatedRef.current = true;
+          onNext?.();
+        }
       } else {
         const backendErrors = (response as any)?.errors || null;
-
         if (backendErrors?.encrypted_pan || backendErrors?.pan_number) {
           const msg = Array.isArray(
             backendErrors.encrypted_pan || backendErrors.pan_number,
@@ -772,86 +669,29 @@ export const PANStep: React.FC<StepProps> = ({
       );
     } finally {
       setIsVerifying(false);
+      // Don't reset isNavigating so button stays locked
     }
   };
 
-  // ==========================================
-  // HANDLE CORRECTION SUBMIT
-  // ==========================================
   const handleRequestCorrection = async () => {
-    setCorrectionDOBError("");
-
-    // ---- Name validation (only when field is visible) ----
-    if (showNameField && !correctionName.trim()) {
+    const email = resolveEmail();
+    if (!email.trim()) {
       dispatch(
         showToast({
-          message: "Please enter your full name",
+          message: "Email not found. Please refresh and try again.",
           type: "error",
         }),
       );
       return;
     }
-
-    // ---- DOB validation (only when field is visible) ----
-    if (showDOBField) {
-      if (!correctionDOB.trim()) {
-        setCorrectionDOBError("Date of birth is required");
-        dispatch(
-          showToast({
-            message: "Please enter your date of birth",
-            type: "error",
-          }),
-        );
-        return;
-      }
-
-      if (!isValidDOB(correctionDOB)) {
-        setCorrectionDOBError(
-          "Please enter a valid calendar date (DD/MM/YYYY)",
-        );
-        dispatch(
-          showToast({
-            message: "Please enter a valid date of birth (DD/MM/YYYY)",
-            type: "error",
-          }),
-        );
-        return;
-      }
-
-      if (!isAtLeast18(correctionDOB)) {
-        setCorrectionDOBError("You must be at least 18 years old");
-        dispatch(
-          showToast({
-            message: "You must be at least 18 years old",
-            type: "error",
-          }),
-        );
-        return;
-      }
+    if (!correctionReason) {
+      dispatch(showToast({ message: "Please select a reason", type: "error" }));
+      return;
     }
-
     setIsSubmittingCorrection(true);
     try {
-      const email =
-        data.email || localStorage.getItem("distributor_email") || "";
-
-      // Fallback: if a field is hidden, use existing stored value
-      const finalName = showNameField
-        ? correctionName.trim()
-        : String(data.pan_name_as_per_pan || lockedName || "").trim();
-
-      const finalDOB = showDOBField
-        ? correctionDOB.replace(/\//g, "-")
-        : String(data.pan_date_of_birth || lockedDOB || "").replace(/\//g, "-");
-
-      const payload = {
-        email,
-        reason: correctionReason,
-        full_name: finalName,
-        date_of_birth: finalDOB,
-      };
-
-      const res = await requestCorrection(payload).unwrap();
+      const payload = { email, reason: correctionReason };
+      const res = await requestCorrection(payload as any).unwrap();
       if (res.status) {
         dispatch(
           showToast({
@@ -881,29 +721,40 @@ export const PANStep: React.FC<StepProps> = ({
   };
 
   // ==========================================
-  // NEXT
+  // NEXT (WITH DOUBLE-CLICK GUARD)
   // ==========================================
   const handleNext = () => {
+    // 🛑 Guard: Agar already navigate ho chuka hai, toh kuch mat karo
+    if (hasNavigatedRef.current || isNavigating) {
+      console.log("⏭️ Navigation already in progress, ignoring click");
+      return;
+    }
+
+    // If data was already verified from API, just move forward
     if (isDataLoadedFromAPI && data.pan_verified) {
+      hasNavigatedRef.current = true;
+      setIsNavigating(true);
       dispatch(
         showToast({
-          message: "PAN already verified. Proceeding to next step.",
+          message: "PAN already verified. Proceeding...",
           type: "success",
         }),
       );
-      setTimeout(() => onNext?.(), 500);
+      onNext?.();
       return;
     }
+
+    // If not verified yet, run verify (which will navigate on success)
     if (!data.pan_verified) {
       handlePANVerify();
     } else {
+      // Already verified but not from API (manual verify flow)
+      hasNavigatedRef.current = true;
+      setIsNavigating(true);
       onNext?.();
     }
   };
 
-  // ==========================================
-  // INPUT HANDLERS
-  // ==========================================
   const handlePANChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
     if (value.includes("*")) return;
@@ -936,16 +787,21 @@ export const PANStep: React.FC<StepProps> = ({
     setPageError("");
   };
 
-  const openContactModal = () => {
-    setCorrectionName(data.pan_name_as_per_pan || lockedName || "");
-    setCorrectionDOB(data.pan_date_of_birth || lockedDOB || "");
-    setCorrectionDOBError("");
+  const openContactModal = async () => {
+    let email = resolveEmail();
+    if (!email) {
+      await fetchStepData();
+      email = resolveEmail();
+    }
+    setCorrectionEmail(email);
     setShowContactModal(true);
   };
 
   const cleanPan =
     data.pan_number?.toUpperCase().replace(/[^A-Z0-9]/g, "") || "";
+
   const isContinueEnabled = () => {
+    if (isNavigating) return false; // Lock while navigating
     if (isDataLoadedFromAPI && data.pan_verified) return true;
     return (
       !!data.pan_number &&
@@ -957,13 +813,11 @@ export const PANStep: React.FC<StepProps> = ({
   };
 
   const getButtonLabel = () => {
+    if (isNavigating) return "Loading...";
     if (isDataLoadedFromAPI && data.pan_verified) return "Continue";
     if (isVerifying) return "Verifying...";
     return "Verify PAN";
   };
-
-  const maxDOB = getMaxDOB();
-  const minDOB = getMinDOB();
 
   return (
     <>
@@ -1016,7 +870,8 @@ export const PANStep: React.FC<StepProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowConfirmModal(true)}
-                  className="group flex-shrink-0 flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-[var(--gold)]/40 bg-[#FFFBEF] text-xs sm:text-sm font-semibold text-[var(--gold-deep)] hover:bg-[var(--gold)] hover:text-[var(--navy)] hover:border-[var(--gold)] shadow-sm hover:shadow-md transition-all duration-200 whitespace-nowrap"
+                  disabled={isNavigating}
+                  className="group flex-shrink-0 flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-[var(--gold)]/40 bg-[#FFFBEF] text-xs sm:text-sm font-semibold text-[var(--gold-deep)] hover:bg-[var(--gold)] hover:text-[var(--navy)] hover:border-[var(--gold)] shadow-sm hover:shadow-md transition-all duration-200 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <PlusCircle className="w-3 sm:w-4 h-3 sm:h-4 transition-transform duration-300 group-hover:rotate-90" />
                   <span className="hidden xs:inline">New Registration</span>
@@ -1065,6 +920,7 @@ export const PANStep: React.FC<StepProps> = ({
                       }
                       disabled={
                         isVerifying ||
+                        isNavigating ||
                         data.pan_verified ||
                         (isDataLoadedFromAPI && data.pan_verified)
                       }
@@ -1114,7 +970,9 @@ export const PANStep: React.FC<StepProps> = ({
                       value={data.pan_name_as_per_pan || ""}
                       onChange={handleNameChange}
                       placeholder="e.g. John Doe"
-                      disabled={isVerifying || data.pan_verified}
+                      disabled={
+                        isVerifying || isNavigating || data.pan_verified
+                      }
                       className={
                         "w-full h-12 sm:h-14 px-3 sm:px-4 rounded-xl sm:rounded-2xl border tracking-wide font-semibold text-sm sm:text-base outline-none transition-all duration-200 " +
                         (nameFieldError
@@ -1127,7 +985,8 @@ export const PANStep: React.FC<StepProps> = ({
                     />
                     {data.pan_name_as_per_pan?.trim() &&
                       !nameFieldError &&
-                      !isVerifying && (
+                      !isVerifying &&
+                      !isNavigating && (
                         <div className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2">
                           <CheckCircle className="w-4 sm:w-5 h-4 sm:h-5 text-emerald-500" />
                         </div>
@@ -1178,7 +1037,9 @@ export const PANStep: React.FC<StepProps> = ({
                       placeholder="DD/MM/YYYY"
                       maxLength={10}
                       inputMode="numeric"
-                      disabled={isVerifying || data.pan_verified}
+                      disabled={
+                        isVerifying || isNavigating || data.pan_verified
+                      }
                       className={
                         "w-full h-12 sm:h-14 px-3 sm:px-4 rounded-xl sm:rounded-2xl border tracking-wider font-semibold text-sm sm:text-base outline-none transition-all duration-200 " +
                         (dobFieldError
@@ -1192,7 +1053,8 @@ export const PANStep: React.FC<StepProps> = ({
                     {data.pan_date_of_birth?.trim() &&
                       isValidDOB(data.pan_date_of_birth || "") &&
                       !dobFieldError &&
-                      !isVerifying && (
+                      !isVerifying &&
+                      !isNavigating && (
                         <div className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2">
                           <CheckCircle className="w-4 sm:w-5 h-4 sm:h-5 text-emerald-500" />
                         </div>
@@ -1218,7 +1080,8 @@ export const PANStep: React.FC<StepProps> = ({
                 <button
                   type="button"
                   onClick={openContactModal}
-                  className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100 transition-all duration-200 text-xs sm:text-sm font-semibold"
+                  disabled={isNavigating}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100 transition-all duration-200 text-xs sm:text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <PhoneCall className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
                   Need help? Contact Admin
@@ -1249,7 +1112,7 @@ export const PANStep: React.FC<StepProps> = ({
                   onBack={onBack}
                   onNext={
                     isDataLoadedFromAPI && data.pan_verified
-                      ? onNext
+                      ? handleNext
                       : undefined
                   }
                   onSubmit={
@@ -1258,9 +1121,9 @@ export const PANStep: React.FC<StepProps> = ({
                       : undefined
                   }
                   isSubmitDisabled={!isContinueEnabled()}
-                  isLoading={isVerifying}
+                  isLoading={isVerifying || isNavigating}
                   submitLabel={getButtonLabel()}
-                  nextLabel="Continue →"
+                  nextLabel={isNavigating ? "Loading..." : "Continue →"}
                 />
               </div>
             </div>
@@ -1268,7 +1131,7 @@ export const PANStep: React.FC<StepProps> = ({
         </div>
       </div>
 
-      {/* ---------------- CONTACT ADMIN / CORRECTION MODAL ---------------- */}
+      {/* CONTACT ADMIN / CORRECTION MODAL */}
       {showContactModal && (
         <div
           className="fixed inset-0 z-[9999] flex items-center justify-center bg-[var(--navy)]/70 backdrop-blur-sm px-3 sm:px-4"
@@ -1297,15 +1160,34 @@ export const PANStep: React.FC<StepProps> = ({
             </h3>
 
             <p className="text-xs sm:text-sm text-gray-500 text-center mb-4 sm:mb-6 font-medium">
-              Select what's wrong and we'll send the request to admin for
-              approval.
+              If your name or DOB doesn't match your PAN card, submit a
+              correction request. Admin will review it.
             </p>
 
             <div className="space-y-4 mb-5">
-              {/* Reason Dropdown — exact backend enums */}
+              <div className="space-y-1.5">
+                <label className="text-xs sm:text-sm font-semibold text-gray-700 flex items-center gap-1.5">
+                  Email <Lock className="w-3 h-3 text-blue-500" />
+                  <span className="text-[10px] sm:text-xs font-normal text-blue-500">
+                    (auto-filled)
+                  </span>
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="email"
+                    value={correctionEmail}
+                    readOnly
+                    disabled
+                    placeholder="Loading..."
+                    className="w-full h-11 sm:h-12 pl-9 pr-3 rounded-xl border border-blue-200 bg-blue-50/50 text-blue-900 text-sm font-medium outline-none cursor-not-allowed"
+                  />
+                </div>
+              </div>
+
               <div className="space-y-1.5">
                 <label className="text-xs sm:text-sm font-semibold text-gray-700 block">
-                  Reason for correction
+                  Reason for correction <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={correctionReason}
@@ -1323,71 +1205,15 @@ export const PANStep: React.FC<StepProps> = ({
                   <option value="both_wrong_at_signup">
                     Both Name &amp; DOB Wrong
                   </option>
-               
+           
                 </select>
               </div>
-
-              {/* Full Name — only if reason needs it */}
-              {showNameField && (
-                <div className="space-y-1.5">
-                  <label className="text-xs sm:text-sm font-semibold text-gray-700 block">
-                    Full Name
-                  </label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input
-                      type="text"
-                      value={correctionName}
-                      onChange={(e) => setCorrectionName(e.target.value)}
-                      placeholder="Enter correct full name"
-                      className="w-full h-11 sm:h-12 pl-9 pr-3 rounded-xl border border-gray-200 bg-white text-gray-900 placeholder:text-gray-400 placeholder:font-normal text-sm font-medium focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 outline-none"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* DOB — only if reason needs it, with native calendar + 18y cap */}
-              {showDOBField && (
-                <div className="space-y-1.5">
-                  <label className="text-xs sm:text-sm font-semibold text-gray-700 block">
-                    Date of Birth <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                    <input
-                      type="date"
-                      value={toISODate(correctionDOB)}
-                      onChange={(e) => {
-                        const iso = e.target.value;
-                        if (!iso) {
-                          setCorrectionDOB("");
-                          return;
-                        }
-                        const [yyyy, mm, dd] = iso.split("-");
-                        setCorrectionDOB(`${dd}/${mm}/${yyyy}`);
-                        setCorrectionDOBError("");
-                      }}
-                      min={minDOB}
-                      max={maxDOB}
-                      className="w-full h-11 sm:h-12 pl-9 pr-3 rounded-xl border border-gray-200 bg-white text-gray-900 text-sm font-medium focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 outline-none"
-                    />
-                  </div>
-                  {correctionDOBError && (
-                    <p className="text-[10px] sm:text-xs text-red-500 mt-1 font-medium">
-                      {correctionDOBError}
-                    </p>
-                  )}
-                  <p className="text-[10px] sm:text-xs text-gray-400 mt-1 font-medium">
-                    Must be at least 18 years old.
-                  </p>
-                </div>
-              )}
             </div>
 
             <button
               type="button"
               onClick={handleRequestCorrection}
-              disabled={isSubmittingCorrection}
+              disabled={isSubmittingCorrection || !correctionEmail}
               className="w-full flex items-center justify-center gap-2 bg-[var(--gold)] hover:bg-[var(--gold-dark)] text-[var(--navy)] font-bold py-3 rounded-xl transition-all duration-200 mb-6 disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {isSubmittingCorrection ? (
@@ -1401,7 +1227,6 @@ export const PANStep: React.FC<StepProps> = ({
               )}
             </button>
 
-            {/* Fallback Contact Options */}
             <div className="border-t border-gray-100 pt-4">
               <p className="text-[10px] sm:text-xs text-center text-gray-400 font-medium mb-3">
                 Or contact us directly
@@ -1425,7 +1250,7 @@ export const PANStep: React.FC<StepProps> = ({
         </div>
       )}
 
-      {/* Confirm New Registration Modal */}
+      {/* CONFIRM NEW REGISTRATION MODAL */}
       {showConfirmModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--navy)]/70 backdrop-blur-sm px-3 sm:px-4"

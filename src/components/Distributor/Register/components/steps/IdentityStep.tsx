@@ -1,8 +1,6 @@
-// components/distributor/registration/components/steps/IdentityStep.tsx
-
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/common/Input";
 import { Button } from "@/components/common/Button";
 import { DatePicker } from "../DatePicker";
@@ -58,8 +56,11 @@ export const IdentityStep: React.FC<StepProps> = ({
   const [newEmailInput, setNewEmailInput] = useState("");
   const [showPasswordField, setShowPasswordField] = useState(false);
 
-  // Password confirmation error state
   const [passwordMatchError, setPasswordMatchError] = useState<string>("");
+
+  // ✅ FIX: Navigation locks
+  const [isNavigating, setIsNavigating] = useState(false);
+  const hasNavigatedRef = useRef(false);
 
   // Mobile verification states
   const [mobileInput, setMobileInput] = useState("");
@@ -82,20 +83,10 @@ export const IdentityStep: React.FC<StepProps> = ({
   const [isEmailOtpSending, setIsEmailOtpSending] = useState(false);
   const [isEmailVerifying, setIsEmailVerifying] = useState(false);
 
-  // Temp token state
   const [tempToken, setTempToken] = useState("");
-
-  // Password state for existing users
   const [existingPassword, setExistingPassword] = useState("");
 
-  // Track which fields have data from API
-  const [apiFields, setApiFields] = useState<{
-    full_name: boolean;
-    date_of_birth: boolean;
-    email: boolean;
-    mobile: boolean;
-    password: boolean;
-  }>({
+  const [apiFields, setApiFields] = useState({
     full_name: false,
     date_of_birth: false,
     email: false,
@@ -103,10 +94,13 @@ export const IdentityStep: React.FC<StepProps> = ({
     password: false,
   });
 
+  // ✅ FIX: Track if email/mobile were verified via API (for bypass logic)
+  const [isEmailVerifiedFromAPI, setIsEmailVerifiedFromAPI] = useState(false);
+  const [isMobileVerifiedFromAPI, setIsMobileVerifiedFromAPI] = useState(false);
+
   // Handle password changes with real-time confirmation validation
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-
     onChange(e);
 
     if (name === "confirm_password") {
@@ -126,7 +120,6 @@ export const IdentityStep: React.FC<StepProps> = ({
     }
   };
 
-  // API Hooks
   const [sendOTP] = useDistributorsendOTPMutation();
   const [verifyPhoneOTP] = useVerifyPhoneOTPMutation();
   const [verifyEmailOTP] = useVerifyEmailOTPMutation();
@@ -134,41 +127,12 @@ export const IdentityStep: React.FC<StepProps> = ({
   const [getStepData, { isLoading: isLoadingStepData }] =
     useLazyGetStepDataQuery();
 
-  // ==========================================
-  // ✅ CACHE CLEARING FUNCTIONS
-  // ==========================================
-
   const resetDistributorAPI = () => {
     try {
       dispatch(distributorAuthApi.util.resetApiState());
-      dispatch(
-        distributorAuthApi.util.invalidateTags([
-          "DistributorCheckStatus",
-          "DistributorStepData",
-          "User",
-          "Auth",
-          "Registration",
-          "DistributorPersonal",
-          "DistributorSponsor",
-          "DistributorAadhaar",
-          "DistributorPAN",
-          "DistributorBank",
-          "DistributorLocation",
-          "DistributorSubmit",
-        ]),
-      );
       dispatch(authApi.util.resetApiState());
-      dispatch(
-        authApi.util.invalidateTags([
-          "User",
-          "Auth",
-          "Registration",
-          "Distributor",
-        ]),
-      );
-      console.log("✅ Distributor API reset successfully");
     } catch (error) {
-      console.error("Error resetting distributor API:", error);
+      console.error("Error resetting API:", error);
     }
   };
 
@@ -199,6 +163,8 @@ export const IdentityStep: React.FC<StepProps> = ({
       mobile: false,
       password: false,
     });
+    setIsEmailVerifiedFromAPI(false);
+    setIsMobileVerifiedFromAPI(false);
 
     const itemsToClear = [
       "distributor_verified_phone",
@@ -238,47 +204,30 @@ export const IdentityStep: React.FC<StepProps> = ({
       "distributor_email",
     ];
 
-    itemsToClear.forEach((key) => {
-      if (localStorage.getItem(key) !== null) {
-        localStorage.removeItem(key);
-        console.log(`✅ Removed: ${key}`);
-      }
-    });
-
+    itemsToClear.forEach((key) => localStorage.removeItem(key));
     sessionStorage.clear();
-    console.log("✅ SessionStorage cleared");
 
-    if (clearCache) {
-      resetDistributorAPI();
-    }
+    if (clearCache) resetDistributorAPI();
   };
 
   // ==========================================
-  // ✅ FETCH STEP DATA FROM API USING EMAIL
+  // FETCH STEP DATA FROM API
   // ==========================================
-
   const fetchStepData = async () => {
     const email = data.email || localStorage.getItem("distributor_email") || "";
-
-    if (!email) {
-      console.log("No email found to fetch step data");
-      return;
-    }
+    if (!email) return;
 
     try {
-      console.log("📡 Fetching step data for email:", email);
-      const response = await getStepData({
-        step: "1",
-        phone: email,
-      }).unwrap();
+      const response = await getStepData({ step: "1", phone: email }).unwrap();
 
       if (response.status && response.step_data) {
-        console.log("✅ Step 1 data fetched:", response);
-
         const userData = response.step_data.user;
-        const profileData = response.step_data.distributor_profile;
 
-        // Track which fields have API data
+        // ✅ Strict checks
+        const isEmailActuallyVerified = !!userData.email_verified_at;
+        const isMobileActuallyVerified =
+          userData.phone_verified === 1 || !!userData.phone_verified_at;
+
         const fieldsFromAPI = {
           full_name: !!userData.full_name,
           date_of_birth: !!userData.date_of_birth,
@@ -290,14 +239,18 @@ export const IdentityStep: React.FC<StepProps> = ({
 
         if (userData.email) {
           setEmailInput(userData.email);
-          onChange({
-            target: { name: "email", value: userData.email },
-          } as any);
+          onChange({ target: { name: "email", value: userData.email } } as any);
 
-          if (userData.email_verified_at) {
+          if (isEmailActuallyVerified) {
             setIsEmailVerified(true);
+            setIsEmailVerifiedFromAPI(true);
             localStorage.setItem("distributor_verified_email", userData.email);
             localStorage.setItem("distributor_email_verified", "true");
+          } else {
+            // ✅ API has email but NOT verified -> show OTP button
+            setIsEmailVerified(false);
+            setIsEmailVerifiedFromAPI(false);
+            setShowEmailOtp(false); // Ensure OTP button shows
           }
         }
 
@@ -306,10 +259,16 @@ export const IdentityStep: React.FC<StepProps> = ({
           setMobileInput(phoneNumber);
           setIsMobileFromCheck(true);
 
-          if (userData.phone_verified === 1 || userData.phone_verified_at) {
+          if (isMobileActuallyVerified) {
             setIsMobileVerified(true);
+            setIsMobileVerifiedFromAPI(true);
             localStorage.setItem("distributor_verified_phone", phoneNumber);
             localStorage.setItem("distributor_phone_verified", "true");
+          } else {
+            // ✅ API has phone but NOT verified -> show OTP button
+            setIsMobileVerified(false);
+            setIsMobileVerifiedFromAPI(false);
+            setShowMobileOtp(false);
           }
         }
 
@@ -321,10 +280,7 @@ export const IdentityStep: React.FC<StepProps> = ({
 
         if (userData.date_of_birth) {
           const dob = userData.date_of_birth.split(" ")[0];
-          onChange({
-            target: { name: "date_of_birth", value: dob },
-          } as any);
-
+          onChange({ target: { name: "date_of_birth", value: dob } } as any);
           const age = validateAge(dob);
           if (age < 18 && age > 0) {
             setAgeError(
@@ -335,37 +291,28 @@ export const IdentityStep: React.FC<StepProps> = ({
           }
         }
 
-        // Pre-fill password with encrypted value from API
         if (userData.password) {
           const encryptedPassword = userData.password;
           setExistingPassword(encryptedPassword);
-
           onChange({
             target: { name: "password", value: encryptedPassword },
           } as any);
           onChange({
             target: { name: "confirm_password", value: encryptedPassword },
           } as any);
-
           setShowPasswordField(false);
-          console.log("✅ Password pre-filled with encrypted value");
         }
 
         setIsDataLoadedFromAPI(true);
-
         dispatch(
-          showToast({
-            message: "Loaded existing data successfully",
-            type: "success",
-          }),
+          showToast({ message: "Loaded existing data", type: "success" }),
         );
       }
     } catch (error: any) {
-      console.error("Error fetching step data:", error);
       if (error?.status !== 404) {
         dispatch(
           showToast({
-            message: error?.data?.message || "Failed to load existing data",
+            message: error?.data?.message || "Failed to load data",
             type: "error",
           }),
         );
@@ -393,15 +340,8 @@ export const IdentityStep: React.FC<StepProps> = ({
       const emailFromProps = data.email;
       const emailFromStorage = localStorage.getItem("distributor_email");
       const email = emailFromProps || emailFromStorage || "";
-
-      if (email) {
-        console.log("📧 Loading data for email:", email);
-        await fetchStepData();
-      } else {
-        console.log("⚠️ No email found to fetch step data");
-      }
+      if (email) await fetchStepData();
     };
-
     loadData();
   }, [data.email]);
 
@@ -409,15 +349,11 @@ export const IdentityStep: React.FC<StepProps> = ({
     if (data.email && !emailInput && !isDataLoadedFromAPI) {
       setEmailInput(data.email);
       setIsEmailVerified(false);
-      console.log("📧 Email loaded from previous step:", data.email);
     }
-
     if (data.mobile && !mobileInput && !isDataLoadedFromAPI) {
       setMobileInput(data.mobile);
       setIsMobileFromCheck(true);
-      console.log("📱 Mobile loaded from previous step:", data.mobile);
     }
-
     const savedTempToken = localStorage.getItem("distributor_temp_token") || "";
     setTempToken(savedTempToken);
   }, [data.email, data.mobile, isDataLoadedFromAPI]);
@@ -457,65 +393,18 @@ export const IdentityStep: React.FC<StepProps> = ({
       setAgeError(
         "You must be at least 18 years old to register as a distributor",
       );
-      dispatch(
-        showToast({
-          message: "You must be at least 18 years old",
-          type: "error",
-        }),
-      );
     } else {
       setAgeError("");
-      if (age >= 18) {
-        dispatch(
-          showToast({
-            message: "Valid age confirmed",
-            type: "success",
-          }),
-        );
-      }
     }
-  };
-
-  const handleChangeMobile = () => {
-    setIsMobileVerified(false);
-    setShowMobileOtp(false);
-    setMobileInput("");
-    setMobileOtpInput("");
-    setMobileError("");
-    setMobileResendTimer(0);
-    setIsMobileFromCheck(false);
-    localStorage.removeItem("distributor_verified_phone");
-    localStorage.removeItem("distributor_phone_verified");
-    localStorage.removeItem("distributor_mobile");
-    setTempToken("");
-    setIsDataLoadedFromAPI(false);
-    setApiFields((prev) => ({ ...prev, mobile: false }));
-
-    dispatch(
-      showToast({
-        message: "Mobile changed, please verify again",
-        type: "info",
-      }),
-    );
   };
 
   const handleNewRegistration = () => {
     clearAllRegistrationData(true);
     setShowConfirmModal(false);
-
-    dispatch(
-      showToast({
-        message: "Starting new registration",
-        type: "info",
-      }),
-    );
-
-    if (onBackToMobile) {
-      onBackToMobile();
-    }
+    dispatch(showToast({ message: "Starting new registration", type: "info" }));
+    if (onBackToMobile) onBackToMobile();
   };
 
-  // ========== CHANGE EMAIL FUNCTIONS ==========
   const handleChangeEmailClick = () => {
     setNewEmailInput(emailInput);
     setShowChangeEmailModal(true);
@@ -531,18 +420,15 @@ export const IdentityStep: React.FC<StepProps> = ({
       );
       return;
     }
-
     setIsEmailVerified(false);
+    setIsEmailVerifiedFromAPI(false);
     setShowEmailOtp(false);
     setEmailOtpInput("");
     setEmailError("");
     setEmailResendTimer(0);
     setEmailInput(newEmailInput);
 
-    onChange({
-      target: { name: "email", value: newEmailInput },
-    } as any);
-
+    onChange({ target: { name: "email", value: newEmailInput } } as any);
     localStorage.removeItem("distributor_verified_email");
     localStorage.removeItem("distributor_email_verified");
     localStorage.removeItem("distributor_email");
@@ -550,7 +436,6 @@ export const IdentityStep: React.FC<StepProps> = ({
     resetDistributorAPI();
     setShowChangeEmailModal(false);
     setApiFields((prev) => ({ ...prev, email: false }));
-
     dispatch(
       showToast({
         message: `Email changed to ${newEmailInput}. Please verify again.`,
@@ -563,80 +448,37 @@ export const IdentityStep: React.FC<StepProps> = ({
   const handleSendMobileOTP = async () => {
     if (!mobileInput || mobileInput.length < 10) {
       setMobileError("Please enter a valid 10-digit mobile number");
-      dispatch(
-        showToast({
-          message: "Please enter a valid 10-digit mobile number",
-          type: "error",
-        }),
-      );
       return;
     }
 
-    let formattedMobile = mobileInput;
-    if (!mobileInput.startsWith("+")) {
-      formattedMobile = "+91" + mobileInput.replace(/^0+/, "");
-    }
+    let formattedMobile = mobileInput.startsWith("+")
+      ? mobileInput
+      : "+91" + mobileInput.replace(/^0+/, "");
 
     setIsMobileOtpSending(true);
     setMobileError("");
 
     try {
-      const requestData: any = {
-        phone: formattedMobile,
-        type: "phone",
-      };
-
-      if (tempToken && !(isMobileVerified && isEmailVerified)) {
+      const requestData: any = { phone: formattedMobile, type: "phone" };
+      if (tempToken && !(isMobileVerified && isEmailVerified))
         requestData.temp_token = tempToken;
-      }
 
       const response = await sendOTP(requestData).unwrap();
 
       if (response.status) {
         setShowMobileOtp(true);
         setMobileResendTimer(60);
-        setMobileError("");
         setMobileOtpInput("");
-
         if (response.temp_token) {
           setTempToken(response.temp_token);
           localStorage.setItem("distributor_temp_token", response.temp_token);
         }
-
-        dispatch(
-          showToast({
-            message: response.message,
-            type: "success",
-          }),
-        );
-        if (response.expires_in) {
-          dispatch(
-            showToast({
-              message: "OTP Sent Successfully!",
-              type: "info",
-            }),
-          );
-        }
+        dispatch(showToast({ message: response.message, type: "success" }));
       } else {
         setMobileError(response.message || "Failed to send OTP");
-        dispatch(
-          showToast({
-            message: response.message || "Failed to send OTP",
-            type: "error",
-          }),
-        );
       }
     } catch (error: any) {
-      console.error("Send OTP error:", error);
-      const errorMsg =
-        error?.data?.message || "Failed to send OTP. Please try again.";
-      setMobileError(errorMsg);
-      dispatch(
-        showToast({
-          message: errorMsg,
-          type: "error",
-        }),
-      );
+      setMobileError(error?.data?.message || "Failed to send OTP");
     } finally {
       setIsMobileOtpSending(false);
     }
@@ -645,44 +487,27 @@ export const IdentityStep: React.FC<StepProps> = ({
   const handleVerifyMobileOTP = async () => {
     if (!mobileOtpInput || mobileOtpInput.length < 6) {
       setMobileError("Please enter a valid 6-digit OTP");
-      dispatch(
-        showToast({
-          message: "Please enter a valid 6-digit OTP",
-          type: "error",
-        }),
-      );
       return;
     }
 
-    let formattedMobile = mobileInput;
-    if (!mobileInput.startsWith("+")) {
-      formattedMobile = "+91" + mobileInput.replace(/^0+/, "");
-    }
+    let formattedMobile = mobileInput.startsWith("+")
+      ? mobileInput
+      : "+91" + mobileInput.replace(/^0+/, "");
 
     setIsMobileVerifying(true);
     setMobileError("");
 
     try {
-      const requestData: any = {
-        phone: formattedMobile,
-        otp: mobileOtpInput,
-      };
-
-      if (tempToken) {
-        requestData.temp_token = tempToken;
-      }
+      const requestData: any = { phone: formattedMobile, otp: mobileOtpInput };
+      if (tempToken) requestData.temp_token = tempToken;
 
       const response = await verifyPhoneOTP(requestData).unwrap();
 
       if (response.status) {
         setIsMobileVerified(true);
+        setIsMobileVerifiedFromAPI(false); // Manually verified
         setShowMobileOtp(false);
-        setMobileError("");
-
-        onChange({
-          target: { name: "mobile", value: mobileInput },
-        } as any);
-
+        onChange({ target: { name: "mobile", value: mobileInput } } as any);
         localStorage.setItem("distributor_verified_phone", mobileInput);
         localStorage.setItem("distributor_phone_verified", "true");
 
@@ -690,14 +515,10 @@ export const IdentityStep: React.FC<StepProps> = ({
           setTempToken(response.temp_token);
           localStorage.setItem("distributor_temp_token", response.temp_token);
         }
-
         if (isEmailVerified) {
           localStorage.removeItem("distributor_temp_token");
           setTempToken("");
         }
-
-        await fetchStepData();
-
         dispatch(
           showToast({
             message: "Mobile verified successfully",
@@ -705,39 +526,12 @@ export const IdentityStep: React.FC<StepProps> = ({
           }),
         );
       } else {
-        setMobileError(response.message || "Invalid OTP. Please try again.");
-        dispatch(
-          showToast({
-            message: response.message || "Invalid OTP. Please try again.",
-            type: "error",
-          }),
-        );
+        setMobileError(response.message || "Invalid OTP");
       }
     } catch (error: any) {
-      console.error("Verify OTP error:", error);
-      const errorMsg =
-        error?.data?.message || "Failed to verify OTP. Please try again.";
-      setMobileError(errorMsg);
-      dispatch(
-        showToast({
-          message: errorMsg,
-          type: "error",
-        }),
-      );
+      setMobileError(error?.data?.message || "Failed to verify OTP");
     } finally {
       setIsMobileVerifying(false);
-    }
-  };
-
-  const handleResendMobileOTP = () => {
-    if (mobileResendTimer === 0) {
-      handleSendMobileOTP();
-      dispatch(
-        showToast({
-          message: "Resending OTP...",
-          type: "info",
-        }),
-      );
     }
   };
 
@@ -745,12 +539,6 @@ export const IdentityStep: React.FC<StepProps> = ({
   const handleSendEmailOTP = async () => {
     if (!emailInput || !emailInput.includes("@")) {
       setEmailError("Please enter a valid email address");
-      dispatch(
-        showToast({
-          message: "Please enter a valid email address",
-          type: "error",
-        }),
-      );
       return;
     }
 
@@ -758,62 +546,28 @@ export const IdentityStep: React.FC<StepProps> = ({
     setEmailError("");
 
     try {
-      const requestData: any = {
-        email: emailInput,
-        type: "email",
-      };
-
-      if (tempToken && !(isMobileVerified && isEmailVerified)) {
+      const requestData: any = { email: emailInput, type: "email" };
+      if (tempToken && !(isMobileVerified && isEmailVerified))
         requestData.temp_token = tempToken;
-      }
 
       const response = await sendOTP(requestData).unwrap();
 
       if (response.status) {
         setShowEmailOtp(true);
         setEmailResendTimer(60);
-        setEmailError("");
         setEmailOtpInput("");
-
         if (response.temp_token) {
           setTempToken(response.temp_token);
           localStorage.setItem("distributor_temp_token", response.temp_token);
         }
-
         dispatch(
-          showToast({
-            message: "OTP sent to " + emailInput,
-            type: "success",
-          }),
+          showToast({ message: "OTP sent to " + emailInput, type: "success" }),
         );
-        if (response.expires_in) {
-          dispatch(
-            showToast({
-              message: "OTP expires in " + response.expires_in + " minutes",
-              type: "info",
-            }),
-          );
-        }
       } else {
         setEmailError(response.message || "Failed to send OTP");
-        dispatch(
-          showToast({
-            message: response.message || "Failed to send OTP",
-            type: "error",
-          }),
-        );
       }
     } catch (error: any) {
-      console.error("Send Email OTP error:", error);
-      const errorMsg =
-        error?.data?.message || "Failed to send OTP. Please try again.";
-      setEmailError(errorMsg);
-      dispatch(
-        showToast({
-          message: errorMsg,
-          type: "error",
-        }),
-      );
+      setEmailError(error?.data?.message || "Failed to send OTP");
     } finally {
       setIsEmailOtpSending(false);
     }
@@ -822,12 +576,6 @@ export const IdentityStep: React.FC<StepProps> = ({
   const handleVerifyEmailOTP = async () => {
     if (!emailOtpInput || emailOtpInput.length < 6) {
       setEmailError("Please enter a valid 6-digit OTP");
-      dispatch(
-        showToast({
-          message: "Please enter a valid 6-digit OTP",
-          type: "error",
-        }),
-      );
       return;
     }
 
@@ -835,26 +583,16 @@ export const IdentityStep: React.FC<StepProps> = ({
     setEmailError("");
 
     try {
-      const requestData: any = {
-        email: emailInput,
-        otp: emailOtpInput,
-      };
-
-      if (tempToken) {
-        requestData.temp_token = tempToken;
-      }
+      const requestData: any = { email: emailInput, otp: emailOtpInput };
+      if (tempToken) requestData.temp_token = tempToken;
 
       const response = await verifyEmailOTP(requestData).unwrap();
 
       if (response.status) {
         setIsEmailVerified(true);
+        setIsEmailVerifiedFromAPI(false); // Manually verified
         setShowEmailOtp(false);
-        setEmailError("");
-
-        onChange({
-          target: { name: "email", value: emailInput },
-        } as any);
-
+        onChange({ target: { name: "email", value: emailInput } } as any);
         localStorage.setItem("distributor_verified_email", emailInput);
         localStorage.setItem("distributor_email_verified", "true");
 
@@ -862,14 +600,10 @@ export const IdentityStep: React.FC<StepProps> = ({
           setTempToken(response.temp_token);
           localStorage.setItem("distributor_temp_token", response.temp_token);
         }
-
         if (isMobileVerified) {
           localStorage.removeItem("distributor_temp_token");
           setTempToken("");
         }
-
-        await fetchStepData();
-
         dispatch(
           showToast({
             message: "Email verified successfully",
@@ -877,128 +611,90 @@ export const IdentityStep: React.FC<StepProps> = ({
           }),
         );
       } else {
-        setEmailError(response.message || "Invalid OTP. Please try again.");
-        dispatch(
-          showToast({
-            message: response.message || "Invalid OTP. Please try again.",
-            type: "error",
-          }),
-        );
+        setEmailError(response.message || "Invalid OTP");
       }
     } catch (error: any) {
-      console.error("Verify Email OTP error:", error);
-      const errorMsg =
-        error?.data?.message || "Failed to verify OTP. Please try again.";
-      setEmailError(errorMsg);
-      dispatch(
-        showToast({
-          message: errorMsg,
-          type: "error",
-        }),
-      );
+      setEmailError(error?.data?.message || "Failed to verify OTP");
     } finally {
       setIsEmailVerifying(false);
     }
   };
 
-  const handleResendEmailOTP = () => {
-    if (emailResendTimer === 0) {
-      handleSendEmailOTP();
-      dispatch(
-        showToast({
-          message: "Otp Sent Successfully!",
-          type: "info",
-        }),
-      );
-    }
-  };
-
-  // ========== SUBMIT STEP 1 - ALWAYS POST ==========
+  // ========== SUBMIT STEP 1 (WITH RACE CONDITION FIX) ==========
   const handleSubmit = async () => {
+    // Guard: Agar already navigating hai, toh kuch mat karo
+    if (hasNavigatedRef.current || isNavigating) {
+      console.log("⏭️ Navigation already in progress, ignoring");
+      return;
+    }
+
     setPasswordMatchError("");
 
-    // ✅ VALIDATION: Full name
-    if (!data.full_name) {
+    // ✅ Check if we can bypass POST API (Direct Next)
+    const isEverythingAlreadyVerified =
+      isDataLoadedFromAPI &&
+      apiFields.full_name &&
+      apiFields.date_of_birth &&
+      apiFields.password &&
+      isEmailVerified &&
+      isMobileVerified &&
+      isEmailVerifiedFromAPI && // ✅ Only bypass if verified by API
+      isMobileVerifiedFromAPI; // ✅ Only bypass if verified by API
+
+    if (isEverythingAlreadyVerified) {
+      hasNavigatedRef.current = true;
+      setIsNavigating(true);
       dispatch(
         showToast({
-          message: "Full name is required",
-          type: "error",
+          message: "All details already verified. Proceeding...",
+          type: "success",
         }),
       );
+      onNext();
       return;
     }
 
-    // ✅ VALIDATION: DOB
-    if (!data.date_of_birth) {
-      dispatch(
-        showToast({
-          message: "Date of birth is required",
-          type: "error",
-        }),
+    // Standard Validation if not bypassing
+    if (!data.full_name)
+      return dispatch(
+        showToast({ message: "Full name is required", type: "error" }),
       );
-      return;
-    }
+    if (!data.date_of_birth)
+      return dispatch(
+        showToast({ message: "Date of birth is required", type: "error" }),
+      );
 
-    // ✅ VALIDATION: Password check
     if (!isDataLoadedFromAPI) {
-      if (!data.password) {
-        dispatch(
+      if (!data.password || data.password !== data.confirm_password) {
+        return dispatch(
           showToast({
-            message: "Password is required",
+            message: "Passwords do not match or are empty",
             type: "error",
           }),
         );
-        return;
       }
-
+    } else if (data.password && data.password !== existingPassword) {
       if (data.password !== data.confirm_password) {
-        dispatch(
-          showToast({
-            message: "Passwords do not match",
-            type: "error",
-          }),
+        return dispatch(
+          showToast({ message: "Passwords do not match", type: "error" }),
         );
-        return;
-      }
-    } else {
-      if (
-        data.password &&
-        data.confirm_password &&
-        data.password !== data.confirm_password
-      ) {
-        dispatch(
-          showToast({
-            message: "Passwords do not match",
-            type: "error",
-          }),
-        );
-        return;
       }
     }
 
-    // ✅ VALIDATION: Mobile verification
-    if (!isMobileVerified) {
-      setMobileError("Please verify your mobile number first");
-      dispatch(
+    if (!isMobileVerified)
+      return dispatch(
         showToast({
           message: "Please verify your mobile number first",
           type: "error",
         }),
       );
-      return;
-    }
-
-    // ✅ VALIDATION: Email verification
-    if (!isEmailVerified) {
-      setEmailError("Please verify your email address first");
-      dispatch(
+    if (!isEmailVerified)
+      return dispatch(
         showToast({
           message: "Please verify your email address first",
           type: "error",
         }),
       );
-      return;
-    }
 
     setIsSubmitting(true);
 
@@ -1006,7 +702,6 @@ export const IdentityStep: React.FC<StepProps> = ({
       const formattedMobile = mobileInput.startsWith("+")
         ? mobileInput
         : "+91" + mobileInput.replace(/^0+/, "");
-
       const requestData: any = {
         email: emailInput,
         full_name: data.full_name,
@@ -1017,28 +712,15 @@ export const IdentityStep: React.FC<StepProps> = ({
         account_type: "distributor",
       };
 
-      if (data.password && !isDataLoadedFromAPI) {
-        requestData.password = data.password;
-        requestData.password_confirmation = data.confirm_password;
-      } else if (
+      if (
         data.password &&
-        isDataLoadedFromAPI &&
-        data.password !== existingPassword
+        (!isDataLoadedFromAPI || data.password !== existingPassword)
       ) {
         requestData.password = data.password;
         requestData.password_confirmation = data.confirm_password;
       }
 
-      console.log("📤 Submitting step 1 data:", {
-        ...requestData,
-        password: requestData.password ? "***" : "not provided",
-        account_type: requestData.account_type,
-        isExistingUser: isDataLoadedFromAPI,
-      });
-
       const response = await step1Personal(requestData).unwrap();
-
-      console.log("✅ Step 1 API Response:", response);
 
       if (response.status) {
         localStorage.removeItem("distributor_temp_token");
@@ -1051,67 +733,49 @@ export const IdentityStep: React.FC<StepProps> = ({
             "distributor_user_data",
             JSON.stringify(response.user),
           );
-          if (response.user.email) {
+          if (response.user.email)
             localStorage.setItem("distributor_email", response.user.email);
-          }
-          if (response.user.phone) {
+          if (response.user.phone)
             localStorage.setItem("distributor_phone", response.user.phone);
-          }
         }
 
+        // ✅ LOCK UI FIRST
+        setIsNavigating(true);
+
+        // ✅ Await API before navigating so UI is in sync
         await fetchStepData();
 
-        dispatch(
-          showToast({
-            message:
-              response.message || "Personal information saved successfully",
-            type: "success",
-          }),
-        );
-
-        setTimeout(() => onNext(), 500);
+        // ✅ Navigate only once, no setTimeout
+        if (!hasNavigatedRef.current) {
+          hasNavigatedRef.current = true;
+          dispatch(
+            showToast({
+              message: response.message || "Personal information saved",
+              type: "success",
+            }),
+          );
+          onNext();
+        }
       } else {
-        const errorMessage =
-          response.message || "Failed to save personal information";
         dispatch(
           showToast({
-            message: errorMessage,
+            message: response.message || "Failed to save data",
             type: "error",
           }),
         );
       }
     } catch (error: any) {
-      console.error("❌ Step 1 submission error:", error);
-
       let errorMessage = "Failed to save personal information";
-
-      if (error?.data?.message) {
-        errorMessage = error.data.message;
-      } else if (error?.message) {
-        errorMessage = error.message;
-      }
-
+      if (error?.data?.message) errorMessage = error.data.message;
       if (error?.data?.errors) {
         const validationErrors = Object.values(error.data.errors).flat();
-        if (validationErrors.length > 0) {
+        if (validationErrors.length > 0)
           errorMessage = validationErrors.join(", ");
-        }
       }
-
-      if (error?.status === 420) {
-        errorMessage =
-          error?.data?.message ||
-          "Validation failed. Please check your inputs.";
-      }
-
-      dispatch(
-        showToast({
-          message: errorMessage,
-          type: "error",
-        }),
-      );
+      dispatch(showToast({ message: errorMessage, type: "error" }));
     } finally {
       setIsSubmitting(false);
+      // Don't reset isNavigating so button stays locked
     }
   };
 
@@ -1122,39 +786,44 @@ export const IdentityStep: React.FC<StepProps> = ({
     return false;
   };
 
+  // ✅ BUTTON ENABLE LOGIC
   const isContinueEnabled = () => {
+    if (isSubmitting || isNavigating || ageError) return false;
+
+    const isEverythingAlreadyVerified =
+      isDataLoadedFromAPI &&
+      apiFields.full_name &&
+      apiFields.date_of_birth &&
+      apiFields.password &&
+      isEmailVerified &&
+      isMobileVerified &&
+      isEmailVerifiedFromAPI &&
+      isMobileVerifiedFromAPI;
+
+    // Bypass logic: Directly enable if all details are from API and verified by API
+    if (isEverythingAlreadyVerified) return true;
+
+    // Standard logic for manual filling
     const hasRequiredFields = data.full_name && data.date_of_birth;
 
-    if (isDataLoadedFromAPI) {
+    if (!isMobileVerified || !isEmailVerified || !hasRequiredFields)
+      return false;
+
+    if (!isDataLoadedFromAPI || !apiFields.password) {
       if (
-        data.password &&
-        data.confirm_password &&
-        data.password !== data.confirm_password
+        !data.password ||
+        data.password !== data.confirm_password ||
+        passwordMatchError
       ) {
         return false;
       }
-      if (passwordMatchError) {
+    } else if (data.password && data.password !== existingPassword) {
+      if (data.password !== data.confirm_password || passwordMatchError) {
         return false;
       }
-      return !!(
-        !isSubmitting &&
-        !ageError &&
-        isMobileVerified &&
-        isEmailVerified &&
-        hasRequiredFields
-      );
     }
 
-    return !!(
-      !isSubmitting &&
-      !ageError &&
-      isMobileVerified &&
-      isEmailVerified &&
-      hasRequiredFields &&
-      data.password &&
-      data.password === data.confirm_password &&
-      !passwordMatchError
-    );
+    return true;
   };
 
   return (
@@ -1179,7 +848,6 @@ export const IdentityStep: React.FC<StepProps> = ({
             </div>
 
             <div className="relative space-y-4 sm:space-y-5">
-              {/* Header */}
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 sm:gap-3 mb-1">
@@ -1209,12 +877,8 @@ export const IdentityStep: React.FC<StepProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowConfirmModal(true)}
-                  className="group flex-shrink-0 flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full
-                    border border-[var(--gold)]/40 bg-[#FFFBEF]
-                    text-xs sm:text-sm font-semibold text-[var(--gold-deep)]
-                    hover:bg-[var(--gold)] hover:text-[var(--navy)] hover:border-[var(--gold)]
-                    shadow-sm hover:shadow-md
-                    transition-all duration-200 whitespace-nowrap"
+                  disabled={isNavigating}
+                  className="group flex-shrink-0 flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-[var(--gold)]/40 bg-[#FFFBEF] text-xs sm:text-sm font-semibold text-[var(--gold-deep)] hover:bg-[var(--gold)] hover:text-[var(--navy)] hover:border-[var(--gold)] shadow-sm hover:shadow-md transition-all duration-200 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <PlusCircle className="w-3 sm:w-4 h-3 sm:h-4" />
                   <span className="hidden xs:inline">New Registration</span>
@@ -1227,7 +891,6 @@ export const IdentityStep: React.FC<StepProps> = ({
                 compliance with regulatory requirements.
               </InfoBox>
 
-              {/* Email from previous step */}
               {data.email && (
                 <div className="bg-blue-50/80 backdrop-blur-sm p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-blue-200 text-xs sm:text-sm text-blue-700 flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
@@ -1292,29 +955,25 @@ export const IdentityStep: React.FC<StepProps> = ({
                         maxLength={10}
                         value={mobileInput}
                         onChange={(e) => {
-                          const val = e.target.value.replace(/\D/g, "");
-                          setMobileInput(val);
+                          setMobileInput(e.target.value.replace(/\D/g, ""));
                           setMobileError("");
                         }}
                         error={mobileError}
                         placeholder="Enter 10-digit mobile number"
-                        helperText={
-                          isFieldDisabled("mobile")
-                            ? "Mobile number from existing account"
-                            : "We'll send OTP to verify your number"
-                        }
+                        helperText="We'll send OTP to verify your number"
                         className="w-full h-12 sm:h-14 px-3 sm:px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 text-sm sm:text-base sm:pr-[110px]"
-                        disabled={isFieldDisabled("mobile")}
+                        disabled={isNavigating}
                       />
 
-                      {!showMobileOtp && !isFieldDisabled("mobile") && (
+                      {!showMobileOtp && (
                         <button
                           type="button"
                           onClick={handleSendMobileOTP}
                           disabled={
                             isMobileOtpSending ||
                             !mobileInput ||
-                            mobileInput.length < 10
+                            mobileInput.length < 10 ||
+                            isNavigating
                           }
                           className="mt-2 w-full sm:w-auto sm:mt-0 sm:absolute sm:right-3 sm:top-1/2 sm:-translate-y-1/2 bg-[var(--gold)] hover:bg-[var(--gold-dark)] text-[var(--navy)] font-semibold px-4 py-2 rounded-lg text-xs sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                         >
@@ -1324,14 +983,6 @@ export const IdentityStep: React.FC<StepProps> = ({
                             "Send OTP"
                           )}
                         </button>
-                      )}
-
-                      {isFieldDisabled("mobile") && (
-                        <span className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 text-[10px] sm:text-xs text-green-600 font-medium bg-green-50 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-green-200">
-                          <CheckCircle className="w-3 sm:w-3.5 h-3 sm:h-3.5 inline mr-0.5 sm:mr-1" />
-                          <span className="hidden xs:inline">Verified</span>
-                          <span className="xs:hidden">✓</span>
-                        </span>
                       )}
                     </div>
 
@@ -1352,7 +1003,7 @@ export const IdentityStep: React.FC<StepProps> = ({
                             error={mobileError}
                             placeholder="Enter 6-digit OTP"
                             className="w-full h-12 sm:h-14 px-3 sm:px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 text-sm sm:text-base sm:pr-[90px]"
-                            disabled={isMobileVerifying}
+                            disabled={isMobileVerifying || isNavigating}
                           />
 
                           <button
@@ -1361,7 +1012,8 @@ export const IdentityStep: React.FC<StepProps> = ({
                             disabled={
                               isMobileVerifying ||
                               !mobileOtpInput ||
-                              mobileOtpInput.length < 6
+                              mobileOtpInput.length < 6 ||
+                              isNavigating
                             }
                             className="mt-2 w-full sm:w-auto sm:mt-0 sm:absolute sm:right-3 sm:top-14 sm:-translate-y-1/2 bg-[var(--gold)] hover:bg-[var(--gold-dark)] text-[var(--navy)] font-semibold px-4 py-2 rounded-lg text-xs sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap sm:min-w-[70px]"
                           >
@@ -1375,9 +1027,11 @@ export const IdentityStep: React.FC<StepProps> = ({
                         <div className="flex justify-end">
                           <button
                             type="button"
-                            onClick={handleResendMobileOTP}
+                            onClick={handleSendMobileOTP}
                             disabled={
-                              mobileResendTimer > 0 || isMobileOtpSending
+                              mobileResendTimer > 0 ||
+                              isMobileOtpSending ||
+                              isNavigating
                             }
                             className="text-[10px] sm:text-sm text-[var(--gold-deep)] hover:text-[var(--gold-dark)] disabled:text-gray-400 disabled:cursor-not-allowed font-medium"
                           >
@@ -1435,24 +1089,23 @@ export const IdentityStep: React.FC<StepProps> = ({
                         error={emailError}
                         placeholder="Enter your email address"
                         helperText={
-                          isFieldDisabled("email")
-                            ? "Email from existing account"
-                            : data.email
-                              ? `Email from previous step: ${data.email}. Verify with OTP.`
-                              : "We'll send OTP to verify your email"
+                          data.email
+                            ? `Email from previous step: ${data.email}. Verify with OTP.`
+                            : "We'll send OTP to verify your email"
                         }
                         className="w-full h-12 sm:h-14 px-3 sm:px-4 text-black rounded-xl border-gray-200 bg-gray-50 cursor-not-allowed text-sm sm:text-base"
                         disabled={true}
                       />
 
-                      {!showEmailOtp && !isFieldDisabled("email") && (
+                      {!showEmailOtp && (
                         <button
                           type="button"
                           onClick={handleSendEmailOTP}
                           disabled={
                             isEmailOtpSending ||
                             !emailInput ||
-                            !emailInput.includes("@")
+                            !emailInput.includes("@") ||
+                            isNavigating
                           }
                           className="mt-2 w-full sm:w-auto sm:absolute sm:right-3 sm:top-14 sm:-translate-y-1/2 sm:mt-0 bg-[var(--gold)] hover:bg-[var(--gold-dark)] text-[var(--navy)] font-semibold px-4 py-2 rounded-lg text-xs sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                         >
@@ -1482,7 +1135,7 @@ export const IdentityStep: React.FC<StepProps> = ({
                             error={emailError}
                             placeholder="Enter 6-digit OTP"
                             className="w-full h-12 sm:h-14 px-3 sm:px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 text-sm sm:text-base sm:pr-[100px]"
-                            disabled={isEmailVerifying}
+                            disabled={isEmailVerifying || isNavigating}
                           />
 
                           <button
@@ -1491,7 +1144,8 @@ export const IdentityStep: React.FC<StepProps> = ({
                             disabled={
                               isEmailVerifying ||
                               !emailOtpInput ||
-                              emailOtpInput.length < 6
+                              emailOtpInput.length < 6 ||
+                              isNavigating
                             }
                             className="mt-2 w-full sm:w-auto sm:mt-0 sm:absolute sm:right-3 sm:top-14 sm:-translate-y-1/2 bg-[var(--gold)] hover:bg-[var(--gold-dark)] text-[var(--navy)] font-semibold px-4 py-2 rounded-lg text-xs sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap sm:min-w-[70px]"
                           >
@@ -1505,8 +1159,12 @@ export const IdentityStep: React.FC<StepProps> = ({
                         <div className="flex justify-end">
                           <button
                             type="button"
-                            onClick={handleResendEmailOTP}
-                            disabled={emailResendTimer > 0 || isEmailOtpSending}
+                            onClick={handleSendEmailOTP}
+                            disabled={
+                              emailResendTimer > 0 ||
+                              isEmailOtpSending ||
+                              isNavigating
+                            }
                             className="text-[10px] sm:text-sm text-[var(--gold-deep)] hover:text-[var(--gold-dark)] disabled:text-gray-400 disabled:cursor-not-allowed font-medium"
                           >
                             {emailResendTimer > 0
@@ -1540,10 +1198,9 @@ export const IdentityStep: React.FC<StepProps> = ({
                       : "Must match your PAN card name"
                   }
                   className="w-full h-12 sm:h-14 px-3 sm:px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 text-sm sm:text-base"
-                  disabled={isFieldDisabled("full_name")}
+                  disabled={isFieldDisabled("full_name") || isNavigating}
                 />
 
-                {/* Date of Birth */}
                 <div className="space-y-1">
                   {isDataLoadedFromAPI && apiFields.date_of_birth ? (
                     <>
@@ -1584,12 +1241,13 @@ export const IdentityStep: React.FC<StepProps> = ({
                           : "You must be at least 18 years old"
                       }
                       required
-                      disabled={isFieldDisabled("date_of_birth")}
+                      disabled={
+                        isFieldDisabled("date_of_birth") || isNavigating
+                      }
                     />
                   )}
                 </div>
 
-                {/* Password */}
                 <div className="space-y-1">
                   {isDataLoadedFromAPI && apiFields.password ? (
                     <>
@@ -1605,8 +1263,8 @@ export const IdentityStep: React.FC<StepProps> = ({
                         </div>
                       </div>
                       <p className="text-[10px] sm:text-xs text-green-600 flex items-center gap-1 mt-1">
-                        <Lock className="w-2.5 sm:w-3 h-2.5 sm:h-3" />
-                        🔒 Password is locked from your existing account
+                        <Lock className="w-2.5 sm:w-3 h-2.5 sm:h-3" /> 🔒
+                        Password is locked from your existing account
                       </p>
                     </>
                   ) : (
@@ -1620,11 +1278,11 @@ export const IdentityStep: React.FC<StepProps> = ({
                       helperText="Minimum 8 characters with uppercase, lowercase and number"
                       className="w-full h-12 sm:h-14 px-3 sm:px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 outline-none text-sm sm:text-base"
                       required={!isDataLoadedFromAPI}
+                      disabled={isNavigating}
                     />
                   )}
                 </div>
 
-                {/* Confirm Password */}
                 <div className="space-y-1">
                   {isDataLoadedFromAPI && apiFields.password ? (
                     <>
@@ -1650,6 +1308,7 @@ export const IdentityStep: React.FC<StepProps> = ({
                       placeholder="Confirm your password"
                       required={!isDataLoadedFromAPI}
                       className="w-full h-12 sm:h-14 px-3 sm:px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 outline-none text-sm sm:text-base"
+                      disabled={isNavigating}
                     />
                   )}
                 </div>
@@ -1658,7 +1317,8 @@ export const IdentityStep: React.FC<StepProps> = ({
                   <button
                     type="button"
                     onClick={onBackToMobile}
-                    className="w-full sm:w-auto text-center text-gray-600 hover:text-gray-800 font-medium text-xs sm:text-sm transition-colors duration-200 py-2 sm:py-0"
+                    disabled={isNavigating}
+                    className="w-full sm:w-auto text-center text-gray-600 hover:text-gray-800 font-medium text-xs sm:text-sm transition-colors duration-200 py-2 sm:py-0 disabled:opacity-50"
                   >
                     Back to Email
                   </button>
@@ -1668,10 +1328,14 @@ export const IdentityStep: React.FC<StepProps> = ({
                     disabled={!isContinueEnabled()}
                     className="w-full sm:w-auto bg-[var(--gold)] hover:bg-[var(--gold-dark)] text-[var(--navy)] font-semibold px-6 sm:px-8 py-2.5 sm:py-3 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all duration-200 shadow-[0_8px_20px_-6px_rgba(249,199,68,0.5)] hover:shadow-[0_12px_28px_-8px_rgba(249,199,68,0.6)] text-sm sm:text-base"
                   >
-                    {isSubmitting ? (
+                    {isSubmitting || isNavigating ? (
                       <>
                         <Loader2 className="w-4 sm:w-5 h-4 sm:h-5 animate-spin" />
-                        {isDataLoadedFromAPI ? "Updating..." : "Saving..."}
+                        {isNavigating
+                          ? "Loading next step..."
+                          : isDataLoadedFromAPI
+                            ? "Updating..."
+                            : "Saving..."}
                       </>
                     ) : (
                       "Continue →"
@@ -1698,22 +1362,18 @@ export const IdentityStep: React.FC<StepProps> = ({
             >
               <X className="w-4 sm:w-5 h-4 sm:h-5" />
             </button>
-
             <div className="flex justify-center mb-3 sm:mb-4">
               <div className="w-12 sm:w-16 h-12 sm:h-16 rounded-full bg-blue-100 flex items-center justify-center ring-4 ring-blue-50">
                 <Mail className="w-6 sm:w-8 h-6 sm:h-8 text-blue-600" />
               </div>
             </div>
-
             <h3 className="text-lg sm:text-xl font-bold text-center text-[#06101E] mb-1 sm:mb-2 tracking-tight">
               Change Email Address
             </h3>
-
             <p className="text-xs sm:text-sm text-gray-500 text-center mb-4 sm:mb-6 font-medium">
               Enter your new email address. You'll need to verify it again with
               OTP.
             </p>
-
             <div className="space-y-3 sm:space-y-4">
               <Input
                 label="New Email Address"
@@ -1723,14 +1383,12 @@ export const IdentityStep: React.FC<StepProps> = ({
                 placeholder="Enter new email address"
                 className="w-full h-12 sm:h-14 px-3 sm:px-4 text-black rounded-xl border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 transition-all duration-200 text-sm sm:text-base"
               />
-
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-2.5 sm:p-3">
                 <p className="text-[10px] sm:text-xs text-amber-700 font-medium">
                   ⚠️ Changing email will reset your verification status and API
                   state. You'll need to verify the new email.
                 </p>
               </div>
-
               <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2">
                 <button
                   type="button"
@@ -1767,28 +1425,23 @@ export const IdentityStep: React.FC<StepProps> = ({
             >
               <X className="w-4 sm:w-5 h-4 sm:h-5" />
             </button>
-
             <div className="flex justify-center mb-3 sm:mb-4">
               <div className="w-12 sm:w-16 h-12 sm:h-16 rounded-full bg-amber-100 flex items-center justify-center ring-4 ring-amber-50">
                 <AlertTriangle className="w-6 sm:w-8 h-6 sm:h-8 text-amber-600" />
               </div>
             </div>
-
             <h3 className="text-lg sm:text-xl font-bold text-center text-[#06101E] mb-1 sm:mb-2 tracking-tight">
               Start New Registration?
             </h3>
-
             <p className="text-xs sm:text-sm text-gray-500 text-center mb-4 sm:mb-6 font-medium">
               All your entered information will be discarded. This action cannot
               be undone.
             </p>
-
             <div className="bg-red-50 border border-red-200 rounded-xl p-2.5 sm:p-3 mb-4 sm:mb-6">
               <p className="text-[10px] sm:text-xs text-red-600 text-center font-semibold">
                 ⚠️ Your current progress will be lost
               </p>
             </div>
-
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
               <button
                 type="button"

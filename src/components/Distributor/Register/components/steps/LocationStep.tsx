@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   PlusCircle,
   AlertTriangle,
@@ -37,7 +37,6 @@ const theme = {
 };
 
 const BLOCKED_STATE = "telangana";
-
 const BLOCKED_MESSAGE =
   "Telangana users can't register directly. Please contact Admin.";
 
@@ -63,44 +62,26 @@ export const LocationStep: React.FC<StepProps> = ({
   const [locationStatus, setLocationStatus] = useState("");
 
   const [phoneNumber, setPhoneNumber] = useState("");
-
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
-  /**
-   * TRUE when Step-6 GET API has been loaded.
-   */
+  // ✅ FIX: Navigation locks to prevent double-clicks
+  const [isNavigating, setIsNavigating] = useState(false);
+  const hasNavigatedRef = useRef(false);
+
   const [isDataLoadedFromAPI, setIsDataLoadedFromAPI] = useState(false);
-
-  /**
-   * TRUE when API already contained valid latitude/longitude.
-   *
-   * This is the most important flag.
-   *
-   * If TRUE:
-   * - do NOT call location POST
-   * - simply continue
-   */
   const [isLocationFromApi, setIsLocationFromApi] = useState(false);
-
-  /**
-   * TRUE when browser GPS was captured in this session.
-   */
   const [hasCapturedLocation, setHasCapturedLocation] = useState(false);
-
   const [isTelanganaBlocked, setIsTelanganaBlocked] = useState(false);
-
   const [detectedState, setDetectedState] = useState("");
   const [detectedCity, setDetectedCity] = useState("");
 
   const [step6Location] = useStep6LocationMutation();
-
   const [getStepData, { isLoading: isLoadingStepData }] =
     useLazyGetStepDataQuery();
 
   // ============================================================
   // BODY SCROLL LOCK
   // ============================================================
-
   useEffect(() => {
     if (showConfirmModal) {
       document.body.style.overflow = "hidden";
@@ -109,17 +90,14 @@ export const LocationStep: React.FC<StepProps> = ({
       document.body.style.top = `-${window.scrollY}px`;
     } else {
       const scrollY = document.body.style.top;
-
       document.body.style.overflow = "";
       document.body.style.position = "";
       document.body.style.width = "";
       document.body.style.top = "";
-
       if (scrollY) {
         window.scrollTo(0, parseInt(scrollY || "0", 10) * -1);
       }
     }
-
     return () => {
       document.body.style.overflow = "";
       document.body.style.position = "";
@@ -131,14 +109,12 @@ export const LocationStep: React.FC<StepProps> = ({
   // ============================================================
   // LOCATION HELPERS
   // ============================================================
-
   const isValidCoordinate = (
     latitude: unknown,
     longitude: unknown,
   ): boolean => {
     const lat = Number(latitude);
     const lng = Number(longitude);
-
     return (
       Number.isFinite(lat) &&
       Number.isFinite(lng) &&
@@ -150,10 +126,6 @@ export const LocationStep: React.FC<StepProps> = ({
     );
   };
 
-  // ============================================================
-  // REVERSE GEOCODING - BIGDATACLOUD
-  // ============================================================
-
   const fetchFromBigDataCloud = async (
     lat: number,
     lng: number,
@@ -162,19 +134,13 @@ export const LocationStep: React.FC<StepProps> = ({
       const res = await fetch(
         `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`,
       );
-
-      if (!res.ok) {
-        return null;
-      }
-
+      if (!res.ok) return null;
       const json = await res.json();
-
       return {
         state:
           json?.principalSubdivision ||
           json?.principalSubdivisionCode?.replace("IN-", "") ||
           null,
-
         city:
           json?.city ||
           json?.locality ||
@@ -182,12 +148,10 @@ export const LocationStep: React.FC<StepProps> = ({
             (item: any) => item?.adminLevel === 5 || item?.adminLevel === 6,
           )?.name ||
           null,
-
         district:
           json?.localityInfo?.administrative?.find?.(
             (item: any) => item?.adminLevel === 5 || item?.adminLevel === 6,
           )?.name || null,
-
         country: json?.countryName || null,
       };
     } catch (error) {
@@ -196,10 +160,6 @@ export const LocationStep: React.FC<StepProps> = ({
     }
   };
 
-  // ============================================================
-  // REVERSE GEOCODING - NOMINATIM FALLBACK
-  // ============================================================
-
   const fetchFromNominatim = async (
     lat: number,
     lng: number,
@@ -207,24 +167,13 @@ export const LocationStep: React.FC<StepProps> = ({
     try {
       const res = await fetch(
         `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=en&zoom=14`,
-        {
-          headers: {
-            Accept: "application/json",
-          },
-        },
+        { headers: { Accept: "application/json" } },
       );
-
-      if (!res.ok) {
-        return null;
-      }
-
+      if (!res.ok) return null;
       const json = await res.json();
-
       const addr = json?.address || {};
-
       return {
         state: addr?.state || addr?.state_district || null,
-
         city:
           addr?.city ||
           addr?.town ||
@@ -233,9 +182,7 @@ export const LocationStep: React.FC<StepProps> = ({
           addr?.suburb ||
           addr?.county ||
           null,
-
         district: addr?.state_district || addr?.county || null,
-
         country: addr?.country || null,
       };
     } catch (error) {
@@ -244,86 +191,44 @@ export const LocationStep: React.FC<StepProps> = ({
     }
   };
 
-  // ============================================================
-  // REVERSE GEOCODE COORDINATES
-  // ============================================================
-
   const getLocationFromCoords = async (
     lat: number,
     lng: number,
   ): Promise<LocationInfo | null> => {
     const bdc = await fetchFromBigDataCloud(lat, lng);
-
-    if (bdc && (bdc.state || bdc.city)) {
-      return bdc;
-    }
-
+    if (bdc && (bdc.state || bdc.city)) return bdc;
     const nom = await fetchFromNominatim(lat, lng);
-
-    if (nom && (nom.state || nom.city)) {
-      return nom;
-    }
-
+    if (nom && (nom.state || nom.city)) return nom;
     return null;
   };
-
-  // ============================================================
-  // APPLY DETECTED LOCATION
-  // ============================================================
 
   const applyDetectedLocation = (info: LocationInfo | null) => {
     if (!info) {
       setDetectedCity("");
       setDetectedState("");
-
       return;
     }
-
     const city = info.city || "";
     const state = info.state || "";
-
     setDetectedCity(city);
     setDetectedState(state);
 
     if (city) {
-      onChange({
-        target: {
-          name: "city",
-          value: city,
-        },
-      } as any);
+      onChange({ target: { name: "city", value: city } } as any);
     }
-
     if (state) {
-      onChange({
-        target: {
-          name: "state",
-          value: state,
-        },
-      } as any);
+      onChange({ target: { name: "state", value: state } } as any);
     }
 
     const stateLower = state.trim().toLowerCase();
-
     if (stateLower === BLOCKED_STATE) {
       setIsTelanganaBlocked(true);
-
       setLocationStatus(`❌ ${BLOCKED_MESSAGE}`);
-
-      dispatch(
-        showToast({
-          message: BLOCKED_MESSAGE,
-          type: "error",
-        }),
-      );
-
+      dispatch(showToast({ message: BLOCKED_MESSAGE, type: "error" }));
       return;
     }
-
     setIsTelanganaBlocked(false);
-
     const label = [city, state].filter(Boolean).join(", ");
-
     if (label) {
       setLocationStatus(`✓ Location detected — ${label}`);
     }
@@ -332,7 +237,6 @@ export const LocationStep: React.FC<StepProps> = ({
   // ============================================================
   // LOAD PHONE
   // ============================================================
-
   useEffect(() => {
     const candidates = [
       localStorage.getItem("distributor_verified_phone"),
@@ -343,14 +247,11 @@ export const LocationStep: React.FC<StepProps> = ({
     ].filter(Boolean) as string[];
 
     const savedPhone = candidates[0] || "";
-
     if (savedPhone) {
       const cleaned = savedPhone.replace(/\s+/g, "").replace(/^0+/, "");
-
       const formattedPhone = cleaned.startsWith("+")
         ? cleaned
         : `+91${cleaned}`;
-
       setPhoneNumber(formattedPhone);
     } else if (data.email) {
       setPhoneNumber(data.email);
@@ -360,30 +261,16 @@ export const LocationStep: React.FC<StepProps> = ({
   // ============================================================
   // FETCH STEP 6 DATA
   // ============================================================
-
   const fetchStepData = async () => {
     const email = data.email || localStorage.getItem("distributor_email") || "";
-
-    if (!email) {
-      return;
-    }
+    if (!email) return;
 
     try {
-      const response = await getStepData({
-        step: "6",
-        phone: email,
-      }).unwrap();
-
-      if (!response?.status || !response?.step_data) {
-        return;
-      }
+      const response = await getStepData({ step: "6", phone: email }).unwrap();
+      if (!response?.status || !response?.step_data) return;
 
       const userData = response.step_data.user;
       const profileData = response.step_data.distributor_profile;
-
-      // --------------------------------------------------------
-      // LOCATION CONSENT
-      // --------------------------------------------------------
 
       const hasLocationConsent =
         userData?.location_consent_given === 1 ||
@@ -392,70 +279,27 @@ export const LocationStep: React.FC<StepProps> = ({
         profileData?.location_consent === true;
 
       if (hasLocationConsent) {
-        onChange({
-          target: {
-            name: "location_consent",
-            value: true,
-          },
-        } as any);
+        onChange({ target: { name: "location_consent", value: true } } as any);
       }
-
-      // --------------------------------------------------------
-      // GET LATITUDE / LONGITUDE
-      // --------------------------------------------------------
 
       const apiLat = profileData?.latitude;
       const apiLng = profileData?.longitude;
-
       const apiHasValidCoordinates = isValidCoordinate(apiLat, apiLng);
 
-      /**
-       * IMPORTANT:
-       *
-       * If API has coordinates:
-       *
-       * 1. Save coordinates into form
-       * 2. Mark source as API
-       * 3. Reverse geocode
-       * 4. Detect city/state
-       * 5. NEVER POST location again
-       */
       if (apiHasValidCoordinates) {
         const latNum = Number(apiLat);
         const lngNum = Number(apiLng);
+        onChange({ target: { name: "latitude", value: latNum } } as any);
+        onChange({ target: { name: "longitude", value: lngNum } } as any);
 
-        // Save coordinates into parent form
-        onChange({
-          target: {
-            name: "latitude",
-            value: latNum,
-          },
-        } as any);
-
-        onChange({
-          target: {
-            name: "longitude",
-            value: lngNum,
-          },
-        } as any);
-
-        // IMPORTANT SOURCE FLAG
         setIsLocationFromApi(true);
         setHasCapturedLocation(true);
-
         setLocationStatus("✓ Saved coordinates found. Detecting city...");
 
-        // ------------------------------------------------------
-        // REVERSE GEOCODE API COORDINATES
-        // ------------------------------------------------------
-
         const info = await getLocationFromCoords(latNum, lngNum);
-
         if (info) {
           applyDetectedLocation(info);
-
           const label = [info.city, info.state].filter(Boolean).join(", ");
-
           if (!isTelanganaBlocked) {
             setLocationStatus(
               label ? `✓ Saved location — ${label}` : "✓ Saved location loaded",
@@ -467,31 +311,14 @@ export const LocationStep: React.FC<StepProps> = ({
           );
         }
 
-        // ------------------------------------------------------
-        // IMPORTANT:
-        // Do NOT call POST here.
-        // ------------------------------------------------------
-
-        onChange({
-          target: {
-            name: "location_verified",
-            value: true,
-          },
-        } as any);
+        onChange({ target: { name: "location_verified", value: true } } as any);
       } else {
-        /**
-         * No coordinates from API.
-         *
-         * User must capture GPS manually.
-         */
         setIsLocationFromApi(false);
         setHasCapturedLocation(false);
-
         setLocationStatus("Please capture your current location to continue.");
       }
 
       setIsDataLoadedFromAPI(true);
-
       dispatch(
         showToast({
           message: "Location data loaded successfully",
@@ -500,7 +327,6 @@ export const LocationStep: React.FC<StepProps> = ({
       );
     } catch (error: any) {
       console.error("Error fetching step 6 data:", error);
-
       if (error?.status !== 404) {
         dispatch(
           showToast({
@@ -512,24 +338,15 @@ export const LocationStep: React.FC<StepProps> = ({
     }
   };
 
-  // ============================================================
-  // LOAD API DATA ON SCREEN LOAD
-  // ============================================================
-
   useEffect(() => {
     const email = data.email || localStorage.getItem("distributor_email") || "";
-
-    if (email) {
-      fetchStepData();
-    }
-
+    if (email) fetchStepData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data.email]);
 
   // ============================================================
   // CLEAR REGISTRATION DATA
   // ============================================================
-
   const clearAllRegistrationData = () => {
     const itemsToRemove = [
       "verified_phone",
@@ -555,11 +372,7 @@ export const LocationStep: React.FC<StepProps> = ({
       "distributor_temp_token",
       "distributor_email",
     ];
-
-    itemsToRemove.forEach((item) => {
-      localStorage.removeItem(item);
-    });
-
+    itemsToRemove.forEach((item) => localStorage.removeItem(item));
     try {
       dispatch(distributorAuthApi.util.resetApiState());
       dispatch(authApi.util.resetApiState());
@@ -570,34 +383,26 @@ export const LocationStep: React.FC<StepProps> = ({
 
   const handleNewRegistration = () => {
     clearAllRegistrationData();
-
     setShowConfirmModal(false);
-
-    if (onBackToMobile) {
-      onBackToMobile();
-    }
+    if (onBackToMobile) onBackToMobile();
   };
 
   // ============================================================
   // CAPTURE CURRENT GPS LOCATION
   // ============================================================
-
   const handleCaptureLocation = () => {
     if (!navigator.geolocation) {
       setLocationStatus("⚠ Geolocation is not supported by this browser.");
-
       dispatch(
         showToast({
           message: "Geolocation is not supported in this browser.",
           type: "warning",
         }),
       );
-
       return;
     }
 
     setIsCapturing(true);
-
     setLocationStatus("Requesting your current location...");
 
     navigator.geolocation.getCurrentPosition(
@@ -605,45 +410,24 @@ export const LocationStep: React.FC<StepProps> = ({
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
 
-        // --------------------------------------------------------
-        // SAVE GPS COORDINATES
-        // --------------------------------------------------------
+        onChange({ target: { name: "latitude", value: lat } } as any);
+        onChange({ target: { name: "longitude", value: lng } } as any);
 
-        onChange({
-          target: {
-            name: "latitude",
-            value: lat,
-          },
-        } as any);
-
-        onChange({
-          target: {
-            name: "longitude",
-            value: lng,
-          },
-        } as any);
-
-        // This is a NEW browser GPS capture.
         setIsLocationFromApi(false);
         setHasCapturedLocation(true);
-
         setLocationStatus("✓ Location captured. Detecting city and state...");
 
         try {
           const info = await getLocationFromCoords(lat, lng);
-
           if (info) {
             applyDetectedLocation(info);
-
             if (!isTelanganaBlocked) {
               const label = [info.city, info.state].filter(Boolean).join(", ");
-
               setLocationStatus(
                 label
                   ? `✓ Location captured — ${label}`
                   : "✓ Location captured successfully",
               );
-
               dispatch(
                 showToast({
                   message: label
@@ -657,7 +441,6 @@ export const LocationStep: React.FC<StepProps> = ({
             setLocationStatus(
               "✓ Location captured. City/state could not be detected.",
             );
-
             dispatch(
               showToast({
                 message:
@@ -668,7 +451,6 @@ export const LocationStep: React.FC<StepProps> = ({
           }
         } catch (error) {
           console.error("Reverse geocoding error:", error);
-
           setLocationStatus(
             "✓ Location captured. City/state could not be detected.",
           );
@@ -678,31 +460,23 @@ export const LocationStep: React.FC<StepProps> = ({
       },
       (error) => {
         console.error("Geolocation error:", error);
-
         let errorMsg = "⚠ Unable to capture your location. ";
-
         switch (error.code) {
           case error.PERMISSION_DENIED:
             errorMsg += "Location permission was denied.";
             break;
-
           case error.POSITION_UNAVAILABLE:
             errorMsg += "Location information is unavailable.";
             break;
-
           case error.TIMEOUT:
             errorMsg += "Location request timed out.";
             break;
-
           default:
             errorMsg += "An unknown error occurred.";
             break;
         }
-
         setLocationStatus(errorMsg);
-
         setIsCapturing(false);
-
         dispatch(
           showToast({
             message: "Unable to capture location. Please try again.",
@@ -710,64 +484,30 @@ export const LocationStep: React.FC<StepProps> = ({
           }),
         );
       },
-      {
-        enableHighAccuracy: true,
-        timeout: 15000,
-        maximumAge: 0,
-      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
     );
   };
 
   // ============================================================
   // REMOVE GPS
   // ============================================================
-
   const handleRemoveGps = () => {
-    onChange({
-      target: {
-        name: "latitude",
-        value: undefined,
-      },
-    } as any);
-
-    onChange({
-      target: {
-        name: "longitude",
-        value: undefined,
-      },
-    } as any);
-
-    onChange({
-      target: {
-        name: "state",
-        value: undefined,
-      },
-    } as any);
-
-    onChange({
-      target: {
-        name: "city",
-        value: undefined,
-      },
-    } as any);
-
-    onChange({
-      target: {
-        name: "location_verified",
-        value: false,
-      },
-    } as any);
+    onChange({ target: { name: "latitude", value: undefined } } as any);
+    onChange({ target: { name: "longitude", value: undefined } } as any);
+    onChange({ target: { name: "state", value: undefined } } as any);
+    onChange({ target: { name: "city", value: undefined } } as any);
+    onChange({ target: { name: "location_verified", value: false } } as any);
 
     setLocationStatus("");
-
     setDetectedState("");
     setDetectedCity("");
-
     setIsTelanganaBlocked(false);
-
     setHasCapturedLocation(false);
-
     setIsLocationFromApi(false);
+
+    // Reset navigation guards so user can submit again
+    hasNavigatedRef.current = false;
+    setIsNavigating(false);
 
     dispatch(
       showToast({
@@ -778,28 +518,19 @@ export const LocationStep: React.FC<StepProps> = ({
   };
 
   // ============================================================
-  // SUBMIT LOCATION
+  // SUBMIT LOCATION (WITH RACE CONDITION FIX)
   // ============================================================
-
   const handleSubmitLocation = async () => {
-    // ----------------------------------------------------------
-    // BLOCK TELANGANA
-    // ----------------------------------------------------------
-
-    if (isTelanganaBlocked) {
-      dispatch(
-        showToast({
-          message: BLOCKED_MESSAGE,
-          type: "error",
-        }),
-      );
-
+    // Guard: Agar already navigating hai, toh kuch mat karo
+    if (hasNavigatedRef.current || isNavigating) {
+      console.log("⏭️ Navigation already in progress, ignoring");
       return;
     }
 
-    // ----------------------------------------------------------
-    // CONSENT
-    // ----------------------------------------------------------
+    if (isTelanganaBlocked) {
+      dispatch(showToast({ message: BLOCKED_MESSAGE, type: "error" }));
+      return;
+    }
 
     if (!data.location_consent) {
       dispatch(
@@ -808,26 +539,14 @@ export const LocationStep: React.FC<StepProps> = ({
           type: "error",
         }),
       );
-
       return;
     }
 
     // ==========================================================
-    // VERY IMPORTANT:
-    //
-    // API already contains lat/long.
-    //
-    // DO NOT HIT POST.
+    // API already contains lat/long → skip POST
     // ==========================================================
-
     if (isLocationFromApi) {
-      onChange({
-        target: {
-          name: "location_verified",
-          value: true,
-        },
-      } as any);
-
+      onChange({ target: { name: "location_verified", value: true } } as any);
       dispatch(
         showToast({
           message: "Saved location already exists. Proceeding...",
@@ -835,16 +554,15 @@ export const LocationStep: React.FC<StepProps> = ({
         }),
       );
 
-      setTimeout(() => {
-        onNext?.();
-      }, 500);
+      // ✅ LOCK UI FIRST
+      setIsNavigating(true);
 
+      if (!hasNavigatedRef.current) {
+        hasNavigatedRef.current = true;
+        onNext?.();
+      }
       return;
     }
-
-    // ----------------------------------------------------------
-    // IDENTIFIER
-    // ----------------------------------------------------------
 
     const identifier =
       phoneNumber ||
@@ -861,17 +579,11 @@ export const LocationStep: React.FC<StepProps> = ({
           type: "error",
         }),
       );
-
       return;
     }
 
-    // ----------------------------------------------------------
-    // VALIDATE COORDINATES
-    // ----------------------------------------------------------
-
     const latNum = Number(data.latitude);
     const lngNum = Number(data.longitude);
-
     const validCoords = isValidCoordinate(latNum, lngNum);
 
     if (!validCoords) {
@@ -882,24 +594,16 @@ export const LocationStep: React.FC<StepProps> = ({
           type: "error",
         }),
       );
-
       return;
     }
-
-    // ----------------------------------------------------------
-    // SUBMIT
-    // ----------------------------------------------------------
 
     setIsVerifying(true);
 
     try {
       const response = await step6Location({
         phone: identifier,
-
         location_consent: data.location_consent ? 1 : 0,
-
         latitude: latNum,
-
         longitude: lngNum,
       }).unwrap();
 
@@ -910,25 +614,21 @@ export const LocationStep: React.FC<StepProps> = ({
             type: "success",
           }),
         );
+        onChange({ target: { name: "location_verified", value: true } } as any);
 
-        onChange({
-          target: {
-            name: "location_verified",
-            value: true,
-          },
-        } as any);
-
-        // IMPORTANT:
-        // This was a successful NEW POST.
-        // From this point it is server-verified.
         setIsLocationFromApi(true);
 
-        // Refresh GET data
+        // ✅ LOCK UI FIRST so user cannot click Continue
+        setIsNavigating(true);
+
+        // ✅ Await API before navigating so UI is in sync
         await fetchStepData();
 
-        setTimeout(() => {
+        // ✅ Navigate only once, no setTimeout
+        if (!hasNavigatedRef.current) {
+          hasNavigatedRef.current = true;
           onNext?.();
-        }, 800);
+        }
       } else {
         dispatch(
           showToast({
@@ -941,161 +641,99 @@ export const LocationStep: React.FC<StepProps> = ({
       }
     } catch (error: any) {
       console.error("Location submission error:", error);
-
       const errorMsg =
         error?.data?.message ||
         error?.message ||
         "Location submission failed. Please try again.";
-
-      dispatch(
-        showToast({
-          message: errorMsg,
-          type: "error",
-        }),
-      );
+      dispatch(showToast({ message: errorMsg, type: "error" }));
     } finally {
       setIsVerifying(false);
+      // Don't reset isNavigating so button stays locked
     }
   };
 
   // ============================================================
-  // NEXT
+  // NEXT (WITH DOUBLE-CLICK GUARD)
   // ============================================================
-
   const handleNext = () => {
-    if (isTelanganaBlocked) {
-      dispatch(
-        showToast({
-          message: BLOCKED_MESSAGE,
-          type: "error",
-        }),
-      );
-
+    // 🛑 Guard: Agar already navigate ho chuka hai, toh kuch mat karo
+    if (hasNavigatedRef.current || isNavigating) {
+      console.log("⏭️ Navigation already in progress, ignoring click");
       return;
     }
 
-    /**
-     * If GET API already provided coordinates,
-     * there is nothing to POST.
-     */
+    if (isTelanganaBlocked) {
+      dispatch(showToast({ message: BLOCKED_MESSAGE, type: "error" }));
+      return;
+    }
+
+    // If API provided location, just move forward
     if (isLocationFromApi) {
+      hasNavigatedRef.current = true;
+      setIsNavigating(true);
       dispatch(
         showToast({
           message: "Saved location already exists. Proceeding...",
           type: "success",
         }),
       );
-
-      setTimeout(() => {
-        onNext?.();
-      }, 500);
-
-      return;
-    }
-
-    /**
-     * If location was already verified in local state,
-     * continue.
-     */
-    if (data.location_verified) {
       onNext?.();
       return;
     }
 
-    /**
-     * Otherwise submit newly captured GPS.
-     */
+    // If location already verified in local state, continue
+    if (data.location_verified) {
+      hasNavigatedRef.current = true;
+      setIsNavigating(true);
+      onNext?.();
+      return;
+    }
+
+    // Otherwise submit newly captured GPS
     handleSubmitLocation();
   };
 
   // ============================================================
   // CONSENT CHANGE
   // ============================================================
-
   const handleConsentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange({
-      target: {
-        name: "location_consent",
-        value: e.target.checked,
-      },
+      target: { name: "location_consent", value: e.target.checked },
     } as any);
   };
 
   // ============================================================
-  // COORDINATE STATUS
+  // DERIVED VALUES
   // ============================================================
-
   const hasCoordinates = isValidCoordinate(data.latitude, data.longitude);
-
   const locationCaptured = hasCapturedLocation || hasCoordinates;
-
-  /**
-   * If coordinates came from GET API:
-   * button becomes Continue.
-   *
-   * If coordinates don't exist:
-   * button becomes Submit Location.
-   */
   const shouldSkipSubmit = isLocationFromApi;
 
   const isContinueEnabled = () => {
-    if (isTelanganaBlocked) {
-      return false;
-    }
-
-    if (isLoadingStepData) {
-      return false;
-    }
-
-    if (isVerifying || isCapturing) {
-      return false;
-    }
-
-    if (!data.location_consent) {
-      return false;
-    }
-
-    /**
-     * Existing API location:
-     * Always allow Continue.
-     */
-    if (isLocationFromApi) {
-      return true;
-    }
-
-    /**
-     * New location:
-     * GPS coordinates must exist.
-     */
+    if (isNavigating) return false; // Lock while navigating
+    if (isTelanganaBlocked) return false;
+    if (isLoadingStepData) return false;
+    if (isVerifying || isCapturing) return false;
+    if (!data.location_consent) return false;
+    if (isLocationFromApi) return true;
     return locationCaptured;
   };
 
   const getButtonLabel = () => {
-    if (isTelanganaBlocked) {
-      return "Registration Blocked";
-    }
-
-    if (isLoadingStepData) {
-      return "Loading...";
-    }
-
-    if (isLocationFromApi) {
-      return "Continue";
-    }
-
-    if (isVerifying) {
-      return "Submitting...";
-    }
-
+    if (isNavigating) return "Loading...";
+    if (isTelanganaBlocked) return "Registration Blocked";
+    if (isLoadingStepData) return "Loading...";
+    if (isLocationFromApi) return "Continue";
+    if (isVerifying) return "Submitting...";
     return "Submit Location";
   };
 
-  const gpsDisabled = isTelanganaBlocked || isVerifying || isCapturing;
+  const gpsDisabled =
+    isTelanganaBlocked || isVerifying || isCapturing || isNavigating;
 
   // ============================================================
   // UI
   // ============================================================
-
   return (
     <>
       <div
@@ -1114,33 +752,26 @@ export const LocationStep: React.FC<StepProps> = ({
         <div className="w-full max-w-lg mx-auto">
           <div className="relative rounded-[20px] sm:rounded-[28px] bg-white/90 backdrop-blur-xl border border-[var(--navy)]/[0.06] shadow-[0_20px_60px_-15px_rgba(6,16,30,0.15)] px-4 sm:px-6 md:px-9 py-6 sm:py-8 md:py-10">
             <div className="relative space-y-4 sm:space-y-5">
-              {/* ==================================================
-                  HEADER
-              ================================================== */}
-
+              {/* HEADER */}
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 sm:gap-3 mb-1">
                     <div className="w-9 sm:w-11 h-9 sm:h-11 rounded-xl sm:rounded-2xl bg-gradient-to-br from-[var(--gold)] via-[var(--gold-dark)] to-[var(--gold-deep)] flex items-center justify-center">
                       <MapPin className="w-4 sm:w-5 h-4 sm:h-5 text-[var(--navy)]" />
                     </div>
-
                     <h2 className="text-lg sm:text-2xl font-bold tracking-tight text-[var(--navy)]">
                       Location Consent
                     </h2>
                   </div>
-
                   <p className="text-xs sm:text-sm text-gray-500 font-medium">
                     Consent for location capture for fraud prevention
                   </p>
-
                   {isLoadingStepData && (
                     <div className="flex items-center gap-2 mt-2 text-xs sm:text-sm text-gray-500">
                       <Loader2 className="w-3 sm:w-4 h-3 sm:h-4 animate-spin" />
                       Loading your location data...
                     </div>
                   )}
-
                   {isDataLoadedFromAPI && (
                     <div className="mt-2 text-[10px] sm:text-xs font-semibold text-blue-600 bg-blue-50 py-1 px-2 sm:px-3 rounded-full inline-block">
                       Existing data loaded
@@ -1151,19 +782,14 @@ export const LocationStep: React.FC<StepProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowConfirmModal(true)}
-                  className="group flex-shrink-0 flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-[var(--gold)]/40 bg-[#FFFBEF] text-xs sm:text-sm font-semibold text-[var(--gold-deep)] hover:bg-[var(--gold)] hover:text-[var(--navy)] transition-all"
+                  disabled={isNavigating}
+                  className="group flex-shrink-0 flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-[var(--gold)]/40 bg-[#FFFBEF] text-xs sm:text-sm font-semibold text-[var(--gold-deep)] hover:bg-[var(--gold)] hover:text-[var(--navy)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <PlusCircle className="w-3 sm:w-4 h-3 sm:h-4" />
-
                   <span className="hidden xs:inline">New Registration</span>
-
                   <span className="xs:hidden">New</span>
                 </button>
               </div>
-
-              {/* ==================================================
-                  INFO
-              ================================================== */}
 
               <InfoBox type="info" title="📍 Purpose">
                 Location is captured once at registration for fraud prevention.
@@ -1171,13 +797,8 @@ export const LocationStep: React.FC<StepProps> = ({
                 affect registration.
               </InfoBox>
 
-              {/* ==================================================
-                  FORM
-              ================================================== */}
-
               <div className="space-y-3 sm:space-y-4">
                 {/* CONSENT */}
-
                 <div className="space-y-2 sm:space-y-3">
                   <label className="flex items-start gap-2 sm:gap-3 cursor-pointer bg-gray-50/70 border border-gray-100 rounded-xl sm:rounded-2xl p-3 sm:p-4">
                     <input
@@ -1185,17 +806,17 @@ export const LocationStep: React.FC<StepProps> = ({
                       name="location_consent"
                       checked={data.location_consent || false}
                       onChange={handleConsentChange}
-                      disabled={isVerifying || isTelanganaBlocked}
+                      disabled={
+                        isVerifying || isNavigating || isTelanganaBlocked
+                      }
                       className="mt-0.5 sm:mt-1 w-3.5 sm:w-4 h-3.5 sm:h-4"
                     />
-
                     <span className="text-[11px] sm:text-sm text-gray-600 leading-relaxed font-medium">
                       I consent to my location being recorded once at
                       registration for fraud prevention purposes as per the
                       Digital Personal Data Protection Act, 2023.
                     </span>
                   </label>
-
                   {errors.location_consent && (
                     <p className="text-[10px] sm:text-xs text-red-500 font-medium pl-1">
                       {errors.location_consent}
@@ -1203,10 +824,7 @@ export const LocationStep: React.FC<StepProps> = ({
                   )}
                 </div>
 
-                {/* ==================================================
-                    LOCATION CARD
-                ================================================== */}
-
+                {/* LOCATION CARD */}
                 {data.location_consent && !isTelanganaBlocked && (
                   <div
                     className={`rounded-xl sm:rounded-2xl border-2 p-3 sm:p-4 transition-all ${
@@ -1215,8 +833,6 @@ export const LocationStep: React.FC<StepProps> = ({
                         : "border-gray-100 bg-white"
                     }`}
                   >
-                    {/* CARD HEADER */}
-
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
                         <div
@@ -1232,27 +848,24 @@ export const LocationStep: React.FC<StepProps> = ({
                             <Navigation className="w-4 h-4" />
                           )}
                         </div>
-
                         <span className="text-xs sm:text-sm font-semibold text-[var(--navy)]">
                           {isLocationFromApi
                             ? "Saved Location"
                             : "Capture Current Location"}
                         </span>
                       </div>
-
                       {locationCaptured && !isLocationFromApi && (
                         <button
                           type="button"
                           onClick={handleRemoveGps}
-                          className="flex items-center gap-1 text-xs font-semibold text-red-500 bg-red-50 px-2 py-1 rounded-md"
+                          disabled={isNavigating}
+                          className="flex items-center gap-1 text-xs font-semibold text-red-500 bg-red-50 px-2 py-1 rounded-md disabled:opacity-50"
                         >
                           <X className="w-3 h-3" />
                           Remove
                         </button>
                       )}
                     </div>
-
-                    {/* GPS BUTTON */}
 
                     {!isLocationFromApi && (
                       <Button
@@ -1269,8 +882,6 @@ export const LocationStep: React.FC<StepProps> = ({
                       </Button>
                     )}
 
-                    {/* STATUS */}
-
                     {locationStatus && (
                       <p
                         className={`text-xs sm:text-sm mt-2 sm:mt-3 font-medium ${
@@ -1285,8 +896,6 @@ export const LocationStep: React.FC<StepProps> = ({
                       </p>
                     )}
 
-                    {/* COORDINATES */}
-
                     {hasCoordinates && (
                       <div className="mt-3 space-y-2">
                         <p className="text-[10px] sm:text-xs text-gray-500 font-medium">
@@ -1294,9 +903,6 @@ export const LocationStep: React.FC<StepProps> = ({
                           {Number(data.latitude).toFixed(6)},{" "}
                           {Number(data.longitude).toFixed(6)}
                         </p>
-
-                        {/* CITY + STATE */}
-
                         {(detectedCity || detectedState) && (
                           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                             {detectedCity && (
@@ -1305,7 +911,6 @@ export const LocationStep: React.FC<StepProps> = ({
                                 {detectedCity}
                               </span>
                             )}
-
                             {detectedState && (
                               <span className="inline-flex items-center gap-1 text-emerald-700 font-semibold text-xs">
                                 <MapPin className="w-3 h-3" />
@@ -1319,19 +924,14 @@ export const LocationStep: React.FC<StepProps> = ({
                   </div>
                 )}
 
-                {/* ==================================================
-                    TELANGANA BLOCK
-                ================================================== */}
-
+                {/* TELANGANA BLOCK */}
                 {isTelanganaBlocked && (
                   <div className="bg-red-50 border-2 border-red-200 rounded-xl sm:rounded-2xl p-3 sm:p-4 flex items-start gap-2 sm:gap-3">
                     <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0" />
-
                     <div>
                       <p className="text-xs sm:text-sm font-bold text-red-700 mb-1">
                         Telangana users can't register
                       </p>
-
                       <p className="text-[11px] sm:text-xs text-red-600 leading-relaxed">
                         Registration from Telangana state is currently not
                         allowed. Please contact Admin for assistance.
@@ -1340,24 +940,16 @@ export const LocationStep: React.FC<StepProps> = ({
                   </div>
                 )}
 
-                {/* ==================================================
-                    VERIFIED BANNER
-                ================================================== */}
-
+                {/* VERIFIED BANNER */}
                 {isLocationFromApi && (
                   <div className="bg-emerald-50/80 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-emerald-100 text-xs sm:text-sm text-emerald-700 flex items-center gap-2 font-medium">
                     <CheckCircle className="w-4 h-4 flex-shrink-0" />
-
                     <span>
                       Saved location found. No new location submission is
                       required.
                     </span>
                   </div>
                 )}
-
-                {/* ==================================================
-                    SUBMITTING
-                ================================================== */}
 
                 {isVerifying && (
                   <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-500 font-medium">
@@ -1366,10 +958,6 @@ export const LocationStep: React.FC<StepProps> = ({
                   </div>
                 )}
 
-                {/* ==================================================
-                    FORM ACTIONS
-                ================================================== */}
-
                 <FormActions
                   onBack={onBack}
                   onNext={shouldSkipSubmit ? handleNext : undefined}
@@ -1377,7 +965,7 @@ export const LocationStep: React.FC<StepProps> = ({
                     !shouldSkipSubmit ? handleSubmitLocation : undefined
                   }
                   isSubmitDisabled={!isContinueEnabled()}
-                  isLoading={isVerifying}
+                  isLoading={isVerifying || isNavigating}
                   submitLabel={getButtonLabel()}
                   nextLabel="Continue →"
                 />
@@ -1387,10 +975,7 @@ export const LocationStep: React.FC<StepProps> = ({
         </div>
       </div>
 
-      {/* ==========================================================
-          NEW REGISTRATION MODAL
-      ========================================================== */}
-
+      {/* NEW REGISTRATION MODAL */}
       {showConfirmModal && (
         <div
           className="fixed inset-0 z-[9999] overflow-y-auto px-3 sm:px-4"
@@ -1403,9 +988,7 @@ export const LocationStep: React.FC<StepProps> = ({
             padding: "1rem",
           }}
           onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setShowConfirmModal(false);
-            }
+            if (e.target === e.currentTarget) setShowConfirmModal(false);
           }}
         >
           <div className="bg-white rounded-[24px] max-w-md w-full p-5 sm:p-7 shadow-2xl relative">
@@ -1446,7 +1029,6 @@ export const LocationStep: React.FC<StepProps> = ({
               >
                 Cancel
               </button>
-
               <button
                 type="button"
                 onClick={handleNewRegistration}
