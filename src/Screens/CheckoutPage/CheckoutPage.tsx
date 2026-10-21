@@ -53,7 +53,10 @@ import {
   usePlaceOrderMutation,
 } from "@/lib/redux/api/checkoutApi";
 
-import { useGetCouponsQuery } from "@/lib/redux/api/cartApi";
+import {
+  useGetCouponsQuery,
+  useLazyGetCartQuery,
+} from "@/lib/redux/api/cartApi";
 
 import AddressFormModal from "./AddressFormModal";
 
@@ -840,9 +843,8 @@ function CartSummary({
             {showCouponList ? "Hide coupons" : "View coupons"}
 
             <ChevronDown
-              className={`h-3 w-3 transition-transform ${
-                showCouponList ? "rotate-180" : ""
-              }`}
+              className={`h-3 w-3 transition-transform ${showCouponList ? "rotate-180" : ""
+                }`}
             />
           </button>
         </div>
@@ -1091,10 +1093,9 @@ function PaymentMethodModal({
   if (!open) return null;
 
   const optionClass = (selected: boolean) =>
-    `group relative w-full rounded-2xl border p-4 text-left transition-all duration-200 sm:p-5 ${
-      selected
-        ? "border-[#191919] bg-[#F9F9F8] shadow-[0_0_0_1px_#191919]"
-        : "border-[#E7E7E5] bg-white hover:border-[#999] hover:bg-[#FCFCFC]"
+    `group relative w-full rounded-2xl border p-4 text-left transition-all duration-200 sm:p-5 ${selected
+      ? "border-[#191919] bg-[#F9F9F8] shadow-[0_0_0_1px_#191919]"
+      : "border-[#E7E7E5] bg-white hover:border-[#999] hover:bg-[#FCFCFC]"
     }`;
 
   return (
@@ -1381,6 +1382,7 @@ export default function CheckoutPage() {
   const { data: couponsData, isLoading: isLoadingCoupons } =
     useGetCouponsQuery();
 
+  const [triggerGetCart] = useLazyGetCartQuery();
   const coupons: CouponListItem[] = useMemo(() => {
     const list = couponsData?.data?.data;
 
@@ -1460,12 +1462,12 @@ export default function CheckoutPage() {
 
       ...(isDirectCheckout
         ? {
-            product_id: productId,
+          product_id: productId,
 
-            quantity,
+          quantity,
 
-            ...(variantId > 0 ? { variant_id: variantId } : {}),
-          }
+          ...(variantId > 0 ? { variant_id: variantId } : {}),
+        }
         : {}),
     }),
 
@@ -1996,7 +1998,7 @@ export default function CheckoutPage() {
           paymentChoice.gateway === "razorpay"
             ? "razorpay"
             : paymentChoice.merchantName ===
-                "INDIEKONNECT ENTERPRISES PVT LTD SG"
+              "INDIEKONNECT ENTERPRISES PVT LTD SG"
               ? "hdfc_sg"
               : "hdfc_ie",
 
@@ -2012,8 +2014,8 @@ export default function CheckoutPage() {
           // Required for Buy Now
           ...(checkoutType === "buy_now"
             ? {
-                items: buyNowItems,
-              }
+              items: buyNowItems,
+            }
             : {}),
         },
       };
@@ -2029,18 +2031,18 @@ export default function CheckoutPage() {
 
       // Submit exactly once. Duplicate requests can create duplicate orders.
       const response = await placeOrder(orderPayload).unwrap();
-
+      triggerGetCart();
       // Avoid logging gateway response: it may contain short-lived checkout tokens.
 
       const rawResponse = response as
         | PlaceOrderResponseShape
         | {
-            success?: boolean;
+          success?: boolean;
 
-            message?: string;
+          message?: string;
 
-            data?: PlaceOrderResponseShape;
-          };
+          data?: PlaceOrderResponseShape;
+        };
 
       const responseData =
         "data" in rawResponse && rawResponse.data
@@ -2053,7 +2055,7 @@ export default function CheckoutPage() {
       if (responseSuccess === false) {
         throw new Error(
           ("message" in rawResponse ? rawResponse.message : "") ||
-            "Unable to place order",
+          "Unable to place order",
         );
       }
 
@@ -2077,9 +2079,9 @@ export default function CheckoutPage() {
 
       const orderReference = String(
         firstOrder?.order_reference ??
-          anyData?.order_reference ??
-          orderReferences?.[0] ??
-          "",
+        anyData?.order_reference ??
+        orderReferences?.[0] ??
+        "",
       ).trim();
 
       const razorpayOrderId = String(anyData?.razorpay_order_id || "").trim();
