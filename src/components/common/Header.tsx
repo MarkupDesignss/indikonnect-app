@@ -173,7 +173,7 @@ const LogoutModal = ({
 };
 
 /* =========================================================
-   HEADER INNER  (यहाँ useSearchParams / usePathname हैं)
+   HEADER INNER
 ========================================================= */
 
 function HeaderInner({
@@ -247,8 +247,10 @@ function HeaderInner({
   const voiceRecognitionRef = useRef<SpeechRecognitionLike | null>(null);
 
   /* API */
-  const { data: cartData } = useGetCartQuery(undefined, {
+  const { data: cartData, refetch: refetchCart } = useGetCartQuery(undefined, {
     skip: hasToken !== true,
+    refetchOnMountOrArgChange: true,
+    refetchOnFocus: true,
   });
   const { data: wishlistData } = useGetWishlistQuery(undefined, {
     skip: hasToken !== true,
@@ -980,6 +982,23 @@ function HeaderInner({
       if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
     };
   }, []);
+
+  /* =========================================================
+     ✅ NEW: CART REFRESH LISTENER
+     Checkout page "placeOrder" ke baad ye event dispatch karta hai.
+     Header sun ke getCart ko refetch karta hai — count + items update.
+  ========================================================= */
+  useEffect(() => {
+    const handleCartRefresh = () => {
+      if (hasToken === true) {
+        refetchCart();
+      }
+    };
+    window.addEventListener("cart:refresh", handleCartRefresh);
+    return () => {
+      window.removeEventListener("cart:refresh", handleCartRefresh);
+    };
+  }, [hasToken, refetchCart]);
 
   /* AUTH / LOGIN */
   const getLoginPath = () =>
@@ -1824,10 +1843,6 @@ function HeaderInner({
 
 /* =========================================================
    DEFAULT EXPORT — Suspense wrapper
-   IMPORTANT: `useSearchParams()` is inside HeaderInner,
-   which is a direct child of <Suspense>. This satisfies
-   Next.js 16's requirement and keeps all static pages
-   prerenderable.
 ========================================================= */
 
 function HeaderSkeleton() {
