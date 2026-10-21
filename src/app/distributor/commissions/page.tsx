@@ -1,7 +1,7 @@
 "use client";
 
 import DashboardHeader from "@/components/Distributor/distributor/DashboardHeader";
-import Sidebar from "../Sidebar";
+import Sidebar from "../../../components/Distributor/distributor/Sidebar";
 import Commissions from "./Commissions";
 
 export default function CommissionsPage() {

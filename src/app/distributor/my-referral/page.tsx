@@ -1,7 +1,7 @@
 "use client";
 
 import DashboardHeader from "@/components/Distributor/distributor/DashboardHeader";
-import Sidebar from "../Sidebar";
+import Sidebar from "../../../components/Distributor/distributor/Sidebar";
 import Referral from "./Referral";
 
 export default function MyReferralPage() {

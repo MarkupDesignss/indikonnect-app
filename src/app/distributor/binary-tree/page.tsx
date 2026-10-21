@@ -1,23 +1,26 @@
 "use client";
 
 import DashboardHeader from "@/components/Distributor/distributor/DashboardHeader";
-import Sidebar from "../Sidebar";
+import Sidebar from "../../../components/Distributor/distributor/Sidebar";
 import BinaryTreeV2 from "./BinaryTreeV2";
 
 export default function BinaryTreePage() {
     return (
-        <div className="min-h-screen w-full bg-white">
-            <div className="w-full h-full">
-                <div className="w-full bg-white">
-                    <DashboardHeader distributorId="AIA603525" />
+        <div className="flex min-h-dvh w-full flex-col bg-white">
+            {/* Responsive Header */}
+            <DashboardHeader distributorId="AIA603525" />
 
-                    <div className="flex min-h-[calc(100vh-72px)] relative">
-                        <Sidebar />
-                        <div className="min-w-0 flex-1 bg-[#fafcff] px-8 pt-6 pb-8">
-                            <BinaryTreeV2 />
-                        </div>
+            {/* Sidebar + Main Content */}
+            <div className="relative flex w-full min-w-0 flex-1">
+                {/* Desktop Sidebar / Mobile Drawer */}
+                <Sidebar />
+
+                {/* Main Content */}
+                <main className="min-h-0 min-w-0 flex-1 bg-[#fafcff] px-3 py-4 sm:px-4 sm:py-5 md:px-6 lg:px-8 lg:py-6">
+                    <div className="w-full min-w-0">
+                        <BinaryTreeV2 />
                     </div>
-                </div>
+                </main>
             </div>
         </div>
     );

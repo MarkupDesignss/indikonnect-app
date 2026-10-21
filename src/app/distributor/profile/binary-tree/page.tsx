@@ -1,23 +1,30 @@
 "use client";
 
 import DashboardHeader from "@/components/Distributor/distributor/DashboardHeader";
-import Sidebar from "../../Sidebar";
 import BinaryTree from "./BinaryTree";
+import Sidebar from "@/components/Distributor/distributor/Sidebar";
 
 export default function BinaryTreePage() {
     return (
-        <div className="min-h-screen w-full bg-white">
-            <div className="w-full h-full">
-                <div className="w-full bg-white">
-                    <DashboardHeader distributorId="AIA603525" />
+        // h-screen ensures full viewport height, overflow-hidden stops body scroll
+        <div className="flex h-screen w-full overflow-hidden bg-[#fafcff]">
+            
+            {/* 1. SIDEBAR: Top-left, full height */}
+            <Sidebar />
 
-                    <div className="flex min-h-[calc(100vh-72px)] relative">
-                        <Sidebar />
-                        <div className="min-w-0 flex-1 bg-[#fafcff] px-8 pt-6 pb-8">
-                            <BinaryTree />
-                        </div>
-                    </div>
-                </div>
+            {/* 2. RIGHT SIDE COLUMN */}
+            <div className="flex flex-1 flex-col min-w-0 h-full">
+                
+                {/* HEADER: Sticky top */}
+                <header className="shrink-0 sticky top-0 z-30 bg-white">
+                    <DashboardHeader distributorId="AIA603525" />
+                </header>
+
+                {/* MAIN CONTENT: Scrollable */}
+                <main className="flex-1 overflow-y-auto px-8 pt-6 pb-8">
+                    <BinaryTree />
+                </main>
+                
             </div>
         </div>
     );
