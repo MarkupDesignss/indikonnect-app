@@ -5,6 +5,31 @@ export interface DistributorCheckStatusRequest {
   phone?: string;
   email?: string;
 }
+
+// =====================================================
+// CORRECTION REQUEST / RESPONSE
+// =====================================================
+
+export type CorrectionReason =
+  | "wrong_name_at_signup"
+  | "wrong_dob_at_signup"
+  | "both_wrong_at_signup"
+  | "typo_mistake"
+  | "legal_name_change"
+  | "dob_data_entry_error";
+
+export interface CorrectionRequest {
+  email: string;
+  reason: CorrectionReason;
+  full_name: string;
+  date_of_birth: string; // DD-MM-YYYY format
+}
+
+export interface CorrectionResponse {
+  status: boolean;
+  message: string;
+  data: any;
+}
 // =====================================================
 // CHECK DISTRIBUTOR (BA ID → Sponsor lookup)
 // =====================================================
