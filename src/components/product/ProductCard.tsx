@@ -343,27 +343,27 @@ const detectColor = (value: unknown): string => {
 const variantLabel = (v: any): string =>
   String(
     v?.color?.name ??
-    v?.variant_attributes?.color ??
-    v?.attributes?.color ??
-    v?.color_name ??
-    v?.colour ??
-    v?.color ??
-    v?.attribute_value ??
-    v?.value ??
-    v?.name ??
-    v?.title ??
-    "",
+      v?.variant_attributes?.color ??
+      v?.attributes?.color ??
+      v?.color_name ??
+      v?.colour ??
+      v?.color ??
+      v?.attribute_value ??
+      v?.value ??
+      v?.name ??
+      v?.title ??
+      "",
   ).trim();
 
 const getVariantImage = (v: any): string =>
   normalizeImageUrl(
     v?.image_url ??
-    v?.variant_image_url ??
-    v?.primary_image_url ??
-    v?.image ??
-    v?.images?.[0]?.image_url ??
-    v?.images?.[0]?.url ??
-    "",
+      v?.variant_image_url ??
+      v?.primary_image_url ??
+      v?.image ??
+      v?.images?.[0]?.image_url ??
+      v?.images?.[0]?.url ??
+      "",
   );
 
 // =========================================================    PRODUCT CARD   =========================================================
@@ -601,14 +601,14 @@ function ProductCardInner({
 
   const categoryName = String(
     product?.category?.name ||
-    product?.category_name ||
-    (product?.category_id != null
-      ? apiCategoryNames[Number(product.category_id)]
-      : "") ||
-    (product?.categoryId != null
-      ? apiCategoryNames[Number(product.categoryId)]
-      : "") ||
-    "",
+      product?.category_name ||
+      (product?.category_id != null
+        ? apiCategoryNames[Number(product.category_id)]
+        : "") ||
+      (product?.categoryId != null
+        ? apiCategoryNames[Number(product.categoryId)]
+        : "") ||
+      "",
   ).trim();
 
   const productName = String(product?.name ?? "").trim() || "Product";
@@ -918,11 +918,11 @@ function ProductCardInner({
 
       const apiHex = String(
         v?.hax_color ??
-        v?.hex_color ??
-        v?.hex_code ??
-        v?.color_hex ??
-        v?.hex ??
-        "",
+          v?.hex_color ??
+          v?.hex_code ??
+          v?.color_hex ??
+          v?.hex ??
+          "",
       ).trim();
 
       // API color code is authoritative; use a name-based fallback only if absent.
@@ -1057,8 +1057,6 @@ function ProductCardInner({
     product_id: selectedProductId,
 
     quantity: 1,
-
-    ...(selectedVariantId != null ? { variant_id: selectedVariantId } : {}),
   };
 
   const totalImages = selectedImages.length;
@@ -1095,14 +1093,14 @@ function ProductCardInner({
           isDistributor && distributorMrp > 0 ? distributorMrp : retailMrp;
         const galleryImage = Array.isArray(full?.images)
           ? full.images
-            .map((entry: any) =>
-              normalizeImageUrl(
-                typeof entry === "string"
-                  ? entry
-                  : (entry?.image_url ?? entry?.url),
-              ),
-            )
-            .find(Boolean)
+              .map((entry: any) =>
+                normalizeImageUrl(
+                  typeof entry === "string"
+                    ? entry
+                    : (entry?.image_url ?? entry?.url),
+                ),
+              )
+              .find(Boolean)
           : "";
         const image =
           normalizeImageUrl(variant.image) ||
@@ -1139,13 +1137,13 @@ function ProductCardInner({
               : 0,
           rating: num(
             full?.reviews_summary?.average_rating ??
-            full?.reviews?.summary?.average_rating ??
-            full?.rating,
+              full?.reviews?.summary?.average_rating ??
+              full?.rating,
           ),
           reviews: num(
             full?.reviews_summary?.total_reviews ??
-            full?.reviews?.summary?.total_reviews ??
-            full?.reviews,
+              full?.reviews?.summary?.total_reviews ??
+              full?.reviews,
           ),
           inStock: stock,
         };
@@ -1207,8 +1205,9 @@ function ProductCardInner({
 
   const requireLogin = (): boolean => {
     if (hasToken !== true) {
-      const loginPath = `/auth/${isDistributor ? "distributor" : "customer"
-        }/login`;
+      const loginPath = `/auth/${
+        isDistributor ? "distributor" : "customer"
+      }/login`;
 
       router.push(loginPath);
 
@@ -1389,9 +1388,11 @@ function ProductCardInner({
     setBuying(true);
 
     try {
-      await addToCart(cartPayload as Parameters<typeof addToCart>[0]).unwrap();
-
+      // Buy Now must NOT mutate the shopping cart.
+      // The selected product is sent directly to checkout.
       const params = new URLSearchParams({
+        checkout_type: "buy_now",
+
         product_id: String(selectedProductId),
 
         quantity: "1",
@@ -1734,7 +1735,6 @@ function ProductCardInner({
                 )}
               </AnimatePresence>
             </div>
-
           </div>
         </div>
 
@@ -1787,10 +1787,11 @@ function ProductCardInner({
 
                   aria-current={isActive ? "true" : undefined}
 
-                  className={`block h-[5px] shrink-0 rounded-full transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black ${isActive
+                  className={`block h-[5px] shrink-0 rounded-full transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black ${
+                    isActive
                       ? "w-[17px] bg-[#171717]"
                       : "w-[5px] bg-[#c7c7c7] hover:bg-[#777]"
-                    }`}
+                  }`}
                 />
               );
             })}
@@ -1978,9 +1979,10 @@ function ProductCardInner({
 
                 text-[10px] font-semibold transition
 
-                ${displayedStock && !buying
-                  ? "bg-[#111] text-white hover:bg-black"
-                  : "cursor-not-allowed bg-[#e7e5e1] text-[#888]"
+                ${
+                  displayedStock && !buying
+                    ? "bg-[#111] text-white hover:bg-black"
+                    : "cursor-not-allowed bg-[#e7e5e1] text-[#888]"
                 }
 
               `}
@@ -2009,9 +2011,10 @@ function ProductCardInner({
 
                 rounded-[8px] border
 
-                ${displayedStock && !adding
-                  ? "border-[#dedbd4] bg-white text-[#222] hover:border-[#111] hover:bg-[#111] hover:text-white"
-                  : "cursor-not-allowed border-[#e3e1dc] bg-[#f6f5f1] text-[#999]"
+                ${
+                  displayedStock && !adding
+                    ? "border-[#dedbd4] bg-white text-[#222] hover:border-[#111] hover:bg-[#111] hover:text-white"
+                    : "cursor-not-allowed border-[#e3e1dc] bg-[#f6f5f1] text-[#999]"
                 }
 
               `}
@@ -2172,7 +2175,6 @@ function ProductCardInner({
     </>
   );
 }
-
 
 export default function ProductCard(props: ProductCardProps) {
   const item = props?.product;

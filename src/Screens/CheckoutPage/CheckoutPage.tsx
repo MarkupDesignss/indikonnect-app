@@ -1306,7 +1306,17 @@ export default function CheckoutPage() {
 
   const quantity = Number(searchParams.get("quantity") || 0);
 
-  const isDirectCheckout = productId > 0 && quantity > 0;
+  const variantId = Number(searchParams.get("variant_id") || 0);
+
+  // Explicit checkout source takes precedence; legacy direct-checkout URLs
+  // with product_id + quantity continue to work as Buy Now.
+  const requestedCheckoutType = searchParams.get("checkout_type");
+  const isDirectCheckout =
+    requestedCheckoutType === "buy_now" ||
+    (requestedCheckoutType !== "cart" && productId > 0 && quantity > 0);
+  const checkoutType: "cart" | "buy_now" = isDirectCheckout
+    ? "buy_now"
+    : "cart";
 
   const urlCouponCode = searchParams.get("coupon_code") || "";
 
@@ -1453,6 +1463,8 @@ export default function CheckoutPage() {
             product_id: productId,
 
             quantity,
+
+            ...(variantId > 0 ? { variant_id: variantId } : {}),
           }
         : {}),
     }),
@@ -1467,6 +1479,8 @@ export default function CheckoutPage() {
       productId,
 
       quantity,
+
+      variantId,
     ],
   );
 
@@ -1909,6 +1923,16 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (checkoutType === "buy_now" && !(productId > 0 && quantity > 0)) {
+      dispatch(
+        showToast({
+          message: "Invalid Buy Now product or quantity",
+          type: "error",
+        }),
+      );
+      return;
+    }
+
     if (!summaryData) {
       dispatch(
         showToast({
@@ -1935,7 +1959,28 @@ export default function CheckoutPage() {
       return;
     }
 
-    if (isApplyingCoupon || pendingCoupon) {
+    if (isApplyingCoupon || pendingCoupon || isFetchingCheckoutSummary) {
+      return;
+    }
+
+    // A Buy Now order must contain ONLY the selected product, never cart items.
+    // These are server-provided summary items, not prices calculated in the browser.
+    const buyNowItems =
+      checkoutType === "buy_now" ? normalizeSummaryItems(summaryData) : [];
+
+    if (
+      checkoutType === "buy_now" &&
+      (buyNowItems.length !== 1 ||
+        Number(buyNowItems[0]?.product_id) !== productId ||
+        Number(buyNowItems[0]?.quantity) !== quantity)
+    ) {
+      dispatch(
+        showToast({
+          message:
+            "Buy Now checkout items do not match the selected product. Please refresh checkout.",
+          type: "error",
+        }),
+      );
       return;
     }
 
@@ -1943,12 +1988,10 @@ export default function CheckoutPage() {
       setIsSubmitting(true);
 
       const orderPayload: any = {
+        checkout_type: checkoutType,
         address_id: selectedDeliveryAddress.id,
-
         grand_total: grandTotal,
 
-        // Send the exact gateway identifier expected by the backend.
-        // UI keeps the merchant names for display only.
         payment_gateway:
           paymentChoice.gateway === "razorpay"
             ? "razorpay"
@@ -1959,27 +2002,32 @@ export default function CheckoutPage() {
 
         summary_data: {
           subtotal: summaryData.subtotal,
-
           coupon_discount: summaryData.coupon_discount || 0,
-
           coupon_code: appliedCoupon || null,
-
           shipping_charge: summaryData.shipping_cost || 0,
-
           total_tax: summaryData.total_tax,
-
           net_subtotal: summaryData.subtotal_after_discount,
-
           tax_breakdown: summaryData.tax_breakdown || [],
+
+          // Required for Buy Now
+          ...(checkoutType === "buy_now"
+            ? {
+                items: buyNowItems,
+              }
+            : {}),
         },
       };
 
-      if (isDirectCheckout) {
+      if (checkoutType === "buy_now") {
         orderPayload.product_id = productId;
-
         orderPayload.quantity = quantity;
+
+        if (variantId > 0) {
+          orderPayload.variant_id = variantId;
+        }
       }
 
+      // Submit exactly once. Duplicate requests can create duplicate orders.
       const response = await placeOrder(orderPayload).unwrap();
 
       // Avoid logging gateway response: it may contain short-lived checkout tokens.

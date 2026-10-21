@@ -3,7 +3,7 @@ import {
   CartResponse,
   AddToCartRequest,
   UpdateCartItemRequest,
-  CartData,
+
   CartSummary,
   AddToCartResponse,
   ApiResponse,
