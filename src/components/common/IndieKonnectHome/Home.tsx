@@ -808,8 +808,6 @@ function BrandCard({ brand, router }: any) {
           sm:pt-8
         "
       >
-
-
         {brand?.product_count && (
           <p className="mt-1 text-[10px] text-white/70 sm:text-sm">
             {brand.product_count} Products
@@ -1143,7 +1141,9 @@ function ProductCard({
     4.4;
 
   // Product listing API exposes brand_name directly (not necessarily brand.name).
-  const brandName = String(product?.brand_name ?? product?.brand?.name ?? "").trim();
+  const brandName = String(
+    product?.brand_name ?? product?.brand?.name ?? "",
+  ).trim();
 
   const categoryName = product?.category?.name || "All Watches";
 
@@ -1553,28 +1553,18 @@ function ProductCard({
    LIFESTYLE BANNER
 ========================================================= */
 
-
-function LifestyleBanner({
-  apiResponse,
-  router,
-  parallaxRef,
-}: any) {
+function LifestyleBanner({ apiResponse, router, parallaxRef }: any) {
   // Get banner data from API
   const content = apiResponse?.data?.find(
-    (item: any) =>
-      item.slug === "home-page-second-banner"
+    (item: any) => item.slug === "home-page-second-banner",
   );
 
   const block = content?.blocks?.[0];
 
-  const primaryImage = block?.images?.find(
-    (item: any) => item?.is_primary
-  );
+  const primaryImage = block?.images?.find((item: any) => item?.is_primary);
 
   const image =
-    primaryImage?.url ||
-    block?.images?.[0]?.url ||
-    getPromoPlaceholderImage();
+    primaryImage?.url || block?.images?.[0]?.url || getPromoPlaceholderImage();
 
   return (
     <section
@@ -1589,15 +1579,12 @@ function LifestyleBanner({
       {/* FULL SCREEN WIDTH BANNER */}
       <div
         className="
-          relative
-          w-full
-          overflow-hidden
-          h-[320px]
-          sm:h-[360px]
-          md:h-[390px]
-          lg:h-[410px]
-          xl:h-[420px]
-        "
+
+  w-full
+  aspect-video
+  overflow-hidden
+  bg-black
+"
       >
         {/* BACKGROUND IMAGE */}
         <div
@@ -1611,9 +1598,7 @@ function LifestyleBanner({
           <img
             src={image}
             alt={
-              primaryImage?.alt_text ||
-              content?.title ||
-              "Premium Lifestyle"
+              primaryImage?.alt_text || content?.title || "Premium Lifestyle"
             }
             className="
               block
@@ -1623,13 +1608,9 @@ function LifestyleBanner({
               object-center
             "
             onError={(e) => {
-              const fallback =
-                getPromoPlaceholderImage();
+              const fallback = getPromoPlaceholderImage();
 
-              if (
-                e.currentTarget.getAttribute("src") !==
-                fallback
-              ) {
+              if (e.currentTarget.getAttribute("src") !== fallback) {
                 e.currentTarget.src = fallback;
               }
             }}
@@ -1732,8 +1713,7 @@ function LifestyleBanner({
                   xl:[&>p]:text-[50px]
                 "
                 dangerouslySetInnerHTML={{
-                  __html:
-                    block.short_description,
+                  __html: block.short_description,
                 }}
               />
             )}
@@ -1770,7 +1750,6 @@ function LifestyleBanner({
               "
             >
               Explore All Products
-
               <span
                 className="
                   text-[16px]
@@ -1788,7 +1767,6 @@ function LifestyleBanner({
     </section>
   );
 }
-
 
 /* =========================================================
    MAIN HOME
@@ -2557,7 +2535,6 @@ export default function IndieKonnectHome() {
 
       <section className="relative isolate flow-root w-full overflow-hidden bg-white">
         <div
-
           className="
     relative
     w-full
@@ -2569,7 +2546,6 @@ export default function IndieKonnectHome() {
     2xl:h-[700px]
   "
         >
-
           <AnimatePresence initial={false}>
             {heroSlides.map((slide: any, index: number) => {
               const total = heroSlides.length;
@@ -2655,13 +2631,14 @@ export default function IndieKonnectHome() {
                         preload={isActive ? "auto" : "metadata"}
                         poster={slide.image || undefined}
                         className="
-                      block
-                      h-full
-                      w-full
-                      select-none
-                      object-cover
-                      object-center
-                    "
+    absolute
+    inset-0
+    block
+    h-full
+    w-full
+    object-cover
+    object-top
+  "
                       />
                     ) : (
                       <img
@@ -2670,16 +2647,13 @@ export default function IndieKonnectHome() {
                         draggable={false}
                         loading={isActive ? "eager" : "lazy"}
                         className="
-                      block
-                      h-full
-                      w-full
-                      select-none
-                      object-cover
-                      object-center
-                      transition-transform
-                      duration-700
-                      group-hover:scale-[1.008]
-                    "
+      block
+      h-full
+      w-full
+      select-none
+      object-cover
+      object-center
+    "
                         onError={(e) => {
                           e.currentTarget.src = getPromoPlaceholderImage();
                         }}
@@ -2787,7 +2761,6 @@ export default function IndieKonnectHome() {
             CATEGORY
         ================================================= */}
 
-
         <ShopByCategory
           categories={categories}
           isCategoriesLoading={isCategoriesLoading}
@@ -2796,7 +2769,6 @@ export default function IndieKonnectHome() {
             `/category/${category.slug || category.id}`
           }
         />
-
 
         {/* SIGNUP */}
 
@@ -2991,8 +2963,8 @@ export default function IndieKonnectHome() {
                     aria-label={`Go to slide ${index + 1}`}
                     onClick={() => scrollToIndex(index)}
                     className={`h-2 rounded-full transition-all duration-300 ${activeIndex === index
-                      ? "w-6 bg-gray-800"
-                      : "w-2 bg-gray-300"
+                        ? "w-6 bg-gray-800"
+                        : "w-2 bg-gray-300"
                       }`}
                   />
                 ))}
@@ -3023,8 +2995,6 @@ export default function IndieKonnectHome() {
           brandsData={brandsData}
           isBrandsLoading={isBrandsLoading}
         />
-
-
 
         {/* =================================================
             BEST SELLERS
