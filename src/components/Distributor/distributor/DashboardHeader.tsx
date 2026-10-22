@@ -35,6 +35,8 @@ const MOBILE_SIDEBAR_EVENT = "open-distributor-sidebar";
 
 const NAVY = "#0E1B3D";
 
+
+
 const CATALOGUE_API =
     "https://www.markupdesigns.net/indikonnect/api/catalogues";
 

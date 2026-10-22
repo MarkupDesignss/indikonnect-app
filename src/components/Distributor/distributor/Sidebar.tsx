@@ -42,6 +42,7 @@ import Logo from "../../../../public/indiekonnect-web/images/logo.png";
 
 const NAVY = "#0E1B3D";
 const NAVY_LIGHT = "#1B2E63";
+const BRAND_YELLOW = "#F6B800";
 
 const MOBILE_SIDEBAR_EVENT = "open-distributor-sidebar";
 
@@ -120,6 +121,11 @@ const menuGroups: MenuGroup[] = [
                         href: "/distributor/profile/binary-tree",
                     },
                     {
+                        label: "Pending CV breakdown",
+                        icon: AlertCircle,
+                        href: "/distributor/profile/pending-cv-breakdown",
+                    },
+                    {
                         label: "Rank information",
                         icon: Award,
                         href: "/distributor/profile/rank-information",
@@ -151,11 +157,11 @@ const menuGroups: MenuGroup[] = [
     {
         title: "Finance",
         items: [
-            {
-                label: "Wallet",
-                icon: WalletCards,
-                href: "/distributor/wallet",
-            },
+            // {
+            //     label: "Wallet",
+            //     icon: WalletCards,
+            //     href: "/distributor/wallet",
+            // },
             {
                 label: "Transactions",
                 icon: ReceiptText,
@@ -229,77 +235,77 @@ const LogoutModal = ({
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[100] cursor-default bg-black/40 backdrop-blur-[2px]"
+                        className="fixed inset-0 z-[100] cursor-default bg-[#071126]/50 backdrop-blur-[3px]"
                         onClick={onClose}
                     />
 
                     <motion.div
-                        initial={{
-                            opacity: 0,
-                            scale: 0.97,
-                            y: 12,
-                        }}
-                        animate={{
-                            opacity: 1,
-                            scale: 1,
-                            y: 0,
-                        }}
-                        exit={{
-                            opacity: 0,
-                            scale: 0.97,
-                            y: 12,
-                        }}
+                        initial={{ opacity: 0, scale: 0.96, y: 14 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.96, y: 14 }}
+                        transition={{ type: "spring", stiffness: 380, damping: 30 }}
                         className="pointer-events-none fixed inset-0 z-[101] flex items-center justify-center overflow-y-auto p-4"
                     >
                         <div
                             role="dialog"
                             aria-modal="true"
                             aria-labelledby="logout-title"
-                            className="pointer-events-auto relative my-auto w-full max-w-[400px] overflow-hidden rounded-2xl border border-[#E4E7EC] bg-white shadow-2xl"
+                            className="pointer-events-auto relative my-auto w-full max-w-[400px] overflow-hidden rounded-3xl bg-white shadow-[0_30px_80px_-20px_rgba(14,27,61,0.45)]"
                             onClick={(event) => event.stopPropagation()}
                         >
-                            <div className="px-5 pb-4 pt-6 text-center sm:px-6">
-                                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#F1F1F0]">
-                                    <LogOut className="h-6 w-6 text-[#111111]" />
+                            {/* top accent strip */}
+                            <div
+                                className="h-1.5 w-full"
+                                style={{
+                                    background: `linear-gradient(90deg, ${NAVY} 0%, ${NAVY_LIGHT} 60%, ${BRAND_YELLOW} 100%)`,
+                                }}
+                            />
+
+                            <div className="px-6 pb-4 pt-7 text-center">
+                                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FDF2F2] ring-8 ring-[#FDF2F2]/50">
+                                    <LogOut className="h-6 w-6 text-[#B24C4C]" />
                                 </div>
 
                                 <h3
                                     id="logout-title"
-                                    className="mb-2 text-lg font-semibold text-[#171717]"
+                                    className="mb-2 text-lg font-bold text-[#0E1B3D]"
                                 >
-                                    Logout Confirmation
+                                    Log out of your account?
                                 </h3>
 
-                                <p className="text-sm leading-6 text-[#777777]">
-                                    Are you sure you want to logout? You&apos;ll need
-                                    to login again to access your account.
+                                <p className="text-sm leading-6 text-[#667085]">
+                                    You&apos;ll need to log in again to access
+                                    your distributor panel.
                                 </p>
                             </div>
 
-                            <div className="mx-4 flex items-start gap-2.5 rounded-lg border border-[#E4E4E2] bg-[#FAFAF9] p-3 sm:mx-6">
-                                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-[#777777]" />
+                            <div className="mx-6 flex items-start gap-2.5 rounded-xl bg-[#F6F8FB] p-3">
+                                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-[#98A2B3]" />
 
-                                <p className="text-xs leading-5 text-[#666666]">
-                                    Your session will be ended and you&apos;ll be
+                                <p className="text-xs leading-5 text-[#667085]">
+                                    Your session will end and you&apos;ll be
                                     redirected to the login page.
                                 </p>
                             </div>
 
-                            <div className="mt-5 flex gap-3 border-t border-[#E6E6E4] px-4 py-4 sm:px-6">
+                            <div className="mt-6 flex gap-3 px-6 pb-6">
                                 <button
                                     type="button"
                                     onClick={onClose}
                                     disabled={isLoading}
-                                    className="flex-1 rounded-lg border border-[#D7D7D5] bg-white px-3 py-3 text-sm font-medium text-[#555555] transition-colors hover:bg-[#F7F7F6] disabled:cursor-not-allowed disabled:opacity-50"
+                                    className="flex-1 rounded-xl border border-[#E4E7EC] bg-white px-3 py-3 text-sm font-semibold text-[#475066] transition-colors hover:bg-[#F6F8FB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1B2E63]/40 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
-                                    Cancel
+                                    Stay logged in
                                 </button>
 
                                 <button
                                     type="button"
                                     onClick={onConfirm}
                                     disabled={isLoading}
-                                    className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-[#111111] px-3 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#292929] disabled:cursor-not-allowed disabled:opacity-70"
+                                    className="flex flex-1 items-center justify-center gap-2 rounded-xl px-3 py-3 text-sm font-semibold text-white shadow-lg shadow-[#0E1B3D]/20 transition-all hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1B2E63]/40 disabled:cursor-not-allowed disabled:opacity-70"
+                                    style={{
+                                        background: `linear-gradient(135deg, ${NAVY} 0%, ${NAVY_LIGHT} 100%)`,
+                                    }}
                                 >
                                     {isLoading ? (
                                         <>
@@ -309,7 +315,7 @@ const LogoutModal = ({
                                     ) : (
                                         <>
                                             <LogOut className="h-4 w-4" />
-                                            <span>Logout</span>
+                                            <span>Log out</span>
                                         </>
                                     )}
                                 </button>
@@ -396,16 +402,10 @@ export default function Sidebar() {
             setIsMobileOpen(true);
         };
 
-        window.addEventListener(
-            MOBILE_SIDEBAR_EVENT,
-            handleOpenSidebar
-        );
+        window.addEventListener(MOBILE_SIDEBAR_EVENT, handleOpenSidebar);
 
         return () => {
-            window.removeEventListener(
-                MOBILE_SIDEBAR_EVENT,
-                handleOpenSidebar
-            );
+            window.removeEventListener(MOBILE_SIDEBAR_EVENT, handleOpenSidebar);
         };
     }, []);
 
@@ -458,12 +458,8 @@ export default function Sidebar() {
             const parentIsActive =
                 !!item.href &&
                 item.href !== "#" &&
-                (
-                    currentPath === normalizePath(item.href) ||
-                    currentPath.startsWith(
-                        `${normalizePath(item.href)}/`
-                    )
-                );
+                (currentPath === normalizePath(item.href) ||
+                    currentPath.startsWith(`${normalizePath(item.href)}/`));
 
             if (childIsActive || parentIsActive) {
                 toOpen.push(item.label);
@@ -543,13 +539,17 @@ export default function Sidebar() {
     };
 
     // -------------------------------------------------
-    // ACTIVE ITEM STYLE
+    // ACTIVE ITEM STYLE (Shadow removed, slightly compact)
     // -------------------------------------------------
 
     const activeStyle: React.CSSProperties = {
         background: `linear-gradient(135deg, ${NAVY} 0%, ${NAVY_LIGHT} 100%)`,
         color: "#ffffff",
+        // boxShadow removed as requested
     };
+
+    const rowBase =
+        "group relative flex h-10 w-full min-w-0 items-center rounded-xl px-2.5 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1B2E63]/40";
 
     // -------------------------------------------------
     // RENDER MENU ITEM
@@ -579,33 +579,38 @@ export default function Sidebar() {
 
                             toggleDropdown(item.label);
                         }}
-                        className="group relative flex h-11 w-full min-w-0 items-center rounded-xl px-3 text-left transition-colors duration-200"
+                        className={`${rowBase} ${
+                            parentActive ? "" : "hover:bg-[#F3F5F9]"
+                        }`}
                         style={parentActive ? activeStyle : undefined}
                     >
-                        {!parentActive && (
-                            <span className="pointer-events-none absolute inset-0 rounded-xl bg-[#F2F4F7] opacity-0 transition-opacity group-hover:opacity-100" />
+                        {parentActive && (
+                            <span
+                                className="absolute -left-4 top-1/2 h-4 w-1 -translate-y-1/2 rounded-r-full"
+                                style={{ background: BRAND_YELLOW }}
+                            />
                         )}
 
                         <span
-                            className={`relative mr-3 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+                            className={`relative mr-2.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors ${
                                 parentActive
-                                    ? "bg-white/15"
-                                    : "bg-[#F2F4F7] group-hover:bg-white"
+                                    ? "bg-white/12"
+                                    : "bg-[#F1F4F9] group-hover:bg-white"
                             }`}
                         >
                             <Icon
-                                size={17}
+                                size={15}
                                 strokeWidth={1.9}
                                 className={
                                     parentActive
-                                        ? "text-white"
+                                        ? "text-[#F6B800]"
                                         : "text-[#667085] group-hover:text-[#0E1B3D]"
                                 }
                             />
                         </span>
 
                         <span
-                            className={`relative min-w-0 flex-1 truncate text-[13.5px] font-semibold ${
+                            className={`relative min-w-0 flex-1 truncate text-[13px] font-semibold ${
                                 parentActive
                                     ? "text-white"
                                     : "text-[#475066] group-hover:text-[#0E1B3D]"
@@ -614,41 +619,36 @@ export default function Sidebar() {
                             {item.label}
                         </span>
 
-                        <ChevronDown
-                            size={15}
-                            strokeWidth={2.2}
-                            className={`relative ml-2 shrink-0 transition-transform duration-300 ${
-                                isOpen ? "rotate-180" : ""
-                            } ${
-                                parentActive
-                                    ? "text-white/80"
-                                    : "text-[#A0A8B8]"
+                        <span
+                            className={`relative ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full transition-colors ${
+                                parentActive ? "bg-white/10" : "group-hover:bg-white"
                             }`}
-                        />
+                        >
+                            <ChevronDown
+                                size={13}
+                                strokeWidth={2.4}
+                                className={`transition-transform duration-300 ${
+                                    isOpen ? "rotate-180" : ""
+                                } ${
+                                    parentActive ? "text-white/80" : "text-[#98A2B3]"
+                                }`}
+                            />
+                        </span>
                     </button>
 
                     <AnimatePresence initial={false}>
                         {isOpen && (
                             <motion.div
-                                initial={{
-                                    height: 0,
-                                    opacity: 0,
-                                }}
-                                animate={{
-                                    height: "auto",
-                                    opacity: 1,
-                                }}
-                                exit={{
-                                    height: 0,
-                                    opacity: 0,
-                                }}
-                                transition={{
-                                    duration: 0.22,
-                                    ease: "easeInOut",
-                                }}
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: "auto", opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.22, ease: "easeInOut" }}
                                 className="overflow-hidden"
                             >
-                                <div className="ml-[27px] mt-1 space-y-0.5 border-l-2 border-[#E9EDF2] pb-1 pl-3">
+                                <div className="relative ml-[24px] mt-1 space-y-0.5 pb-1 pl-4">
+                                    {/* vertical tree line */}
+                                    <span className="absolute bottom-3 left-0 top-0 w-px bg-gradient-to-b from-[#DDE3EC] to-[#DDE3EC]/30" />
+
                                     {item.children.map((child) => {
                                         const ChildIcon = child.icon;
                                         const childActive = isActive(child.href);
@@ -658,20 +658,30 @@ export default function Sidebar() {
                                                 key={child.label}
                                                 href={child.href}
                                                 onClick={closeMobileSidebar}
-                                                className={`relative flex min-h-9 w-full min-w-0 items-center gap-2.5 rounded-lg px-2.5 py-2 text-[12.5px] transition-colors ${
+                                                className={`relative flex min-h-[32px] w-full min-w-0 items-center gap-2 rounded-lg px-2.5 py-1.5 text-[12px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1B2E63]/40 ${
                                                     childActive
                                                         ? "bg-[#EEF1FA] font-semibold text-[#0E1B3D]"
-                                                        : "font-medium text-[#667085] hover:bg-[#F7F8FA] hover:text-[#0E1B3D]"
+                                                        : "font-medium text-[#667085] hover:bg-[#F6F8FB] hover:text-[#0E1B3D]"
                                                 }`}
                                             >
+                                                {/* elbow connector */}
+                                                <span className="absolute -left-4 top-1/2 h-px w-3 bg-[#DDE3EC]" />
+
                                                 {childActive && (
-                                                    <span className="absolute -left-[14px] top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-[#1F9D6B] ring-2 ring-white" />
+                                                    <span
+                                                        className="absolute -left-[19px] top-1/2 h-[6px] w-[6px] -translate-y-1/2 rounded-full ring-[3px] ring-white"
+                                                        style={{ background: BRAND_YELLOW }}
+                                                    />
                                                 )}
 
                                                 <ChildIcon
-                                                    size={14}
+                                                    size={13}
                                                     strokeWidth={1.8}
-                                                    className="shrink-0"
+                                                    className={`shrink-0 ${
+                                                        childActive
+                                                            ? "text-[#1B2E63]"
+                                                            : "text-[#98A2B3]"
+                                                    }`}
                                                 />
 
                                                 <span className="min-w-0 flex-1 break-words">
@@ -696,33 +706,36 @@ export default function Sidebar() {
                 key={item.label}
                 href={item.href}
                 onClick={closeMobileSidebar}
-                className="group relative flex h-11 w-full min-w-0 items-center rounded-xl px-3 text-left transition-colors duration-200"
+                className={`${rowBase} ${active ? "" : "hover:bg-[#F3F5F9]"}`}
                 style={active ? activeStyle : undefined}
             >
-                {!active && (
-                    <span className="pointer-events-none absolute inset-0 rounded-xl bg-[#F2F4F7] opacity-0 transition-opacity group-hover:opacity-100" />
+                {active && (
+                    <span
+                        className="absolute -left-4 top-1/2 h-4 w-1 -translate-y-1/2 rounded-r-full"
+                        style={{ background: BRAND_YELLOW }}
+                    />
                 )}
 
                 <span
-                    className={`relative mr-3 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors ${
+                    className={`relative mr-2.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors ${
                         active
-                            ? "bg-white/15"
-                            : "bg-[#F2F4F7] group-hover:bg-white"
+                            ? "bg-white/12"
+                            : "bg-[#F1F4F9] group-hover:bg-white"
                     }`}
                 >
                     <Icon
-                        size={17}
+                        size={15}
                         strokeWidth={1.9}
                         className={
                             active
-                                ? "text-white"
+                                ? "text-[#F6B800]"
                                 : "text-[#667085] group-hover:text-[#0E1B3D]"
                         }
                     />
                 </span>
 
                 <span
-                    className={`relative min-w-0 flex-1 truncate text-[13.5px] font-semibold transition-colors ${
+                    className={`relative min-w-0 flex-1 truncate text-[13px] font-semibold transition-colors ${
                         active
                             ? "text-white"
                             : "text-[#475066] group-hover:text-[#0E1B3D]"
@@ -745,8 +758,16 @@ export default function Sidebar() {
 
                 .sb-scroll {
                     scrollbar-width: thin;
-                    scrollbar-color: #e4e7ec transparent;
+                    scrollbar-color: transparent transparent;
                     overscroll-behavior: contain;
+                    -webkit-overflow-scrolling: touch;
+                    /* soft fade at top and bottom so items never look cut off */
+                    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 12px, #000 calc(100% - 28px), transparent 100%);
+                    mask-image: linear-gradient(to bottom, transparent 0, #000 12px, #000 calc(100% - 28px), transparent 100%);
+                }
+
+                .sb-scroll:hover {
+                    scrollbar-color: #dfe4ec transparent;
                 }
 
                 .sb-scroll::-webkit-scrollbar {
@@ -758,14 +779,27 @@ export default function Sidebar() {
                 }
 
                 .sb-scroll::-webkit-scrollbar-thumb {
-                    background: #e4e7ec;
+                    background: transparent;
                     border-radius: 999px;
                 }
 
-                .sb-scroll::-webkit-scrollbar-thumb:hover {
-                    background: #cfd4dc;
+                .sb-scroll:hover::-webkit-scrollbar-thumb {
+                    background: #dfe4ec;
+                }
+
+                @media (prefers-reduced-motion: reduce) {
+                    #distributor-sidebar,
+                    #distributor-sidebar * {
+                        transition-duration: 0.01ms !important;
+                    }
                 }
             `}</style>
+
+            {/* Desktop spacer — keeps page content clear of the fixed sidebar */}
+            <div
+                aria-hidden="true"
+                className="hidden w-[280px] shrink-0 lg:block"
+            />
 
             {/* Mobile drawer backdrop */}
             <AnimatePresence>
@@ -783,69 +817,82 @@ export default function Sidebar() {
                 )}
             </AnimatePresence>
 
-            {/* Sidebar / Mobile Drawer */}
+            {/* Sidebar — fixed top to bottom on every screen size */}
             <aside
                 id="distributor-sidebar"
                 aria-label="Distributor navigation"
                 style={{ fontFamily: "'Lato', sans-serif" }}
-                className={`fixed left-0 top-0 z-50 flex h-dvh w-[min(84vw,300px)] max-w-[300px] shrink-0 flex-col border-r border-[#E9EDF2] bg-white transition-transform duration-300 ease-in-out lg:sticky lg:top-0 lg:z-auto lg:h-screen lg:w-[280px] lg:max-w-none lg:translate-x-0 lg:shadow-none ${
+                className={`fixed inset-y-0 left-0 z-50 flex w-[min(84vw,300px)] max-w-[300px] flex-col overflow-hidden border-r border-[#E9EDF2] bg-white transition-transform duration-300 ease-in-out lg:z-30 lg:w-[280px] lg:max-w-none lg:translate-x-0 lg:shadow-none ${
                     isMobileOpen
                         ? "translate-x-0 shadow-2xl"
                         : "-translate-x-full shadow-none"
                 }`}
             >
                 {/* Brand (Top) */}
-                <div className="shrink-0 px-5 pt-5 lg:pt-6">
-                    <div className="flex min-w-0 items-center justify-between border-b border-[#E9EDF2] pb-5">
+                <div className="relative shrink-0 px-4 pt-4 lg:pt-5">
+                    <div className="relative flex min-w-0 items-center justify-between overflow-hidden rounded-2xl bg-gradient-to-br from-[#F6F8FC] to-[#EEF2F9] p-3 ring-1 ring-[#E9EDF2]">
+                        {/* decorative corner glow */}
+                        <span
+                            aria-hidden="true"
+                            className="pointer-events-none absolute -right-6 -top-6 h-20 w-20 rounded-full opacity-25 blur-2xl"
+                            style={{ background: BRAND_YELLOW }}
+                        />
+
                         <Link
                             href="/"
                             onClick={closeMobileSidebar}
-                            className="flex min-w-0 items-center gap-3"
+                            className="relative flex min-w-0 items-center gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1B2E63]/40 rounded-xl"
                         >
-                            <div className="relative h-10 w-10 shrink-0">
-                                <Image
-                                    src={Logo}
-                                    alt="IndieKonnect"
-                                    fill
-                                    priority
-                                    sizes="40px"
-                                    className="object-contain"
-                                />
+                            <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-[#E9EDF2]">
+                                <div className="relative h-8 w-8">
+                                    <Image
+                                        src={Logo}
+                                        alt="IndieKonnect"
+                                        fill
+                                        priority
+                                        sizes="32px"
+                                        className="object-contain"
+                                    />
+                                </div>
                             </div>
 
                             <div className="flex min-w-0 flex-col leading-none">
-                                <span className="truncate text-[18px] font-semibold tracking-[-0.01em] text-[#111111]">
+                                <span className="truncate text-[17px] font-bold tracking-[-0.01em] text-[#0E1B3D]">
                                     IndieKonnect
                                 </span>
 
-                                <span className="mt-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#98A2B3]">
-                                    Distributor Panel
+                                <span className="mt-1.5 inline-flex w-fit items-center gap-1.5 rounded-full bg-white px-2 py-[3px] text-[10.5px] font-semibold text-[#667085] ring-1 ring-[#E4E7EC]">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-[#1F9D6B]" />
+                                    Distributor panel
                                 </span>
                             </div>
                         </Link>
-                        
+
                         {/* Close button (Mobile only) */}
                         <button
                             type="button"
                             aria-label="Close sidebar"
                             onClick={closeMobileSidebar}
-                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[#475066] transition-colors hover:bg-[#F2F4F7] lg:hidden"
+                            className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[#475066] transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1B2E63]/40 lg:hidden"
                         >
                             <X size={20} />
                         </button>
                     </div>
                 </div>
 
-                {/* Scrollable Menu */}
-                <div className="sb-scroll min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 pt-5">
-                    <nav className="space-y-5 pb-5">
+                {/* Scrollable Menu — only this part scrolls */}
+                <div className="sb-scroll mt-3 min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 pt-2">
+                    <nav className="space-y-5 pb-10">
                         {menuGroups.map((group) => (
                             <div key={group.title} className="min-w-0">
-                                <p className="mb-2 px-3 text-[10.5px] font-bold uppercase tracking-[0.12em] text-[#A0A8B8]">
-                                    {group.title}
-                                </p>
+                                <div className="mb-2 flex items-center gap-2 px-2.5">
+                                    <p className="text-[11px] font-bold tracking-[0.02em] text-[#98A2B3]">
+                                        {group.title}
+                                    </p>
+                                    <span className="h-px flex-1 bg-[#EEF1F5]" />
+                                </div>
 
-                                <div className="space-y-1">
+                                <div className="space-y-0.5">
                                     {group.items.map(renderItem)}
                                 </div>
                             </div>
@@ -853,25 +900,27 @@ export default function Sidebar() {
                     </nav>
                 </div>
 
-                {/* Logout pinned at the bottom */}
-                <div className="shrink-0 border-t border-[#EEF0F4] bg-white px-4 py-3 pb-[max(12px,env(safe-area-inset-bottom))] lg:py-4">
+                {/* Sticky Logout — always pinned at the very bottom */}
+                <div className="relative shrink-0 bg-white px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
+                    <div className="mb-3 h-px bg-[#EEF1F5]" />
+
                     <button
                         type="button"
                         onClick={() => {
                             setShowLogoutModal(true);
                             closeMobileSidebar();
                         }}
-                        className="group relative flex h-11 w-full items-center rounded-xl px-3 text-left transition-colors duration-200 hover:bg-[#FDF2F2]"
+                        className="group flex h-10 w-full min-w-0 items-center rounded-xl bg-[#FDF5F5] px-2.5 text-left ring-1 ring-[#F8E1E1] transition-all duration-200 hover:bg-[#FBE9E9] hover:ring-[#F3CDCD] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B24C4C]/40"
                     >
-                        <span className="mr-3 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#FDF2F2] transition-colors group-hover:bg-white">
+                        <span className="mr-2.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white shadow-sm">
                             <LogOut
-                                size={17}
+                                size={15}
                                 strokeWidth={1.9}
-                                className="text-[#B24C4C]"
+                                className="text-[#B24C4C] transition-transform duration-200 group-hover:translate-x-0.5"
                             />
                         </span>
 
-                        <span className="text-[13.5px] font-semibold text-[#B24C4C]">
+                        <span className="text-[13px] font-semibold text-[#B24C4C]">
                             Logout
                         </span>
                     </button>

@@ -455,19 +455,6 @@ function getRefundDetails(
   issuedAt: string | null;
   downloadUrl: string | null;
 } | null {
-  /*
-   * API refund amount ko sabse pehle use karenge.
-   *
-   * Example:
-   * refunded_amount: 991.64
-   *
-   * Output:
-   * Rs. 991.64
-   *
-   * Is approach mein matching return record hona
-   * zaroori nahi hai.
-   */
-
   const rawRefundedAmount =
     order.refunded_amount;
 
@@ -499,10 +486,8 @@ function getRefundDetails(
           : null;
 
       return {
-        // ✅ Actual refund amount from API
         amount: parsedRefundAmount,
 
-        // Credit note metadata remains unchanged.
         creditNoteNumber:
           creditNoteForMetadata?.credit_note_number ||
           null,
@@ -518,12 +503,6 @@ function getRefundDetails(
       };
     }
   }
-
-  /*
-   * Fallback:
-   * refunded_amount agar null, missing ya invalid ho,
-   * to existing credit-note/return logic use hoga.
-   */
 
   const normalizedDeliveryStatus =
     normalizeStatus(order.delivery_status);
@@ -1001,7 +980,6 @@ const ViewDetailsModal = ({
             </p>
           </div>
 
-          {/* ✅ Refund amount from refunded_amount API key */}
           {refundDetails?.amount !== null &&
             refundDetails?.amount !== undefined && (
               <div className="rounded-[7px] border border-[#CFE0D4] bg-[#F1F7F3] p-2.5">
@@ -1023,7 +1001,6 @@ const ViewDetailsModal = ({
             )}
         </div>
 
-        {/* ✅ Refund Processed Details */}
         {refundDetails?.amount !== null &&
           refundDetails?.amount !== undefined && (
             <div className="mb-4 rounded-[10px] border border-[#CFE0D4] bg-[#F6FBF7] px-5 py-4">
@@ -1260,6 +1237,12 @@ const BuybackModal = ({
     setCourierName,
   ] = useState("");
 
+  /* ✅ NEW: Tracking ID state */
+  const [
+    trackingId,
+    setTrackingId,
+  ] = useState("");
+
   const [
     error,
     setError,
@@ -1290,6 +1273,8 @@ const BuybackModal = ({
 
       setReturnMethod("doorstep");
       setCourierName("");
+      /* ✅ Reset tracking ID on open */
+      setTrackingId("");
 
       setError("");
       setIsSuccess(false);
@@ -1349,11 +1334,20 @@ const BuybackModal = ({
       return;
     }
 
+    /* ✅ Courier validation: BOTH courier name + tracking ID required */
     if (
       returnMethod === "courier" &&
       !courierName.trim()
     ) {
       setError("Please enter the courier name.");
+      return;
+    }
+
+    if (
+      returnMethod === "courier" &&
+      !trackingId.trim()
+    ) {
+      setError("Please enter the tracking ID.");
       return;
     }
 
@@ -1384,6 +1378,12 @@ const BuybackModal = ({
         courier:
           returnMethod === "courier"
             ? courierName.trim()
+            : undefined,
+
+        /* ✅ NEW: tracking_id sent only for courier */
+        tracking_id:
+          returnMethod === "courier"
+            ? trackingId.trim()
             : undefined,
       };
 
@@ -1436,6 +1436,7 @@ const BuybackModal = ({
     }
   };
 
+  /* ✅ Submit enabled only when courier name + tracking ID both filled (courier mode) */
   const canSubmit =
     !isLoading &&
     canBuyback() &&
@@ -1445,7 +1446,10 @@ const BuybackModal = ({
     atLeastOneDeclaration &&
     (
       returnMethod !== "courier" ||
-      courierName.trim().length > 0
+      (
+        courierName.trim().length > 0 &&
+        trackingId.trim().length > 0
+      )
     );
 
   return (
@@ -1726,7 +1730,7 @@ const BuybackModal = ({
                 </button>
               </div>
 
-              {/* Courier Name */}
+              {/* ✅ Courier Name + Tracking ID (both fields shown for courier) */}
               {returnMethod === "courier" && (
                 <motion.div
                   initial={{
@@ -1744,27 +1748,53 @@ const BuybackModal = ({
                   transition={{
                     duration: 0.2,
                   }}
-                  className="mt-2.5"
+                  className="mt-2.5 space-y-2.5"
                 >
-                  <label
-                    htmlFor="courierName"
-                    className="mb-1.5 block text-[10.5px] font-medium uppercase tracking-[0.08em] text-[#888888]"
-                  >
-                    Courier Name{" "}
-                    <span className="text-[#B24C4C]">*</span>
-                  </label>
+                  {/* Courier Name */}
+                  <div>
+                    <label
+                      htmlFor="courierName"
+                      className="mb-1.5 block text-[10.5px] font-medium uppercase tracking-[0.08em] text-[#888888]"
+                    >
+                      Courier Name{" "}
+                      <span className="text-[#B24C4C]">*</span>
+                    </label>
 
-                  <input
-                    id="courierName"
-                    type="text"
-                    value={courierName}
-                    onChange={(e) =>
-                      setCourierName(e.target.value)
-                    }
-                    placeholder="e.g. Delhivery, BlueDart, DTDC..."
-                    disabled={isLoading}
-                    className="h-[38px] w-full rounded-[7px] border border-[#D7D7D5] bg-[#FAFAF9] px-3 text-[12px] text-[#171717] outline-none placeholder:text-[#AAAAAA] disabled:opacity-60 focus:border-[#1F7A56]"
-                  />
+                    <input
+                      id="courierName"
+                      type="text"
+                      value={courierName}
+                      onChange={(e) =>
+                        setCourierName(e.target.value)
+                      }
+                      placeholder="e.g. Delhivery, BlueDart, DTDC..."
+                      disabled={isLoading}
+                      className="h-[38px] w-full rounded-[7px] border border-[#D7D7D5] bg-[#FAFAF9] px-3 text-[12px] text-[#171717] outline-none placeholder:text-[#AAAAAA] disabled:opacity-60 focus:border-[#1F7A56]"
+                    />
+                  </div>
+
+                  {/* ✅ Tracking ID */}
+                  <div>
+                    <label
+                      htmlFor="trackingId"
+                      className="mb-1.5 block text-[10.5px] font-medium uppercase tracking-[0.08em] text-[#888888]"
+                    >
+                      Tracking ID{" "}
+                      <span className="text-[#B24C4C]">*</span>
+                    </label>
+
+                    <input
+                      id="trackingId"
+                      type="text"
+                      value={trackingId}
+                      onChange={(e) =>
+                        setTrackingId(e.target.value)
+                      }
+                      placeholder="e.g. 1234567890"
+                      disabled={isLoading}
+                      className="h-[38px] w-full rounded-[7px] border border-[#D7D7D5] bg-[#FAFAF9] px-3 text-[12px] text-[#171717] outline-none placeholder:text-[#AAAAAA] disabled:opacity-60 focus:border-[#1F7A56]"
+                    />
+                  </div>
                 </motion.div>
               )}
 
@@ -2729,10 +2759,6 @@ export default function BuyBack() {
                     bg: "#f2f4f7",
                   };
 
-                /*
-                 * ✅ Refund amount is now read from
-                 * order.refunded_amount first.
-                 */
                 const refundDetails =
                   getRefundDetails(order);
 
@@ -2780,7 +2806,6 @@ export default function BuyBack() {
                         )}
                       </span>
 
-                      {/* ✅ Refund Amount: refunded_amount API field */}
                       {refundDetails?.amount !== null &&
                         refundDetails?.amount !==
                           undefined && (
