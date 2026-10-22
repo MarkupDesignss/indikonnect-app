@@ -55,7 +55,10 @@ import {
   useRemoveFromWishlistMutation,
 } from "@/lib/redux/api/Wishlist/wishlistApi";
 
-import { useGetProductsQuery } from "@/lib/redux/api/productApi";
+import {
+  useGetProductsQuery,
+  useCheckProductStockMutation,
+} from "@/lib/redux/api/productApi";
 
 import { useGetBrandsQuery } from "@/lib/redux/api/brandsApi";
 import { useGetUserProfileQuery } from "@/lib/redux/api/authApi";
@@ -182,9 +185,9 @@ const getProductPrice = (product: any, userType?: string) => {
   if (userType === "distributor") {
     return Number(
       product.distributor_price ||
-      product.current_price ||
-      product.retail_price ||
-      0,
+        product.current_price ||
+        product.retail_price ||
+        0,
     );
   }
 
@@ -197,9 +200,9 @@ const getProductMrp = (product: any, userType?: string) => {
   if (userType === "distributor") {
     return Number(
       product.distributor_mrp ||
-      product.original_price ||
-      product.retail_mrp ||
-      0,
+        product.original_price ||
+        product.retail_mrp ||
+        0,
     );
   }
 
@@ -1126,6 +1129,10 @@ function ProductCard({
 
   const [addToCart, { isLoading: isAddingToCart }] = useAddToCartMutation();
 
+  const [checkProductStock] = useCheckProductStockMutation();
+  const purchaseLockRef = useRef(false);
+  const [stockUnavailable, setStockUnavailable] = useState(false);
+
   const [justAdded, setJustAdded] = useState(false);
 
   const [isBuyingNow, setIsBuyingNow] = useState(false);
@@ -1157,9 +1164,45 @@ function ProductCard({
   const isWishlisted = wish?.[product?.id] || false;
 
   const inStock =
+    !stockUnavailable &&
     product?.in_stock !== false &&
-    product?.stock_status !== "out_of_stock" &&
+    !["out_of_stock", "inactive", "disabled"].includes(
+      String(product?.stock_status ?? "").toLowerCase(),
+    ) &&
     (product?.stock_quantity == null || Number(product.stock_quantity) > 0);
+
+  useEffect(() => {
+    setStockUnavailable(false);
+  }, [product?.id]);
+
+  const verifyLiveStock = async () => {
+    const id = Number(product?.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      throw new Error("Invalid product. Please refresh and try again.");
+    }
+
+    const response = await checkProductStock({
+      product_id: id,
+      quantity: 1,
+    }).unwrap();
+    const stock = response?.data;
+    const quantity = Number(stock?.stock_quantity);
+
+    if (
+      response?.success !== true ||
+      Number(stock?.product_id) !== id ||
+      typeof stock?.available !== "boolean" ||
+      !Number.isFinite(quantity)
+    ) {
+      throw new Error("Unable to verify live stock. Please try again.");
+    }
+
+    if (!stock.available || quantity < 1) {
+      setStockUnavailable(true);
+      throw new Error("This product is currently out of stock.");
+    }
+    setStockUnavailable(false);
+  };
 
   const openProduct = () => {
     if (!product?.slug) return;
@@ -1184,19 +1227,13 @@ function ProductCard({
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (!product?.id || !inStock || purchaseLockRef.current) return;
 
-    if (!product?.id || !inStock || isAddingToCart || isBuyingNow) {
-      return;
-    }
-
+    purchaseLockRef.current = true;
     try {
-      await addToCart({
-        product_id: product.id,
-        quantity: 1,
-      }).unwrap();
-
+      await verifyLiveStock();
+      await addToCart({ product_id: Number(product.id), quantity: 1 }).unwrap();
       setJustAdded(true);
-
       dispatch(
         showToast({
           message: `${product.name} added to cart 🛒`,
@@ -1206,54 +1243,42 @@ function ProductCard({
     } catch (err: any) {
       dispatch(
         showToast({
-          message: err?.data?.message || "Failed to add item to cart",
-          type: "error",
-        }),
-      );
-    }
-  };
-
-  /* =====================================================
-     BUY NOW
-  ===================================================== */
-
-  const handleBuyNow = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (!product?.id || !inStock || isBuyingNow) {
-      return;
-    }
-
-    setIsBuyingNow(true);
-
-    try {
-      await addToCart({
-        product_id: product.id,
-        quantity: 1,
-      }).unwrap();
-
-      dispatch(
-        showToast({
-          message: "Redirecting to checkout...",
-          type: "info",
-        }),
-      );
-
-      const params = new URLSearchParams({
-        product_id: String(product.id),
-        quantity: "1",
-      });
-
-      router.push(`/checkout?${params.toString()}`);
-    } catch (err: any) {
-      dispatch(
-        showToast({
-          message: err?.data?.message || "Failed to process your order",
+          message:
+            err?.data?.message || err?.message || "Failed to add item to cart",
           type: "error",
         }),
       );
     } finally {
+      purchaseLockRef.current = false;
+    }
+  };
+
+  /* BUY NOW: stock verified; no shopping-cart mutation */
+  const handleBuyNow = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!product?.id || !inStock || purchaseLockRef.current) return;
+
+    purchaseLockRef.current = true;
+    setIsBuyingNow(true);
+    try {
+      await verifyLiveStock();
+      const params = new URLSearchParams({
+        checkout_type: "buy_now",
+        product_id: String(product.id),
+        quantity: "1",
+      });
+      router.push(`/checkout?${params.toString()}`);
+    } catch (err: any) {
+      dispatch(
+        showToast({
+          message:
+            err?.data?.message || err?.message || "Unable to verify stock",
+          type: "error",
+        }),
+      );
+    } finally {
+      purchaseLockRef.current = false;
       setIsBuyingNow(false);
     }
   };
@@ -1485,11 +1510,12 @@ function ProductCard({
               transition-all
               duration-200
               active:scale-90
-              ${!inStock
-                ? "cursor-not-allowed border-[#eeeeee] bg-[#f7f7f7] text-[#cccccc]"
-                : justAdded
-                  ? "border-[#1a8a3f] bg-[#eafaf0] text-[#1a8a3f]"
-                  : "border-[#e2e2e2] bg-white text-[#111111] hover:border-[#111111]"
+              ${
+                !inStock
+                  ? "cursor-not-allowed border-[#eeeeee] bg-[#f7f7f7] text-[#cccccc]"
+                  : justAdded
+                    ? "border-[#1a8a3f] bg-[#eafaf0] text-[#1a8a3f]"
+                    : "border-[#e2e2e2] bg-white text-[#111111] hover:border-[#111111]"
               }
             `}
           >
@@ -1505,7 +1531,7 @@ function ProductCard({
           <button
             type="button"
             onClick={handleBuyNow}
-            disabled={!inStock || isBuyingNow}
+            disabled={!inStock || isBuyingNow || isAddingToCart}
             aria-label="Buy now"
             className={`
               flex
@@ -1523,11 +1549,12 @@ function ProductCard({
               transition-all
               duration-200
               active:scale-[0.97]
-              ${!inStock
-                ? "cursor-not-allowed bg-[#f0f0f0] text-[#bbbbbb]"
-                : isBuyingNow
-                  ? "cursor-wait bg-[#252525] text-white"
-                  : "bg-[#111111] text-white hover:bg-[#252525]"
+              ${
+                !inStock
+                  ? "cursor-not-allowed bg-[#f0f0f0] text-[#bbbbbb]"
+                  : isBuyingNow
+                    ? "cursor-wait bg-[#252525] text-white"
+                    : "bg-[#111111] text-white hover:bg-[#252525]"
               }
             `}
           >
@@ -1833,6 +1860,8 @@ export default function IndieKonnectHome() {
   const { data: growthStepsData } = useGetGrowthStepsQuery();
 
   const [addToCartMutation] = useAddToCartMutation();
+  const [checkParentProductStock] = useCheckProductStockMutation();
+  const parentCartLockRef = useRef(false);
 
   const [updateCartItemMutation, { isLoading: isUpdatingCart }] =
     useUpdateCartItemMutation();
@@ -2105,8 +2134,9 @@ export default function IndieKonnectHome() {
         </div>
 
         <div style="flex:1;min-width:0;">
-          ${productName
-        ? `
+          ${
+            productName
+              ? `
               <div style="
                 font-size:13px;
                 font-weight:600;
@@ -2115,8 +2145,8 @@ export default function IndieKonnectHome() {
                 ${productName}
               </div>
             `
-        : ""
-      }
+              : ""
+          }
 
           <div style="
             font-size:12px;
@@ -2213,12 +2243,26 @@ export default function IndieKonnectHome() {
     productPrice: number,
     e?: React.MouseEvent,
   ) => {
-    if (e) {
-      ripple(e);
-      flyToCart(e);
-    }
+    if (parentCartLockRef.current) return;
+    parentCartLockRef.current = true;
 
     try {
+      const id = Number(productId);
+      const requiredQuantity =
+        (cartItems.find((item) => Number(item.product_id) === id)?.quantity ??
+          0) + 1;
+      const stockResponse = await checkParentProductStock({
+        product_id: id,
+        quantity: requiredQuantity,
+      }).unwrap();
+      if (
+        stockResponse?.success !== true ||
+        Number(stockResponse?.data?.product_id) !== id ||
+        stockResponse?.data?.available !== true ||
+        Number(stockResponse?.data?.stock_quantity) < requiredQuantity
+      ) {
+        throw new Error("Insufficient stock for the requested quantity.");
+      }
       const response = await addToCartMutation({
         product_id: productId,
         quantity: 1,
@@ -2228,6 +2272,10 @@ export default function IndieKonnectHome() {
         response?.message === "Item added to cart successfully" ||
         response?.data?.items
       ) {
+        if (e) {
+          ripple(e);
+          flyToCart(e);
+        }
         const serverItemId =
           response?.data?.item?.id ?? response?.data?.id ?? productId;
 
@@ -2238,9 +2286,9 @@ export default function IndieKonnectHome() {
             return prev.map((item) =>
               item.product_id === productId
                 ? {
-                  ...item,
-                  quantity: item.quantity + 1,
-                }
+                    ...item,
+                    quantity: item.quantity + 1,
+                  }
                 : item,
             );
           }
@@ -2270,6 +2318,8 @@ export default function IndieKonnectHome() {
         error?.data?.message || error?.message || "Failed to add item to cart",
         productName,
       );
+    } finally {
+      parentCartLockRef.current = false;
     }
   };
 
@@ -2373,6 +2423,21 @@ export default function IndieKonnectHome() {
     }
 
     try {
+      if (action === "increment") {
+        const requiredQuantity = Number(currentItem.quantity) + 1;
+        const stockResponse = await checkParentProductStock({
+          product_id: Number(productId),
+          quantity: requiredQuantity,
+        }).unwrap();
+        if (
+          stockResponse?.success !== true ||
+          Number(stockResponse?.data?.product_id) !== Number(productId) ||
+          stockResponse?.data?.available !== true ||
+          Number(stockResponse?.data?.stock_quantity) < requiredQuantity
+        ) {
+          throw new Error("Insufficient stock for the requested quantity.");
+        }
+      }
       await updateCartItemMutation({
         itemId,
         data: {
@@ -2388,9 +2453,9 @@ export default function IndieKonnectHome() {
         prev.map((item) =>
           item.product_id === productId
             ? {
-              ...item,
-              quantity: item.quantity + change,
-            }
+                ...item,
+                quantity: item.quantity + change,
+              }
             : item,
         ),
       );
@@ -2740,10 +2805,11 @@ export default function IndieKonnectHome() {
               rounded-full
               transition-all
               duration-300
-              ${index === heroIndex
-                    ? "w-7 bg-[#071a41]"
-                    : "w-[5px] bg-[#cfd3d7]"
-                  }
+              ${
+                index === heroIndex
+                  ? "w-7 bg-[#071a41]"
+                  : "w-[5px] bg-[#cfd3d7]"
+              }
             `}
                 aria-label={`Go to banner ${index + 1}`}
               />
@@ -2858,9 +2924,10 @@ export default function IndieKonnectHome() {
                 flex
                 w-full
                 flex-col
-                ${bestOffers?.length <= 2
-                  ? "items-center text-center"
-                  : "items-start text-left"
+                ${
+                  bestOffers?.length <= 2
+                    ? "items-center text-center"
+                    : "items-start text-left"
                 }
               `}
             >
@@ -2962,10 +3029,11 @@ export default function IndieKonnectHome() {
                     type="button"
                     aria-label={`Go to slide ${index + 1}`}
                     onClick={() => scrollToIndex(index)}
-                    className={`h-2 rounded-full transition-all duration-300 ${activeIndex === index
+                    className={`h-2 rounded-full transition-all duration-300 ${
+                      activeIndex === index
                         ? "w-6 bg-gray-800"
                         : "w-2 bg-gray-300"
-                      }`}
+                    }`}
                   />
                 ))}
               </div>
@@ -3028,9 +3096,10 @@ export default function IndieKonnectHome() {
                 flex
                 w-full
                 flex-col
-                ${bestSellers?.length <= 2
-                  ? "items-center text-center"
-                  : "items-start text-left"
+                ${
+                  bestSellers?.length <= 2
+                    ? "items-center text-center"
+                    : "items-start text-left"
                 }
               `}
             >
