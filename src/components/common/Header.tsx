@@ -84,6 +84,17 @@ interface LocationInfo {
 }
 
 /* =========================================================
+   SCROLL CONFIG (hysteresis for no flicker)
+========================================================= */
+
+const SCROLL_COLLAPSE_AT = 80;
+const SCROLL_EXPAND_AT = 10;
+
+// Header ko staged tarike se collapse karein: pehle black strip, phir nav.
+const NAV_COLLAPSE_AT = 260;
+const NAV_EXPAND_AT = 140;
+
+/* =========================================================
    LOGOUT MODAL
 ========================================================= */
 
@@ -226,6 +237,13 @@ function HeaderInner({
     null,
   );
 
+  /* ✅ SCROLL STATE */
+  // Black announcement strip pehle hide hoti hai.
+  const [isScrolled, setIsScrolled] = useState(false);
+  // Navigation sirf deeper scroll par hide hoti hai, dono ek saath nahi.
+  const [isNavCollapsed, setIsNavCollapsed] = useState(false);
+  const [headerHeight, setHeaderHeight] = useState(0);
+
   /* LOCATION STATES */
   const [locationLoading, setLocationLoading] = useState(false);
   const [locationName, setLocationName] = useState<string | null>(null);
@@ -245,6 +263,9 @@ function HeaderInner({
   const searchInputRef = useRef<HTMLInputElement>(null);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const voiceRecognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const headerRef = useRef<HTMLElement>(null);
+  const lastScrollY = useRef(0);
+  const ticking = useRef(false);
 
   /* API */
   const { data: cartData, refetch: refetchCart } = useGetCartQuery(undefined, {
@@ -269,6 +290,61 @@ function HeaderInner({
       },
       { skip: debouncedSearchQuery.length < 1 },
     );
+
+  /* =========================================================
+     ✅ SMOOTH SCROLL LISTENER (rAF + hysteresis)
+  ========================================================= */
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    lastScrollY.current = window.scrollY || 0;
+
+    const update = () => {
+      const y = window.scrollY || document.documentElement.scrollTop || 0;
+      // Stage 1: top black strip collapses first.
+      setIsScrolled((prev) =>
+        prev ? y > SCROLL_EXPAND_AT : y > SCROLL_COLLAPSE_AT,
+      );
+
+      // Stage 2: navigation collapses only after further scrolling.
+      // Scroll up karne par nav pehle wapas aati hai; black strip top ke paas aati hai.
+      setIsNavCollapsed((prev) =>
+        prev ? y > NAV_EXPAND_AT : y > NAV_COLLAPSE_AT,
+      );
+      ticking.current = false;
+    };
+
+    const onScroll = () => {
+      if (!ticking.current) {
+        ticking.current = true;
+        window.requestAnimationFrame(update);
+      }
+    };
+
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  /* Measure header height → page ko spacer dena taaki content shift na ho */
+  useEffect(() => {
+    if (typeof window === "undefined" || !headerRef.current) return;
+    const el = headerRef.current;
+    const ro = new ResizeObserver(() => {
+      setHeaderHeight(el.getBoundingClientRect().height);
+    });
+    ro.observe(el);
+    setHeaderHeight(el.getBoundingClientRect().height);
+    return () => ro.disconnect();
+  }, []);
+
+  /* Collapse hote hi khule hue dropdowns band */
+  useEffect(() => {
+    if (isScrolled) {
+      setIsAllCategoriesOpen(false);
+      setHoveredCategoryId(null);
+    }
+  }, [isScrolled]);
 
   /* =========================================================
      RESTORE SAVED LOCATION
@@ -983,11 +1059,7 @@ function HeaderInner({
     };
   }, []);
 
-  /* =========================================================
-     ✅ NEW: CART REFRESH LISTENER
-     Checkout page "placeOrder" ke baad ye event dispatch karta hai.
-     Header sun ke getCart ko refetch karta hai — count + items update.
-  ========================================================= */
+  /* CART REFRESH LISTENER */
   useEffect(() => {
     const handleCartRefresh = () => {
       if (hasToken === true) {
@@ -1336,6 +1408,11 @@ function HeaderInner({
   };
 
   /* =========================================================
+     ✅ COLLAPSIBLE WRAPPER STYLES
+     - Smooth height collapse using max-height (fixed px avoid karo)
+     - overflow visible rakho normal me taaki dropdowns clip na hon
+  ========================================================= */
+  /* =========================================================
      RENDER
   ========================================================= */
 
@@ -1347,56 +1424,91 @@ function HeaderInner({
         onConfirm={handleLogoutConfirm}
         isLoading={isLoggingOut}
       />
-      <header className="premium-header sticky top-0 z-[999] w-full font-lato">
+
+      {/*
+        ✅ FIX: sticky ki jagah spacer + fixed wrapper.
+        - Page content shift nahi hoga kyunki spacer headerHeight reserve karta hai.
+        - Header fixed hai, isliye page scroll ke dauran layout stable rehta hai.
+        - Pehle black announcement strip hide hoti hai; deep scroll par nav hide hoti hai.
+      */}
+      <div
+        style={{ height: headerHeight || undefined }}
+        aria-hidden="true"
+        className="premium-header-spacer"
+      />
+
+      <header
+        ref={headerRef}
+        className={`premium-header premium-header-fixed font-lato ${
+          isScrolled ? "premium-header-compact" : ""
+        }`}
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 999,
+          willChange: "transform",
+        }}
+      >
+        {/* ── TOP ANNOUNCEMENT STRIP (scroll par hide) ── */}
         {!hideAnnouncement && (
-          <div className="premium-benefits premium-benefits-refreshed">
-            <div
-              className="premium-benefits-marquee"
-              aria-label="Store benefits"
-            >
-              <div className="premium-benefits-track">
-                {[0, 1].map((copy) => (
-                  <div
-                    className="premium-benefits-group"
-                    key={copy}
-                    aria-hidden={copy === 1}
-                  >
-                    <span className="premium-benefit-item">
-                      <Grid3x3 size={15} /> Explore premium collections
-                    </span>
-                    <span className="premium-benefit-item">
-                      <BadgeCheck size={15} /> 100% genuine products
-                    </span>
-                    <span className="premium-benefit-item">
-                      <Tag size={15} /> Discover new arrivals
-                    </span>
-                    <span className="premium-benefit-item">
-                      <Headphones size={15} /> Dedicated customer support
-                    </span>
-                  </div>
-                ))}
+          <div
+            className={`premium-header-announcement-wrap ${isScrolled ? "is-collapsed" : ""}`}
+            aria-hidden={isScrolled}
+          >
+            <div className="premium-benefits premium-benefits-refreshed">
+              <div
+                className="premium-benefits-marquee"
+                aria-label="Store benefits"
+              >
+                <div className="premium-benefits-track">
+                  {[0, 1].map((copy) => (
+                    <div
+                      className="premium-benefits-group"
+                      key={copy}
+                      aria-hidden={copy === 1}
+                    >
+                      <span className="premium-benefit-item">
+                        <Grid3x3 size={15} /> Explore premium collections
+                      </span>
+                      <span className="premium-benefit-item">
+                        <BadgeCheck size={15} /> 100% genuine products
+                      </span>
+                      <span className="premium-benefit-item">
+                        <Tag size={15} /> Discover new arrivals
+                      </span>
+                      <span className="premium-benefit-item">
+                        <Headphones size={15} /> Dedicated customer support
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
+              <button
+                type="button"
+                onClick={handleCheckAvailability}
+                disabled={locationLoading}
+                className="premium-deliver premium-deliver-refreshed"
+                title={locationError || "Detect delivery location"}
+                tabIndex={isScrolled ? -1 : 0}
+              >
+                {locationLoading ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <MapPin size={16} />
+                )}
+                <span>
+                  <small>DELIVER TO</small>
+                  <b>{locationName || "Select location"}</b>
+                </span>
+                <ChevronDown size={13} />
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={handleCheckAvailability}
-              disabled={locationLoading}
-              className="premium-deliver premium-deliver-refreshed"
-              title={locationError || "Detect delivery location"}
-            >
-              {locationLoading ? (
-                <Loader2 size={16} className="animate-spin" />
-              ) : (
-                <MapPin size={16} />
-              )}
-              <span>
-                <small>DELIVER TO</small>
-                <b>{locationName || "Select location"}</b>
-              </span>
-              <ChevronDown size={13} />
-            </button>
           </div>
         )}
+
+        {/* ── MAIN ROW (hamesha visible) ── */}
         <div className="premium-main">
           <div className="premium-shell premium-main-content">
             <button
@@ -1659,99 +1771,112 @@ function HeaderInner({
             </div>
           </div>
         </div>
+
+        {/* ── NAV BAR (scroll par hide) ── */}
         {!hideMenu && (
-          <nav className="premium-nav">
-            <div className="premium-shell premium-nav-inner">
-              <div
-                className="premium-nav-category"
-                onMouseLeave={() => setIsAllCategoriesOpen(false)}
-              >
-                <button
-                  type="button"
-                  className="premium-all-categories"
-                  onClick={() => setIsAllCategoriesOpen((prev) => !prev)}
-                  aria-expanded={isAllCategoriesOpen}
-                  aria-haspopup="true"
-                >
-                  <Menu size={22} /> ALL CATEGORIES
-                </button>
+          <div
+            className={`premium-header-nav-wrap ${isNavCollapsed ? "is-collapsed" : ""}`}
+            aria-hidden={isNavCollapsed}
+          >
+            <nav className="premium-nav">
+              <div className="premium-shell premium-nav-inner">
                 <div
-                  className="premium-all-dropdown"
-                  style={isAllCategoriesOpen ? { display: "block" } : undefined}
+                  className="premium-nav-category"
+                  onMouseLeave={() => setIsAllCategoriesOpen(false)}
                 >
-                  {categories.map((category: any) => (
-                    <button
-                      key={category.id}
-                      type="button"
-                      onClick={() =>
-                        goToProducts(
-                          category.slug || category.title || category.name,
-                        )
+                  <button
+                    type="button"
+                    className="premium-all-categories"
+                    onClick={() => setIsAllCategoriesOpen((prev) => !prev)}
+                    aria-expanded={isAllCategoriesOpen}
+                    aria-haspopup="true"
+                    tabIndex={isNavCollapsed ? -1 : 0}
+                  >
+                    <Menu size={22} /> ALL CATEGORIES
+                  </button>
+                  <div
+                    className="premium-all-dropdown"
+                    style={
+                      isAllCategoriesOpen ? { display: "block" } : undefined
+                    }
+                  >
+                    {categories.map((category: any) => (
+                      <button
+                        key={category.id}
+                        type="button"
+                        onClick={() =>
+                          goToProducts(
+                            category.slug || category.title || category.name,
+                          )
+                        }
+                      >
+                        {category.title || category.name}
+                        <ChevronRight size={15} />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <span className="premium-nav-separator" />
+                <div className="premium-nav-links">
+                  {desktopNavItems.map((item: any, index: number) => (
+                    <div
+                      className="premium-nav-link-wrap"
+                      key={`${item.label}-${index}`}
+                      onMouseEnter={() =>
+                        item.isCategory &&
+                        handleCategoryMouseEnter(item.categoryId)
                       }
+                      onMouseLeave={handleCategoryMouseLeave}
                     >
-                      {category.title || category.name}
-                      <ChevronRight size={15} />
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => handleNavigation(item)}
+                        aria-current={isNavItemActive(item) ? "page" : undefined}
+                        tabIndex={isNavCollapsed ? -1 : 0}
+                        className={`${navClass} ${
+                          isNavItemActive(item) ? "premium-nav-active" : ""
+                        }`}
+                      >
+                        {item.label}
+                      </button>
+                      {item.isCategory &&
+                        hoveredCategoryId === item.categoryId &&
+                        item.subcategories?.length > 0 && (
+                          <div
+                            className="premium-category-submenu"
+                            onMouseEnter={() =>
+                              handleCategoryPopupEnter(item.categoryId)
+                            }
+                            onMouseLeave={handleCategoryPopupLeave}
+                          >
+                            {item.subcategories.map((sub: any) => (
+                              <button
+                                type="button"
+                                key={sub.id}
+                                className={
+                                  isSubmenuActive(sub)
+                                    ? "premium-submenu-active"
+                                    : ""
+                                }
+                                aria-current={
+                                  isSubmenuActive(sub) ? "page" : undefined
+                                }
+                                onClick={() => goToSubcategory(sub)}
+                              >
+                                {sub.title || sub.name}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                    </div>
                   ))}
                 </div>
               </div>
-              <span className="premium-nav-separator" />
-              <div className="premium-nav-links">
-                {desktopNavItems.map((item: any, index: number) => (
-                  <div
-                    className="premium-nav-link-wrap"
-                    key={`${item.label}-${index}`}
-                    onMouseEnter={() =>
-                      item.isCategory &&
-                      handleCategoryMouseEnter(item.categoryId)
-                    }
-                    onMouseLeave={handleCategoryMouseLeave}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => handleNavigation(item)}
-                      aria-current={isNavItemActive(item) ? "page" : undefined}
-                      className={`${navClass} ${
-                        isNavItemActive(item) ? "premium-nav-active" : ""
-                      }`}
-                    >
-                      {item.label}
-                    </button>
-                    {item.isCategory &&
-                      hoveredCategoryId === item.categoryId &&
-                      item.subcategories?.length > 0 && (
-                        <div
-                          className="premium-category-submenu"
-                          onMouseEnter={() =>
-                            handleCategoryPopupEnter(item.categoryId)
-                          }
-                          onMouseLeave={handleCategoryPopupLeave}
-                        >
-                          {item.subcategories.map((sub: any) => (
-                            <button
-                              type="button"
-                              key={sub.id}
-                              className={
-                                isSubmenuActive(sub)
-                                  ? "premium-submenu-active"
-                                  : ""
-                              }
-                              aria-current={
-                                isSubmenuActive(sub) ? "page" : undefined
-                              }
-                              onClick={() => goToSubcategory(sub)}
-                            >
-                              {sub.title || sub.name}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </nav>
+            </nav>
+          </div>
         )}
+
+        {/* ── MOBILE DRAWER ── */}
         {isMobileMenuOpen && (
           <div className="premium-mobile-drawer">
             <button
@@ -1776,9 +1901,7 @@ function HeaderInner({
                   key={`all-category-${category.id}`}
                   type="button"
                   onClick={() =>
-                    goToProducts(
-                      category.slug || category.title || category.name,
-                    )
+                    goToProducts(category.slug || category.title || category.name)
                   }
                 >
                   {category.title || category.name}
