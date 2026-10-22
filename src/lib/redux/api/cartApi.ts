@@ -1,9 +1,9 @@
+// src/lib/redux/api/cartApi.ts
 import { baseApi } from "./baseApi";
 import {
   CartResponse,
   AddToCartRequest,
   UpdateCartItemRequest,
-
   CartSummary,
   AddToCartResponse,
   ApiResponse,
@@ -18,6 +18,30 @@ interface CouponsResponse {
     total: number;
     per_page: number;
   };
+}
+
+/* =========================================================
+   CART LIVE STOCK TYPES
+========================================================= */
+
+export interface CartStockItem {
+  product_id: number;
+  requested_quantity: number;
+  stock_quantity: number;
+  available: boolean;
+  status: string;
+}
+
+export interface CartStockResponse {
+  success: boolean;
+  data: {
+    all_available: boolean;
+    total_items: number;
+    available_items: number;
+    unavailable_items: number;
+    items: CartStockItem[];
+  };
+  message?: string;
 }
 
 export const cartApi = baseApi.injectEndpoints({
@@ -43,19 +67,19 @@ export const cartApi = baseApi.injectEndpoints({
 
     // Update cart item quantity
     updateCartItem: builder.mutation<
-    ApiResponse,
-    {
-      itemId: number;
-      data: UpdateCartItemRequest;
-    }
-  >({
-    query: ({ itemId, data }) => ({
-      url: `/cart/update/${itemId}`,
-      method: "POST",
-      body: data,
+      ApiResponse,
+      {
+        itemId: number;
+        data: UpdateCartItemRequest;
+      }
+    >({
+      query: ({ itemId, data }) => ({
+        url: `/cart/update/${itemId}`,
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["Cart"],
     }),
-    invalidatesTags: ["Cart"],
-  }),
 
     // Remove item from cart
     removeFromCart: builder.mutation<ApiResponse, number>({
@@ -108,6 +132,28 @@ export const cartApi = baseApi.injectEndpoints({
       providesTags: ["Cart"],
     }),
 
+    /* =======================================================
+       LIVE STOCK CHECK FOR ENTIRE CART
+       GET /carts/{cartId}/check-stock
+       Returns availability for every product in the cart.
+       `cache: no-store` + `Cache-Control: no-cache` ensure
+       the freshest data is fetched every time.
+    ======================================================= */
+
+    checkCartStock: builder.mutation<CartStockResponse, { cartId: number }>({
+      query: ({ cartId }) => ({
+        url: `/carts/${encodeURIComponent(String(cartId))}/check-stock`,
+        method: "GET",
+        cache: "no-store" as RequestCache,
+        headers: {
+          Accept: "application/json",
+          "Cache-Control": "no-cache",
+        },
+      }),
+      // Cart contents did not change, but stock availability might have.
+      // Invalidate Cart so the cart page refetches the latest quantities.
+      invalidatesTags: ["Cart"],
+    }),
   }),
 });
 
@@ -122,6 +168,7 @@ export const {
   useGetCouponsQuery,
   useLazyGetCartQuery,
   useLazyGetCartSummaryQuery,
+  useCheckCartStockMutation,
 } = cartApi;
 
 export default cartApi;

@@ -28,7 +28,10 @@ import {
   useGetWishlistQuery,
 } from "@/lib/redux/api/Wishlist/wishlistApi";
 
-import { useGetProductsByCategoryQuery } from "@/lib/redux/api/productApi";
+import {
+  useGetProductsByCategoryQuery,
+  useCheckProductStockMutation,
+} from "@/lib/redux/api/productApi";
 
 import Fallback from "../../../public/indiekonnect-web/images/test.jpg";
 
@@ -343,27 +346,27 @@ const detectColor = (value: unknown): string => {
 const variantLabel = (v: any): string =>
   String(
     v?.color?.name ??
-      v?.variant_attributes?.color ??
-      v?.attributes?.color ??
-      v?.color_name ??
-      v?.colour ??
-      v?.color ??
-      v?.attribute_value ??
-      v?.value ??
-      v?.name ??
-      v?.title ??
-      "",
+    v?.variant_attributes?.color ??
+    v?.attributes?.color ??
+    v?.color_name ??
+    v?.colour ??
+    v?.color ??
+    v?.attribute_value ??
+    v?.value ??
+    v?.name ??
+    v?.title ??
+    "",
   ).trim();
 
 const getVariantImage = (v: any): string =>
   normalizeImageUrl(
     v?.image_url ??
-      v?.variant_image_url ??
-      v?.primary_image_url ??
-      v?.image ??
-      v?.images?.[0]?.image_url ??
-      v?.images?.[0]?.url ??
-      "",
+    v?.variant_image_url ??
+    v?.primary_image_url ??
+    v?.image ??
+    v?.images?.[0]?.image_url ??
+    v?.images?.[0]?.url ??
+    "",
   );
 
 // =========================================================    PRODUCT CARD   =========================================================
@@ -440,6 +443,7 @@ function ProductCardInner({
   // =======================================================    API   =======================================================
 
   const [addToCart] = useAddToCartMutation();
+  const [checkProductStock] = useCheckProductStockMutation();
 
   const [addToWishlist] = useAddToWishlistMutation();
 
@@ -601,14 +605,14 @@ function ProductCardInner({
 
   const categoryName = String(
     product?.category?.name ||
-      product?.category_name ||
-      (product?.category_id != null
-        ? apiCategoryNames[Number(product.category_id)]
-        : "") ||
-      (product?.categoryId != null
-        ? apiCategoryNames[Number(product.categoryId)]
-        : "") ||
-      "",
+    product?.category_name ||
+    (product?.category_id != null
+      ? apiCategoryNames[Number(product.category_id)]
+      : "") ||
+    (product?.categoryId != null
+      ? apiCategoryNames[Number(product.categoryId)]
+      : "") ||
+    "",
   ).trim();
 
   const productName = String(product?.name ?? "").trim() || "Product";
@@ -918,11 +922,11 @@ function ProductCardInner({
 
       const apiHex = String(
         v?.hax_color ??
-          v?.hex_color ??
-          v?.hex_code ??
-          v?.color_hex ??
-          v?.hex ??
-          "",
+        v?.hex_color ??
+        v?.hex_code ??
+        v?.color_hex ??
+        v?.hex ??
+        "",
       ).trim();
 
       // API color code is authoritative; use a name-based fallback only if absent.
@@ -1051,8 +1055,6 @@ function ProductCardInner({
 
   const selectedProductId = selectedVariant?.productId ?? product.id;
 
-  const selectedVariantId = selectedVariant?.variantId;
-
   const cartPayload = {
     product_id: selectedProductId,
 
@@ -1093,14 +1095,14 @@ function ProductCardInner({
           isDistributor && distributorMrp > 0 ? distributorMrp : retailMrp;
         const galleryImage = Array.isArray(full?.images)
           ? full.images
-              .map((entry: any) =>
-                normalizeImageUrl(
-                  typeof entry === "string"
-                    ? entry
-                    : (entry?.image_url ?? entry?.url),
-                ),
-              )
-              .find(Boolean)
+            .map((entry: any) =>
+              normalizeImageUrl(
+                typeof entry === "string"
+                  ? entry
+                  : (entry?.image_url ?? entry?.url),
+              ),
+            )
+            .find(Boolean)
           : "";
         const image =
           normalizeImageUrl(variant.image) ||
@@ -1137,13 +1139,13 @@ function ProductCardInner({
               : 0,
           rating: num(
             full?.reviews_summary?.average_rating ??
-              full?.reviews?.summary?.average_rating ??
-              full?.rating,
+            full?.reviews?.summary?.average_rating ??
+            full?.rating,
           ),
           reviews: num(
             full?.reviews_summary?.total_reviews ??
-              full?.reviews?.summary?.total_reviews ??
-              full?.reviews,
+            full?.reviews?.summary?.total_reviews ??
+            full?.reviews,
           ),
           inStock: stock,
         };
@@ -1205,9 +1207,8 @@ function ProductCardInner({
 
   const requireLogin = (): boolean => {
     if (hasToken !== true) {
-      const loginPath = `/auth/${
-        isDistributor ? "distributor" : "customer"
-      }/login`;
+      const loginPath = `/auth/${isDistributor ? "distributor" : "customer"
+        }/login`;
 
       router.push(loginPath);
 
@@ -1342,36 +1343,97 @@ function ProductCardInner({
     setIsDragging(false);
   };
 
+  // =======================================================    FRESH STOCK VALIDATION   =======================================================
+
+  // NOTE: `checkProductStock` already declares `invalidatesTags: ["Products"]`,
+  // so every subscribed product query (listing, category, slug detail, by-id,
+  // search) auto-refetches after each call. No manual dispatch is required.
+
+  const actionLockRef = useRef(false);
+
+  const checkFreshStock = async (): Promise<boolean> => {
+    const id = Number(selectedProductId);
+    const quantity = Number(cartPayload.quantity);
+    if (
+      !Number.isInteger(id) ||
+      id <= 0 ||
+      !Number.isInteger(quantity) ||
+      quantity <= 0
+    ) {
+      throw new Error(
+        "Invalid product or quantity. Please refresh and try again.",
+      );
+    }
+
+    // Reusable RTK Query endpoint: HTTP GET with `cache: no-store`.
+    // Uses the selected sibling PRODUCT id; no variant_id is passed.
+    let result;
+    try {
+      result = await checkProductStock({ product_id: id, quantity }).unwrap();
+    } catch (error: any) {
+      throw new Error(
+        error?.data?.message || "Unable to verify live stock. Please retry.",
+      );
+    }
+
+    const stock = result?.data;
+    if (
+      result?.success !== true ||
+      Number(stock?.product_id) !== id ||
+      typeof stock?.available !== "boolean" ||
+      !Number.isFinite(stock?.stock_quantity) ||
+      stock.stock_quantity < 0
+    ) {
+      throw new Error("Invalid stock API response. Please retry.");
+    }
+    // NOTE: No manual dispatch(productApi.util.invalidateTags(["Products"]))
+    // here — the mutation's own `invalidatesTags: ["Products"]` already
+    // refetches all subscribed listing/category queries, including when
+    // stock is now zero.
+    if (!stock.available || stock.stock_quantity < quantity) {
+      throw new Error(
+        "This product is currently out of stock or the requested quantity is unavailable.",
+      );
+    }
+    return true;
+  };
+
+  const alertStockError = (error: unknown) => {
+    const e = error as any;
+    dispatch(
+      showToast({
+        message:
+          e?.message || e?.data?.message || "Unable to check stock right now.",
+        type: "error",
+      }),
+    );
+  };
+
   // =======================================================    ADD TO CART   =======================================================
 
   const handleAddToCart = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
-
-    if (!requireLogin()) return;
-
-    if (!displayedStock || adding) return;
-
+    if (!requireLogin() || actionLockRef.current) return;
+    actionLockRef.current = true;
     setAdding(true);
 
     try {
+      await checkFreshStock();
+      // Backend add-to-cart must ALSO enforce current stock.
       await addToCart(cartPayload as Parameters<typeof addToCart>[0]).unwrap();
-
+      // NOTE: No manual invalidateTags here — the checkProductStock mutation
+      // above already triggered the auto-refetch via `invalidatesTags`.
       dispatch(
         showToast({
           message: `${displayedProductName} added to cart successfully! 🛒`,
-
           type: "success",
         }),
       );
-    } catch (error: any) {
-      dispatch(
-        showToast({
-          message: error?.data?.message || "Failed to add item to cart",
-
-          type: "error",
-        }),
-      );
+      // Add to Cart retains the existing behavior: no checkout redirect.
+    } catch (error) {
+      alertStockError(error);
     } finally {
+      actionLockRef.current = false;
       setAdding(false);
     }
   };
@@ -1380,38 +1442,22 @@ function ProductCardInner({
 
   const handleBuyNow = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
-
-    if (!requireLogin()) return;
-
-    if (!displayedStock || buying) return;
-
+    if (!requireLogin() || actionLockRef.current) return;
+    actionLockRef.current = true;
     setBuying(true);
 
     try {
-      // Buy Now must NOT mutate the shopping cart.
-      // The selected product is sent directly to checkout.
+      await checkFreshStock();
+      // Do not add to shopping cart. Only navigate AFTER successful verification.
       const params = new URLSearchParams({
         checkout_type: "buy_now",
-
         product_id: String(selectedProductId),
-
         quantity: "1",
-
-        ...(selectedVariantId != null
-          ? { variant_id: String(selectedVariantId) }
-          : {}),
       });
-
       router.push(`/checkout?${params.toString()}`);
-    } catch (error: any) {
-      dispatch(
-        showToast({
-          message: error?.data?.message || "Failed to process your order",
-
-          type: "error",
-        }),
-      );
-
+    } catch (error) {
+      alertStockError(error);
+      actionLockRef.current = false;
       setBuying(false);
     }
   };
@@ -1787,11 +1833,10 @@ function ProductCardInner({
 
                   aria-current={isActive ? "true" : undefined}
 
-                  className={`block h-[5px] shrink-0 rounded-full transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black ${
-                    isActive
+                  className={`block h-[5px] shrink-0 rounded-full transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black ${isActive
                       ? "w-[17px] bg-[#171717]"
                       : "w-[5px] bg-[#c7c7c7] hover:bg-[#777]"
-                  }`}
+                    }`}
                 />
               );
             })}
@@ -1965,75 +2010,73 @@ function ProductCardInner({
             </span>
           )}
 
-          <div className="mt-[9px] flex w-full items-center gap-[6px]">
-            <button
-              type="button"
+          {/* ACTION BUTTONS
+              - In stock: Buy Now + Add to Cart
+              - Out of stock: Sold Out (disabled, single full-width) */}
 
-              onClick={handleBuyNow}
-
-              disabled={!displayedStock || buying}
-
-              className={`
-
-                flex h-[34px] min-w-0 flex-1 items-center justify-center rounded-[8px]
-
-                text-[10px] font-semibold transition
-
-                ${
-                  displayedStock && !buying
+          {displayedStock ? (
+            <div className="mt-[9px] flex w-full items-center gap-[6px]">
+              <button
+                type="button"
+                onClick={handleBuyNow}
+                disabled={buying || adding}
+                className={`
+                  flex h-[34px] min-w-0 flex-1 items-center justify-center rounded-[8px]
+                  text-[10px] font-semibold transition
+                  ${!buying && !adding
                     ? "bg-[#111] text-white hover:bg-black"
                     : "cursor-not-allowed bg-[#e7e5e1] text-[#888]"
-                }
+                  }
+                `}
+              >
+                {buying ? (
+                  <span className="h-[11px] w-[11px] animate-spin rounded-full border-2 border-white border-t-transparent" />
+                ) : (
+                  "Buy Now"
+                )}
+              </button>
 
-              `}
-            >
-              {buying ? (
-                <span className="h-[11px] w-[11px] animate-spin rounded-full border-2 border-white border-t-transparent" />
-              ) : displayedStock ? (
-                "Buy Now"
-              ) : (
-                "Sold Out"
-              )}
-            </button>
-
-            <button
-              type="button"
-
-              onClick={handleAddToCart}
-
-              disabled={!displayedStock || adding}
-
-              aria-label="Add to cart"
-
-              className={`
-
-                flex h-[34px] min-w-[96px] flex-1 items-center justify-center gap-1 px-[5px]
-
-                rounded-[8px] border
-
-                ${
-                  displayedStock && !adding
+              <button
+                type="button"
+                onClick={handleAddToCart}
+                disabled={adding || buying}
+                aria-label="Add to cart"
+                className={`
+                  flex h-[34px] min-w-[96px] flex-1 items-center justify-center gap-1 px-[5px]
+                  rounded-[8px] border
+                  ${!adding && !buying
                     ? "border-[#dedbd4] bg-white text-[#222] hover:border-[#111] hover:bg-[#111] hover:text-white"
                     : "cursor-not-allowed border-[#e3e1dc] bg-[#f6f5f1] text-[#999]"
-                }
-
-              `}
-            >
-              {adding ? (
-                <span className="h-[12px] w-[12px] animate-spin rounded-full border-2 border-current border-t-transparent" />
-              ) : (
-                <>
-                  <ShoppingCart
-                    className="h-[14px] w-[14px]"
-
-                    strokeWidth={1.7}
-                  />
-
-                  <span className="text-[10px] font-semibold">Add to Cart</span>
-                </>
-              )}
-            </button>
-          </div>
+                  }
+                `}
+              >
+                {adding ? (
+                  <span className="h-[12px] w-[12px] animate-spin rounded-full border-2 border-current border-t-transparent" />
+                ) : (
+                  <>
+                    <ShoppingCart
+                      className="h-[14px] w-[14px]"
+                      strokeWidth={1.7}
+                    />
+                    <span className="text-[10px] font-semibold">
+                      Add to Cart
+                    </span>
+                  </>
+                )}
+              </button>
+            </div>
+          ) : (
+            <div className="mt-[9px] flex w-full items-center">
+              <button
+                type="button"
+                disabled
+                aria-label="Sold out"
+                className="flex h-[34px] w-full cursor-not-allowed items-center justify-center rounded-[8px] border border-[#e3e1dc] bg-[#f6f5f1] text-[10px] font-semibold uppercase tracking-wide text-[#999]"
+              >
+                Sold Out
+              </button>
+            </div>
+          )}
         </div>
       </motion.article>
 
@@ -2178,6 +2221,7 @@ function ProductCardInner({
 
 export default function ProductCard(props: ProductCardProps) {
   const item = props?.product;
+
   if (
     !item ||
     typeof item !== "object" ||
@@ -2186,5 +2230,6 @@ export default function ProductCard(props: ProductCardProps) {
   ) {
     return null;
   }
+
   return <ProductCardInner {...props} product={item} />;
 }

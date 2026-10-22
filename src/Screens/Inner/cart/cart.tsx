@@ -18,6 +18,7 @@ import {
   Sparkles,
   ChevronRight,
   Home,
+  AlertTriangle,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import Header from "../../../components/common/Header";
@@ -28,6 +29,7 @@ import {
   useClearCartMutation,
   useUpdateCartItemMutation,
   useAddToCartMutation,
+  useCheckCartStockMutation,
 } from "@/lib/redux/api/cartApi";
 import { useGetProductsQuery } from "@/lib/redux/api/productApi";
 
@@ -284,12 +286,14 @@ const CartProductItem = ({
   item,
   isUpdating,
   isRemoving,
+  isUnavailable,
   updateQuantity,
   removeItem,
 }: {
   item: CartItemView;
   isUpdating: boolean;
   isRemoving: boolean;
+  isUnavailable: boolean;
   updateQuantity: (id: number, action: "increment" | "decrement") => void;
   removeItem: (id: number) => void;
 }) => {
@@ -304,11 +308,13 @@ const CartProductItem = ({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, height: 0 }}
       transition={{ duration: 0.2 }}
-      className="group grid grid-cols-[88px_minmax(0,1fr)] gap-4 border-b border-[#EEEEEE] py-6 last:border-0 sm:grid-cols-[132px_minmax(0,1fr)] sm:gap-6 sm:py-7"
+      className={`group grid grid-cols-[88px_minmax(0,1fr)] gap-4 border-b border-[#EEEEEE] py-6 last:border-0 sm:grid-cols-[132px_minmax(0,1fr)] sm:gap-6 sm:py-7 ${isUnavailable ? "relative" : ""
+        }`}
     >
       <Link
         href={`/product/${item.slug}`}
-        className="relative block h-[105px] w-[88px] overflow-hidden rounded-xl bg-[#F7F7F7] sm:h-[150px] sm:w-[132px]"
+        className={`relative block h-[105px] w-[88px] overflow-hidden rounded-xl bg-[#F7F7F7] sm:h-[150px] sm:w-[132px] ${isUnavailable ? "opacity-60" : ""
+          }`}
       >
         <Image
           src={item.image}
@@ -317,6 +323,13 @@ const CartProductItem = ({
           sizes="(max-width:640px) 88px, 132px"
           className="object-contain p-2.5 transition-transform duration-500 group-hover:scale-105"
         />
+        {isUnavailable && (
+          <span className="absolute inset-0 flex items-center justify-center bg-black/45">
+            <span className="rounded-[4px] bg-white px-2 py-1 text-[9px] font-bold uppercase tracking-wide text-[#B64339]">
+              Out of Stock
+            </span>
+          </span>
+        )}
       </Link>
       <div className="flex min-w-0 flex-col justify-between gap-3">
         <div className="flex items-start justify-between gap-3">
@@ -337,6 +350,14 @@ const CartProductItem = ({
               sku={item.sku}
               variantAttributes={item.variantAttributes}
             />
+            {isUnavailable && (
+              <div className="mt-2 inline-flex items-center gap-1.5 rounded-[4px] border border-[#F1C8C4] bg-[#FFF2F1] px-2 py-1">
+                <AlertTriangle className="h-3 w-3 text-[#B64339]" />
+                <span className="text-[9px] font-semibold uppercase tracking-wide text-[#B64339]">
+                  Currently unavailable
+                </span>
+              </div>
+            )}
           </div>
           <button
             type="button"
@@ -382,7 +403,8 @@ const CartProductItem = ({
               aria-label="Increase quantity"
               disabled={
                 item.quantity >= Math.min(10, item.stockQuantity ?? 10) ||
-                isUpdating
+                isUpdating ||
+                isUnavailable
               }
               onClick={() => updateQuantity(item.id, "increment")}
               className="grid h-full w-10 place-items-center text-[#292929] transition hover:bg-[#F6F6F6] disabled:opacity-30"
@@ -412,12 +434,18 @@ const OrderSummary = ({
   total,
   itemCount,
   cartItems,
+  isCheckingStock,
+  unavailableCount,
+  onCheckout,
 }: {
   subtotal: number;
   totalSavings: number;
   total: number;
   itemCount: number;
   cartItems: CartItemView[];
+  isCheckingStock: boolean;
+  unavailableCount: number;
+  onCheckout: () => void;
 }) => {
   const router = useRouter();
   return (
@@ -458,18 +486,38 @@ const OrderSummary = ({
           {formatPrice(total)}
         </p>
       </div>
+
+      {unavailableCount > 0 && (
+        <div className="mb-4 flex items-start gap-2 rounded-lg border border-[#F1C8C4] bg-[#FFF2F1] p-3">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[#B64339]" />
+          <div>
+            <p className="text-[11px] font-semibold text-[#B64339]">
+              {unavailableCount}{" "}
+              {unavailableCount === 1 ? "item is" : "items are"} out of stock
+            </p>
+            <p className="mt-0.5 text-[10px] leading-4 text-[#8A4A44]">
+              Please remove the unavailable items to continue checkout.
+            </p>
+          </div>
+        </div>
+      )}
+
       <button
         type="button"
-        onClick={() => {
-          if (!cartItems.length) {
-            toast.error("Your cart is empty");
-            return;
-          }
-          router.push("/checkout");
-        }}
-        className="flex h-[52px] w-full items-center justify-center gap-3 rounded-xl bg-[#171717] px-5 text-[13px] font-semibold text-white transition hover:bg-[#373737] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black"
+        onClick={onCheckout}
+        disabled={isCheckingStock || !cartItems.length}
+        className="flex h-[52px] w-full items-center justify-center gap-3 rounded-xl bg-[#171717] px-5 text-[13px] font-semibold text-white transition hover:bg-[#373737] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black disabled:cursor-not-allowed disabled:opacity-60"
       >
-        Proceed to Checkout <ArrowRight className="h-4 w-4" />
+        {isCheckingStock ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Checking stock...
+          </>
+        ) : (
+          <>
+            Proceed to Checkout <ArrowRight className="h-4 w-4" />
+          </>
+        )}
       </button>
       <button
         type="button"
@@ -694,6 +742,9 @@ const CartWithItems = ({
   subtotal,
   totalSavings,
   total,
+  unavailableProductIds,
+  isCheckingStock,
+  onCheckout,
 }: any) => {
   return (
     <div
@@ -787,6 +838,7 @@ const CartWithItems = ({
                   item={item}
                   isUpdating={isUpdating === item.id}
                   isRemoving={isRemoving}
+                  isUnavailable={unavailableProductIds.has(item.productId)}
                   updateQuantity={updateQuantity}
                   removeItem={removeItem}
                 />
@@ -837,6 +889,9 @@ const CartWithItems = ({
           total={total}
           itemCount={itemCount}
           cartItems={cartItems}
+          isCheckingStock={isCheckingStock}
+          unavailableCount={unavailableProductIds.size}
+          onCheckout={onCheckout}
         />
       </aside>
     </div>
@@ -851,6 +906,12 @@ export default function CartPage() {
   >(null);
   const recommendedScrollRef = useRef<HTMLDivElement>(null);
 
+  // Set of product IDs currently flagged unavailable by the last stock check.
+  const [unavailableProductIds, setUnavailableProductIds] = useState<
+    Set<number>
+  >(new Set());
+  const [isCheckingStock, setIsCheckingStock] = useState(false);
+
   const {
     data: cartData,
     isLoading: isCartLoading,
@@ -863,6 +924,7 @@ export default function CartPage() {
   const [clearCart, { isLoading: isClearing }] = useClearCartMutation();
   const [updateCartItem] = useUpdateCartItemMutation();
   const [addToCart] = useAddToCartMutation();
+  const [checkCartStock] = useCheckCartStockMutation();
 
   const scrollRecommended = (direction: "left" | "right") => {
     const element = recommendedScrollRef.current;
@@ -936,6 +998,100 @@ export default function CartPage() {
     };
   }, [cartItems]);
 
+  /* -------------------------------------------------------
+     Cart-level live stock check
+     Runs the /carts/{id}/check-stock endpoint on demand
+     (just before checkout). Updates `unavailableProductIds`
+     so unavailable items are visually flagged.
+     Emits a toast for every outcome (success / partial / fail).
+  ------------------------------------------------------- */
+  const runCartStockCheck = async (): Promise<{
+    allAvailable: boolean;
+    unavailableIds: Set<number>;
+  }> => {
+    const cartId = cartData?.data?.id;
+
+    // Cart ID missing — cannot verify. Notify and block.
+    if (!cartId) {
+      toast.error("Cart is not ready yet. Please refresh the page.", {
+        position: "bottom-center",
+      });
+      return { allAvailable: false, unavailableIds: new Set() };
+    }
+
+    try {
+      const result = await checkCartStock({ cartId }).unwrap();
+      const items = result?.data?.items || [];
+      const unavailableIds = new Set<number>();
+
+      items.forEach((it) => {
+        if (!it.available) {
+          unavailableIds.add(Number(it.product_id));
+        }
+      });
+
+      setUnavailableProductIds(unavailableIds);
+      // checkCartStock invalidates ["Cart"] which triggers refetch;
+      // explicit refetch keeps the view in sync in one tick.
+      await refetchCart();
+
+      const allAvailable = unavailableIds.size === 0;
+
+      // Toast per outcome
+      if (allAvailable) {
+        toast.success("All items are in stock. Proceeding to checkout…", {
+          position: "bottom-center",
+          duration: 2000,
+        });
+      } else {
+        toast.error(
+          unavailableIds.size === 1
+            ? "1 item is out of stock. Please remove it to continue."
+            : `${unavailableIds.size} items are out of stock. Please remove them to continue.`,
+          {
+            position: "bottom-center",
+            duration: 4000,
+          },
+        );
+      }
+
+      return { allAvailable, unavailableIds };
+    } catch (error: any) {
+      // If the check itself fails, do not block the user silently.
+      // Show a toast and let the backend reject at checkout time.
+      toast.error(
+        error?.data?.message ||
+        "Unable to verify stock right now. Please try again.",
+        {
+          position: "bottom-center",
+          duration: 4000,
+        },
+      );
+      return { allAvailable: false, unavailableIds: new Set() };
+    }
+  };
+  const handleCheckout = async () => {
+    if (!cartItems.length) {
+      toast.error("Your cart is empty", {
+        position: "bottom-center",
+      });
+      return;
+    }
+
+    setIsCheckingStock(true);
+    try {
+      const { allAvailable } = await runCartStockCheck();
+      // Toast is already emitted inside runCartStockCheck() for both
+      // the "all available" and "some unavailable" cases.
+      if (!allAvailable) {
+        return;
+      }
+      router.push("/checkout");
+    } finally {
+      setIsCheckingStock(false);
+    }
+  };
+
   const updateQuantity = async (
     cartItemId: number,
     action: "increment" | "decrement",
@@ -962,6 +1118,13 @@ export default function CartPage() {
         },
       }).unwrap();
       await refetchCart();
+      // Clear stale unavailable flags for this item after a successful update.
+      setUnavailableProductIds((prev) => {
+        if (!prev.has(item.productId)) return prev;
+        const next = new Set(prev);
+        next.delete(item.productId);
+        return next;
+      });
     } catch (error: any) {
       toast.error(error?.data?.message || "Unable to update quantity");
     } finally {
@@ -977,6 +1140,12 @@ export default function CartPage() {
     try {
       await removeFromCart(item.cartItemId).unwrap();
       await refetchCart();
+      setUnavailableProductIds((prev) => {
+        if (!prev.has(item.productId)) return prev;
+        const next = new Set(prev);
+        next.delete(item.productId);
+        return next;
+      });
       toast.success("Item removed from cart", {
         position: "bottom-center",
       });
@@ -989,6 +1158,7 @@ export default function CartPage() {
     try {
       await clearCart({}).unwrap();
       await refetchCart();
+      setUnavailableProductIds(new Set());
       toast.success("Cart cleared successfully", {
         position: "bottom-center",
       });
@@ -1038,8 +1208,8 @@ export default function CartPage() {
           cartCount={0}
           cartSubtotal={0}
           wishlistCount={0}
-          onRemoveFromCart={() => {}}
-          onClearCart={() => {}}
+          onRemoveFromCart={() => { }}
+          onClearCart={() => { }}
         />
         <main className="mx-auto flex min-h-[65vh] w-full max-w-[1200px] items-center justify-center px-4">
           <div className="text-center">
@@ -1110,6 +1280,9 @@ export default function CartPage() {
             subtotal={subtotal}
             totalSavings={totalSavings}
             total={total}
+            unavailableProductIds={unavailableProductIds}
+            isCheckingStock={isCheckingStock}
+            onCheckout={handleCheckout}
           />
         )}
       </main>
