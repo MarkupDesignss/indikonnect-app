@@ -21,25 +21,28 @@ const PX_W = 1011;
 const PX_H = 638;
 
 // ---- Clean White / Black Theme ----
-const INK = "#000000"; // Pure black for text
-const MUTED = "#555555"; // Dark grey for labels
-const PAPER = "#FFFFFF"; // Pure white background
-const SOFT = "#F3F4F6"; // Light grey for panels
-const BORDER = "#D1D5DB"; // Grey for borders
+const INK = "#000000";
+const MUTED = "#555555";
+const PAPER = "#FFFFFF";
+const SOFT = "#F3F4F6";
+const BORDER = "#D1D5DB";
 const GREEN = "#15803D";
 
 const FONT_FAMILY = "Poppins, Arial, sans-serif";
 const MED = (px: number) => `500 ${px}px ${FONT_FAMILY}`;
 const SEMI = (px: number) => `600 ${px}px ${FONT_FAMILY}`;
 
-// Photo rectangle on the FRONT card (canvas px). Everything else derives from it.
+// Photo rectangle on the FRONT card.
 const PHOTO = { x: 50, y: 140, w: 210, h: 280, r: 12 };
+
 const PHOTO_CSS = {
   left: `${(PHOTO.x / PX_W) * 100}%`,
   top: `${(PHOTO.y / PX_H) * 100}%`,
   width: `${(PHOTO.w / PX_W) * 100}%`,
   height: `${(PHOTO.h / PX_H) * 100}%`,
-  borderRadius: `${(PHOTO.r / PHOTO.w) * 100}% / ${(PHOTO.r / PHOTO.h) * 100}%`,
+  borderRadius: `${(PHOTO.r / PHOTO.w) * 100}% / ${
+    (PHOTO.r / PHOTO.h) * 100
+  }%`,
 };
 
 type User = {
@@ -105,7 +108,10 @@ const emptyAddress: Address = {
   pincode: "",
 };
 
-async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
+async function api<T>(
+  path: string,
+  options: RequestInit = {},
+): Promise<T> {
   const res = await fetch(API_BASE + path, {
     ...options,
     credentials: "include",
@@ -153,7 +159,7 @@ function loadRazorpay(): Promise<void> {
   });
 }
 
-// Load Poppins 500/600 so both the UI and the canvas card use it.
+// Load Poppins 500/600 for the UI and canvas card.
 async function loadPoppins(): Promise<void> {
   if (typeof document === "undefined") return;
 
@@ -173,6 +179,7 @@ async function loadPoppins(): Promise<void> {
     await Promise.race([
       new Promise<void>((resolve) => {
         if (link!.sheet) return resolve();
+
         link!.addEventListener("load", () => resolve(), { once: true });
         link!.addEventListener("error", () => resolve(), { once: true });
       }),
@@ -184,27 +191,33 @@ async function loadPoppins(): Promise<void> {
         document.fonts.load("500 24px Poppins"),
         document.fonts.load("600 24px Poppins"),
       ]),
-      new Promise((resolve) => setTimeout(resolve, 3000)),
+      new Promise<void>((resolve) => setTimeout(resolve, 3000)),
     ]);
   } catch {
-    // fall back to Arial silently
+    // Fall back to Arial silently.
   }
 }
 
 function getProfilePhotoUrl(user: User): string | null {
   const picture = user.profile_picture;
+
   const candidate =
     typeof picture === "string" ? picture : picture?.url || picture?.path;
+
   const finalValue = candidate || user.profile_image || user.avatar;
+
   if (!finalValue || typeof finalValue !== "string") return null;
+
   return finalValue.trim() || null;
 }
 
-function img(src: string, allowCanvasExport = false): Promise<HTMLImageElement> {
+function img(
+  src: string,
+  allowCanvasExport = false,
+): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new Image();
 
-    // Set CORS before src for a best-effort canvas/PDF export of remote images.
     if (allowCanvasExport) image.crossOrigin = "anonymous";
 
     image.onload = () => resolve(image);
@@ -216,15 +229,18 @@ function img(src: string, allowCanvasExport = false): Promise<HTMLImageElement> 
 function escapeHtmlAttribute(value: string): string {
   return value
     .replace(/&/g, "&amp;")
-    .replace(/\"/g, "&quot;")
+    .replace(/"/g, "&quot;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
 }
 
 function formatDate(value?: string): string {
   if (!value) return "—";
+
   const date = new Date(value);
+
   if (Number.isNaN(date.getTime())) return value;
+
   return date.toLocaleDateString("en-GB", {
     day: "2-digit",
     month: "short",
@@ -266,13 +282,20 @@ function drawText(
   align: CanvasTextAlign = "left",
   spacing = "0px",
 ) {
-  const c = ctx as CanvasRenderingContext2D & { letterSpacing?: string };
+  const c = ctx as CanvasRenderingContext2D & {
+    letterSpacing?: string;
+  };
+
   ctx.font = font;
   ctx.fillStyle = color;
   ctx.textAlign = align;
+
   if ("letterSpacing" in c) c.letterSpacing = spacing;
+
   ctx.fillText(value, x, y, maxWidth);
+
   if ("letterSpacing" in c) c.letterSpacing = "0px";
+
   ctx.textAlign = "left";
 }
 
@@ -284,7 +307,18 @@ function drawLabelValue(
   y: number,
   width = 330,
 ) {
-  drawText(ctx, label.toUpperCase(), x, y, MED(14), MUTED, width, "left", "2px");
+  drawText(
+    ctx,
+    label.toUpperCase(),
+    x,
+    y,
+    MED(14),
+    MUTED,
+    width,
+    "left",
+    "2px",
+  );
+
   drawText(ctx, value || "—", x, y + 34, SEMI(24), INK, width);
 }
 
@@ -298,12 +332,23 @@ function cropPhoto(
   r: number,
 ) {
   const ratio = Math.max(w / photo.naturalWidth, h / photo.naturalHeight);
+
   const nw = photo.naturalWidth * ratio;
   const nh = photo.naturalHeight * ratio;
+
   ctx.save();
+
   roundRect(ctx, x, y, w, h, r);
   ctx.clip();
-  ctx.drawImage(photo, x + (w - nw) / 2, y + (h - nh) / 2, nw, nh);
+
+  ctx.drawImage(
+    photo,
+    x + (w - nw) / 2,
+    y + (h - nh) / 2,
+    nw,
+    nh,
+  );
+
   ctx.restore();
 }
 
@@ -313,18 +358,88 @@ function fitName(
   maxWidth: number,
 ) {
   let size = 42;
+
   while (size > 20) {
     ctx.font = SEMI(size);
+
     if (ctx.measureText(value).width <= maxWidth) break;
+
     size -= 1;
   }
+
   return size;
 }
 
-// Clean White background
+// Clean white card background.
 function lightBackground(ctx: CanvasRenderingContext2D) {
   ctx.fillStyle = PAPER;
   ctx.fillRect(0, 0, PX_W, PX_H);
+}
+
+// ======================================================
+// SMALL, CENTERED WATERMARK
+// The logo stays inside the content area and does not
+// spread over the entire card or go outside the canvas.
+// ======================================================
+
+function drawWatermark(
+  ctx: CanvasRenderingContext2D,
+  logo: HTMLImageElement | null,
+  side: "front" | "back",
+) {
+  if (!logo || !logo.naturalWidth || !logo.naturalHeight) return;
+
+  // Front: keep the watermark behind the information area,
+  // away from the distributor photo.
+  //
+  // Back: center it inside the card's inner content area.
+  const area =
+    side === "front"
+      ? {
+          x: 285,
+          y: 108,
+          w: 690,
+          h: 470,
+        }
+      : {
+          x: 50,
+          y: 108,
+          w: 925,
+          h: 470,
+        };
+
+  // Smaller maximum size for a subtle background watermark.
+  const maxW = 310;
+  const maxH = 190;
+
+  // Keep the logo's original aspect ratio.
+  const scale = Math.min(
+    maxW / logo.naturalWidth,
+    maxH / logo.naturalHeight,
+    area.w / logo.naturalWidth,
+    area.h / logo.naturalHeight,
+  );
+
+  const wmW = logo.naturalWidth * scale;
+  const wmH = logo.naturalHeight * scale;
+
+  // Center the watermark in its allowed area.
+  const x = area.x + (area.w - wmW) / 2;
+  const y = area.y + (area.h - wmH) / 2;
+
+  ctx.save();
+
+  // Prevent the watermark from drawing outside its area.
+  ctx.beginPath();
+  ctx.rect(area.x, area.y, area.w, area.h);
+  ctx.clip();
+
+  // Very light watermark, keeping foreground text readable.
+  ctx.globalAlpha = 0.04;
+
+  ctx.drawImage(logo, x, y, wmW, wmH);
+
+  ctx.restore();
 }
 
 function drawHeader(
@@ -338,23 +453,19 @@ function drawHeader(
   ctx.fillStyle = BORDER;
   ctx.fillRect(0, height, PX_W, 4);
 
-  // Shifted further right to align with the center/right of the photo frame
   if (logo && logo.naturalWidth > 0 && logo.naturalHeight > 0) {
     const maxW = 240;
     const maxH = height - 24;
-    
-    const scale = Math.min(maxW / logo.naturalWidth, maxH / logo.naturalHeight);
+
+    const scale = Math.min(
+      maxW / logo.naturalWidth,
+      maxH / logo.naturalHeight,
+    );
+
     const lw = logo.naturalWidth * scale;
     const lh = logo.naturalHeight * scale;
-    
-    // Start from PHOTO.x + 20 for better right alignment
-    ctx.drawImage(
-      logo,
-      PHOTO.x + 20, 
-      (height - lh) / 2,
-      lw,
-      lh,
-    );
+
+    ctx.drawImage(logo, PHOTO.x + 20, (height - lh) / 2, lw, lh);
   } else {
     drawText(
       ctx,
@@ -373,6 +484,7 @@ function drawHeader(
 function drawFooterBand(ctx: CanvasRenderingContext2D) {
   ctx.fillStyle = PAPER;
   ctx.fillRect(0, 578, PX_W, 60);
+
   ctx.fillStyle = BORDER;
   ctx.fillRect(0, 578, PX_W, 2);
 }
@@ -387,11 +499,15 @@ function drawStatusBadge(
   h: number,
 ) {
   const col = active ? GREEN : "#B45309";
+
   ctx.fillStyle = active ? "#E8F8EE" : "#FFF3E0";
+
   roundRect(ctx, x, y, w, h, h / 2);
   ctx.fill();
+
   ctx.strokeStyle = col;
   ctx.lineWidth = 2;
+
   roundRect(ctx, x, y, w, h, h / 2);
   ctx.stroke();
 
@@ -420,11 +536,14 @@ async function drawCard(
   logo: HTMLImageElement | null,
 ): Promise<string> {
   const canvas = document.createElement("canvas");
+
   canvas.width = PX_W;
   canvas.height = PX_H;
+
   const ctx = canvas.getContext("2d");
 
   if (!ctx) throw new Error("Canvas not available");
+
   ctx.textBaseline = "alphabetic";
 
   const joined = formatDate(
@@ -432,29 +551,23 @@ async function drawCard(
       user.distributor_profile?.joining_date ||
       user.created_at,
   );
+
   const state =
     user.state || user.distributor_profile?.state || user.country || "—";
+
   const status =
     user.distributor_status || (user.is_active ? "Active" : "Inactive");
 
+  // ======================================================
+  // FRONT CARD
+  // ======================================================
+
   if (side === "front") {
     lightBackground(ctx);
-    
-    // Watermark Logo (Bottom Right corner for clean text)
-    if (logo && logo.naturalWidth > 0) {
-      ctx.save();
-      ctx.globalAlpha = 0.04; 
-      const wmW = 500;
-      const wmH = (logo.naturalHeight / logo.naturalWidth) * wmW;
-      ctx.drawImage(
-        logo,
-        PX_W - wmW + 100, // Pushed further right
-        PX_H - wmH + 150, // Pushed further down
-        wmW,
-        wmH
-      );
-      ctx.restore();
-    }
+
+    // Small and centered watermark behind the details only.
+    // It will not spread over the whole card.
+    drawWatermark(ctx, logo, "front");
 
     drawHeader(ctx, logo, 108);
 
@@ -469,8 +582,10 @@ async function drawCard(
       "right",
       "2px",
     );
+
     ctx.fillStyle = BORDER;
     ctx.fillRect(715, 64, 260, 2);
+
     drawText(
       ctx,
       "COMPANY ISSUED  •  AUTHORISED PARTNER",
@@ -483,22 +598,58 @@ async function drawCard(
       "2px",
     );
 
-    // Photo frame (No shadow to keep it clean)
+    // Photo frame.
     ctx.fillStyle = PAPER;
-    roundRect(ctx, PHOTO.x - 10, PHOTO.y - 10, PHOTO.w + 20, PHOTO.h + 20, 18);
+
+    roundRect(
+      ctx,
+      PHOTO.x - 10,
+      PHOTO.y - 10,
+      PHOTO.w + 20,
+      PHOTO.h + 20,
+      18,
+    );
+
     ctx.fill();
 
     ctx.strokeStyle = BORDER;
     ctx.lineWidth = 3;
-    roundRect(ctx, PHOTO.x - 10, PHOTO.y - 10, PHOTO.w + 20, PHOTO.h + 20, 18);
+
+    roundRect(
+      ctx,
+      PHOTO.x - 10,
+      PHOTO.y - 10,
+      PHOTO.w + 20,
+      PHOTO.h + 20,
+      18,
+    );
+
     ctx.stroke();
 
     if (photo) {
-      cropPhoto(ctx, photo, PHOTO.x, PHOTO.y, PHOTO.w, PHOTO.h, PHOTO.r);
+      cropPhoto(
+        ctx,
+        photo,
+        PHOTO.x,
+        PHOTO.y,
+        PHOTO.w,
+        PHOTO.h,
+        PHOTO.r,
+      );
     } else {
       ctx.fillStyle = SOFT;
-      roundRect(ctx, PHOTO.x, PHOTO.y, PHOTO.w, PHOTO.h, PHOTO.r);
+
+      roundRect(
+        ctx,
+        PHOTO.x,
+        PHOTO.y,
+        PHOTO.w,
+        PHOTO.h,
+        PHOTO.r,
+      );
+
       ctx.fill();
+
       drawText(
         ctx,
         initials(user.full_name),
@@ -511,13 +662,23 @@ async function drawCard(
       );
     }
 
-    // Status badge under photo
-    drawStatusBadge(ctx, status, !!user.is_active, PHOTO.x, 448, PHOTO.w, 46);
+    // Status badge under photo.
+    drawStatusBadge(
+      ctx,
+      status,
+      !!user.is_active,
+      PHOTO.x,
+      448,
+      PHOTO.w,
+      46,
+    );
 
-    // Name + role
+    // Name + role.
     const name = (user.full_name || "Distributor").toUpperCase();
     const nameSize = fitName(ctx, name, 660);
+
     drawText(ctx, name, 300, 192, SEMI(nameSize), INK, 665);
+
     drawText(
       ctx,
       (user.account_type || "Distributor").toUpperCase(),
@@ -533,12 +694,37 @@ async function drawCard(
     ctx.fillStyle = BORDER;
     ctx.fillRect(300, 248, 675, 2);
 
-    // Details grid
-    drawLabelValue(ctx, "Distributor ID", user.distributor_id || "—", 300, 292, 320);
+    // Distributor details.
+    drawLabelValue(
+      ctx,
+      "Distributor ID",
+      user.distributor_id || "—",
+      300,
+      292,
+      320,
+    );
+
     drawLabelValue(ctx, "Joining Date", joined, 660, 292, 315);
-    drawLabelValue(ctx, "Mobile No.", user.phone || "—", 300, 377, 320);
+
+    drawLabelValue(
+      ctx,
+      "Mobile No.",
+      user.phone || "—",
+      300,
+      377,
+      320,
+    );
+
     drawLabelValue(ctx, "State", state, 660, 377, 315);
-    drawLabelValue(ctx, "Email ID", user.email || "—", 300, 462, 675);
+
+    drawLabelValue(
+      ctx,
+      "Email ID",
+      user.email || "—",
+      300,
+      462,
+      675,
+    );
 
     drawText(
       ctx,
@@ -550,8 +736,9 @@ async function drawCard(
       675,
     );
 
-    // Footer
+    // Footer.
     drawFooterBand(ctx);
+
     drawText(
       ctx,
       "Official distributor card for company identification and verification.",
@@ -561,6 +748,7 @@ async function drawCard(
       INK,
       690,
     );
+
     drawText(
       ctx,
       user.distributor_id || "INDIEKONNECT",
@@ -573,23 +761,14 @@ async function drawCard(
       "2px",
     );
   } else {
+    // ======================================================
+    // BACK CARD
+    // ======================================================
+
     lightBackground(ctx);
-    
-    // Watermark Logo (Bottom Right corner)
-    if (logo && logo.naturalWidth > 0) {
-      ctx.save();
-      ctx.globalAlpha = 0.04; 
-      const wmW = 500;
-      const wmH = (logo.naturalHeight / logo.naturalWidth) * wmW;
-      ctx.drawImage(
-        logo,
-        PX_W - wmW + 100,
-        PX_H - wmH + 150,
-        wmW,
-        wmH
-      );
-      ctx.restore();
-    }
+
+    // Small, centered watermark inside the back-card content.
+    drawWatermark(ctx, logo, "back");
 
     drawHeader(ctx, logo, 100);
 
@@ -605,13 +784,18 @@ async function drawCard(
       "3px",
     );
 
-    // Instructions panel
+    // Instructions panel.
     ctx.fillStyle = SOFT;
+
     roundRect(ctx, 50, 138, 925, 280, 18);
+
     ctx.fill();
+
     ctx.strokeStyle = BORDER;
     ctx.lineWidth = 2;
+
     roundRect(ctx, 50, 138, 925, 280, 18);
+
     ctx.stroke();
 
     drawText(
@@ -625,6 +809,7 @@ async function drawCard(
       "left",
       "3px",
     );
+
     ctx.fillStyle = BORDER;
     ctx.fillRect(80, 194, 300, 2);
 
@@ -637,49 +822,117 @@ async function drawCard(
     ];
 
     let y = 238;
+
     lines.forEach((line, index) => {
       ctx.fillStyle = SOFT;
+
       ctx.beginPath();
       ctx.arc(95, y - 7, 15, 0, Math.PI * 2);
       ctx.fill();
+
       ctx.strokeStyle = BORDER;
       ctx.lineWidth = 2;
       ctx.stroke();
-      drawText(ctx, String(index + 1), 95, y - 1, SEMI(16), INK, 20, "center");
+
+      drawText(
+        ctx,
+        String(index + 1),
+        95,
+        y - 1,
+        SEMI(16),
+        INK,
+        20,
+        "center",
+      );
+
       drawText(ctx, line, 128, y, MED(19), INK, 825);
+
       y += 42;
     });
 
-    // Contact
-    drawText(ctx, "WEBSITE", 50, 484, MED(14), MUTED, 120, "left", "2px");
-    drawText(ctx, "www.indiekonnect.com", 170, 485, SEMI(21), INK, 330);
-    drawText(ctx, "EMAIL", 50, 534, MED(14), MUTED, 120, "left", "2px");
-    drawText(ctx, "support@indiekonnect.com", 170, 535, SEMI(21), INK, 360);
+    // Contact details.
+    drawText(
+      ctx,
+      "WEBSITE",
+      50,
+      484,
+      MED(14),
+      MUTED,
+      120,
+      "left",
+      "2px",
+    );
 
-    // Barcode box (derived from the distributor id)
+    drawText(
+      ctx,
+      "www.indiekonnect.com",
+      170,
+      485,
+      SEMI(21),
+      INK,
+      330,
+    );
+
+    drawText(
+      ctx,
+      "EMAIL",
+      50,
+      534,
+      MED(14),
+      MUTED,
+      120,
+      "left",
+      "2px",
+    );
+
+    drawText(
+      ctx,
+      "support@indiekonnect.com",
+      170,
+      535,
+      SEMI(21),
+      INK,
+      360,
+    );
+
+    // Barcode box derived from distributor ID.
     const id = user.distributor_id || "IND000000";
+
     const boxX = 690;
     const boxY = 448;
     const boxW = 285;
     const boxH = 110;
+
     ctx.fillStyle = PAPER;
+
     roundRect(ctx, boxX, boxY, boxW, boxH, 10);
+
     ctx.fill();
+
     ctx.strokeStyle = BORDER;
     ctx.lineWidth = 2;
+
     roundRect(ctx, boxX, boxY, boxW, boxH, 10);
+
     ctx.stroke();
 
     ctx.fillStyle = INK;
+
     let bx = boxX + 18;
     let i = 0;
+
     while (bx < boxX + boxW - 18) {
       const code = id.charCodeAt(i % id.length);
       const barW = 2 + ((code + i * 7) % 3);
-      if (i % 2 === 0) ctx.fillRect(bx, boxY + 12, barW, 56);
+
+      if (i % 2 === 0) {
+        ctx.fillRect(bx, boxY + 12, barW, 56);
+      }
+
       bx += barW + 1.5;
       i += 1;
     }
+
     drawText(
       ctx,
       id,
@@ -692,12 +945,13 @@ async function drawCard(
       "4px",
     );
 
-    // Footer
+    // Footer.
     drawFooterBand(ctx);
+
     drawText(
       ctx,
       "PEOPLE  •  PRODUCTS  •  POSSIBILITIES",
-      (PX_W) / 2,
+      PX_W / 2,
       616,
       SEMI(19),
       INK,
@@ -710,14 +964,20 @@ async function drawCard(
   return canvas.toDataURL("image/png");
 }
 
-export default function DistributorPVCSection({ user }: { user: User }) {
+export default function DistributorPVCSection({
+  user,
+}: {
+  user: User;
+}) {
   const profilePhotoUrl = getProfilePhotoUrl(user);
 
   const [front, setFront] = useState("");
   const [back, setBack] = useState("");
+
   const [busy, setBusy] = useState<
     "render" | "download" | "print" | "quote" | "pay" | null
   >("render");
+
   const [modal, setModal] = useState(false);
   const [quote, setQuote] = useState<Quote | null>(null);
   const [address, setAddress] = useState<Address>(emptyAddress);
@@ -737,13 +997,18 @@ export default function DistributorPVCSection({ user }: { user: User }) {
         img(Logo.src || Logo, false)
           .then((image) => image)
           .catch(() => null),
+
         profilePhotoUrl
           ? img(profilePhotoUrl, true)
               .then((image) => ({ image }))
               .catch(() => ({ image: null }))
           : Promise.resolve({ image: null }),
+
         loadPoppins(),
-      ]).then(([l, p]) => [l, p] as const);
+      ]).then(([logoImage, profileResult]) => [
+        logoImage,
+        profileResult,
+      ] as const);
 
       const [frontImg, backImg] = await Promise.all([
         drawCard(user, "front", photoResult.image, localLogo),
@@ -753,7 +1018,9 @@ export default function DistributorPVCSection({ user }: { user: User }) {
       setFront(frontImg);
       setBack(backImg);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Card preview failed");
+      setError(
+        err instanceof Error ? err.message : "Card preview failed",
+      );
     } finally {
       setBusy(null);
     }
@@ -780,8 +1047,13 @@ export default function DistributorPVCSection({ user }: { user: User }) {
     void render();
   }, [render]);
 
+  // ======================================================
+  // DOWNLOAD PDF
+  // ======================================================
+
   const download = () => {
     if (!front || !back) return;
+
     setBusy("download");
     setError("");
 
@@ -796,19 +1068,31 @@ export default function DistributorPVCSection({ user }: { user: User }) {
       pdf.addImage(front, "PNG", 0, 0, MM_W, MM_H);
       pdf.addPage([MM_W, MM_H], "landscape");
       pdf.addImage(back, "PNG", 0, 0, MM_W, MM_H);
+
       pdf.save(
-        `Indiekonnect-${(user.distributor_id || "card").replace(/[^\w-]/g, "")}.pdf`,
+        `Indiekonnect-${(user.distributor_id || "card").replace(
+          /[^\w-]/g,
+          "",
+        )}.pdf`,
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "PDF download failed");
+      setError(
+        err instanceof Error ? err.message : "PDF download failed",
+      );
     } finally {
       setBusy(null);
     }
   };
 
+  // ======================================================
+  // PRINT CARD
+  // ======================================================
+
   const print = () => {
     if (!front || !back) return;
+
     const popup = window.open("", "_blank");
+
     if (!popup) {
       setError("Allow pop-ups to print the card");
       return;
@@ -819,6 +1103,7 @@ export default function DistributorPVCSection({ user }: { user: User }) {
 
     try {
       popup.document.open();
+
       popup.document.write(`<!doctype html>
 <html>
 <head>
@@ -828,9 +1113,30 @@ export default function DistributorPVCSection({ user }: { user: User }) {
 @page{size:A4 portrait;margin:15mm}
 *{box-sizing:border-box}
 body{font:13px Arial,sans-serif;padding:0;margin:0}
-.card-wrap{position:relative;width:85.6mm;height:54mm;margin:0 0 12mm 0;print-color-adjust:exact;-webkit-print-color-adjust:exact}
-.card{position:absolute;inset:0;width:100%;height:100%;display:block}
-.profile-overlay{position:absolute;left:${PHOTO_CSS.left};top:${PHOTO_CSS.top};width:${PHOTO_CSS.width};height:${PHOTO_CSS.height};object-fit:cover;border-radius:${PHOTO_CSS.borderRadius}}
+.card-wrap{
+  position:relative;
+  width:85.6mm;
+  height:54mm;
+  margin:0 0 12mm 0;
+  print-color-adjust:exact;
+  -webkit-print-color-adjust:exact
+}
+.card{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  display:block
+}
+.profile-overlay{
+  position:absolute;
+  left:${PHOTO_CSS.left};
+  top:${PHOTO_CSS.top};
+  width:${PHOTO_CSS.width};
+  height:${PHOTO_CSS.height};
+  object-fit:cover;
+  border-radius:${PHOTO_CSS.borderRadius}
+}
 .note{margin:0 0 8mm 0;padding:0}
 @media print{.note{display:none}}
 </style>
@@ -839,22 +1145,38 @@ body{font:13px Arial,sans-serif;padding:0;margin:0}
 <p class="note">Print at 100% / Actual Size. Front and back are separate; align carefully for duplex printing.</p>
 <div class="card-wrap">
   <img class="card" src="${front}" alt="Front card" />
-  ${profilePhotoUrl ? `<img class="profile-overlay" src="${escapeHtmlAttribute(profilePhotoUrl)}" alt="Profile photo" />` : ""}
+  ${
+    profilePhotoUrl
+      ? `<img class="profile-overlay" src="${escapeHtmlAttribute(
+          profilePhotoUrl,
+        )}" alt="Profile photo" />`
+      : ""
+  }
 </div>
-<div class="card-wrap"><img class="card" src="${back}" alt="Back card" /></div>
+<div class="card-wrap">
+  <img class="card" src="${back}" alt="Back card" />
+</div>
 <script>
-window.addEventListener('load', function(){ setTimeout(function(){ window.print(); }, 300); });
+window.addEventListener('load', function(){
+  setTimeout(function(){ window.print(); }, 300);
+});
 <\/script>
 </body>
 </html>`);
+
       popup.document.close();
     } catch (err) {
       popup.close();
+
       setError(err instanceof Error ? err.message : "Print failed");
     } finally {
       setBusy(null);
     }
   };
+
+  // ======================================================
+  // REQUEST PVC CARD DELIVERY
+  // ======================================================
 
   const startRequest = async () => {
     setBusy("quote");
@@ -863,6 +1185,7 @@ window.addEventListener('load', function(){ setTimeout(function(){ window.print(
 
     try {
       const q = await api<Quote>("/quote");
+
       if (
         !q.quote_id ||
         !Number.isSafeInteger(q.amount_paise) ||
@@ -873,13 +1196,17 @@ window.addEventListener('load', function(){ setTimeout(function(){ window.print(
       }
 
       setQuote(q);
+
       setAddress((prev) => ({
         ...prev,
         full_name: prev.full_name || user.full_name || "",
       }));
+
       setModal(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Price unavailable");
+      setError(
+        err instanceof Error ? err.message : "Price unavailable",
+      );
     } finally {
       setBusy(null);
     }
@@ -908,7 +1235,9 @@ window.addEventListener('load', function(){ setTimeout(function(){ window.print(
     try {
       const order = await api<OrderResponse>("/requests", {
         method: "POST",
-        headers: { "Idempotency-Key": quote.quote_id },
+        headers: {
+          "Idempotency-Key": quote.quote_id,
+        },
         body: JSON.stringify({
           quote_id: quote.quote_id,
           delivery_address: address,
@@ -924,7 +1253,10 @@ window.addEventListener('load', function(){ setTimeout(function(){ window.print(
       }
 
       await loadRazorpay();
-      if (!window.Razorpay) throw new Error("Razorpay unavailable");
+
+      if (!window.Razorpay) {
+        throw new Error("Razorpay unavailable");
+      }
 
       new window.Razorpay({
         key: order.razorpay_key,
@@ -933,21 +1265,30 @@ window.addEventListener('load', function(){ setTimeout(function(){ window.print(
         order_id: order.razorpay_order_id,
         name: "Indiekonnect",
         description: "Distributor PVC card home delivery",
+
         prefill: {
           name: address.full_name,
           contact: address.phone,
         },
-        theme: { color: INK },
+
+        theme: {
+          color: INK,
+        },
+
         handler: async (response: unknown) => {
           try {
             await api(
-              `/requests/${encodeURIComponent(order.request_id)}/verify`,
+              `/requests/${encodeURIComponent(
+                order.request_id,
+              )}/verify`,
               {
                 method: "POST",
                 body: JSON.stringify(response),
               },
             );
+
             setModal(false);
+
             setMessage(
               "Payment verified. Your card request has been submitted.",
             );
@@ -957,23 +1298,39 @@ window.addEventListener('load', function(){ setTimeout(function(){ window.print(
             );
           }
         },
+
         modal: {
-          ondismiss: () =>
+          ondismiss: () => {
             setMessage(
               "Payment window closed. Request remains unconfirmed until payment is verified.",
-            ),
+            );
+          },
         },
       }).open();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to start payment");
+      setError(
+        err instanceof Error ? err.message : "Unable to start payment",
+      );
     } finally {
       setBusy(null);
     }
   };
 
-  const fields: { key: keyof Address; label: string; placeholder: string }[] = [
-    { key: "full_name", label: "Recipient name", placeholder: "Full name" },
-    { key: "phone", label: "Mobile number", placeholder: "10-digit mobile" },
+  const fields: {
+    key: keyof Address;
+    label: string;
+    placeholder: string;
+  }[] = [
+    {
+      key: "full_name",
+      label: "Recipient name",
+      placeholder: "Full name",
+    },
+    {
+      key: "phone",
+      label: "Mobile number",
+      placeholder: "10-digit mobile",
+    },
     {
       key: "address_line1",
       label: "Address line 1",
@@ -984,9 +1341,21 @@ window.addEventListener('load', function(){ setTimeout(function(){ window.print(
       label: "Address line 2",
       placeholder: "Area / landmark (optional)",
     },
-    { key: "city", label: "City", placeholder: "City" },
-    { key: "state", label: "State", placeholder: "State" },
-    { key: "pincode", label: "PIN code", placeholder: "6-digit PIN" },
+    {
+      key: "city",
+      label: "City",
+      placeholder: "City",
+    },
+    {
+      key: "state",
+      label: "State",
+      placeholder: "State",
+    },
+    {
+      key: "pincode",
+      label: "PIN code",
+      placeholder: "6-digit PIN",
+    },
   ];
 
   return (
@@ -994,15 +1363,18 @@ window.addEventListener('load', function(){ setTimeout(function(){ window.print(
       style={{ fontFamily: FONT_FAMILY }}
       className="w-full min-w-0 rounded-2xl border border-gray-200 bg-white p-4 font-medium text-black shadow-sm sm:p-6"
     >
+      {/* Section header */}
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <span className="rounded-xl bg-gray-100 p-2.5 text-black">
             <CreditCard size={22} />
           </span>
+
           <div>
             <h2 className="text-lg font-semibold text-black">
               My Indiekonnect Distributor ID
             </h2>
+
             <p className="text-xs font-medium text-gray-500">
               Horizontal PVC card • front and back • 85.6 × 54 mm
             </p>
@@ -1013,12 +1385,14 @@ window.addEventListener('load', function(){ setTimeout(function(){ window.print(
           type="button"
           onClick={() => void render()}
           disabled={!!busy}
-          className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs font-semibold text-black disabled:opacity-50 hover:bg-gray-100 transition-colors"
+          className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs font-semibold text-black transition-colors hover:bg-gray-100 disabled:opacity-50"
         >
-          <RefreshCw size={14} /> Refresh Card
+          <RefreshCw size={14} />
+          Refresh Card
         </button>
       </div>
 
+      {/* Front and back preview */}
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
         {(
           [
@@ -1034,10 +1408,12 @@ window.addEventListener('load', function(){ setTimeout(function(){ window.print(
               <span className="text-xs font-semibold tracking-widest text-black">
                 {card.label}
               </span>
+
               <span className="text-[11px] font-medium text-gray-500">
                 Landscape
               </span>
             </div>
+
             <div className="relative aspect-[85.6/54] overflow-hidden rounded-[4%] border border-gray-200 bg-white shadow-[0_16px_32px_rgba(0,0,0,.1)]">
               {card.src ? (
                 <img
@@ -1047,56 +1423,68 @@ window.addEventListener('load', function(){ setTimeout(function(){ window.print(
                 />
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center text-sm font-medium text-gray-500">
-                  <Loader2 size={18} className="mr-2 animate-spin" /> Preparing
-                  card…
+                  <Loader2
+                    size={18}
+                    className="mr-2 animate-spin"
+                  />
+                  Preparing card…
                 </div>
               )}
 
-              {card.label === "FRONT" && profilePhotoUrl && card.src && (
-                <div className="absolute overflow-hidden" style={PHOTO_CSS}>
-                  <img
-                    src={profilePhotoUrl}
-                    alt="Profile photo on distributor ID"
-                    className="h-full w-full object-cover"
-                    loading="eager"
-                  />
-                </div>
-              )}
+              {card.label === "FRONT" &&
+                profilePhotoUrl &&
+                card.src && (
+                  <div
+                    className="absolute overflow-hidden"
+                    style={PHOTO_CSS}
+                  >
+                    <img
+                      src={profilePhotoUrl}
+                      alt="Profile photo on distributor ID"
+                      className="h-full w-full object-cover"
+                      loading="eager"
+                    />
+                  </div>
+                )}
             </div>
           </div>
         ))}
       </div>
 
+      {/* Action buttons */}
       <div className="mt-5 flex flex-wrap gap-3">
         <button
           type="button"
           disabled={!!busy || !front || !back}
           onClick={download}
-          className="inline-flex items-center gap-2 rounded-xl bg-black px-5 py-3 text-xs font-semibold text-white shadow-sm hover:bg-gray-800 disabled:opacity-50 transition-colors"
+          className="inline-flex items-center gap-2 rounded-xl bg-black px-5 py-3 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-gray-800 disabled:opacity-50"
         >
-          <Download size={16} /> Download Print PDF
+          <Download size={16} />
+          Download Print PDF
         </button>
 
         <button
           type="button"
           disabled={!!busy || !front || !back}
           onClick={print}
-          className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-5 py-3 text-xs font-semibold text-black hover:bg-gray-50 disabled:opacity-50 transition-colors"
+          className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-5 py-3 text-xs font-semibold text-black transition-colors hover:bg-gray-50 disabled:opacity-50"
         >
-          <Printer size={16} /> Print Card
+          <Printer size={16} />
+          Print Card
         </button>
 
         <button
           type="button"
           disabled={!!busy || !user.distributor_id || !user.is_active}
           onClick={startRequest}
-          className="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-5 py-3 text-xs font-semibold text-black hover:bg-gray-50 disabled:opacity-50 transition-colors"
+          className="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-5 py-3 text-xs font-semibold text-black transition-colors hover:bg-gray-50 disabled:opacity-50"
         >
           {busy === "quote" ? (
             <Loader2 size={16} className="animate-spin" />
           ) : (
             <Truck size={16} />
           )}
+
           Request PVC Home Delivery
         </button>
       </div>
@@ -1109,16 +1497,24 @@ window.addEventListener('load', function(){ setTimeout(function(){ window.print(
       </p>
 
       {message && (
-        <p role="status" className="mt-2 text-xs font-medium text-emerald-700">
+        <p
+          role="status"
+          className="mt-2 text-xs font-medium text-emerald-700"
+        >
           {message}
         </p>
       )}
+
       {!modal && error && (
-        <p role="alert" className="mt-2 text-xs font-medium text-red-600">
+        <p
+          role="alert"
+          className="mt-2 text-xs font-medium text-red-600"
+        >
           {error}
         </p>
       )}
 
+      {/* PVC delivery modal */}
       {modal && quote && (
         <div
           role="dialog"
@@ -1132,11 +1528,12 @@ window.addEventListener('load', function(){ setTimeout(function(){ window.print(
               <h3 className="text-lg font-semibold text-black">
                 Print and deliver my PVC card
               </h3>
+
               <button
                 type="button"
                 onClick={() => setModal(false)}
                 aria-label="Close"
-                className="rounded-lg p-2 text-black hover:bg-gray-100 transition-colors"
+                className="rounded-lg p-2 text-black transition-colors hover:bg-gray-100"
               >
                 <X size={19} />
               </button>
@@ -1146,11 +1543,14 @@ window.addEventListener('load', function(){ setTimeout(function(){ window.print(
               <div className="text-xs font-medium text-gray-500">
                 Total price including delivery
               </div>
+
               <div className="mt-1 text-2xl font-semibold text-black">
                 ₹{(quote.amount_paise / 100).toFixed(2)}
               </div>
+
               <div className="text-xs font-medium text-gray-500">
-                {quote.description || "PVC card printing + home delivery"}
+                {quote.description ||
+                  "PVC card printing + home delivery"}
               </div>
             </div>
 
@@ -1159,24 +1559,31 @@ window.addEventListener('load', function(){ setTimeout(function(){ window.print(
                 <label
                   key={field.key}
                   className={
-                    field.key.startsWith("address_line") ? "sm:col-span-2" : ""
+                    field.key.startsWith("address_line")
+                      ? "sm:col-span-2"
+                      : ""
                   }
                 >
                   <span className="mb-1 block text-xs font-semibold text-black">
                     {field.label}
                   </span>
+
                   <input
-                    className="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm font-medium text-black outline-none placeholder:text-gray-400 focus:border-black focus:ring-1 focus:ring-black transition-colors"
+                    className="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm font-medium text-black outline-none transition-colors placeholder:text-gray-400 focus:border-black focus:ring-1 focus:ring-black"
                     value={address[field.key]}
                     placeholder={field.placeholder}
                     onChange={(e) =>
                       setAddress((prev) => ({
                         ...prev,
                         [field.key]:
-                          field.key === "phone" || field.key === "pincode"
+                          field.key === "phone" ||
+                          field.key === "pincode"
                             ? e.target.value
                                 .replace(/\D/g, "")
-                                .slice(0, field.key === "phone" ? 10 : 6)
+                                .slice(
+                                  0,
+                                  field.key === "phone" ? 10 : 6,
+                                )
                             : e.target.value,
                       }))
                     }
@@ -1186,7 +1593,10 @@ window.addEventListener('load', function(){ setTimeout(function(){ window.print(
             </div>
 
             {error && (
-              <p role="alert" className="mt-3 text-xs font-medium text-red-600">
+              <p
+                role="alert"
+                className="mt-3 text-xs font-medium text-red-600"
+              >
                 {error}
               </p>
             )}
@@ -1195,15 +1605,18 @@ window.addEventListener('load', function(){ setTimeout(function(){ window.print(
               type="button"
               disabled={!!busy}
               onClick={pay}
-              className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-black px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-gray-800 disabled:opacity-50 transition-colors"
+              className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-black px-4 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-gray-800 disabled:opacity-50"
             >
-              {busy === "pay" && <Loader2 className="animate-spin" size={16} />}
+              {busy === "pay" && (
+                <Loader2 className="animate-spin" size={16} />
+              )}
+
               Pay ₹{(quote.amount_paise / 100).toFixed(2)} & Request Card
             </button>
 
             <p className="mt-3 text-[11px] font-medium leading-5 text-gray-500">
-              Order confirmation requires backend payment verification. Do not
-              retry while verification is pending.
+              Order confirmation requires backend payment verification.
+              Do not retry while verification is pending.
             </p>
           </div>
         </div>
