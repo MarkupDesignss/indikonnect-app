@@ -1049,7 +1049,7 @@ function ProfileForm({
 
       }));
 
-    }
+    } 
 
   };
 
