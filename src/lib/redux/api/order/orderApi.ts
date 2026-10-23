@@ -13,11 +13,71 @@ import {
   CancelReturnResponse,
 } from "./orderTypes";
 
+// =====================================================
+// RETRY PAYMENT TYPES
+// =====================================================
+
+export type PaymentGateway = "razorpay" | "hdfc_sg" | "hdfc_ie";
+
+export interface RetryOrderRequest {
+  orderReference: string;
+  payment_gateway: PaymentGateway;
+}
+
+export interface RetryOrderResponse {
+  success: boolean;
+  message: string;
+  data: {
+    order_id: number;
+    order_reference: string;
+    total_items: number;
+    total_amount: number;
+    status: string;
+    checkout_type: "cart" | "buy_now";
+    gateway: PaymentGateway;
+
+    payment_expires_at?: string | null;
+    reservation_expires_at?: string | null;
+
+    tax_split?: {
+      delivery_state?: string;
+      supplier_state?: string;
+      total_cgst?: number;
+      total_sgst?: number;
+      total_igst?: number;
+    };
+
+    // Razorpay
+    razorpay_order_id?: string;
+    razorpay_key?: string;
+
+    // HDFC
+    hdfc_order_id?: string;
+    hdfc_payment_link?: string;
+    hdfc_merchant_id?: string;
+    hdfc_gateway_key?: string;
+
+    hdfc_sdk_payload?: {
+      requestId?: string;
+      service?: string;
+      payload?: Record<string, unknown>;
+      expiry?: string;
+      currTime?: string;
+      xRoutingId?: string;
+    };
+  };
+}
+
+// =====================================================
+// ORDER API
+// =====================================================
+
 export const orderApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     // =====================================================
     // GET MY ORDERS
     // =====================================================
+
     getMyOrders: builder.query<MyOrdersResponse, void>({
       query: () => ({
         url: "/my-orders",
@@ -30,6 +90,7 @@ export const orderApi = baseApi.injectEndpoints({
     // =====================================================
     // GET ORDER STATUSES
     // =====================================================
+
     getOrderStatuses: builder.query<OrderStatusesResponse, void>({
       query: () => ({
         url: "/orders/statuses",
@@ -40,20 +101,41 @@ export const orderApi = baseApi.injectEndpoints({
     }),
 
     // =====================================================
+    // RETRY PAYMENT - NEW
+    // POST /retry-order/{orderReference}
+    // =====================================================
+
+    retryOrder: builder.mutation<RetryOrderResponse, RetryOrderRequest>({
+      query: ({ orderReference, payment_gateway }) => ({
+        url: `/retry-order/${encodeURIComponent(orderReference)}`,
+        method: "POST",
+
+        body: {
+          payment_gateway,
+        },
+      }),
+
+      invalidatesTags: ["Order"],
+    }),
+
+    // =====================================================
     // CANCEL RETURN
     // =====================================================
+
     cancelReturn: builder.mutation<CancelReturnResponse, CancelReturnRequest>({
       query: ({ returnId }) => ({
         url: `/returns/${returnId}/cancel`,
         method: "POST",
         body: {},
       }),
+
       invalidatesTags: ["Order"],
     }),
 
     // =====================================================
     // CANCEL ORDER
     // =====================================================
+
     cancelOrder: builder.mutation<
       CancelOrderResponse,
       {
@@ -75,9 +157,10 @@ export const orderApi = baseApi.injectEndpoints({
     }),
 
     // =====================================================
-    // WITHDRAW CANCEL REQUEST (ORDER-LEVEL, LEGACY)
-    // POST /orders/{orderReference}/withdrawCancel
+    // WITHDRAW CANCEL REQUEST
+    // ORDER LEVEL (LEGACY)
     // =====================================================
+
     withdrawCancelRequest: builder.mutation<
       any,
       {
@@ -87,7 +170,6 @@ export const orderApi = baseApi.injectEndpoints({
       query: ({ orderReference }) => ({
         url: `/orders/${orderReference}/withdrawCancel`,
         method: "POST",
-
         body: {},
       }),
 
@@ -95,16 +177,10 @@ export const orderApi = baseApi.injectEndpoints({
     }),
 
     // =====================================================
-    // WITHDRAW CANCEL REQUEST (LINE-LEVEL) ✅ NEW
-    // POST /orders/{orderReference}/withdrawCancel/{orderLineId}
-    //
-    // Backend response shape:
-    // {
-    //   success: true,
-    //   message: "Order cancellation withdrawn successfully.",
-    //   data: { order_id, order_reference, order_lines: [...] }
-    // }
+    // WITHDRAW CANCEL REQUEST
+    // LINE LEVEL
     // =====================================================
+
     withdrawCancelOrder: builder.mutation<
       {
         success: boolean;
@@ -112,6 +188,7 @@ export const orderApi = baseApi.injectEndpoints({
         data?: {
           order_id?: number;
           order_reference?: string;
+
           order_lines?: Array<{
             id: number;
             order_id: number;
@@ -143,65 +220,49 @@ export const orderApi = baseApi.injectEndpoints({
     // =====================================================
     // INITIATE RETURN
     // POST /returns/initiate
-    //
-    // FormData fields:
-    //   - order_reference   (string)
-    //   - return_method     ("doorstep" | "courier")
-    //   - courier           (string, required if return_method === "courier")
-    //   - tracking_id       (string, required if return_method === "courier")
-    //   - items[i][order_line_id]
-    //   - items[i][quantity]
-    //   - items[i][reason]
-    //   - items[i][images][]
     // =====================================================
+
     initiateReturn: builder.mutation<
       InitiateReturnResponse,
       InitiateReturnRequest
     >({
-      query: ({ order_reference, return_method, courier, tracking_id, items }) => {
+      query: ({
+        order_reference,
+        return_method,
+        courier,
+        tracking_id,
+        items,
+      }) => {
         const formData = new FormData();
 
-        // =================================================
-        // ORDER REFERENCE
-        // =================================================
+        // Order Reference
         formData.append("order_reference", String(order_reference));
 
-        // =================================================
-        // RETURN METHOD ("doorstep" | "courier")
-        // =================================================
+        // Return Method
         formData.append("return_method", return_method);
 
-        // =================================================
-        // COURIER NAME (required when return_method === "courier")
-        // =================================================
+        // Courier
         if (return_method === "courier" && courier) {
           formData.append("courier", courier);
         }
 
-        // =================================================
-        // TRACKING ID (required when return_method === "courier")
-        // =================================================
+        // Tracking ID
         if (return_method === "courier" && tracking_id) {
           formData.append("tracking_id", tracking_id);
         }
 
-        // =================================================
-        // ITEMS
-        // =================================================
+        // Items
         items.forEach((item, index) => {
-          // ORDER LINE ID
           formData.append(
             `items[${index}][order_line_id]`,
             String(item.order_line_id),
           );
 
-          // QUANTITY
           formData.append(`items[${index}][quantity]`, String(item.quantity));
 
-          // RETURN REASON
           formData.append(`items[${index}][reason]`, item.reason);
 
-          // RETURN IMAGES
+          // Return Images
           if (item.images && item.images.length > 0) {
             item.images.forEach((image) => {
               formData.append(`items[${index}][images][]`, image);
@@ -222,6 +283,7 @@ export const orderApi = baseApi.injectEndpoints({
     // =====================================================
     // GET INVOICE BY ORDER ID
     // =====================================================
+
     getInvoiceByOrderId: builder.query<InvoiceResponse, number | string>({
       query: (orderId) => ({
         url: `/invoice/order/${orderId}`,
@@ -232,6 +294,7 @@ export const orderApi = baseApi.injectEndpoints({
     // =====================================================
     // ADD RATING & REVIEW
     // =====================================================
+
     addRatingReview: builder.mutation<
       AddRatingReviewResponse,
       AddRatingReviewRequest
@@ -246,24 +309,24 @@ export const orderApi = baseApi.injectEndpoints({
       }) => {
         const formData = new FormData();
 
-        // RATING
+        // Rating
         formData.append("rating", String(rating));
 
-        // REVIEW TEXT
+        // Review Text
         formData.append("review_text", review_text);
 
-        // ORDER ID
+        // Order ID
         if (order_id) {
           formData.append("order_id", String(order_id));
         }
 
-        // ORDER LINE ID
+        // Order Line ID
         formData.append("order_line_id", String(order_line_id));
 
-        // PRODUCT ID
+        // Product ID
         formData.append("product_id", String(product_id));
 
-        // MULTIPLE IMAGES
+        // Multiple Images
         if (images && images.length > 0) {
           images.forEach((image) => {
             formData.append("images[]", image);
@@ -283,12 +346,16 @@ export const orderApi = baseApi.injectEndpoints({
 });
 
 // =====================================================
-// HOOKS
+// EXPORT HOOKS
 // =====================================================
 
 export const {
   useGetMyOrdersQuery,
   useGetOrderStatusesQuery,
+
+  // Retry Payment
+  useRetryOrderMutation,
+
   useCancelOrderMutation,
   useWithdrawCancelRequestMutation,
   useWithdrawCancelOrderMutation,

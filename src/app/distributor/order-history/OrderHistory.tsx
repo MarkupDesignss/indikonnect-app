@@ -2,6 +2,7 @@
 
 import {
   useGetMyOrdersQuery,
+  useRetryOrderMutation,
   useCancelOrderMutation,
   useInitiateReturnMutation,
   useAddRatingReviewMutation,
@@ -36,19 +37,11 @@ import {
   FileText,
 } from "lucide-react";
 
-import {
-  useState,
-  useMemo,
-  useRef,
-  useEffect,
-} from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 
 import { createPortal } from "react-dom";
 
-import {
-  motion,
-  AnimatePresence,
-} from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 import Image from "next/image";
 
@@ -155,6 +148,8 @@ interface OrderLineItem {
   product_reviews: any[];
 
   payment_gateway: string;
+  can_repay?: boolean;
+  payment_expires_at?: string | null;
   gateway_transaction_id: string;
   amount_paid: number;
   payment_status: string;
@@ -204,6 +199,8 @@ const STATUS_STYLES: Record<
   confirmed: { color: INDIGO, bg: "#eceffb" },
   delivered: { color: EMERALD, bg: "#eaf7f0" },
   pending: { color: BRASS, bg: "#f8f1e4" },
+  failed: { color: RED, bg: "#fef2f2" },
+  payment_failed: { color: RED, bg: "#fef2f2" },
   processing: { color: "#2563EB", bg: "#EFF6FF" },
   shipped: { color: "#7c3aed", bg: "#f3e8ff" },
   dispatched: { color: "#7c3aed", bg: "#f3e8ff" },
@@ -286,7 +283,11 @@ function formatDate(dateStr: string | null | undefined) {
 function normalizeStatus(status?: string | null) {
   if (!status) return "";
 
-  return status.toString().trim().toLowerCase().replace(/[\s-]+/g, "_");
+  return status
+    .toString()
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
 }
 
 function formatStatusLabel(status?: string | null) {
@@ -297,6 +298,112 @@ function formatStatusLabel(status?: string | null) {
   return status
     .replace(/_/g, " ")
     .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+/* Retry window: five minutes from server order_date, interpreted in IST. */
+function orderDateMs(value?: string | null): number {
+  if (!value) return NaN;
+  const raw = value.trim();
+  const iso = raw.replace(" ", "T");
+  const withZone = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(iso) ? iso : `${iso}+05:30`;
+  return Date.parse(withZone);
+}
+
+function isPaymentFailed(order: OrderLineItem): boolean {
+  const statuses = [
+    order.order_status,
+    order.delivery_status,
+    order.payment_status,
+  ].map(normalizeStatus);
+  return statuses.includes("failed") || statuses.includes("payment_failed");
+}
+
+function retryRemainingMs(order: OrderLineItem, now: number): number {
+  if (
+    !isPaymentFailed(order) ||
+    normalizeStatus(order.payment_status) === "paid"
+  )
+    return 0;
+  // Backend eligibility is authoritative; do not allow expired/blocked payment retries.
+  if (order.can_repay === false) return 0;
+  const created = orderDateMs(order.order_date);
+  if (!Number.isFinite(created)) return 0;
+  const localDeadline = created + 5 * 60 * 1000;
+  const backendDeadline = order.payment_expires_at
+    ? orderDateMs(order.payment_expires_at)
+    : Number.POSITIVE_INFINITY;
+  return Math.max(0, Math.min(localDeadline, backendDeadline) - now);
+}
+
+function formatRetryTime(ms: number) {
+  const seconds = Math.ceil(ms / 1000);
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+}
+
+async function loadRazorpayCheckout(): Promise<void> {
+  if ((window as any).Razorpay) return;
+  const existing = document.querySelector<HTMLScriptElement>(
+    'script[data-retry-razorpay="true"]',
+  );
+  if (existing) {
+    await new Promise<void>((resolve, reject) => {
+      if ((window as any).Razorpay) return resolve();
+      existing.addEventListener("load", () => resolve(), { once: true });
+      existing.addEventListener(
+        "error",
+        () => reject(new Error("Razorpay failed to load")),
+        { once: true },
+      );
+    });
+    return;
+  }
+  await new Promise<void>((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    script.dataset.retryRazorpay = "true";
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("Razorpay failed to load"));
+    document.body.appendChild(script);
+  });
+}
+
+function RetryPaymentButton({
+  order,
+  now,
+  busy,
+  onRetry,
+}: {
+  order: OrderLineItem;
+  now: number;
+  busy: boolean;
+  onRetry: (order: OrderLineItem) => void;
+}) {
+  if (!isPaymentFailed(order)) return null;
+  const remaining = retryRemainingMs(order, now);
+  const active = remaining > 0;
+  return (
+    <div className="flex flex-col items-start gap-1">
+      <button
+        type="button"
+        disabled={!active || busy}
+        onClick={() => onRetry(order)}
+        className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-[#0E1B3D] px-3 py-2 text-[11px] font-semibold text-white transition hover:bg-black disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500"
+      >
+        {busy ? (
+          <Loader2 size={13} className="animate-spin" />
+        ) : (
+          <RefreshCcw size={13} />
+        )}
+        {busy ? "Preparing..." : active ? "Retry Payment" : "Retry Expired"}
+      </button>
+      {active && (
+        <span className="text-[10px] text-[#DC2626]">
+          Available for {formatRetryTime(remaining)}
+        </span>
+      )}
+    </div>
+  );
 }
 
 /* -------------------------------------------------------------------------- */
@@ -503,6 +610,9 @@ function getOrderStatusValue(order: OrderLineItem) {
     return "dispatched";
   }
 
+  // Payment failure must override a generic pending state.
+  if (isPaymentFailed(order)) return "payment_failed";
+
   // ✅ Priority 6: Order lifecycle
   if (orderStatus === "confirmed") {
     return "confirmed";
@@ -515,6 +625,9 @@ function getOrderStatusValue(order: OrderLineItem) {
   if (orderStatus === "pending") {
     return "pending";
   }
+
+  // Prioritize payment failure over generic delivery state.
+  if (isPaymentFailed(order)) return "payment_failed";
 
   // Fallback to whatever is available
   return deliveryStatus || orderStatus || "";
@@ -530,7 +643,12 @@ function getOrderStatusBadge(order: OrderLineItem) {
 
   return {
     value: status,
-    label: status ? formatStatusLabel(status) : "—",
+    label:
+      status === "payment_failed"
+        ? "Payment Failed"
+        : status
+          ? formatStatusLabel(status)
+          : "—",
     color: fallback.color,
     bg: fallback.bg,
   };
@@ -601,7 +719,7 @@ function findReturnForLine(order: OrderLineItem) {
     const items = ret?.items || [];
 
     const match = items.find(
-      (it) => Number(it.order_line_id) === Number(order.line_id)
+      (it) => Number(it.order_line_id) === Number(order.line_id),
     );
 
     if (match) {
@@ -616,9 +734,7 @@ function findReturnForLine(order: OrderLineItem) {
     return null;
   }
 
-  matches.sort(
-    (a, b) => Number(b.returnObj.id) - Number(a.returnObj.id)
-  );
+  matches.sort((a, b) => Number(b.returnObj.id) - Number(a.returnObj.id));
 
   return matches[0];
 }
@@ -641,7 +757,7 @@ function findActiveReturnForLine(order: OrderLineItem) {
     const items = ret?.items || [];
 
     const match = items.find(
-      (it) => Number(it.order_line_id) === Number(order.line_id)
+      (it) => Number(it.order_line_id) === Number(order.line_id),
     );
 
     if (match) {
@@ -656,9 +772,7 @@ function findActiveReturnForLine(order: OrderLineItem) {
     return null;
   }
 
-  matches.sort(
-    (a, b) => Number(b.returnObj.id) - Number(a.returnObj.id)
-  );
+  matches.sort((a, b) => Number(b.returnObj.id) - Number(a.returnObj.id));
 
   return matches[0];
 }
@@ -759,8 +873,8 @@ function getReturnStatusBadge(order: OrderLineItem) {
     returnType === "buyback"
       ? "Buyback"
       : returnType === "cooling_off"
-      ? "Cooling Off"
-      : "Return";
+        ? "Cooling Off"
+        : "Return";
 
   let color = INDIGO;
   let bg = "#eceffb";
@@ -807,9 +921,7 @@ function getReturnStatusBadge(order: OrderLineItem) {
   };
 }
 
-function isReturnWindowOpen(
-  returnApplicableTill: string | null | undefined
-) {
+function isReturnWindowOpen(returnApplicableTill: string | null | undefined) {
   if (!returnApplicableTill) {
     return false;
   }
@@ -1020,8 +1132,7 @@ function getRefundDetails(order: OrderLineItem) {
       return {
         amount,
         creditNoteNumber: null,
-        issuedAt:
-          found?.returnObj?.refund_processed_at ?? null,
+        issuedAt: found?.returnObj?.refund_processed_at ?? null,
         status: found?.returnObj?.refund_status || "processed",
       };
     }
@@ -1035,7 +1146,7 @@ function getRefundDetails(order: OrderLineItem) {
       note &&
       note.amount !== null &&
       note.amount !== undefined &&
-      note.amount !== ""
+      note.amount !== "",
   );
 
   if (matchingCreditNote) {
@@ -1217,7 +1328,7 @@ const OrderImageGallery = ({
                 type="button"
                 onClick={() =>
                   setActiveIndex((prev) =>
-                    prev === 0 ? images.length - 1 : prev - 1
+                    prev === 0 ? images.length - 1 : prev - 1,
                   )
                 }
                 className="absolute left-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/70 bg-white/90 text-[#555555] shadow-sm"
@@ -1229,7 +1340,7 @@ const OrderImageGallery = ({
                 type="button"
                 onClick={() =>
                   setActiveIndex((prev) =>
-                    prev === images.length - 1 ? 0 : prev + 1
+                    prev === images.length - 1 ? 0 : prev + 1,
                   )
                 }
                 className="absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/70 bg-white/90 text-[#555555] shadow-sm"
@@ -1413,14 +1524,14 @@ const TrackingModal = ({ isOpen, onClose, order }: TrackingModalProps) => {
               const dotColor = isRejected
                 ? RED
                 : step.group === "return"
-                ? BRASS
-                : EMERALD;
+                  ? BRASS
+                  : EMERALD;
 
               const dotBg = isRejected
                 ? "#FEF2F2"
                 : step.group === "return"
-                ? "#F8F1E4"
-                : "#eaf7f0";
+                  ? "#F8F1E4"
+                  : "#eaf7f0";
 
               const Icon = step.icon;
 
@@ -1500,7 +1611,7 @@ const OrderBreakupModal = ({
     }
 
     const lines = allOrders.filter(
-      (item) => Number(item.order_id) === Number(order.order_id)
+      (item) => Number(item.order_id) === Number(order.order_id),
     );
 
     const fallback = lines.length > 0 ? lines : [order];
@@ -1516,15 +1627,15 @@ const OrderBreakupModal = ({
 
   const subtotal = orderLines.reduce(
     (sum, line) => sum + (Number(line.line_total) || 0),
-    0
+    0,
   );
 
   const shipping = Number(
     orderSummary.shipping_charge ??
       orderLines.reduce(
         (sum, line) => sum + (Number(line.delivery_charges) || 0),
-        0
-      )
+        0,
+      ),
   );
 
   const totalPayable = Number(
@@ -1534,8 +1645,8 @@ const OrderBreakupModal = ({
       orderLines.reduce(
         (sum, line) =>
           sum + (Number(line.final_amount ?? line.line_total) || 0),
-        0
-      )
+        0,
+      ),
   );
 
   const coinRedeemed = Number(orderSummary.coin_redeemed ?? 0);
@@ -1548,7 +1659,10 @@ const OrderBreakupModal = ({
       <div className="flex shrink-0 items-center justify-between border-b border-[#E6E6E4] px-4 py-3 sm:px-5">
         <div className="flex min-w-0 items-center gap-2.5">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] bg-[#f8f1e4]">
-            <LuReceiptIndianRupee className="h-4 w-4" style={{ color: BRASS }} />
+            <LuReceiptIndianRupee
+              className="h-4 w-4"
+              style={{ color: BRASS }}
+            />
           </div>
 
           <div className="min-w-0">
@@ -1855,7 +1969,7 @@ const ReviewModal = ({
       setTimeout(() => onClose(), 2000);
     } catch (err: any) {
       setError(
-        err?.data?.message || err?.message || "Failed to submit review."
+        err?.data?.message || err?.message || "Failed to submit review.",
       );
 
       setIsSubmitting(false);
@@ -1869,7 +1983,7 @@ const ReviewModal = ({
       3: "Good",
       4: "Very Good",
       5: "Excellent!",
-    }[value] || "");
+    })[value] || "";
 
   if (!isOpen) {
     return null;
@@ -1891,7 +2005,6 @@ const ReviewModal = ({
 
           <p className="mt-1 text-[10px] text-black sm:text-[11px]">
             Order: {order?.order_reference || `#${order?.order_id}`}
-
             {order?.line_id && (
               <span className="ml-1 text-[#AAAAAA]">
                 • Item #{order.line_id}
@@ -2178,7 +2291,7 @@ const ViewReviewModal = ({ isOpen, onClose, order }: ViewReviewModalProps) => {
     (review: any) =>
       review.order_line_id === order.line_id ||
       review.order_id === order.order_id ||
-      review.product_id === order.product_id
+      review.product_id === order.product_id,
   );
 
   const rating = existingReview?.rating || 0;
@@ -2200,7 +2313,7 @@ const ViewReviewModal = ({ isOpen, onClose, order }: ViewReviewModalProps) => {
       3: "Good",
       4: "Very Good",
       5: "Excellent!",
-    }[value] || "");
+    })[value] || "";
 
   return (
     <ModalShell onClose={onClose} maxWidth="max-w-xl">
@@ -2218,7 +2331,6 @@ const ViewReviewModal = ({ isOpen, onClose, order }: ViewReviewModalProps) => {
 
           <p className="mt-1 text-[10px] text-black sm:text-[11px]">
             Order: {order.order_reference}
-
             {order.line_id && (
               <span className="ml-1 text-[#AAAAAA]">
                 • Item #{order.line_id}
@@ -2494,7 +2606,7 @@ const ReturnModal = ({
       setError(
         err?.data?.message ||
           err?.message ||
-          "Failed to submit return request."
+          "Failed to submit return request.",
       );
 
       setIsSubmitting(false);
@@ -2724,7 +2836,7 @@ const ReturnModal = ({
                   htmlFor="courierName"
                   className="mb-1.5 block text-[10.5px] font-medium uppercase tracking-[0.08em] text-black"
                 >
-                  Courier Name  <span className="text-[#B24C4C]">*</span>
+                  Courier Name <span className="text-[#B24C4C]">*</span>
                 </label>
 
                 <input
@@ -2767,8 +2879,8 @@ const ReturnModal = ({
               <span className="font-semibold">Doorstep return:</span> 2×
               shipping charge deducted
               <br />
-              <span className="font-semibold">Courier return:</span> 1×
-              shipping charge deducted
+              <span className="font-semibold">Courier return:</span> 1× shipping
+              charge deducted
             </p>
           </div>
         </div>
@@ -2807,9 +2919,7 @@ const ReturnModal = ({
               </span>
             </label>
 
-            <span className="text-[9px] text-[#999999]">
-              {images.length}/5
-            </span>
+            <span className="text-[9px] text-[#999999]">{images.length}/5</span>
           </div>
 
           {imagePreviews.length > 0 ? (
@@ -2989,9 +3099,7 @@ const CancelModal = ({
 
       onClose();
     } catch (err: any) {
-      setError(
-        err?.data?.message || err?.message || "Failed to cancel order."
-      );
+      setError(err?.data?.message || err?.message || "Failed to cancel order.");
 
       setIsSubmitting(false);
     }
@@ -3167,7 +3275,7 @@ const CancelReturnModal = ({
       setError(
         err?.data?.message ||
           err?.message ||
-          "Failed to cancel return request."
+          "Failed to cancel return request.",
       );
 
       setIsSubmitting(false);
@@ -3234,7 +3342,6 @@ const CancelReturnModal = ({
 
               <p className="mt-0.5 text-[10px] text-black">
                 Order #{order.order_reference}
-
                 {returnId && (
                   <span className="ml-1 text-[#AAAAAA]">
                     • Return #{returnId}
@@ -3342,9 +3449,7 @@ const WithdrawModal = ({
       onClose();
     } catch (err: any) {
       setError(
-        err?.data?.message ||
-          err?.message ||
-          "Failed to withdraw request."
+        err?.data?.message || err?.message || "Failed to withdraw request.",
       );
 
       setIsSubmitting(false);
@@ -3616,9 +3721,7 @@ const ActionDropdown = ({
               top: coords.top,
               left: coords.left,
               width: coords.width,
-              transform: coords.openUp
-                ? "translateY(-100%)"
-                : "translateY(0)",
+              transform: coords.openUp ? "translateY(-100%)" : "translateY(0)",
               zIndex: 9999,
             }}
             className="overflow-hidden rounded-[8px] border border-[#e5e9ef] bg-white shadow-[0_8px_24px_rgba(16,24,40,0.15)]"
@@ -3668,9 +3771,7 @@ const ActionDropdown = ({
             {canCancelReturn && cancellableReturn && (
               <button
                 onClick={() =>
-                  handleAction(() =>
-                    onCancelReturn(cancellableReturn.returnId)
-                  )
+                  handleAction(() => onCancelReturn(cancellableReturn.returnId))
                 }
                 className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#DC2626] hover:bg-[#FEF2F2]"
               >
@@ -3703,7 +3804,7 @@ const ActionDropdown = ({
             )}
           </motion.div>
         </AnimatePresence>,
-        document.body
+        document.body,
       )
     : null;
 
@@ -3752,7 +3853,7 @@ const OrderDetails = ({
 }: OrderDetailsProps) => {
   const orderLines = useMemo(() => {
     const lines = allOrders.filter(
-      (item) => Number(item.order_id) === Number(order.order_id)
+      (item) => Number(item.order_id) === Number(order.order_id),
     );
 
     const fallback = lines.length > 0 ? lines : [order];
@@ -3762,10 +3863,7 @@ const OrderDetails = ({
 
   const refundDetails = orderLines
     .map((line) => getRefundDetails(line))
-    .find(
-      (refund) =>
-        refund?.amount !== null && refund?.amount !== undefined
-    );
+    .find((refund) => refund?.amount !== null && refund?.amount !== undefined);
 
   console.log(refundDetails);
 
@@ -3837,7 +3935,7 @@ const OrderDetails = ({
                   order.final_amount ??
                     order.total_payable ??
                     order.amount_paid ??
-                    0
+                    0,
                 )}
               </p>
             </div>
@@ -3972,9 +4070,15 @@ interface MobileOrderCardProps {
   onWithdrawReturn: () => void;
   onInvoiceDownload: (orderId: number) => void;
   isInvoiceLoading?: boolean;
+  now: number;
+  retryBusy: boolean;
+  onRetry: (order: OrderLineItem) => void;
 }
 
 const MobileOrderCard = ({
+  now,
+  retryBusy,
+  onRetry,
   order,
   allOrders,
   isExpanded,
@@ -4077,6 +4181,20 @@ const MobileOrderCard = ({
                 Status: {apiStatus.label}
               </span>
             </div>
+
+            {apiStatus.value === "payment_failed" && (
+              <div className="mt-2.5 rounded-lg border border-red-100 bg-red-50/60 p-2.5">
+                <p className="mb-2 text-[11px] font-semibold text-red-700">
+                  Payment Failed
+                </p>
+                <RetryPaymentButton
+                  order={order}
+                  now={now}
+                  busy={retryBusy}
+                  onRetry={onRetry}
+                />
+              </div>
+            )}
 
             {returnWindow && returnWindow.state !== "completed" && (
               <div
@@ -4203,6 +4321,15 @@ const MobileOrderCard = ({
 
 export default function OrderHistory() {
   const dispatch = useAppDispatch();
+  const [now, setNow] = useState(() => Date.now());
+  const [retryingReference, setRetryingReference] = useState<string | null>(
+    null,
+  );
+  const [retryOrder] = useRetryOrderMutation();
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -4219,10 +4346,12 @@ export default function OrderHistory() {
   const [cancelReturnModalOpen, setCancelReturnModalOpen] = useState(false);
   const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
   const [withdrawType, setWithdrawType] = useState<"cancel" | "return" | null>(
-    null
+    null,
   );
   const [imageGalleryOpen, setImageGalleryOpen] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState<OrderLineItem | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<OrderLineItem | null>(
+    null,
+  );
   const [selectedReturnId, setSelectedReturnId] = useState<number | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -4240,7 +4369,7 @@ export default function OrderHistory() {
     orderQueryArgs as any,
     {
       refetchOnMountOrArgChange: true,
-    }
+    },
   );
 
   const [cancelOrder, { isLoading: isCancelling }] = useCancelOrderMutation();
@@ -4272,6 +4401,90 @@ export default function OrderHistory() {
     return [];
   }, [data]);
 
+  const handleRetryPayment = async (order: OrderLineItem) => {
+    if (retryingReference) return;
+    if (retryRemainingMs(order, Date.now()) <= 0) {
+      dispatch(
+        showToast({
+          type: "error",
+          message: "The 5-minute retry window has expired.",
+        }),
+      );
+      return;
+    }
+    const gateway = order.payment_gateway;
+    if (
+      gateway !== "razorpay" &&
+      gateway !== "hdfc_sg" &&
+      gateway !== "hdfc_ie"
+    ) {
+      dispatch(
+        showToast({ type: "error", message: "Unsupported payment gateway." }),
+      );
+      return;
+    }
+    setRetryingReference(order.order_reference);
+    try {
+      // Load checkout before API creation to avoid orphaned retry sessions.
+      if (gateway === "razorpay") await loadRazorpayCheckout();
+      const response = await retryOrder({
+        orderReference: order.order_reference,
+        payment_gateway: gateway,
+      }).unwrap();
+      if (!response.success || !response.data)
+        throw new Error(response.message || "Retry failed");
+      const session = response.data;
+      if (session.gateway === "hdfc_sg" || session.gateway === "hdfc_ie") {
+        if (!session.hdfc_payment_link)
+          throw new Error("HDFC payment link missing in retry response");
+        // Full page navigation is more reliable for bank hosted checkout.
+        window.location.assign(session.hdfc_payment_link);
+        return;
+      }
+      if (!session.razorpay_key || !session.razorpay_order_id)
+        throw new Error("Incomplete Razorpay retry session");
+      const RazorpayConstructor = (window as any).Razorpay;
+      const checkout = new RazorpayConstructor({
+        key: session.razorpay_key,
+        amount: Math.round(Number(session.total_amount) * 100),
+        currency: "INR",
+        name: "INDIEKONNECT",
+        description: `Order ${session.order_reference}`,
+        order_id: session.razorpay_order_id,
+        // Do not mark payment successful here; backend must verify the signature/webhook.
+        handler: async () => {
+          dispatch(
+            showToast({
+              type: "success",
+              message: "Payment submitted. Confirmation is being verified.",
+            }),
+          );
+          await refetch();
+        },
+        modal: {
+          ondismiss: () => {
+            void refetch();
+          },
+        },
+      });
+      checkout.on("payment.failed", () => {
+        void refetch();
+      });
+      checkout.open();
+      await refetch();
+    } catch (err: any) {
+      dispatch(
+        showToast({
+          type: "error",
+          message:
+            err?.data?.message || err?.message || "Unable to retry payment.",
+        }),
+      );
+    } finally {
+      setRetryingReference(null);
+    }
+  };
+
   const apiStatusOptions = useMemo(() => {
     return extractStatusOptionsFromApi(data);
   }, [data]);
@@ -4279,42 +4492,34 @@ export default function OrderHistory() {
   const statusOptions = useMemo(() => {
     const map = new Map<string, ApiStatusOption>();
 
-    apiStatusOptions.forEach((status) => {
-      if (status.value) {
-        map.set(status.value, status);
-      }
-    });
+    // The API can call this status "failed" or "payment_failed".
+    // Both must appear as just one filter: Payment Failed.
+    const canonicalStatus = (value: string) => {
+      const normalized = normalizeStatus(value);
+      return normalized === "payment_failed" ? "failed" : normalized;
+    };
 
+    const addStatus = (rawValue: string, rawLabel?: string) => {
+      const value = canonicalStatus(rawValue);
+      if (!value || map.has(value)) return;
+      map.set(value, {
+        value,
+        label:
+          value === "failed"
+            ? "Payment Failed"
+            : rawLabel || formatStatusLabel(value),
+      });
+    };
+
+    apiStatusOptions.forEach((status) => addStatus(status.value, status.label));
     orders.forEach((order) => {
-      const orderStatus = normalizeStatus(order.order_status);
-      const deliveryStatus = normalizeStatus(order.delivery_status);
-
-      if (orderStatus && !map.has(orderStatus)) {
-        map.set(orderStatus, {
-          value: orderStatus,
-          label: formatStatusLabel(orderStatus),
-        });
-      }
-
-      if (deliveryStatus && !map.has(deliveryStatus)) {
-        map.set(deliveryStatus, {
-          value: deliveryStatus,
-          label: formatStatusLabel(deliveryStatus),
-        });
-      }
+      addStatus(order.order_status);
+      addStatus(order.delivery_status);
     });
-
-    Object.keys(STATUS_STYLES).forEach((status) => {
-      if (!map.has(status)) {
-        map.set(status, {
-          value: status,
-          label: formatStatusLabel(status),
-        });
-      }
-    });
+    Object.keys(STATUS_STYLES).forEach((status) => addStatus(status));
 
     return Array.from(map.values()).sort((a, b) =>
-      a.label.localeCompare(b.label)
+      a.label.localeCompare(b.label),
     );
   }, [apiStatusOptions, orders]);
 
@@ -4328,6 +4533,14 @@ export default function OrderHistory() {
         const deliveryStatus = normalizeStatus(order.delivery_status);
         const orderStatus = normalizeStatus(order.order_status);
         const returnStatus = normalizeStatus(order.return_status);
+
+        // Selecting Payment Failed covers both backend status spellings.
+        if (
+          selectedStatus === "failed" ||
+          selectedStatus === "payment_failed"
+        ) {
+          return isPaymentFailed(order);
+        }
 
         return (
           deliveryStatus === selectedStatus ||
@@ -4350,7 +4563,7 @@ export default function OrderHistory() {
         order.order_status?.toLowerCase().includes(q) ||
         order.item_reference_id?.toLowerCase().includes(q) ||
         order.delivery_status?.toLowerCase().includes(q) ||
-        order.return_status?.toLowerCase().includes(q)
+        order.return_status?.toLowerCase().includes(q),
     );
   }, [orders, searchQuery, statusFilter]);
 
@@ -4381,7 +4594,9 @@ export default function OrderHistory() {
 
     try {
       const files: File[] = Array.isArray(reviewData?.images)
-        ? reviewData.images.filter((img: any): img is File => img instanceof File)
+        ? reviewData.images.filter(
+            (img: any): img is File => img instanceof File,
+          )
         : [];
 
       const rating = Number(reviewData?.rating);
@@ -4409,7 +4624,7 @@ export default function OrderHistory() {
         showToast({
           message: response?.message || "Review submitted successfully!",
           type: "success",
-        })
+        }),
       );
 
       await refetch();
@@ -4423,7 +4638,7 @@ export default function OrderHistory() {
             error?.message ||
             "Failed to submit review.",
           type: "error",
-        })
+        }),
       );
 
       throw error;
@@ -4450,7 +4665,7 @@ export default function OrderHistory() {
       // ✅ NEW: hard block if API says not allowed
       if (!isCancelReturnAllowed(selectedOrder)) {
         throw new Error(
-          "Return is not allowed for this item. Please contact support."
+          "Return is not allowed for this item. Please contact support.",
         );
       }
 
@@ -4473,7 +4688,7 @@ export default function OrderHistory() {
         !returnData.courier?.trim()
       ) {
         throw new Error(
-          "Courier name is required when courier return method is selected."
+          "Courier name is required when courier return method is selected.",
         );
       }
 
@@ -4482,7 +4697,7 @@ export default function OrderHistory() {
         !returnData.tracking_id?.trim()
       ) {
         throw new Error(
-          "Tracking ID is required when courier return method is selected."
+          "Tracking ID is required when courier return method is selected.",
         );
       }
 
@@ -4500,7 +4715,8 @@ export default function OrderHistory() {
         items: [
           {
             order_line_id: selectedOrder.line_id,
-            quantity: selectedOrder.available_for_return || selectedOrder.quantity || 1,
+            quantity:
+              selectedOrder.available_for_return || selectedOrder.quantity || 1,
             reason: returnData.reason,
             images: returnData.images || [],
           },
@@ -4512,15 +4728,14 @@ export default function OrderHistory() {
           message:
             response?.message || "Return request submitted successfully!",
           type: "success",
-        })
+        }),
       );
 
       await refetch();
 
       return response;
     } catch (error: any) {
-      let errorMessage =
-        "Failed to submit return request. Please try again.";
+      let errorMessage = "Failed to submit return request. Please try again.";
 
       if (error?.data?.message) {
         errorMessage = error.data.message;
@@ -4536,7 +4751,7 @@ export default function OrderHistory() {
         showToast({
           message: errorMessage,
           type: "error",
-        })
+        }),
       );
 
       throw error;
@@ -4556,7 +4771,7 @@ export default function OrderHistory() {
       // ✅ NEW: hard block if API says not allowed
       if (!isCancelReturnAllowed(selectedOrder)) {
         throw new Error(
-          "Cancellation is not allowed for this item. Please contact support."
+          "Cancellation is not allowed for this item. Please contact support.",
         );
       }
 
@@ -4583,7 +4798,7 @@ export default function OrderHistory() {
             response?.message ||
             "Order cancellation request submitted successfully!",
           type: "success",
-        })
+        }),
       );
 
       await refetch();
@@ -4593,11 +4808,9 @@ export default function OrderHistory() {
       dispatch(
         showToast({
           message:
-            error?.data?.message ||
-            error?.message ||
-            "Failed to cancel order.",
+            error?.data?.message || error?.message || "Failed to cancel order.",
           type: "error",
-        })
+        }),
       );
 
       throw error;
@@ -4612,7 +4825,7 @@ export default function OrderHistory() {
         showToast({
           message: "Return ID is missing.",
           type: "error",
-        })
+        }),
       );
 
       throw new Error("Return ID is missing.");
@@ -4630,7 +4843,7 @@ export default function OrderHistory() {
           message:
             response?.message || "Return request cancelled successfully!",
           type: "success",
-        })
+        }),
       );
 
       await refetch();
@@ -4646,7 +4859,7 @@ export default function OrderHistory() {
             error?.message ||
             "Failed to cancel return request.",
           type: "error",
-        })
+        }),
       );
 
       throw error;
@@ -4673,7 +4886,7 @@ export default function OrderHistory() {
           message:
             response?.message || "Cancel request withdrawn successfully!",
           type: "success",
-        })
+        }),
       );
 
       await refetch();
@@ -4687,7 +4900,7 @@ export default function OrderHistory() {
             error?.message ||
             "Failed to withdraw cancel request.",
           type: "error",
-        })
+        }),
       );
 
       throw error;
@@ -4714,7 +4927,7 @@ export default function OrderHistory() {
           message:
             response?.message || "Withdraw request submitted successfully!",
           type: "success",
-        })
+        }),
       );
 
       await refetch();
@@ -4728,7 +4941,7 @@ export default function OrderHistory() {
             error?.message ||
             "Failed to withdraw request.",
           type: "error",
-        })
+        }),
       );
 
       throw error;
@@ -4753,14 +4966,14 @@ export default function OrderHistory() {
           showToast({
             message: "Invoice generated successfully!",
             type: "success",
-          })
+          }),
         );
       } else {
         dispatch(
           showToast({
             message: "Invoice not available for this order",
             type: "error",
-          })
+          }),
         );
       }
     } catch (error: any) {
@@ -4773,7 +4986,7 @@ export default function OrderHistory() {
             error?.message ||
             "Failed to fetch invoice. Please try again.",
           type: "error",
-        })
+        }),
       );
     } finally {
       setInvoiceLoadingOrders((prev) => ({
@@ -4806,7 +5019,7 @@ export default function OrderHistory() {
           message:
             "Return is not allowed for this item. Please contact support.",
           type: "error",
-        })
+        }),
       );
       return;
     }
@@ -4821,7 +5034,7 @@ export default function OrderHistory() {
           showToast({
             message: "Return window has expired for this item.",
             type: "error",
-          })
+          }),
         );
         return;
       }
@@ -4832,7 +5045,7 @@ export default function OrderHistory() {
         showToast({
           message: "This item has already been returned.",
           type: "error",
-        })
+        }),
       );
       return;
     }
@@ -4842,7 +5055,7 @@ export default function OrderHistory() {
         showToast({
           message: "This item is not eligible for return.",
           type: "error",
-        })
+        }),
       );
       return;
     }
@@ -4859,7 +5072,7 @@ export default function OrderHistory() {
           message:
             "Cancellation is not allowed for this item. Please contact support.",
           type: "error",
-        })
+        }),
       );
       return;
     }
@@ -4884,7 +5097,7 @@ export default function OrderHistory() {
         showToast({
           message: "Return window has closed — cannot cancel return.",
           type: "error",
-        })
+        }),
       );
 
       return;
@@ -5044,6 +5257,9 @@ export default function OrderHistory() {
                   onWithdrawReturn={() => openWithdrawReturn(order)}
                   onInvoiceDownload={handleInvoiceDownload}
                   isInvoiceLoading={!!invoiceLoadingOrders[order.order_id]}
+                  now={now}
+                  retryBusy={retryingReference === order.order_reference}
+                  onRetry={handleRetryPayment}
                 />
               );
             })
@@ -5057,7 +5273,7 @@ export default function OrderHistory() {
             <div className="min-w-[1000px]">
               {/* HEADER */}
 
-              <div className="grid grid-cols-[40px_minmax(140px,1.35fr)_minmax(160px,1.6fr)_minmax(85px,0.8fr)_minmax(80px,0.8fr)_50px_minmax(70px,0.85fr)_minmax(120px,1.15fr)_60px] items-center gap-2 border-b border-[#e7e9ee] pb-3 text-[11.5px] font-bold tracking-wide text-[#8a92a6]">
+              <div className="grid grid-cols-[40px_minmax(140px,1.35fr)_minmax(160px,1.6fr)_minmax(85px,0.8fr)_minmax(80px,0.8fr)_50px_minmax(70px,0.85fr)_minmax(120px,1.15fr)_190px] items-center gap-2 border-b border-[#e7e9ee] pb-3 text-[11.5px] font-bold tracking-wide text-[#8a92a6]">
                 <span />
 
                 <span>Order Reference</span>
@@ -5103,15 +5319,13 @@ export default function OrderHistory() {
                       >
                         {/* ROW */}
 
-                        <div className="grid grid-cols-[40px_minmax(140px,1.35fr)_minmax(160px,1.6fr)_minmax(85px,0.8fr)_minmax(80px,0.8fr)_50px_minmax(70px,0.85fr)_minmax(120px,1.15fr)_60px] items-center gap-2 py-4 text-[13px] text-[#101828]">
+                        <div className="grid grid-cols-[40px_minmax(140px,1.35fr)_minmax(160px,1.6fr)_minmax(85px,0.8fr)_minmax(80px,0.8fr)_50px_minmax(70px,0.85fr)_minmax(120px,1.15fr)_190px] items-center gap-2 py-4 text-[13px] text-[#101828]">
                           {/* EXPAND */}
 
                           <button
                             onClick={() => toggleRow(rowKey)}
                             className="flex h-7 w-7 items-center justify-center rounded-[6px] border border-[#e5e9ef] bg-white text-[#667085] hover:bg-[#f7f8fa]"
-                            aria-label={
-                              isExpanded ? "Collapse" : "Expand"
-                            }
+                            aria-label={isExpanded ? "Collapse" : "Expand"}
                           >
                             <ChevronDown
                               size={15}
@@ -5221,23 +5435,31 @@ export default function OrderHistory() {
                                 {statusBadge.label}
                               </span>
                             </div>
+                            {statusBadge.value === "payment_failed" && (
+                              <div className="mt-2">
+                                <RetryPaymentButton
+                                  order={order}
+                                  now={now}
+                                  busy={
+                                    retryingReference === order.order_reference
+                                  }
+                                  onRetry={handleRetryPayment}
+                                />
+                              </div>
+                            )}
 
                             {refundDetails?.amount !== null &&
                               refundDetails?.amount !== undefined && (
                                 <p className="mt-1 truncate text-[8.5px] font-semibold text-[#1F7A56]">
-                                  <Check
-                                    size={10}
-                                    className="mr-0.5 inline"
-                                  />
-                                  Refunded{" "} processed 
-                            
+                                  <Check size={10} className="mr-0.5 inline" />
+                                  Refunded processed
                                 </p>
                               )}
                           </div>
 
                           {/* ACTIONS */}
 
-                          <div className="flex items-center justify-end">
+                          <div className="flex items-center justify-end gap-2">
                             <ActionDropdown
                               order={order}
                               onReview={() => openReview(order)}
@@ -5248,12 +5470,8 @@ export default function OrderHistory() {
                               onCancelReturn={(returnId) =>
                                 openCancelReturn(order, returnId)
                               }
-                              onWithdrawCancel={() =>
-                                openWithdrawCancel(order)
-                              }
-                              onWithdrawReturn={() =>
-                                openWithdrawReturn(order)
-                              }
+                              onWithdrawCancel={() => openWithdrawCancel(order)}
+                              onWithdrawReturn={() => openWithdrawReturn(order)}
                             />
                           </div>
                         </div>
@@ -5298,7 +5516,7 @@ export default function OrderHistory() {
               {totalRecords > 0
                 ? `Showing ${(page - 1) * perPage + 1}–${Math.min(
                     page * perPage,
-                    totalRecords
+                    totalRecords,
                   )} of ${totalRecords} records`
                 : "Showing 0 records"}
             </span>
@@ -5315,7 +5533,7 @@ export default function OrderHistory() {
 
             {Array.from(
               { length: Math.min(totalPages, 5) },
-              (_, i) => i + 1
+              (_, i) => i + 1,
             ).map((p) => (
               <button
                 key={p}
@@ -5338,9 +5556,7 @@ export default function OrderHistory() {
             ))}
 
             <button
-              onClick={() =>
-                setPage((p) => Math.min(totalPages, p + 1))
-              }
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
               className="flex h-7 w-7 items-center justify-center rounded-[6px] text-[#b0b8c8] hover:bg-[#f2f4f7] disabled:opacity-40"
             >
@@ -5430,9 +5646,7 @@ export default function OrderHistory() {
             : handleWithdrawCancelRequest
         }
         isUploading={
-          isWithdrawingCancelOrder ||
-          isWithdrawingCancelRequest ||
-          isUploading
+          isWithdrawingCancelOrder || isWithdrawingCancelRequest || isUploading
         }
       />
     </>

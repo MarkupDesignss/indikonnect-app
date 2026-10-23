@@ -17,7 +17,35 @@ export interface OrderItem {
   images: OrderImage[];
   primary_image: string;
 }
+export type RetryPaymentGateway = "razorpay" | "hdfc_sg" | "hdfc_ie";
 
+export interface RetryOrderRequest {
+  orderReference: string;
+  payment_gateway: RetryPaymentGateway;
+}
+
+export interface RetryOrderResponse {
+  success: boolean;
+  message: string;
+  data: {
+    order_id: number;
+    order_reference: string;
+    total_items: number;
+    total_amount: number;
+    status: string;
+    checkout_type: "cart" | "buy_now" | string;
+    gateway: RetryPaymentGateway;
+    payment_expires_at?: string;
+    reservation_expires_at?: string;
+    razorpay_order_id?: string;
+    razorpay_key?: string;
+    hdfc_order_id?: string;
+    hdfc_payment_link?: string;
+    hdfc_sdk_payload?: unknown;
+    hdfc_merchant_id?: string;
+    hdfc_gateway_key?: string;
+  };
+}
 export interface OrderAddress {
   id: number;
   full_name: string | null;
