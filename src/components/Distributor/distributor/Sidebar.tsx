@@ -131,11 +131,11 @@ const menuGroups: MenuGroup[] = [
                         icon: Award,
                         href: "/distributor/profile/rank-information",
                     },
-                    {
-                        label: "CV allocation",
-                        icon: IndianRupeeIcon,
-                        href: "/distributor/profile/cv-allocation",
-                    },
+                    // {
+                    //     label: "CV allocation",
+                    //     icon: IndianRupeeIcon,
+                    //     href: "/distributor/profile/cv-allocation",
+                    // },
                     {
                         label: "Sponsored",
                         icon: Share2,

@@ -1,21 +1,12 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useState, useEffect } from "react";
 import {
     User,
-    Package,
-    Heart,
-    Settings,
-    LogOut,
-    Star,
     Crown,
     ChevronRight,
-    Gift,
     Loader2,
     AlertCircle,
-    MapPin,
-    DollarSign,
     IndianRupee,
     TrendingUp,
     Wallet,
@@ -28,14 +19,13 @@ import {
     Percent,
     Shield,
     BarChart3,
-    PieChart,
     Target,
     Zap,
-    Clock
+    Clock,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-import { useGetDistributorStatsQuery } from "@/lib/redux/api/headerApi";
+import { useGetDistributorStatsQuery } from "@/lib/redux/api/distributor/distributorStatsApi";
 
 // Skeleton Loader
 const SkeletonLoader = () => (
@@ -61,14 +51,14 @@ const SkeletonLoader = () => (
 );
 
 // Stats Card Component
-const StatsCard = ({ 
-    icon: Icon, 
-    label, 
-    value, 
-    delay, 
-    subtitle, 
+const StatsCard = ({
+    icon: Icon,
+    label,
+    value,
+    delay,
+    subtitle,
     valueColor = "text-[#2B2420]",
-    bgColor = "bg-[#FDCB00]/10"
+    bgColor = "bg-[#FDCB00]/10",
 }: any) => (
     <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -80,17 +70,11 @@ const StatsCard = ({
             <Icon className="w-6 h-6 text-[#C9A227]" />
         </div>
         <p className={`text-2xl font-bold ${valueColor}`}>{value}</p>
-        <p
-            className="text-sm text-[#8a7f6e]"
-            style={{ fontFamily: "Jost, sans-serif" }}
-        >
+        <p className="text-sm text-[#8a7f6e]" style={{ fontFamily: "Jost, sans-serif" }}>
             {label}
         </p>
         {subtitle && (
-            <p
-                className="text-xs text-[#8a7f6e]/60 mt-1"
-                style={{ fontFamily: "Jost, sans-serif" }}
-            >
+            <p className="text-xs text-[#8a7f6e]/60 mt-1" style={{ fontFamily: "Jost, sans-serif" }}>
                 {subtitle}
             </p>
         )}
@@ -122,7 +106,7 @@ const InfoCard = ({ icon: Icon, label, value, delay }: any) => (
 // Achievement Badge Component
 const AchievementBadge = ({ icon: Icon, label, value, color = "text-[#C9A227]" }: any) => (
     <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-[#FBF6EC] to-transparent rounded-xl border border-[#E7DBC0]/30">
-        <div className={`w-8 h-8 rounded-full bg-[#FDCB00]/10 flex items-center justify-center flex-shrink-0`}>
+        <div className="w-8 h-8 rounded-full bg-[#FDCB00]/10 flex items-center justify-center flex-shrink-0">
             <Icon className={`w-4 h-4 ${color}`} />
         </div>
         <div className="flex-1">
@@ -136,47 +120,30 @@ const AchievementBadge = ({ icon: Icon, label, value, color = "text-[#C9A227]" }
     </div>
 );
 
-interface DistributorStats {
-    success: boolean;
-    data: {
-        user_id: number;
-        full_name: string;
-        email: string;
-        phone: string;
-        total_orders: number;
-        total_amount_mrp: number;
-        total_savings: number;
-        total_coins_earned: number;
-        account_type: string;
-        joined_at: string;
-    };
-    message: string;
-}
-
 export default function DistributorStatsPage() {
     const router = useRouter();
-    
-    // Use RTK Query hook to fetch data dynamically
-    const { data: statsData, isLoading, error, refetch } = useGetDistributorStatsQuery({});
+
+    // Fetch data dynamically (endpoint takes no arguments)
+    const { data: statsData, isLoading, error, refetch } = useGetDistributorStatsQuery();
 
     // Format date
     const formatDate = (dateString: string) => {
         if (!dateString) return "N/A";
         const date = new Date(dateString);
-        return date.toLocaleDateString('en-IN', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric'
+        return date.toLocaleDateString("en-IN", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
         });
     };
 
     // Format currency in Rupees
     const formatCurrency = (amount: number = 0) => {
-        return new Intl.NumberFormat('en-IN', {
-            style: 'currency',
-            currency: 'INR',
+        return new Intl.NumberFormat("en-IN", {
+            style: "currency",
+            currency: "INR",
             maximumFractionDigits: 0,
-            minimumFractionDigits: 0
+            minimumFractionDigits: 0,
         }).format(amount);
     };
 
@@ -185,10 +152,7 @@ export default function DistributorStatsPage() {
         hidden: { opacity: 0 },
         visible: {
             opacity: 1,
-            transition: {
-                staggerChildren: 0.08,
-                delayChildren: 0.1,
-            },
+            transition: { staggerChildren: 0.08, delayChildren: 0.1 },
         },
     };
 
@@ -197,11 +161,7 @@ export default function DistributorStatsPage() {
         visible: {
             opacity: 1,
             y: 0,
-            transition: {
-                type: "spring",
-                stiffness: 300,
-                damping: 25,
-            },
+            transition: { type: "spring", stiffness: 300, damping: 25 },
         },
     };
 
@@ -223,7 +183,9 @@ export default function DistributorStatsPage() {
                 <div className="bg-white rounded-2xl p-8 shadow-lg border border-red-200 max-w-md w-full text-center">
                     <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
                     <h3 className="text-xl font-bold text-[#2B2420] mb-2">Error Loading Stats</h3>
-                    <p className="text-[#8a7f6e] mb-4">Failed to load distributor statistics. Please try again.</p>
+                    <p className="text-[#8a7f6e] mb-4">
+                        Failed to load distributor statistics. Please try again.
+                    </p>
                     <button
                         onClick={() => refetch()}
                         className="px-6 py-2 bg-[#2B2420] text-white rounded-lg hover:bg-[#3d332e] transition-colors"
@@ -235,9 +197,15 @@ export default function DistributorStatsPage() {
         );
     }
 
+    const data = statsData?.data;
+    const currentRankName =
+        data?.rank_progress?.ranks?.find(
+            (r) => r.rank_no === data?.rank_progress?.current?.rank_no
+        )?.name || "Standard";
+
     return (
         <div className="min-h-screen bg-[#FBF8F2]">
-            {/* Banner - Removed Image import */}
+            {/* Banner */}
             <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -277,7 +245,7 @@ export default function DistributorStatsPage() {
                                     animate={{ opacity: 1 }}
                                     transition={{ delay: 0.5 }}
                                 >
-                                    Welcome back, {statsData?.data?.full_name || "Distributor"}
+                                    Welcome back, {data?.full_name || "Distributor"}
                                 </motion.p>
                             </motion.div>
                         </div>
@@ -307,33 +275,30 @@ export default function DistributorStatsPage() {
                         <StatsCard
                             icon={ShoppingBag}
                             label="Total Orders"
-                            value={statsData?.data?.total_orders || 0}
+                            value={data?.total_orders || 0}
                             delay={0.1}
                             bgColor="bg-blue-50"
                         />
                         <StatsCard
                             icon={IndianRupee}
                             label="Total Amount (MRP)"
-                            value={formatCurrency(statsData?.data?.total_amount_mrp || 0)}
+                            value={formatCurrency(data?.total_amount_mrp || 0)}
                             delay={0.2}
                             bgColor="bg-green-50"
-                        
                         />
                         <StatsCard
                             icon={Percent}
                             label="Total Savings"
-                            value={formatCurrency(statsData?.data?.total_savings || 0)}
+                            value={formatCurrency(data?.total_savings || 0)}
                             delay={0.3}
                             bgColor="bg-purple-50"
-                           
                         />
                         <StatsCard
                             icon={Coins}
-                            label="Coins Earned"
-                            value={statsData?.data?.total_coins_earned || 0}
+                            label="Coins Redeemed"
+                            value={data?.total_coins_redeemed || 0}
                             delay={0.4}
                             bgColor="bg-amber-50"
-                          
                         />
                     </motion.div>
 
@@ -349,28 +314,13 @@ export default function DistributorStatsPage() {
                                 Personal Information
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <InfoCard
-                                    icon={User}
-                                    label="Full Name"
-                                    value={statsData?.data?.full_name}
-                                    delay={0.1}
-                                />
-                                <InfoCard
-                                    icon={Mail}
-                                    label="Email Address"
-                                    value={statsData?.data?.email}
-                                    delay={0.2}
-                                />
-                                <InfoCard
-                                    icon={Phone}
-                                    label="Phone Number"
-                                    value={statsData?.data?.phone}
-                                    delay={0.3}
-                                />
+                                <InfoCard icon={User} label="Full Name" value={data?.full_name} delay={0.1} />
+                                <InfoCard icon={Mail} label="Email Address" value={data?.email} delay={0.2} />
+                                <InfoCard icon={Phone} label="Phone Number" value={data?.phone} delay={0.3} />
                                 <InfoCard
                                     icon={Calendar}
                                     label="Joined Date"
-                                    value={formatDate(statsData?.data?.joined_at || "")}
+                                    value={formatDate(data?.joined_at || "")}
                                     delay={0.4}
                                 />
                             </div>
@@ -386,25 +336,24 @@ export default function DistributorStatsPage() {
                                 <AchievementBadge
                                     icon={Shield}
                                     label="Account Type"
-                                    value={statsData?.data?.account_type || "Distributor"}
-                                    color="text-[#C9A227]"
+                                    value={data?.account_type || "Distributor"}
                                 />
                                 <AchievementBadge
                                     icon={TrendingUp}
                                     label="Total Orders"
-                                    value={statsData?.data?.total_orders || 0}
+                                    value={data?.total_orders || 0}
                                     color="text-blue-600"
                                 />
                                 <AchievementBadge
                                     icon={Coins}
-                                    label="Coins Earned"
-                                    value={statsData?.data?.total_coins_earned || 0}
+                                    label="Coins Redeemed"
+                                    value={data?.total_coins_redeemed || 0}
                                     color="text-amber-600"
                                 />
                                 <AchievementBadge
                                     icon={Wallet}
                                     label="Total Savings"
-                                    value={formatCurrency(statsData?.data?.total_savings || 0)}
+                                    value={formatCurrency(data?.total_savings || 0)}
                                     color="text-emerald-600"
                                 />
                             </div>
@@ -412,10 +361,7 @@ export default function DistributorStatsPage() {
                     </motion.div>
 
                     {/* Performance & Achievements */}
-                    <motion.div
-                        variants={itemVariants}
-                        className="grid grid-cols-1 lg:grid-cols-2 gap-6"
-                    >
+                    <motion.div variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         {/* Performance Metrics */}
                         <div className="bg-gradient-to-br from-white to-[#FBF6EC] rounded-2xl shadow-[0_4px_20px_-8px_rgba(43,36,32,0.06)] border border-[#E7DBC0]/40 p-6">
                             <h3 className="font-serif font-bold text-[#2B2420] text-lg mb-4 flex items-center gap-2">
@@ -431,7 +377,10 @@ export default function DistributorStatsPage() {
                                         <span className="font-semibold text-[#2B2420]">0%</span>
                                     </div>
                                     <div className="w-full bg-gray-200 rounded-full h-2.5">
-                                        <div className="bg-gradient-to-r from-[#C9A227] to-[#92403F] h-2.5 rounded-full" style={{ width: '0%' }}></div>
+                                        <div
+                                            className="bg-gradient-to-r from-[#C9A227] to-[#92403F] h-2.5 rounded-full"
+                                            style={{ width: "0%" }}
+                                        ></div>
                                     </div>
                                 </div>
                                 <div>
@@ -442,7 +391,10 @@ export default function DistributorStatsPage() {
                                         <span className="font-semibold text-[#2B2420]">0%</span>
                                     </div>
                                     <div className="w-full bg-gray-200 rounded-full h-2.5">
-                                        <div className="bg-gradient-to-r from-emerald-400 to-emerald-600 h-2.5 rounded-full" style={{ width: '0%' }}></div>
+                                        <div
+                                            className="bg-gradient-to-r from-emerald-400 to-emerald-600 h-2.5 rounded-full"
+                                            style={{ width: "0%" }}
+                                        ></div>
                                     </div>
                                 </div>
                                 <div>
@@ -450,10 +402,15 @@ export default function DistributorStatsPage() {
                                         <span className="text-[#8a7f6e]" style={{ fontFamily: "Jost, sans-serif" }}>
                                             Coins Accumulation
                                         </span>
-                                        <span className="font-semibold text-[#2B2420]">0</span>
+                                        <span className="font-semibold text-[#2B2420]">
+                                            {data?.total_coins_redeemed || 0}
+                                        </span>
                                     </div>
                                     <div className="w-full bg-gray-200 rounded-full h-2.5">
-                                        <div className="bg-gradient-to-r from-amber-400 to-amber-600 h-2.5 rounded-full" style={{ width: '0%' }}></div>
+                                        <div
+                                            className="bg-gradient-to-r from-amber-400 to-amber-600 h-2.5 rounded-full"
+                                            style={{ width: "0%" }}
+                                        ></div>
                                     </div>
                                 </div>
                             </div>
@@ -473,7 +430,9 @@ export default function DistributorStatsPage() {
                                     <p className="text-xs text-[#8a7f6e]" style={{ fontFamily: "Jost, sans-serif" }}>
                                         First Order
                                     </p>
-                                    <p className="text-sm font-semibold text-[#2B2420]">Not Started</p>
+                                    <p className="text-sm font-semibold text-[#2B2420]">
+                                        {(data?.total_orders || 0) > 0 ? "Unlocked" : "Not Started"}
+                                    </p>
                                 </div>
                                 <div className="p-4 bg-white rounded-xl border border-[#E7DBC0]/30 text-center hover:shadow-md transition-shadow">
                                     <div className="w-10 h-10 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-2">
@@ -482,7 +441,9 @@ export default function DistributorStatsPage() {
                                     <p className="text-xs text-[#8a7f6e]" style={{ fontFamily: "Jost, sans-serif" }}>
                                         Coins Milestone
                                     </p>
-                                    <p className="text-sm font-semibold text-[#2B2420]">0 / 100</p>
+                                    <p className="text-sm font-semibold text-[#2B2420]">
+                                        {data?.total_coins_redeemed || 0} / 100
+                                    </p>
                                 </div>
                                 <div className="p-4 bg-white rounded-xl border border-[#E7DBC0]/30 text-center hover:shadow-md transition-shadow">
                                     <div className="w-10 h-10 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-2">
@@ -491,7 +452,9 @@ export default function DistributorStatsPage() {
                                     <p className="text-xs text-[#8a7f6e]" style={{ fontFamily: "Jost, sans-serif" }}>
                                         Savings Target
                                     </p>
-                                    <p className="text-sm font-semibold text-[#2B2420]">₹0 / ₹1,000</p>
+                                    <p className="text-sm font-semibold text-[#2B2420]">
+                                        {formatCurrency(data?.total_savings || 0)} / ₹1,000
+                                    </p>
                                 </div>
                                 <div className="p-4 bg-white rounded-xl border border-[#E7DBC0]/30 text-center hover:shadow-md transition-shadow">
                                     <div className="w-10 h-10 bg-purple-50 rounded-full flex items-center justify-center mx-auto mb-2">
@@ -500,7 +463,7 @@ export default function DistributorStatsPage() {
                                     <p className="text-xs text-[#8a7f6e]" style={{ fontFamily: "Jost, sans-serif" }}>
                                         Rank Progress
                                     </p>
-                                    <p className="text-sm font-semibold text-[#2B2420]">Standard</p>
+                                    <p className="text-sm font-semibold text-[#2B2420]">{currentRankName}</p>
                                 </div>
                             </div>
                         </div>
@@ -515,17 +478,27 @@ export default function DistributorStatsPage() {
                             <div className="flex items-center gap-3">
                                 <Clock className="w-6 h-6 text-[#C9A227]" />
                                 <div>
-                                    <p className="text-sm font-medium text-[#2B2420]" style={{ fontFamily: "Jost, sans-serif" }}>
-                                        Account Status: <span className="text-emerald-600 font-semibold">Active</span>
+                                    <p
+                                        className="text-sm font-medium text-[#2B2420]"
+                                        style={{ fontFamily: "Jost, sans-serif" }}
+                                    >
+                                        Account Status:{" "}
+                                        <span className="text-emerald-600 font-semibold">Active</span>
                                     </p>
-                                    <p className="text-xs text-[#8a7f6e]" style={{ fontFamily: "Jost, sans-serif" }}>
-                                        Member since {formatDate(statsData?.data?.joined_at || "")}
+                                    <p
+                                        className="text-xs text-[#8a7f6e]"
+                                        style={{ fontFamily: "Jost, sans-serif" }}
+                                    >
+                                        Member since {formatDate(data?.joined_at || "")}
                                     </p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-2">
-                                <span className="px-4 py-2 bg-[#2B2420] text-white rounded-lg text-sm font-medium" style={{ fontFamily: "Jost, sans-serif" }}>
-                                    Distributor ID: #{statsData?.data?.user_id || "N/A"}
+                                <span
+                                    className="px-4 py-2 bg-[#2B2420] text-white rounded-lg text-sm font-medium"
+                                    style={{ fontFamily: "Jost, sans-serif" }}
+                                >
+                                    Distributor ID: {data?.distributor_id || "N/A"}
                                 </span>
                             </div>
                         </div>

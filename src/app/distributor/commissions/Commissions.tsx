@@ -17,14 +17,14 @@ import { useState } from "react";
 const CARDS = [
     {
         label: "Retail profit",
-        value: "$0.00",
+        value: "₹0.00",
         color: "#3955A6",
         bg: "#eceffb",
         icon: BarChart3,
     },
     {
         label: "Weekly pairing",
-        value: "$0.00",
+        value: "₹0.00",
         color: "#B8935A",
         bg: "#f8f1e4",
         icon: BookOpen,
@@ -38,21 +38,21 @@ const CARDS = [
     },
     {
         label: "Strong leg",
-        value: "$0.00",
+        value: "₹0.00",
         color: "#6B4C9A",
         bg: "#f1ebf7",
         icon: Award,
     },
     {
         label: "Floating (pending release)",
-        value: "$0.00",
+        value: "₹0.00",
         color: "#3955A6",
         bg: "#eceffb",
         icon: Sparkles,
     },
     {
         label: "Released",
-        value: "$0.00",
+        value: "₹0.00",
         color: "#1f9d6b",
         bg: "#eaf7f0",
         icon: CheckCircle2,
@@ -69,13 +69,16 @@ const TABLE_COLUMNS = [
     "Related member",
 ];
 
+// Shared column template so header + future rows line up exactly
+const GRID_TEMPLATE = "1.2fr 1.2fr 1.2fr 1.5fr 1fr 1.2fr 1.2fr";
+
 const Commissions = () => {
     const [filterType, setFilterType] = useState("All types");
 
     return (
         <div
             style={{ fontFamily: "'Lato', sans-serif" }}
-            className="rounded-[16px] border border-[#e7e9ee] bg-white p-6 shadow-[0_1px_2px_rgba(16,24,40,0.03)]"
+            className="rounded-[16px] border border-[#e7e9ee] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.03)] sm:p-6"
         >
             <style>{`
                 @import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,300;0,400;0,700;0,900;1,400&display=swap');
@@ -85,23 +88,25 @@ const Commissions = () => {
             <h1 className="text-[17px] font-bold text-[#101828]">My commissions</h1>
 
             {/* ================= CARDS ================= */}
-            <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+            <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {CARDS.map(({ label, value, color, bg, icon: Icon }) => (
                     <div
                         key={label}
-                        className="flex h-[84px] items-center justify-between rounded-[14px] border border-[#e7e9ee] bg-white px-4"
+                        className="flex min-h-[78px] items-center justify-between rounded-[14px] border border-[#e7e9ee] bg-white px-4 py-3 sm:h-[84px] sm:py-0"
                     >
-                        <div>
-                            <p className="text-[12px] font-semibold text-[#667085]">{label}</p>
-                            <p className="mt-1 text-[19px] font-black" style={{ color }}>
+                        <div className="min-w-0 pr-2">
+                            <p className="text-[12px] font-semibold leading-snug text-[#667085]">
+                                {label}
+                            </p>
+                            <p className="mt-1 text-[18px] font-black sm:text-[19px]" style={{ color }}>
                                 {value}
                             </p>
                         </div>
                         <div
-                            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full sm:h-10 sm:w-10"
                             style={{ backgroundColor: bg }}
                         >
-                            <Icon className="h-5 w-5" style={{ color }} />
+                            <Icon className="h-[18px] w-[18px] sm:h-5 sm:w-5" style={{ color }} />
                         </div>
                     </div>
                 ))}
@@ -110,12 +115,12 @@ const Commissions = () => {
             {/* ================= COMMISSIONS HISTORY TABLE ================= */}
             <div className="mt-8">
                 {/* Header with Filter Dropdown */}
-                <div className="mb-4 flex items-center justify-between">
+                <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <h3 className="text-[15px] font-bold text-[#101828]">Commissions history</h3>
                     <select
                         value={filterType}
                         onChange={(e) => setFilterType(e.target.value)}
-                        className="h-[38px] w-[170px] rounded-[8px] border border-[#e5e9ef] bg-[#f7f8fa] px-3 text-[13px] text-[#101828] outline-none transition-all focus:border-[#0E1B3D] focus:bg-white focus:ring-2 focus:ring-[#0E1B3D]/10"
+                        className="h-[38px] w-full rounded-[8px] border border-[#e5e9ef] bg-[#f7f8fa] px-3 text-[13px] text-[#101828] outline-none transition-all focus:border-[#0E1B3D] focus:bg-white focus:ring-2 focus:ring-[#0E1B3D]/10 sm:w-[170px]"
                     >
                         <option value="All types">All types</option>
                         <option value="Retail profit">Retail profit</option>
@@ -127,28 +132,38 @@ const Commissions = () => {
                     </select>
                 </div>
 
-                {/* Table Header */}
-                <div className="grid grid-cols-[1.2fr_1.2fr_1.2fr_1.5fr_1fr_1.2fr_1.2fr] gap-2 border-b border-[#e7e9ee] pb-3 text-[11.5px] font-bold tracking-wide text-[#8a92a6]">
-                    {TABLE_COLUMNS.map((col) => (
-                        <span key={col}>{col}</span>
-                    ))}
-                </div>
+                {/* Table (scrolls horizontally on small screens) */}
+                <div className="overflow-x-auto">
+                    <div className="min-w-[760px]">
+                        {/* Table Header */}
+                        <div
+                            className="grid gap-2 border-b border-[#e7e9ee] pb-3 text-[11.5px] font-bold tracking-wide text-[#8a92a6]"
+                            style={{ gridTemplateColumns: GRID_TEMPLATE }}
+                        >
+                            {TABLE_COLUMNS.map((col) => (
+                                <span key={col}>{col}</span>
+                            ))}
+                        </div>
 
-                {/* Empty State */}
-                <div className="flex flex-col items-center justify-center gap-3 py-14">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#f2f4f7]">
-                        <Inbox className="h-5 w-5 text-[#98a2b3]" />
-                    </div>
-                    <div className="text-center">
-                        <p className="text-[13.5px] font-semibold text-[#344054]">No commissions yet</p>
-                        <p className="mt-1 text-[12.5px] text-[#8a92a6]">
-                            Commissions will show up here once they're earned.
-                        </p>
+                        {/* Empty State */}
+                        <div className="flex flex-col items-center justify-center gap-3 py-12 sm:py-14">
+                            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#f2f4f7]">
+                                <Inbox className="h-5 w-5 text-[#98a2b3]" />
+                            </div>
+                            <div className="px-4 text-center">
+                                <p className="text-[13.5px] font-semibold text-[#344054]">
+                                    No commissions yet
+                                </p>
+                                <p className="mt-1 text-[12.5px] text-[#8a92a6]">
+                                    Commissions will show up here once they're earned.
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 {/* Pagination */}
-                <div className="mt-4 flex items-center justify-between border-t border-[#f0f2f5] pt-4">
+                <div className="mt-4 flex flex-col gap-3 border-t border-[#f0f2f5] pt-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-4 text-[13px] text-[#667085]">
                         <div className="flex items-center gap-1.5">
                             <span className="font-semibold text-[#101828]">10</span>
@@ -157,7 +172,7 @@ const Commissions = () => {
                         <span className="font-medium">No records to show</span>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 self-end sm:self-auto">
                         <button
                             disabled
                             className="flex h-7 w-7 items-center justify-center rounded-[6px] text-[#d0d5dd] transition-colors"

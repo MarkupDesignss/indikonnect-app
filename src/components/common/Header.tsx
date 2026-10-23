@@ -90,7 +90,6 @@ interface LocationInfo {
 const SCROLL_COLLAPSE_AT = 80;
 const SCROLL_EXPAND_AT = 10;
 
-// Header ko staged tarike se collapse karein: pehle black strip, phir nav.
 const NAV_COLLAPSE_AT = 260;
 const NAV_EXPAND_AT = 140;
 
@@ -237,10 +236,8 @@ function HeaderInner({
     null,
   );
 
-  /* ✅ SCROLL STATE */
-  // Black announcement strip pehle hide hoti hai.
+  /* SCROLL STATE */
   const [isScrolled, setIsScrolled] = useState(false);
-  // Navigation sirf deeper scroll par hide hoti hai, dono ek saath nahi.
   const [isNavCollapsed, setIsNavCollapsed] = useState(false);
   const [headerHeight, setHeaderHeight] = useState(0);
 
@@ -291,9 +288,7 @@ function HeaderInner({
       { skip: debouncedSearchQuery.length < 1 },
     );
 
-  /* =========================================================
-     ✅ SMOOTH SCROLL LISTENER (rAF + hysteresis)
-  ========================================================= */
+  /* SMOOTH SCROLL LISTENER (rAF + hysteresis) */
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -301,13 +296,10 @@ function HeaderInner({
 
     const update = () => {
       const y = window.scrollY || document.documentElement.scrollTop || 0;
-      // Stage 1: top black strip collapses first.
       setIsScrolled((prev) =>
         prev ? y > SCROLL_EXPAND_AT : y > SCROLL_COLLAPSE_AT,
       );
 
-      // Stage 2: navigation collapses only after further scrolling.
-      // Scroll up karne par nav pehle wapas aati hai; black strip top ke paas aati hai.
       setIsNavCollapsed((prev) =>
         prev ? y > NAV_EXPAND_AT : y > NAV_COLLAPSE_AT,
       );
@@ -346,9 +338,7 @@ function HeaderInner({
     }
   }, [isScrolled]);
 
-  /* =========================================================
-     RESTORE SAVED LOCATION
-  ========================================================= */
+  /* RESTORE SAVED LOCATION */
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
@@ -1407,15 +1397,6 @@ function HeaderInner({
     return !!hrefPath && currentPath === hrefPath;
   };
 
-  /* =========================================================
-     ✅ COLLAPSIBLE WRAPPER STYLES
-     - Smooth height collapse using max-height (fixed px avoid karo)
-     - overflow visible rakho normal me taaki dropdowns clip na hon
-  ========================================================= */
-  /* =========================================================
-     RENDER
-  ========================================================= */
-
   return (
     <>
       <LogoutModal
@@ -1425,12 +1406,7 @@ function HeaderInner({
         isLoading={isLoggingOut}
       />
 
-      {/*
-        ✅ FIX: sticky ki jagah spacer + fixed wrapper.
-        - Page content shift nahi hoga kyunki spacer headerHeight reserve karta hai.
-        - Header fixed hai, isliye page scroll ke dauran layout stable rehta hai.
-        - Pehle black announcement strip hide hoti hai; deep scroll par nav hide hoti hai.
-      */}
+      {/* Spacer to prevent layout shift */}
       <div
         style={{ height: headerHeight || undefined }}
         aria-hidden="true"
@@ -1511,14 +1487,8 @@ function HeaderInner({
         {/* ── MAIN ROW (hamesha visible) ── */}
         <div className="premium-main">
           <div className="premium-shell premium-main-content">
-            <button
-              type="button"
-              className="premium-mobile-menu"
-              onClick={handleMobileMenuToggle}
-              aria-label="Toggle menu"
-            >
-              {isMobileMenuOpen ? <X /> : <Menu />}
-            </button>
+            
+            {/* LEFT: Brand Logo */}
             <Link
               href="/home"
               onClick={(e) => {
@@ -1548,6 +1518,8 @@ function HeaderInner({
                 BOUNDARIES
               </span>
             </Link>
+
+            {/* DESKTOP SEARCH (mobile par hidden) */}
             <div className="premium-search-wrap" ref={searchRef}>
               <form onSubmit={handleSearch} className="premium-search-form">
                 <button type="submit" aria-label="Search products">
@@ -1653,7 +1625,10 @@ function HeaderInner({
                 </div>
               )}
             </div>
+
+            {/* RIGHT: Actions & Mobile Menu */}
             <div className="premium-actions">
+              {/* ACCOUNT / PROFILE */}
               <div
                 className="premium-action-holder"
                 onMouseEnter={openProfileDropdown}
@@ -1663,6 +1638,7 @@ function HeaderInner({
                   type="button"
                   className="premium-action"
                   onClick={goToProfile}
+                  aria-label="Account"
                 >
                   <UserCircle size={31} />
                   <span style={{ fontSize: "10px" }}>Account</span>
@@ -1691,10 +1667,24 @@ function HeaderInner({
                   </div>
                 )}
               </div>
+
+              {/* TRACK ORDER (Mobile par hide) */}
+              <button
+                type="button"
+                className="premium-action premium-track-desktop"
+                onClick={goToTrackOrder}
+                aria-label="Track order"
+              >
+                <Package size={31} />
+                <span style={{ fontSize: "10px" }}>Track</span>
+              </button>
+
+              {/* WISHLIST */}
               <button
                 type="button"
                 className="premium-action"
                 onClick={goToWishlist}
+                aria-label="Wishlist"
               >
                 <span className="premium-icon-wrap">
                   <Heart size={32} />
@@ -1702,6 +1692,8 @@ function HeaderInner({
                 </span>
                 <span style={{ fontSize: "10px" }}>Wishlist</span>
               </button>
+
+              {/* CART */}
               <div
                 className="premium-action-holder"
                 onMouseEnter={openCartDropdown}
@@ -1711,6 +1703,7 @@ function HeaderInner({
                   type="button"
                   className="premium-action"
                   onClick={goToCart}
+                  aria-label="Cart"
                 >
                   <span className="premium-icon-wrap">
                     <ShoppingBag size={31} />
@@ -1760,13 +1753,15 @@ function HeaderInner({
                   </div>
                 )}
               </div>
+
+              {/* MOBILE MENU TOGGLE (SABSE LAST RIGHT ME) */}
               <button
                 type="button"
-                className="premium-action"
-                onClick={goToTrackOrder}
+                className="premium-mobile-menu"
+                onClick={handleMobileMenuToggle}
+                aria-label="Toggle menu"
               >
-                <Package size={31} />
-                <span style={{ fontSize: "10px" }}>Track Order</span>
+                {isMobileMenuOpen ? <X /> : <Menu />}
               </button>
             </div>
           </div>

@@ -23,16 +23,14 @@ import {
 
 import { useMemo } from "react";
 
-import {
-    useGetDistributorStatsQuery,
-} from "../../../lib/redux/api/distributor/distributorStatsApi";
+import { useGetDistributorStatsQuery } from "../../../lib/redux/api/distributor/distributorStatsApi";
 
 import type {
     DistributorRank,
     DistributorStatsData,
     RankCondition,
+    RankProgress,
 } from "../../../lib/redux/api/distributor/distributorStatsApi";
-
 
 interface TrackingDashboardProps {
     variant?: "cv" | "commission";
@@ -42,7 +40,6 @@ const NAVY = "#0E1B3D";
 const BRASS = "#B8935A";
 const EMERALD = "#1f9d6b";
 const INDIGO = "#3955A6";
-
 
 const FontImport = () => (
     <style>{`
@@ -60,17 +57,13 @@ function toNumber(value: number | string | null | undefined): number {
     return Number.isFinite(result) ? result : 0;
 }
 
-function formatNumber(
-    value: number | string | null | undefined,
-): string {
+function formatNumber(value: number | string | null | undefined): string {
     return toNumber(value).toLocaleString("en-IN", {
         maximumFractionDigits: 2,
     });
 }
 
-function formatCurrency(
-    value: number | string | null | undefined,
-): string {
+function formatCurrency(value: number | string | null | undefined): string {
     return new Intl.NumberFormat("en-IN", {
         style: "currency",
         currency: "INR",
@@ -87,7 +80,7 @@ function formatStatus(value?: string | null): string {
 }
 
 function getRankName(
-    rankNo: number | undefined,
+    rankNo: number | undefined | null,
     ranks: DistributorRank[],
 ): string {
     if (!rankNo || rankNo <= 0) {
@@ -112,11 +105,7 @@ function DashboardLoader() {
             <FontImport />
 
             <div className="flex flex-col items-center gap-3">
-                <Loader2
-                    size={30}
-                    className="animate-spin"
-                    style={{ color: NAVY }}
-                />
+                <Loader2 size={30} className="animate-spin" style={{ color: NAVY }} />
 
                 <p className="text-[13px] font-semibold text-[#667085]">
                     Loading distributor statistics...
@@ -130,11 +119,7 @@ function DashboardLoader() {
 // ERROR STATE
 // --------------------------------------------------
 
-function DashboardError({
-    onRetry,
-}: {
-    onRetry: () => void;
-}) {
+function DashboardError({ onRetry }: { onRetry: () => void }) {
     return (
         <div className="flex min-h-[300px] flex-col items-center justify-center rounded-[16px] border border-[#e7e9ee] bg-white p-6 text-center">
             <AlertCircle size={34} className="text-[#c0392b]" />
@@ -160,7 +145,6 @@ function DashboardError({
         </div>
     );
 }
-
 
 function StatCard({
     label,
@@ -203,7 +187,6 @@ function StatCard({
 
 // --------------------------------------------------
 // DONUT CHART
-// Displays rank qualifications, not commission totals.
 // --------------------------------------------------
 
 interface DonutSegment {
@@ -250,7 +233,6 @@ function DonutChart({
                                     stopColor={segment.color}
                                     stopOpacity="1"
                                 />
-
                                 <stop
                                     offset="100%"
                                     stopColor={segment.color}
@@ -301,9 +283,7 @@ function DonutChart({
                 </svg>
 
                 <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                    <p className="text-[30px] font-black text-[#101828]">
-                        {total}
-                    </p>
+                    <p className="text-[30px] font-black text-[#101828]">{total}</p>
 
                     <p className="text-[11.5px] font-semibold text-[#8a92a6]">
                         Total ranks
@@ -318,11 +298,7 @@ function DonutChart({
 // PROFILE & ACCOUNT SUMMARY
 // --------------------------------------------------
 
-function DistributorProfile({
-    data,
-}: {
-    data: DistributorStatsData;
-}) {
+function DistributorProfile({ data }: { data: DistributorStatsData }) {
     const accountDetails = [
         {
             label: "Total CV",
@@ -400,10 +376,7 @@ function DistributorProfile({
                 </div>
 
                 <div className="flex min-w-0 items-start gap-2 sm:col-span-2">
-                    <CalendarDays
-                        size={15}
-                        className="mt-0.5 shrink-0 text-[#8a92a6]"
-                    />
+                    <CalendarDays size={15} className="mt-0.5 shrink-0 text-[#8a92a6]" />
 
                     <div className="min-w-0">
                         <p className="text-[10px] font-semibold uppercase tracking-wide text-[#8a92a6]">
@@ -449,27 +422,29 @@ function DistributorProfile({
 
 function RankSnapshot({
     data,
+    rankProgress,
 }: {
     data: DistributorStatsData;
+    rankProgress: RankProgress;
 }) {
-    const { current, closing, ranks } = data.rank_progress;
+    const { current, closing, ranks } = rankProgress;
 
     const snapshots = [
         {
             label: "Current rank",
-            rankNo: current.rank_no,
+            rankNo: current?.rank_no,
             color: INDIGO,
             background: "#eceffb",
         },
         {
             label: "Base rank",
-            rankNo: current.base_rank_no,
+            rankNo: current?.base_rank_no,
             color: BRASS,
             background: "#f8f1e4",
         },
         {
             label: "Eligible rank",
-            rankNo: current.eligible_rank_no,
+            rankNo: current?.eligible_rank_no,
             color: EMERALD,
             background: "#eaf7f0",
         },
@@ -483,7 +458,7 @@ function RankSnapshot({
                 </h3>
 
                 <span className="rounded-full bg-[#f2f4f7] px-3 py-1 text-[10px] font-bold text-[#667085]">
-                    {data.rank_progress.sales_month.label}
+                    {rankProgress.sales_month?.label ?? "N/A"}
                 </span>
             </div>
 
@@ -505,7 +480,7 @@ function RankSnapshot({
                         </p>
 
                         <p className="mt-1 text-[10px] text-[#8a92a6]">
-                            Rank number: {item.rankNo}
+                            Rank number: {item.rankNo ?? "—"}
                         </p>
                     </div>
                 ))}
@@ -519,12 +494,11 @@ function RankSnapshot({
                 <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
                     <div>
                         <p className="text-[16px] font-black text-[#101828]">
-                            {getRankName(closing.rank_no, ranks)}
+                            {getRankName(closing?.rank_no, ranks)}
                         </p>
 
                         <p className="mt-1 text-[10px] text-[#8a92a6]">
-                            Met rank:{" "}
-                            {getRankName(closing.met_rank_no, ranks)}
+                            Met rank: {getRankName(closing?.met_rank_no, ranks)}
                         </p>
                     </div>
 
@@ -534,7 +508,7 @@ function RankSnapshot({
                         </p>
 
                         <p className="mt-1 text-[13px] font-bold text-[#1f9d6b]">
-                            {getRankName(closing.eligible_rank_no, ranks)}
+                            {getRankName(closing?.eligible_rank_no, ranks)}
                         </p>
                     </div>
                 </div>
@@ -559,17 +533,11 @@ function getConditionLabel(key: string): string {
     return labels[key] ?? formatStatus(key);
 }
 
-function formatConditionValue(
-    key: string,
-    condition: RankCondition,
-): string {
+function formatConditionValue(key: string, condition: RankCondition): string {
     const current = formatNumber(condition.current);
     const required = formatNumber(condition.required);
 
-    if (
-        key === "downlines_one_below" ||
-        key === "downlines_two_below"
-    ) {
+    if (key === "downlines_one_below" || key === "downlines_two_below") {
         return `${current} / ${required}`;
     }
 
@@ -588,17 +556,12 @@ function formatConditionValue(
 // NEXT RANK PROGRESS
 // --------------------------------------------------
 
-function NextRankProgress({
-    data,
-}: {
-    data: DistributorStatsData;
-}) {
-    const { ranks, current } = data.rank_progress;
+function NextRankProgress({ rankProgress }: { rankProgress: RankProgress }) {
+    const { ranks = [], current } = rankProgress;
 
     const nextRank =
         ranks.find(
-            (rank) =>
-                rank.rank_no > current.rank_no && !rank.met,
+            (rank) => rank.rank_no > (current?.rank_no ?? 0) && !rank.met,
         ) ?? ranks.find((rank) => !rank.met);
 
     if (!nextRank) {
@@ -622,18 +585,16 @@ function NextRankProgress({
     }
 
     const conditionItems = Object.entries(
-        nextRank.conditions,
+        nextRank.conditions ?? {},
     ) as [keyof typeof nextRank.conditions, RankCondition][];
 
     const completedConditions = conditionItems.filter(
-        ([, condition]) => condition.met,
+        ([, condition]) => condition?.met,
     ).length;
 
     const progress =
         conditionItems.length > 0
-            ? Math.round(
-                (completedConditions / conditionItems.length) * 100,
-            )
+            ? Math.round((completedConditions / conditionItems.length) * 100)
             : 0;
 
     return (
@@ -664,18 +625,13 @@ function NextRankProgress({
                         </p>
                     </div>
 
-                    <p className="text-[16px] font-bold text-[#3955A6]">
-                        {progress}%
-                    </p>
+                    <p className="text-[16px] font-bold text-[#3955A6]">{progress}%</p>
                 </div>
 
                 <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#eef0f4]">
                     <div
                         className="h-full rounded-full transition-all"
-                        style={{
-                            width: `${progress}%`,
-                            backgroundColor: INDIGO,
-                        }}
+                        style={{ width: `${progress}%`, backgroundColor: INDIGO }}
                     />
                 </div>
             </div>
@@ -707,8 +663,8 @@ function NextRankProgress({
 
                         <span
                             className={`flex shrink-0 items-center gap-1 rounded-full px-2 py-1 text-[10px] font-bold ${condition.met
-                                    ? "bg-[#eaf7f0] text-[#1f9d6b]"
-                                    : "bg-[#fff4e0] text-[#b7791f]"
+                                ? "bg-[#eaf7f0] text-[#1f9d6b]"
+                                : "bg-[#fff4e0] text-[#b7791f]"
                                 }`}
                         >
                             {condition.met ? (
@@ -726,19 +682,13 @@ function NextRankProgress({
     );
 }
 
-function RankLadder({
-    data,
-}: {
-    data: DistributorStatsData;
-}) {
-    const { ranks, current } = data.rank_progress;
+function RankLadder({ rankProgress }: { rankProgress: RankProgress }) {
+    const { ranks = [], current } = rankProgress;
 
     return (
         <section className="rounded-[16px] border border-[#e7e9ee] bg-white p-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="text-[16px] font-bold text-[#101828]">
-                    Rank ladder
-                </h3>
+                <h3 className="text-[16px] font-bold text-[#101828]">Rank ladder</h3>
 
                 <span className="text-[11px] font-semibold text-[#667085]">
                     {ranks.length} ranks
@@ -751,27 +701,24 @@ function RankLadder({
                 </p>
             ) : (
                 <>
-                    {/* Scrollable list: shows ~5 rows, scrolls for the rest */}
                     <div
                         className="mt-4 space-y-2 overflow-y-auto pr-1"
                         style={{
-                            maxHeight: "calc(5 * 72px + 4 * 8px)", // 5 items + 4 gaps
+                            maxHeight: "calc(5 * 72px + 4 * 8px)",
                             scrollbarWidth: "thin",
                         }}
                     >
                         {ranks.map((rank) => {
-                            const isCurrent =
-                                rank.rank_no === current.rank_no;
-
+                            const isCurrent = rank.rank_no === current?.rank_no;
                             const isEligible =
-                                rank.rank_no === current.eligible_rank_no;
+                                rank.rank_no === current?.eligible_rank_no;
 
                             return (
                                 <div
                                     key={rank.rank_no}
                                     className={`flex min-w-0 items-center justify-between gap-3 rounded-[10px] border p-3 ${isCurrent
-                                            ? "border-[#3955A6]/30 bg-[#eceffb]/60"
-                                            : "border-[#edf0f3] bg-white"
+                                        ? "border-[#3955A6]/30 bg-[#eceffb]/60"
+                                        : "border-[#edf0f3] bg-white"
                                         }`}
                                 >
                                     <div className="flex min-w-0 items-center gap-3">
@@ -823,8 +770,8 @@ function RankLadder({
                                     <div className="shrink-0 text-right">
                                         <span
                                             className={`text-[10px] font-bold ${rank.met
-                                                    ? "text-[#1f9d6b]"
-                                                    : "text-[#b7791f]"
+                                                ? "text-[#1f9d6b]"
+                                                : "text-[#b7791f]"
                                                 }`}
                                         >
                                             {rank.met ? "Qualified" : "Not met"}
@@ -839,7 +786,6 @@ function RankLadder({
                         })}
                     </div>
 
-                    {/* Hint when there is overflow */}
                     {ranks.length > 5 && (
                         <p className="mt-2 text-center text-[10px] font-medium text-[#8a92a6]">
                             Scroll to view all {ranks.length} ranks
@@ -850,31 +796,20 @@ function RankLadder({
         </section>
     );
 }
+
 // --------------------------------------------------
 // RANK QUALIFICATION BREAKDOWN
 // --------------------------------------------------
 
-function RankQualification({
-    data,
-}: {
-    data: DistributorStatsData;
-}) {
-    const ranks = data.rank_progress.ranks;
+function RankQualification({ rankProgress }: { rankProgress: RankProgress }) {
+    const ranks = rankProgress.ranks ?? [];
 
     const achieved = ranks.filter((rank) => rank.met).length;
     const remaining = Math.max(0, ranks.length - achieved);
 
     const segments = [
-        {
-            label: "Qualified ranks",
-            value: achieved,
-            color: EMERALD,
-        },
-        {
-            label: "Remaining ranks",
-            value: remaining,
-            color: BRASS,
-        },
+        { label: "Qualified ranks", value: achieved, color: EMERALD },
+        { label: "Remaining ranks", value: remaining, color: BRASS },
     ];
 
     return (
@@ -934,24 +869,21 @@ function RankQualification({
                     </span>
 
                     <span className="text-[13px] font-bold text-[#3955A6]">
-                        {getRankName(
-                            data.rank_progress.current.rank_no,
-                            ranks,
-                        )}
+                        {getRankName(rankProgress.current?.rank_no, ranks)}
                     </span>
                 </div>
 
-                <div className="mt-4 rounded-[10px] px-4 py-3" style={{ backgroundColor: NAVY }}>
+                <div
+                    className="mt-4 rounded-[10px] px-4 py-3"
+                    style={{ backgroundColor: NAVY }}
+                >
                     <div className="flex items-center justify-between gap-3">
                         <span className="text-[12px] font-bold text-white">
                             Eligible rank
                         </span>
 
                         <span className="text-[13px] font-bold text-white">
-                            {getRankName(
-                                data.rank_progress.current.eligible_rank_no,
-                                ranks,
-                            )}
+                            {getRankName(rankProgress.current?.eligible_rank_no, ranks)}
                         </span>
                     </div>
                 </div>
@@ -964,9 +896,7 @@ function RankQualification({
 // MAIN DASHBOARD
 // --------------------------------------------------
 
-const TrackingDashboard = ({
-    variant = "cv",
-}: TrackingDashboardProps) => {
+const TrackingDashboard = ({ variant = "cv" }: TrackingDashboardProps) => {
     const {
         data: response,
         isLoading,
@@ -978,13 +908,13 @@ const TrackingDashboard = ({
     });
 
     const data = response?.data;
-
-    const ranks = data?.rank_progress?.ranks ?? [];
+    const rankProgress = data?.rank_progress ?? null;
+    const ranks = rankProgress?.ranks ?? [];
 
     const statCards = useMemo(() => {
         if (!data) return [];
 
-        const current = data.rank_progress.current;
+        const current = rankProgress?.current;
 
         return [
             {
@@ -1024,39 +954,35 @@ const TrackingDashboard = ({
             },
             {
                 label: "Current rank",
-                value: getRankName(current.rank_no, ranks),
+                value: getRankName(current?.rank_no, ranks),
                 icon: Award,
                 color: BRASS,
                 bg: "#f8f1e4",
             },
             {
                 label: "Eligible rank",
-                value: getRankName(current.eligible_rank_no, ranks),
+                value: getRankName(current?.eligible_rank_no, ranks),
                 icon: BadgeCheck,
                 color: EMERALD,
                 bg: "#eaf7f0",
             },
         ];
-    }, [data, ranks]);
+    }, [data, rankProgress, ranks]);
 
-    // Loading
     if (isLoading) {
         return <DashboardLoader />;
     }
 
-    // API error
     if (isError || response?.success === false) {
         return <DashboardError onRetry={() => void refetch()} />;
     }
 
-    // No usable data
-    if (!data || !data.rank_progress) {
-        return (
-            <DashboardError onRetry={() => void refetch()} />
-        );
+    // No usable data OR no rank_progress — show graceful empty state
+    if (!data || !rankProgress) {
+        return <DashboardError onRetry={() => void refetch()} />;
     }
 
-    const salesMonth = data.rank_progress.sales_month;
+    const salesMonth = rankProgress.sales_month;
 
     return (
         <div
@@ -1065,10 +991,7 @@ const TrackingDashboard = ({
         >
             <FontImport />
 
-            {/* =========================================
-          HEADER
-      ========================================= */}
-
+            {/* HEADER */}
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                     <h1 className="text-[20px] font-black tracking-[-0.01em] text-[#101828]">
@@ -1077,7 +1000,7 @@ const TrackingDashboard = ({
                             : "Commission & Rank Dashboard"}
                     </h1>
 
-                    <p className=" text-[12px] text-[#667085] sm:text-[13px]">
+                    <p className="text-[12px] text-[#667085] sm:text-[13px]">
                         Distributor performance and rank qualification
                     </p>
                 </div>
@@ -1097,10 +1020,7 @@ const TrackingDashboard = ({
                 </button>
             </div>
 
-            {/* =========================================
-          TOP STATS
-      ========================================= */}
-
+            {/* TOP STATS */}
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
                 {statCards.map((item) => (
                     <StatCard
@@ -1114,10 +1034,7 @@ const TrackingDashboard = ({
                 ))}
             </div>
 
-            {/* =========================================
-          TRACKING CENTER
-      ========================================= */}
-
+            {/* TRACKING CENTER */}
             <section className="rounded-[16px] border border-[#e7e9ee] bg-white p-5 sm:p-6">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
@@ -1147,10 +1064,7 @@ const TrackingDashboard = ({
                                 {data.distributor_id}
                             </span>
 
-                            <ChevronDown
-                                size={15}
-                                className="shrink-0 text-[#98a2b3]"
-                            />
+                            <ChevronDown size={15} className="shrink-0 text-[#98a2b3]" />
                         </div>
                     </div>
 
@@ -1162,13 +1076,10 @@ const TrackingDashboard = ({
 
                         <div className="flex h-[44px] min-w-0 items-center justify-between gap-2 rounded-[10px] border border-[#e5e9ef] bg-[#f7f8fa] px-4">
                             <span className="truncate text-[13px] font-semibold text-[#101828]">
-                                {salesMonth.label}
+                                {salesMonth?.label ?? "N/A"}
                             </span>
 
-                            <ChevronDown
-                                size={15}
-                                className="shrink-0 text-[#98a2b3]"
-                            />
+                            <ChevronDown size={15} className="shrink-0 text-[#98a2b3]" />
                         </div>
                     </div>
 
@@ -1180,7 +1091,7 @@ const TrackingDashboard = ({
 
                         <div className="flex h-[44px] items-center justify-between rounded-[10px] border border-[#e5e9ef] bg-[#f7f8fa] px-4">
                             <span className="text-[13px] font-semibold text-[#101828]">
-                                {salesMonth.year}
+                                {salesMonth?.year ?? "—"}
                             </span>
 
                             <ChevronDown size={15} className="text-[#98a2b3]" />
@@ -1208,51 +1119,40 @@ const TrackingDashboard = ({
                     <span>
                         Period start:{" "}
                         <strong className="text-[#344054]">
-                            {salesMonth.start_date}
+                            {salesMonth?.start_date ?? "—"}
                         </strong>
                     </span>
 
                     <span>
                         Period end:{" "}
                         <strong className="text-[#344054]">
-                            {salesMonth.end_date}
+                            {salesMonth?.end_date ?? "—"}
                         </strong>
                     </span>
                 </div>
             </section>
 
-            {/* =========================================
-          MAIN GRID
-      ========================================= */}
-
+            {/* MAIN GRID */}
             <div className="grid min-w-0 grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
                 {/* LEFT COLUMN */}
                 <div className="min-w-0 space-y-6">
-                    {/* Distributor profile and financial summary */}
                     <DistributorProfile data={data} />
 
-                    {/* Rank snapshot */}
-                    <RankSnapshot data={data} />
+                    <RankSnapshot data={data} rankProgress={rankProgress} />
 
-                    {/* Progress and rank ladder */}
                     <div className="grid min-w-0 grid-cols-1 items-start gap-6 2xl:grid-cols-2">
-                        <NextRankProgress data={data} />
-
-                        <RankLadder data={data} />
+                        <NextRankProgress rankProgress={rankProgress} />
+                        <RankLadder rankProgress={rankProgress} />
                     </div>
                 </div>
 
                 {/* RIGHT COLUMN */}
                 <div className="min-w-0 space-y-6">
-                    <RankQualification data={data} />
+                    <RankQualification rankProgress={rankProgress} />
 
-                    {/* Rank data summary */}
                     <section className="rounded-[16px] border border-[#e7e9ee] bg-white p-5">
                         <div className="flex items-center gap-2">
-                            <CircleDollarSign
-                                size={19}
-                                className="text-[#3955A6]"
-                            />
+                            <CircleDollarSign size={19} className="text-[#3955A6]" />
 
                             <h3 className="text-[16px] font-bold text-[#101828]">
                                 Rank period summary
@@ -1266,7 +1166,7 @@ const TrackingDashboard = ({
                                 </span>
 
                                 <span className="text-[12px] font-bold text-[#101828]">
-                                    {salesMonth.label}
+                                    {salesMonth?.label ?? "N/A"}
                                 </span>
                             </div>
 
@@ -1276,10 +1176,7 @@ const TrackingDashboard = ({
                                 </span>
 
                                 <span className="text-[12px] font-bold text-[#3955A6]">
-                                    {getRankName(
-                                        data.rank_progress.current.rank_no,
-                                        ranks,
-                                    )}
+                                    {getRankName(rankProgress.current?.rank_no, ranks)}
                                 </span>
                             </div>
 
@@ -1289,10 +1186,7 @@ const TrackingDashboard = ({
                                 </span>
 
                                 <span className="text-[12px] font-bold text-[#101828]">
-                                    {getRankName(
-                                        data.rank_progress.closing.rank_no,
-                                        ranks,
-                                    )}
+                                    {getRankName(rankProgress.closing?.rank_no, ranks)}
                                 </span>
                             </div>
 
@@ -1302,8 +1196,7 @@ const TrackingDashboard = ({
                                 </span>
 
                                 <span className="text-[13px] font-black text-[#1f9d6b]">
-                                    {ranks.filter((rank) => rank.met).length} /{" "}
-                                    {ranks.length}
+                                    {ranks.filter((rank) => rank.met).length} / {ranks.length}
                                 </span>
                             </div>
                         </div>
@@ -1311,10 +1204,7 @@ const TrackingDashboard = ({
                 </div>
             </div>
 
-            {/* =========================================
-          REFRESH INDICATOR
-      ========================================= */}
-
+            {/* REFRESH INDICATOR */}
             {isFetching && (
                 <div className="flex items-center justify-end gap-2 text-[11px] font-semibold text-[#667085]">
                     <Loader2 size={13} className="animate-spin" />

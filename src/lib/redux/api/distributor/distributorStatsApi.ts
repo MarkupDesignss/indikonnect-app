@@ -89,11 +89,9 @@ export interface DistributorStatsResponse {
 // --------------------------------------------------
 
 export const distributorStatsApi = baseApi.injectEndpoints({
+  overrideExisting: true,
   endpoints: (builder) => ({
-    getDistributorStats: builder.query<
-      DistributorStatsResponse,
-      void
-    >({
+    getDistributorStats: builder.query<DistributorStatsResponse, void>({
       query: () => ({
         url: "/distributor-stats",
         method: "GET",
@@ -102,8 +100,6 @@ export const distributorStatsApi = baseApi.injectEndpoints({
   }),
 });
 
-export const {
-  useGetDistributorStatsQuery,
-} = distributorStatsApi;
+export const { useGetDistributorStatsQuery } = distributorStatsApi;
 
 export default distributorStatsApi;

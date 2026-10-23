@@ -380,7 +380,7 @@ function DashboardOverview({
             </p>
 
             <p
-              className="mt-3 inline-block max-w-full break-words rounded-[10px] px-2.5 py-1 text-[22px] font-black leading-tight sm:mt-4 sm:text-[26px]"
+              className="mt-3 inline-block max-w-full break-words rounded-[10px] px-2.5 py-1 text-[18px] font-black leading-tight sm:mt-4 sm:text-[22px]"
               style={{ color: item.color, backgroundColor: item.tint }}
             >
               {item.value}
