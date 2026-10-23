@@ -23,6 +23,7 @@ import {
     WalletCards,
     IndianRupeeIcon,
     X,
+    Clock
 } from "lucide-react";
 
 import Link from "next/link";
@@ -121,7 +122,7 @@ const menuGroups: MenuGroup[] = [
                         href: "/distributor/profile/binary-tree",
                     },
                     {
-                        label: "Pending CV breakdown",
+                        label: "Pending CV Breakdown",
                         icon: AlertCircle,
                         href: "/distributor/profile/pending-cv-breakdown",
                     },
@@ -152,6 +153,18 @@ const menuGroups: MenuGroup[] = [
                 icon: BarChart2,
                 href: "/distributor/downline-cv-report",
             },
+        ],
+    },
+    // 👇 NAYA BLOCK: Placements (Pending items ke liye)
+    {
+        title: "Placements",
+        items: [
+            {
+                label: "Pending Placements",
+                icon: Clock, 
+                href: "/distributor/pending-placements",
+            },
+           
         ],
     },
     {
@@ -205,6 +218,12 @@ const menuGroups: MenuGroup[] = [
                         href: "/distributor/kyc/document-upload",
                     },
                 ],
+            },
+            {
+                label: "Logout",
+                icon: LogOut,
+                href: "#",
+                action: "logout",
             },
         ],
     },
