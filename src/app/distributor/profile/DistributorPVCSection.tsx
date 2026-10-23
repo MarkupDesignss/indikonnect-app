@@ -12,24 +12,35 @@ import {
   X,
 } from "lucide-react";
 import { jsPDF } from "jspdf";
+import Logo from "../../../../public/indiekonnect-web/images/logo.png";
 
-const BASE_PATH = (
-  process.env.NEXT_PUBLIC_BASE_PATH ?? "/indiekonnect-distributor"
-).replace(/\/$/, "");
-const BRAND_LOGO = `${BASE_PATH}/api/distributor-card/photo?kind=logo`;
-const API_BASE = `${BASE_PATH}/api/distributor-card`;
+const API_BASE = "/api/distributor-card";
 const MM_W = 85.6;
 const MM_H = 54;
 const PX_W = 1011;
 const PX_H = 638;
 
-const BLUE = "#1748B8";
-const BLUE_DARK = "#123C9B";
-const BLUE_SOFT = "#EAF1FF";
-const YELLOW = "#FFC928";
-const INK = "#1A1A1A";
-const MUTED = "#51627E";
-const BORDER = "#D7DFEC";
+// ---- Clean White / Black Theme ----
+const INK = "#000000"; // Pure black for text
+const MUTED = "#555555"; // Dark grey for labels
+const PAPER = "#FFFFFF"; // Pure white background
+const SOFT = "#F3F4F6"; // Light grey for panels
+const BORDER = "#D1D5DB"; // Grey for borders
+const GREEN = "#15803D";
+
+const FONT_FAMILY = "Poppins, Arial, sans-serif";
+const MED = (px: number) => `500 ${px}px ${FONT_FAMILY}`;
+const SEMI = (px: number) => `600 ${px}px ${FONT_FAMILY}`;
+
+// Photo rectangle on the FRONT card (canvas px). Everything else derives from it.
+const PHOTO = { x: 50, y: 140, w: 210, h: 280, r: 12 };
+const PHOTO_CSS = {
+  left: `${(PHOTO.x / PX_W) * 100}%`,
+  top: `${(PHOTO.y / PX_H) * 100}%`,
+  width: `${(PHOTO.w / PX_W) * 100}%`,
+  height: `${(PHOTO.h / PX_H) * 100}%`,
+  borderRadius: `${(PHOTO.r / PHOTO.w) * 100}% / ${(PHOTO.r / PHOTO.h) * 100}%`,
+};
 
 type User = {
   full_name?: string;
@@ -142,6 +153,44 @@ function loadRazorpay(): Promise<void> {
   });
 }
 
+// Load Poppins 500/600 so both the UI and the canvas card use it.
+async function loadPoppins(): Promise<void> {
+  if (typeof document === "undefined") return;
+
+  const id = "poppins-card-font";
+  let link = document.getElementById(id) as HTMLLinkElement | null;
+
+  if (!link) {
+    link = document.createElement("link");
+    link.id = id;
+    link.rel = "stylesheet";
+    link.href =
+      "https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&display=swap";
+    document.head.appendChild(link);
+  }
+
+  try {
+    await Promise.race([
+      new Promise<void>((resolve) => {
+        if (link!.sheet) return resolve();
+        link!.addEventListener("load", () => resolve(), { once: true });
+        link!.addEventListener("error", () => resolve(), { once: true });
+      }),
+      new Promise<void>((resolve) => setTimeout(resolve, 3000)),
+    ]);
+
+    await Promise.race([
+      Promise.all([
+        document.fonts.load("500 24px Poppins"),
+        document.fonts.load("600 24px Poppins"),
+      ]),
+      new Promise((resolve) => setTimeout(resolve, 3000)),
+    ]);
+  } catch {
+    // fall back to Arial silently
+  }
+}
+
 function getProfilePhotoUrl(user: User): string | null {
   const picture = user.profile_picture;
   const candidate =
@@ -151,13 +200,25 @@ function getProfilePhotoUrl(user: User): string | null {
   return finalValue.trim() || null;
 }
 
-function img(src: string): Promise<HTMLImageElement> {
+function img(src: string, allowCanvasExport = false): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new Image();
+
+    // Set CORS before src for a best-effort canvas/PDF export of remote images.
+    if (allowCanvasExport) image.crossOrigin = "anonymous";
+
     image.onload = () => resolve(image);
     image.onerror = () => reject(new Error("Image unavailable"));
     image.src = src;
   });
+}
+
+function escapeHtmlAttribute(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/\"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
 
 function formatDate(value?: string): string {
@@ -202,10 +263,17 @@ function drawText(
   font: string,
   color: string,
   maxWidth?: number,
+  align: CanvasTextAlign = "left",
+  spacing = "0px",
 ) {
+  const c = ctx as CanvasRenderingContext2D & { letterSpacing?: string };
   ctx.font = font;
   ctx.fillStyle = color;
+  ctx.textAlign = align;
+  if ("letterSpacing" in c) c.letterSpacing = spacing;
   ctx.fillText(value, x, y, maxWidth);
+  if ("letterSpacing" in c) c.letterSpacing = "0px";
+  ctx.textAlign = "left";
 }
 
 function drawLabelValue(
@@ -214,19 +282,10 @@ function drawLabelValue(
   value: string,
   x: number,
   y: number,
-  width = 425,
+  width = 330,
 ) {
-  drawText(ctx, label, x, y, "700 18px Arial, sans-serif", BLUE_DARK, 180);
-  drawText(ctx, ":", x + 150, y, "700 18px Arial, sans-serif", MUTED);
-  drawText(
-    ctx,
-    value || "—",
-    x + 168,
-    y,
-    "700 25px Arial, sans-serif",
-    INK,
-    width,
-  );
+  drawText(ctx, label.toUpperCase(), x, y, MED(14), MUTED, width, "left", "2px");
+  drawText(ctx, value || "—", x, y + 34, SEMI(24), INK, width);
 }
 
 function cropPhoto(
@@ -236,12 +295,13 @@ function cropPhoto(
   y: number,
   w: number,
   h: number,
+  r: number,
 ) {
   const ratio = Math.max(w / photo.naturalWidth, h / photo.naturalHeight);
   const nw = photo.naturalWidth * ratio;
   const nh = photo.naturalHeight * ratio;
   ctx.save();
-  roundRect(ctx, x, y, w, h, 14);
+  roundRect(ctx, x, y, w, h, r);
   ctx.clip();
   ctx.drawImage(photo, x + (w - nw) / 2, y + (h - nh) / 2, nw, nh);
   ctx.restore();
@@ -252,60 +312,69 @@ function fitName(
   value: string,
   maxWidth: number,
 ) {
-  let size = 44;
-  while (size > 22) {
-    ctx.font = `800 ${size}px Arial, sans-serif`;
+  let size = 42;
+  while (size > 20) {
+    ctx.font = SEMI(size);
     if (ctx.measureText(value).width <= maxWidth) break;
     size -= 1;
   }
   return size;
 }
 
-function frontBackground(ctx: CanvasRenderingContext2D) {
-  ctx.fillStyle = "#FFFFFF";
+// Clean White background
+function lightBackground(ctx: CanvasRenderingContext2D) {
+  ctx.fillStyle = PAPER;
   ctx.fillRect(0, 0, PX_W, PX_H);
-
-  ctx.fillStyle = BLUE;
-  roundRect(ctx, 0, 0, 42, PX_H, 18);
-  ctx.fill();
-
-  ctx.fillStyle = YELLOW;
-  roundRect(ctx, 42, 0, PX_W - 42, 92, 0);
-  ctx.fill();
-
-  ctx.fillStyle = BLUE;
-  ctx.fillRect(42, 92, PX_W - 42, 6);
-
-  ctx.save();
-  ctx.globalAlpha = 0.06;
-  for (let i = 0; i < 90; i += 1) {
-    ctx.beginPath();
-    const px = 60 + ((i * 97) % (PX_W - 110));
-    const py = 110 + ((i * 53) % (PX_H - 140));
-    ctx.arc(px, py, (i % 5) + 3, 0, Math.PI * 2);
-    ctx.fillStyle = BLUE;
-    ctx.fill();
-  }
-  ctx.restore();
 }
 
-function backBackground(ctx: CanvasRenderingContext2D) {
-  ctx.fillStyle = "#FFFFFF";
-  ctx.fillRect(0, 0, PX_W, PX_H);
+function drawHeader(
+  ctx: CanvasRenderingContext2D,
+  logo: HTMLImageElement | null,
+  height: number,
+) {
+  ctx.fillStyle = PAPER;
+  ctx.fillRect(0, 0, PX_W, height);
 
-  ctx.fillStyle = BLUE;
-  roundRect(ctx, 0, 0, 42, PX_H, 18);
-  ctx.fill();
+  ctx.fillStyle = BORDER;
+  ctx.fillRect(0, height, PX_W, 4);
 
-  ctx.fillStyle = BLUE;
-  ctx.fillRect(42, 0, PX_W - 42, 74);
+  // Shifted further right to align with the center/right of the photo frame
+  if (logo && logo.naturalWidth > 0 && logo.naturalHeight > 0) {
+    const maxW = 240;
+    const maxH = height - 24;
+    
+    const scale = Math.min(maxW / logo.naturalWidth, maxH / logo.naturalHeight);
+    const lw = logo.naturalWidth * scale;
+    const lh = logo.naturalHeight * scale;
+    
+    // Start from PHOTO.x + 20 for better right alignment
+    ctx.drawImage(
+      logo,
+      PHOTO.x + 20, 
+      (height - lh) / 2,
+      lw,
+      lh,
+    );
+  } else {
+    drawText(
+      ctx,
+      "INDIEKONNECT",
+      PHOTO.x + 20,
+      height / 2 + 9,
+      SEMI(28),
+      INK,
+      300,
+      "left",
+      "1px",
+    );
+  }
+}
 
-  ctx.fillStyle = YELLOW;
-  ctx.fillRect(42, 74, PX_W - 42, 7);
-
-  ctx.fillStyle = BLUE_SOFT;
-  roundRect(ctx, 72, 130, PX_W - 116, 438, 24);
-  ctx.fill();
+function drawFooterBand(ctx: CanvasRenderingContext2D) {
+  ctx.fillStyle = PAPER;
+  ctx.fillRect(0, 578, PX_W, 60);
+  ctx.fillStyle = BORDER;
+  ctx.fillRect(0, 578, PX_W, 2);
 }
 
 function drawStatusBadge(
@@ -314,22 +383,33 @@ function drawStatusBadge(
   active: boolean,
   x: number,
   y: number,
+  w: number,
+  h: number,
 ) {
-  ctx.fillStyle = active ? "#EFFAF3" : "#FFF4E9";
-  roundRect(ctx, x, y, 138, 52, 26);
+  const col = active ? GREEN : "#B45309";
+  ctx.fillStyle = active ? "#E8F8EE" : "#FFF3E0";
+  roundRect(ctx, x, y, w, h, h / 2);
   ctx.fill();
-  ctx.strokeStyle = active ? "#1C9D5B" : "#E5932F";
+  ctx.strokeStyle = col;
   ctx.lineWidth = 2;
-  roundRect(ctx, x, y, 138, 52, 26);
+  roundRect(ctx, x, y, w, h, h / 2);
   ctx.stroke();
+
+  ctx.fillStyle = col;
+  ctx.beginPath();
+  ctx.arc(x + 28, y + h / 2, 7, 0, Math.PI * 2);
+  ctx.fill();
+
   drawText(
     ctx,
     status.toUpperCase(),
-    x + 20,
-    y + 33,
-    "800 20px Arial, sans-serif",
-    active ? "#1C9D5B" : "#C97717",
-    100,
+    x + w / 2 + 12,
+    y + h / 2 + 7,
+    SEMI(19),
+    col,
+    w - 70,
+    "center",
+    "2px",
   );
 }
 
@@ -358,257 +438,272 @@ async function drawCard(
     user.distributor_status || (user.is_active ? "Active" : "Inactive");
 
   if (side === "front") {
-    frontBackground(ctx);
-
-    if (logo) {
-      ctx.fillStyle = "#FFFFFF";
-      roundRect(ctx, 70, 16, 325, 60, 12);
-      ctx.fill();
-      const scale = Math.min(305 / logo.naturalWidth, 52 / logo.naturalHeight);
-      const lw = logo.naturalWidth * scale,
-        lh = logo.naturalHeight * scale;
-      ctx.drawImage(logo, 78 + (305 - lw) / 2, 20 + (52 - lh) / 2, lw, lh);
-    } else {
-      drawText(
-        ctx,
-        "INDIEKONNECT",
-        82,
-        53,
-        "800 34px Arial, sans-serif",
-        BLUE_DARK,
+    lightBackground(ctx);
+    
+    // Watermark Logo (Bottom Right corner for clean text)
+    if (logo && logo.naturalWidth > 0) {
+      ctx.save();
+      ctx.globalAlpha = 0.04; 
+      const wmW = 500;
+      const wmH = (logo.naturalHeight / logo.naturalWidth) * wmW;
+      ctx.drawImage(
+        logo,
+        PX_W - wmW + 100, // Pushed further right
+        PX_H - wmH + 150, // Pushed further down
+        wmW,
+        wmH
       );
+      ctx.restore();
     }
+
+    drawHeader(ctx, logo, 108);
 
     drawText(
       ctx,
       "DISTRIBUTOR IDENTITY CARD",
-      430,
-      58,
-      "800 28px Arial, sans-serif",
-      BLUE_DARK,
-      520,
+      975,
+      52,
+      SEMI(25),
+      INK,
+      580,
+      "right",
+      "2px",
     );
+    ctx.fillStyle = BORDER;
+    ctx.fillRect(715, 64, 260, 2);
     drawText(
       ctx,
-      "Company Issued ID",
-      431,
-      85,
-      "700 18px Arial, sans-serif",
+      "COMPANY ISSUED  •  AUTHORISED PARTNER",
+      975,
+      92,
+      MED(14),
       MUTED,
-      450,
+      580,
+      "right",
+      "2px",
     );
 
-    ctx.fillStyle = "#FFFFFF";
-    roundRect(ctx, 82, 124, 640, 446, 20);
+    // Photo frame (No shadow to keep it clean)
+    ctx.fillStyle = PAPER;
+    roundRect(ctx, PHOTO.x - 10, PHOTO.y - 10, PHOTO.w + 20, PHOTO.h + 20, 18);
     ctx.fill();
-    ctx.strokeStyle = BORDER;
-    ctx.lineWidth = 2;
-    roundRect(ctx, 82, 124, 640, 446, 20);
-    ctx.stroke();
 
-    ctx.fillStyle = "#FFFFFF";
-    roundRect(ctx, 757, 124, 196, 246, 18);
-    ctx.fill();
-    ctx.strokeStyle = BLUE;
+    ctx.strokeStyle = BORDER;
     ctx.lineWidth = 3;
-    roundRect(ctx, 757, 124, 196, 246, 18);
+    roundRect(ctx, PHOTO.x - 10, PHOTO.y - 10, PHOTO.w + 20, PHOTO.h + 20, 18);
     ctx.stroke();
 
     if (photo) {
-      cropPhoto(ctx, photo, 767, 134, 176, 226);
+      cropPhoto(ctx, photo, PHOTO.x, PHOTO.y, PHOTO.w, PHOTO.h, PHOTO.r);
     } else {
-      ctx.fillStyle = BLUE_SOFT;
-      roundRect(ctx, 767, 134, 176, 226, 14);
+      ctx.fillStyle = SOFT;
+      roundRect(ctx, PHOTO.x, PHOTO.y, PHOTO.w, PHOTO.h, PHOTO.r);
       ctx.fill();
       drawText(
         ctx,
         initials(user.full_name),
-        812,
-        254,
-        "800 70px Arial, sans-serif",
-        BLUE_DARK,
-        95,
+        PHOTO.x + PHOTO.w / 2,
+        PHOTO.y + PHOTO.h / 2 + 24,
+        SEMI(72),
+        "#9CA3AF",
+        150,
+        "center",
       );
     }
 
-    drawText(
-      ctx,
-      "INDIEKONNECT ID",
-      779,
-      430,
-      "800 19px Arial, sans-serif",
-      BLUE_DARK,
-      171,
-    );
-    drawText(
-      ctx,
-      user.distributor_id || "—",
-      780,
-      467,
-      "700 25px Arial, sans-serif",
-      INK,
-      170,
-    );
+    // Status badge under photo
+    drawStatusBadge(ctx, status, !!user.is_active, PHOTO.x, 448, PHOTO.w, 46);
 
+    // Name + role
     const name = (user.full_name || "Distributor").toUpperCase();
-    const nameSize = fitName(ctx, name, 582);
-    drawText(
-      ctx,
-      name,
-      112,
-      188,
-      `800 ${nameSize}px Arial, sans-serif`,
-      INK,
-      585,
-    );
+    const nameSize = fitName(ctx, name, 660);
+    drawText(ctx, name, 300, 192, SEMI(nameSize), INK, 665);
     drawText(
       ctx,
       (user.account_type || "Distributor").toUpperCase(),
-      115,
-      222,
-      "700 22px Arial, sans-serif",
-      BLUE,
-      300,
+      301,
+      228,
+      SEMI(19),
+      MUTED,
+      400,
+      "left",
+      "4px",
     );
 
-    drawStatusBadge(ctx, status, !!user.is_active, 552, 170);
+    ctx.fillStyle = BORDER;
+    ctx.fillRect(300, 248, 675, 2);
 
-    ctx.strokeStyle = BORDER;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(112, 252);
-    ctx.lineTo(690, 252);
-    ctx.stroke();
+    // Details grid
+    drawLabelValue(ctx, "Distributor ID", user.distributor_id || "—", 300, 292, 320);
+    drawLabelValue(ctx, "Joining Date", joined, 660, 292, 315);
+    drawLabelValue(ctx, "Mobile No.", user.phone || "—", 300, 377, 320);
+    drawLabelValue(ctx, "State", state, 660, 377, 315);
+    drawLabelValue(ctx, "Email ID", user.email || "—", 300, 462, 675);
 
-    drawLabelValue(ctx, "Distributor ID", user.distributor_id || "—", 112, 310);
-    drawLabelValue(ctx, "Mobile No.", user.phone || "—", 112, 362);
-    drawLabelValue(ctx, "Email ID", user.email || "—", 112, 414, 455);
-    drawLabelValue(ctx, "Joining Date", joined, 112, 466);
-    drawLabelValue(ctx, "State", state, 112, 518);
+    drawText(
+      ctx,
+      "Property of Indiekonnect. If found, please return to support@indiekonnect.com",
+      300,
+      552,
+      MED(14),
+      MUTED,
+      675,
+    );
 
-    ctx.fillStyle = BLUE;
-    roundRect(ctx, 82, 579, 871, 43, 0);
-    ctx.fill();
+    // Footer
+    drawFooterBand(ctx);
     drawText(
       ctx,
       "Official distributor card for company identification and verification.",
-      108,
-      607,
-      "700 18px Arial, sans-serif",
-      "#FFFFFF",
-      700,
+      50,
+      615,
+      MED(15),
+      INK,
+      690,
     );
-    ctx.fillStyle = YELLOW;
-    roundRect(ctx, 777, 579, 176, 43, 0);
-    ctx.fill();
     drawText(
       ctx,
       user.distributor_id || "INDIEKONNECT",
-      800,
-      607,
-      "800 17px Arial, sans-serif",
-      BLUE_DARK,
-      140,
+      975,
+      616,
+      SEMI(21),
+      INK,
+      240,
+      "right",
+      "2px",
     );
   } else {
-    backBackground(ctx);
-
-    if (logo) {
-      ctx.fillStyle = "#FFFFFF";
-      roundRect(ctx, 70, 10, 320, 54, 10);
-      ctx.fill();
-      const scale = Math.min(300 / logo.naturalWidth, 48 / logo.naturalHeight);
-      const lw = logo.naturalWidth * scale,
-        lh = logo.naturalHeight * scale;
-      ctx.drawImage(logo, 78 + (300 - lw) / 2, 13 + (48 - lh) / 2, lw, lh);
-    } else {
-      drawText(
-        ctx,
-        "INDIEKONNECT",
-        75,
-        48,
-        "800 30px Arial, sans-serif",
-        "#FFFFFF",
+    lightBackground(ctx);
+    
+    // Watermark Logo (Bottom Right corner)
+    if (logo && logo.naturalWidth > 0) {
+      ctx.save();
+      ctx.globalAlpha = 0.04; 
+      const wmW = 500;
+      const wmH = (logo.naturalHeight / logo.naturalWidth) * wmW;
+      ctx.drawImage(
+        logo,
+        PX_W - wmW + 100,
+        PX_H - wmH + 150,
+        wmW,
+        wmH
       );
+      ctx.restore();
     }
+
+    drawHeader(ctx, logo, 100);
 
     drawText(
       ctx,
-      "PEOPLE • PRODUCTS • POSSIBILITIES",
-      414,
-      48,
-      "700 18px Arial, sans-serif",
-      "#FFFFFF",
-      540,
+      "CARDHOLDER TERMS",
+      975,
+      60,
+      SEMI(21),
+      INK,
+      400,
+      "right",
+      "3px",
     );
+
+    // Instructions panel
+    ctx.fillStyle = SOFT;
+    roundRect(ctx, 50, 138, 925, 280, 18);
+    ctx.fill();
+    ctx.strokeStyle = BORDER;
+    ctx.lineWidth = 2;
+    roundRect(ctx, 50, 138, 925, 280, 18);
+    ctx.stroke();
 
     drawText(
       ctx,
       "IMPORTANT INSTRUCTIONS",
-      98,
-      183,
-      "800 30px Arial, sans-serif",
-      BLUE_DARK,
+      80,
+      182,
+      SEMI(22),
+      INK,
+      600,
+      "left",
+      "3px",
     );
+    ctx.fillStyle = BORDER;
+    ctx.fillRect(80, 194, 300, 2);
 
     const lines = [
-      "1. This card is issued to the authorised distributor of Indiekonnect.",
-      "2. This card is personal, company-issued and non-transferable.",
-      "3. On loss or damage, inform Indiekonnect support immediately.",
-      "4. Card validity depends on account status and company approval.",
-      "5. This is not a government identity document.",
+      "This card is issued to the authorised distributor of Indiekonnect.",
+      "This card is personal, company-issued and non-transferable.",
+      "On loss or damage, inform Indiekonnect support immediately.",
+      "Card validity depends on account status and company approval.",
+      "This is not a government identity document.",
     ];
 
-    let y = 234;
-    for (const line of lines) {
-      drawText(ctx, line, 102, y, "600 23px Arial, sans-serif", INK, 775);
-      y += 54;
-    }
+    let y = 238;
+    lines.forEach((line, index) => {
+      ctx.fillStyle = SOFT;
+      ctx.beginPath();
+      ctx.arc(95, y - 7, 15, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = BORDER;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      drawText(ctx, String(index + 1), 95, y - 1, SEMI(16), INK, 20, "center");
+      drawText(ctx, line, 128, y, MED(19), INK, 825);
+      y += 42;
+    });
 
+    // Contact
+    drawText(ctx, "WEBSITE", 50, 484, MED(14), MUTED, 120, "left", "2px");
+    drawText(ctx, "www.indiekonnect.com", 170, 485, SEMI(21), INK, 330);
+    drawText(ctx, "EMAIL", 50, 534, MED(14), MUTED, 120, "left", "2px");
+    drawText(ctx, "support@indiekonnect.com", 170, 535, SEMI(21), INK, 360);
+
+    // Barcode box (derived from the distributor id)
+    const id = user.distributor_id || "IND000000";
+    const boxX = 690;
+    const boxY = 448;
+    const boxW = 285;
+    const boxH = 110;
+    ctx.fillStyle = PAPER;
+    roundRect(ctx, boxX, boxY, boxW, boxH, 10);
+    ctx.fill();
     ctx.strokeStyle = BORDER;
     ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(94, 524);
-    ctx.lineTo(913, 524);
+    roundRect(ctx, boxX, boxY, boxW, boxH, 10);
     ctx.stroke();
 
-    drawText(ctx, "Website", 96, 566, "700 18px Arial, sans-serif", BLUE_DARK);
-    drawText(
-      ctx,
-      "www.indiekonnect.com",
-      210,
-      566,
-      "700 22px Arial, sans-serif",
-      INK,
-      320,
-    );
-    drawText(ctx, "Email", 96, 600, "700 18px Arial, sans-serif", BLUE_DARK);
-    drawText(
-      ctx,
-      "support@indiekonnect.com",
-      210,
-      600,
-      "700 22px Arial, sans-serif",
-      INK,
-      350,
-    );
-
-    const startX = 720;
-    const baseY = 556;
-    ctx.fillStyle = BLUE_DARK;
-    for (let i = 0; i < 42; i += 1) {
-      const barW = i % 3 === 0 ? 6 : i % 2 === 0 ? 3 : 2;
-      const barH = 74 + ((i * 13) % 28);
-      ctx.fillRect(startX + i * 6, baseY - barH, barW, barH);
+    ctx.fillStyle = INK;
+    let bx = boxX + 18;
+    let i = 0;
+    while (bx < boxX + boxW - 18) {
+      const code = id.charCodeAt(i % id.length);
+      const barW = 2 + ((code + i * 7) % 3);
+      if (i % 2 === 0) ctx.fillRect(bx, boxY + 12, barW, 56);
+      bx += barW + 1.5;
+      i += 1;
     }
     drawText(
       ctx,
-      user.distributor_id || "IND000000",
-      744,
-      608,
-      "800 24px Arial, sans-serif",
-      BLUE_DARK,
-      210,
+      id,
+      boxX + boxW / 2,
+      boxY + 97,
+      SEMI(17),
+      INK,
+      boxW - 30,
+      "center",
+      "4px",
+    );
+
+    // Footer
+    drawFooterBand(ctx);
+    drawText(
+      ctx,
+      "PEOPLE  •  PRODUCTS  •  POSSIBILITIES",
+      (PX_W) / 2,
+      616,
+      SEMI(19),
+      INK,
+      800,
+      "center",
+      "4px",
     );
   }
 
@@ -616,6 +711,8 @@ async function drawCard(
 }
 
 export default function DistributorPVCSection({ user }: { user: User }) {
+  const profilePhotoUrl = getProfilePhotoUrl(user);
+
   const [front, setFront] = useState("");
   const [back, setBack] = useState("");
   const [busy, setBusy] = useState<
@@ -626,66 +723,31 @@ export default function DistributorPVCSection({ user }: { user: User }) {
   const [address, setAddress] = useState<Address>(emptyAddress);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
-  const [imageNote, setImageNote] = useState("");
+
+  useEffect(() => {
+    void loadPoppins();
+  }, []);
 
   const render = useCallback(async () => {
     setBusy("render");
     setError("");
-    setImageNote("");
 
     try {
-      const photoUrl = getProfilePhotoUrl(user);
-
-      const [logo, photoResult] = await Promise.all([
-        img(BRAND_LOGO).catch(() => null),
-        photoUrl
-          ? (async () => {
-              const response = await fetch(
-                `${API_BASE}/photo?url=${encodeURIComponent(photoUrl)}`,
-                {
-                  credentials: "include",
-                  cache: "no-store",
-                },
-              );
-
-              if (!response.ok) {
-                throw new Error(
-                  `Photo proxy HTTP ${response.status}. Confirm route.ts is inside src/app/api/distributor-card/photo/ and Next.js has been restarted.`,
-                );
-              }
-
-              const blob = await response.blob();
-              const localUrl = URL.createObjectURL(blob);
-              try {
-                return await img(localUrl);
-              } finally {
-                URL.revokeObjectURL(localUrl);
-              }
-            })()
-              .then((image) => ({ image, error: "" }))
-              .catch((err) => ({
-                image: null,
-                error: String(err?.message || err),
-              }))
-          : Promise.resolve({
-              image: null,
-              error: "No profile_picture URL was returned by the profile API.",
-            }),
-      ]);
-
-      if (!logo)
-        setImageNote(
-          "Company logo could not load from the configured server proxy.",
-        );
-      if (!photoResult.image) {
-        setImageNote((previous) =>
-          `${previous} Profile photo unavailable: ${photoResult.error}. Card currently shows initials instead.`.trim(),
-        );
-      }
+      const [localLogo, photoResult] = await Promise.all([
+        img(Logo.src || Logo, false)
+          .then((image) => image)
+          .catch(() => null),
+        profilePhotoUrl
+          ? img(profilePhotoUrl, true)
+              .then((image) => ({ image }))
+              .catch(() => ({ image: null }))
+          : Promise.resolve({ image: null }),
+        loadPoppins(),
+      ]).then(([l, p]) => [l, p] as const);
 
       const [frontImg, backImg] = await Promise.all([
-        drawCard(user, "front", photoResult.image, logo),
-        drawCard(user, "back", photoResult.image, logo),
+        drawCard(user, "front", photoResult.image, localLogo),
+        drawCard(user, "back", photoResult.image, localLogo),
       ]);
 
       setFront(frontImg);
@@ -696,6 +758,7 @@ export default function DistributorPVCSection({ user }: { user: User }) {
       setBusy(null);
     }
   }, [
+    profilePhotoUrl,
     user.full_name,
     user.distributor_id,
     user.profile_picture,
@@ -765,15 +828,20 @@ export default function DistributorPVCSection({ user }: { user: User }) {
 @page{size:A4 portrait;margin:15mm}
 *{box-sizing:border-box}
 body{font:13px Arial,sans-serif;padding:0;margin:0}
-.card{width:85.6mm;height:54mm;display:block;margin:0 0 12mm 0;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+.card-wrap{position:relative;width:85.6mm;height:54mm;margin:0 0 12mm 0;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+.card{position:absolute;inset:0;width:100%;height:100%;display:block}
+.profile-overlay{position:absolute;left:${PHOTO_CSS.left};top:${PHOTO_CSS.top};width:${PHOTO_CSS.width};height:${PHOTO_CSS.height};object-fit:cover;border-radius:${PHOTO_CSS.borderRadius}}
 .note{margin:0 0 8mm 0;padding:0}
 @media print{.note{display:none}}
 </style>
 </head>
 <body>
 <p class="note">Print at 100% / Actual Size. Front and back are separate; align carefully for duplex printing.</p>
-<img class="card" src="${front}" alt="Front card" />
-<img class="card" src="${back}" alt="Back card" />
+<div class="card-wrap">
+  <img class="card" src="${front}" alt="Front card" />
+  ${profilePhotoUrl ? `<img class="profile-overlay" src="${escapeHtmlAttribute(profilePhotoUrl)}" alt="Profile photo" />` : ""}
+</div>
+<div class="card-wrap"><img class="card" src="${back}" alt="Back card" /></div>
 <script>
 window.addEventListener('load', function(){ setTimeout(function(){ window.print(); }, 300); });
 <\/script>
@@ -869,7 +937,7 @@ window.addEventListener('load', function(){ setTimeout(function(){ window.print(
           name: address.full_name,
           contact: address.phone,
         },
-        theme: { color: BLUE },
+        theme: { color: INK },
         handler: async (response: unknown) => {
           try {
             await api(
@@ -922,17 +990,20 @@ window.addEventListener('load', function(){ setTimeout(function(){ window.print(
   ];
 
   return (
-    <section className="w-full min-w-0 rounded-2xl border border-[#e7eaf0] bg-white p-4 shadow-sm sm:p-6">
+    <section
+      style={{ fontFamily: FONT_FAMILY }}
+      className="w-full min-w-0 rounded-2xl border border-gray-200 bg-white p-4 font-medium text-black shadow-sm sm:p-6"
+    >
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <span className="rounded-xl bg-[#1748B8] p-2.5 text-[#FFC928]">
+          <span className="rounded-xl bg-gray-100 p-2.5 text-black">
             <CreditCard size={22} />
           </span>
           <div>
-            <h2 className="text-lg font-bold text-[#1748B8]">
+            <h2 className="text-lg font-semibold text-black">
               My Indiekonnect Distributor ID
             </h2>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs font-medium text-gray-500">
               Horizontal PVC card • front and back • 85.6 × 54 mm
             </p>
           </div>
@@ -942,7 +1013,7 @@ window.addEventListener('load', function(){ setTimeout(function(){ window.print(
           type="button"
           onClick={() => void render()}
           disabled={!!busy}
-          className="flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold disabled:opacity-50"
+          className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs font-semibold text-black disabled:opacity-50 hover:bg-gray-100 transition-colors"
         >
           <RefreshCw size={14} /> Refresh Card
         </button>
@@ -957,25 +1028,38 @@ window.addEventListener('load', function(){ setTimeout(function(){ window.print(
         ).map((card) => (
           <div
             key={card.label}
-            className="min-w-0 rounded-2xl border border-slate-100 bg-[#f4f6f9] p-3 sm:p-5"
+            className="min-w-0 rounded-2xl border border-gray-200 bg-gray-50 p-3 sm:p-5"
           >
             <div className="mb-3 flex items-center justify-between">
-              <span className="text-xs font-bold tracking-widest text-slate-600">
+              <span className="text-xs font-semibold tracking-widest text-black">
                 {card.label}
               </span>
-              <span className="text-[11px] text-slate-400">Landscape</span>
+              <span className="text-[11px] font-medium text-gray-500">
+                Landscape
+              </span>
             </div>
-            <div className="aspect-[85.6/54] overflow-hidden rounded-[4%] shadow-[0_16px_32px_rgba(1,15,30,.17)]">
+            <div className="relative aspect-[85.6/54] overflow-hidden rounded-[4%] border border-gray-200 bg-white shadow-[0_16px_32px_rgba(0,0,0,.1)]">
               {card.src ? (
                 <img
                   src={card.src}
                   alt={`${card.label} of personalized distributor card`}
-                  className="h-full w-full object-fill"
+                  className="absolute inset-0 h-full w-full object-fill"
                 />
               ) : (
-                <div className="flex h-full items-center justify-center text-sm text-slate-500">
+                <div className="absolute inset-0 flex items-center justify-center text-sm font-medium text-gray-500">
                   <Loader2 size={18} className="mr-2 animate-spin" /> Preparing
                   card…
+                </div>
+              )}
+
+              {card.label === "FRONT" && profilePhotoUrl && card.src && (
+                <div className="absolute overflow-hidden" style={PHOTO_CSS}>
+                  <img
+                    src={profilePhotoUrl}
+                    alt="Profile photo on distributor ID"
+                    className="h-full w-full object-cover"
+                    loading="eager"
+                  />
                 </div>
               )}
             </div>
@@ -988,7 +1072,7 @@ window.addEventListener('load', function(){ setTimeout(function(){ window.print(
           type="button"
           disabled={!!busy || !front || !back}
           onClick={download}
-          className="inline-flex items-center gap-2 rounded-xl bg-[#1748B8] px-5 py-3 text-xs font-semibold text-white disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-xl bg-black px-5 py-3 text-xs font-semibold text-white shadow-sm hover:bg-gray-800 disabled:opacity-50 transition-colors"
         >
           <Download size={16} /> Download Print PDF
         </button>
@@ -997,7 +1081,7 @@ window.addEventListener('load', function(){ setTimeout(function(){ window.print(
           type="button"
           disabled={!!busy || !front || !back}
           onClick={print}
-          className="inline-flex items-center gap-2 rounded-xl border border-[#d6dce5] bg-white px-5 py-3 text-xs font-semibold text-[#1748B8] disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-5 py-3 text-xs font-semibold text-black hover:bg-gray-50 disabled:opacity-50 transition-colors"
         >
           <Printer size={16} /> Print Card
         </button>
@@ -1006,7 +1090,7 @@ window.addEventListener('load', function(){ setTimeout(function(){ window.print(
           type="button"
           disabled={!!busy || !user.distributor_id || !user.is_active}
           onClick={startRequest}
-          className="inline-flex items-center gap-2 rounded-xl border border-[#FFC928] bg-[#FFF7D7] px-5 py-3 text-xs font-semibold text-[#1748B8] disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-5 py-3 text-xs font-semibold text-black hover:bg-gray-50 disabled:opacity-50 transition-colors"
         >
           {busy === "quote" ? (
             <Loader2 size={16} className="animate-spin" />
@@ -1017,21 +1101,20 @@ window.addEventListener('load', function(){ setTimeout(function(){ window.print(
         </button>
       </div>
 
-      <p className="mt-4 flex gap-2 text-xs leading-5 text-slate-500">
+      <p className="mt-4 flex gap-2 text-xs font-medium leading-5 text-gray-500">
         <ShieldCheck size={15} className="mt-0.5 shrink-0" />
         This is an Indiekonnect company-issued ID, not government
         identification. Delivery is available only after server-confirmed
         payment.
       </p>
 
-      {imageNote && <p className="mt-2 text-xs text-amber-700">{imageNote}</p>}
       {message && (
-        <p role="status" className="mt-2 text-xs text-emerald-700">
+        <p role="status" className="mt-2 text-xs font-medium text-emerald-700">
           {message}
         </p>
       )}
       {!modal && error && (
-        <p role="alert" className="mt-2 text-xs text-red-600">
+        <p role="alert" className="mt-2 text-xs font-medium text-red-600">
           {error}
         </p>
       )}
@@ -1041,31 +1124,32 @@ window.addEventListener('load', function(){ setTimeout(function(){ window.print(
           role="dialog"
           aria-modal="true"
           aria-label="Request card delivery"
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4"
+          style={{ fontFamily: FONT_FAMILY }}
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 p-4"
         >
-          <div className="max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-5 shadow-2xl">
+          <div className="max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-2xl border border-gray-200 bg-white p-5 shadow-2xl">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-bold text-[#1748B8]">
+              <h3 className="text-lg font-semibold text-black">
                 Print and deliver my PVC card
               </h3>
               <button
                 type="button"
                 onClick={() => setModal(false)}
                 aria-label="Close"
-                className="p-2"
+                className="rounded-lg p-2 text-black hover:bg-gray-100 transition-colors"
               >
                 <X size={19} />
               </button>
             </div>
 
-            <div className="mt-4 rounded-xl bg-[#FFF7D6] p-4">
-              <div className="text-xs text-slate-600">
+            <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
+              <div className="text-xs font-medium text-gray-500">
                 Total price including delivery
               </div>
-              <div className="mt-1 text-2xl font-bold text-[#1748B8]">
+              <div className="mt-1 text-2xl font-semibold text-black">
                 ₹{(quote.amount_paise / 100).toFixed(2)}
               </div>
-              <div className="text-xs text-slate-500">
+              <div className="text-xs font-medium text-gray-500">
                 {quote.description || "PVC card printing + home delivery"}
               </div>
             </div>
@@ -1078,11 +1162,11 @@ window.addEventListener('load', function(){ setTimeout(function(){ window.print(
                     field.key.startsWith("address_line") ? "sm:col-span-2" : ""
                   }
                 >
-                  <span className="mb-1 block text-xs font-semibold text-slate-600">
+                  <span className="mb-1 block text-xs font-semibold text-black">
                     {field.label}
                   </span>
                   <input
-                    className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-[#1748B8]"
+                    className="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm font-medium text-black outline-none placeholder:text-gray-400 focus:border-black focus:ring-1 focus:ring-black transition-colors"
                     value={address[field.key]}
                     placeholder={field.placeholder}
                     onChange={(e) =>
@@ -1102,7 +1186,7 @@ window.addEventListener('load', function(){ setTimeout(function(){ window.print(
             </div>
 
             {error && (
-              <p role="alert" className="mt-3 text-xs text-red-600">
+              <p role="alert" className="mt-3 text-xs font-medium text-red-600">
                 {error}
               </p>
             )}
@@ -1111,13 +1195,13 @@ window.addEventListener('load', function(){ setTimeout(function(){ window.print(
               type="button"
               disabled={!!busy}
               onClick={pay}
-              className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-[#1748B8] px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
+              className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-black px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-gray-800 disabled:opacity-50 transition-colors"
             >
               {busy === "pay" && <Loader2 className="animate-spin" size={16} />}
               Pay ₹{(quote.amount_paise / 100).toFixed(2)} & Request Card
             </button>
 
-            <p className="mt-3 text-[11px] leading-5 text-slate-500">
+            <p className="mt-3 text-[11px] font-medium leading-5 text-gray-500">
               Order confirmation requires backend payment verification. Do not
               retry while verification is pending.
             </p>

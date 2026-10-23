@@ -42,8 +42,6 @@ const NAVY = "#0E1B3D";
 const BRASS = "#B8935A";
 const EMERALD = "#1f9d6b";
 const INDIGO = "#3955A6";
-const PURPLE = "#a855f7";
-const RED = "#c0392b";
 
 
 const FontImport = () => (
@@ -163,9 +161,6 @@ function DashboardError({
     );
 }
 
-// --------------------------------------------------
-// STAT CARD
-// --------------------------------------------------
 
 function StatCard({
     label,
