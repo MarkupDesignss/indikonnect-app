@@ -483,6 +483,7 @@ export const baseApi = createApi({
     "DistributorSubmit",
     "ForgotPassword",
     "ResetPassword",
+    "DistributorPendingPlacements",
 
     // -----------------------------------------------------
     // CORRECTION / ADMIN REQUESTS

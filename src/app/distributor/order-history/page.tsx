@@ -10,10 +10,10 @@ export default function OrderHistoryPage() {
 
             <div className="relative flex min-h-[calc(100vh-72px)]">
                 <Sidebar />
-                <div className="min-w-0 flex-1 bg-[#f7f8fa] px-8 pb-8 pt-6">
-                    <h1 className="text-[24px] font-black tracking-[-0.01em] text-[#101828]">Order history</h1>
+                <div className="min-w-0 flex-1 bg-[#f7f8fa] px-4 pb-8 pt-4">
+                    <h1 className="text-[24px] font-black tracking-[-0.01em] text-[#101828]">My Orders</h1>
 
-                    <div className="mt-5">
+                    <div className="mt-3">
                         <OrderHistory />
                     </div>
                 </div>

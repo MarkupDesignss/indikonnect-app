@@ -1,3 +1,4 @@
+
 import { baseApi } from "../baseApi";
 
 // ==================================================
@@ -33,26 +34,60 @@ export interface DistributorPendingPlacementsResponse {
 }
 
 // ==================================================
+// SET PLACEMENT TYPES
+// ==================================================
+
+export interface SetPlacementRequest {
+  ba_id: string;
+  side: 1 | 2;
+}
+
+export interface SetPlacementResponse {
+  success: boolean;
+  message?: string;
+  data?: unknown;
+}
+
+// ==================================================
 // API
 // ==================================================
 
 export const distributorPendingPlacementsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
+    // GET: Pending Placements
     getDistributorPendingPlacements: builder.query<
       DistributorPendingPlacementsResponse,
       void
     >({
       query: () => ({
-        // Assumes baseApi.baseUrl already includes "/api".
         url: "/distributor/genealogy/pending-placements",
         method: "GET",
       }),
+      providesTags: ["DistributorPendingPlacements"],
+    }),
+
+    // POST: Set Placement
+    setDistributorPlacement: builder.mutation<
+      SetPlacementResponse,
+      SetPlacementRequest
+    >({
+      query: (body) => ({
+        url: "/distributor/genealogy/set-placement",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["DistributorPendingPlacements"],
     }),
   }),
 });
 
+// ==================================================
+// EXPORT HOOKS
+// ==================================================
+
 export const {
   useGetDistributorPendingPlacementsQuery,
+  useSetDistributorPlacementMutation,
 } = distributorPendingPlacementsApi;
 
 export default distributorPendingPlacementsApi;

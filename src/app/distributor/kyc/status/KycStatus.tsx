@@ -661,7 +661,7 @@ const KycStatus = () => {
       </div>
 
       {/* Overall status card */}
-      <section className="mt-5 min-w-0 rounded-[14px] border border-[#e7e9ee] bg-white p-4 sm:mt-8 sm:rounded-[16px] sm:p-5 lg:p-6">
+      <section className="mt-2 min-w-0 rounded-[14px] border border-[#e7e9ee] bg-white p-4 sm:mt-4 sm:rounded-[16px] sm:p-5 lg:p-6">
         <div className="grid min-w-0 grid-cols-1 gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] xl:items-start xl:gap-8">
           {/* Status information */}
           <div className="min-w-0">

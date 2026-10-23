@@ -21,7 +21,7 @@ export default function BinaryTreePage() {
                 </header>
 
                 {/* MAIN CONTENT: Scrollable */}
-                <main className="flex-1 overflow-y-auto px-8 pt-6 pb-8">
+                <main className="flex-1 overflow-y-auto px-4 pt-5 pb-8">
                     <BinaryTree />
                 </main>
                 

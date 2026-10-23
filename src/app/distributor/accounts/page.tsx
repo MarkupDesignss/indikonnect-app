@@ -14,7 +14,7 @@ export default function AccountsPage() {
                     <div className="flex min-h-[calc(100vh-72px)] relative">
                         <Sidebar />
 
-                        <div className="min-w-0 flex-1 bg-[#fafcff] px-8 pt-6 pb-8">
+                        <div className="min-w-0 flex-1 bg-[#fafcff] px-6 pt-5 pb-8">
                             <Account />
                         </div>
                     </div>

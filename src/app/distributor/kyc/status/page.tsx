@@ -13,7 +13,7 @@ export default function KycStatusPage() {
 
                     <div className="flex min-h-[calc(100vh-72px)] relative">
                         <Sidebar />
-                        <div className="min-w-0 flex-1 bg-[#fafcff] px-8 pt-6 pb-8">
+                        <div className="min-w-0 flex-1 bg-[#fafcff] px-4 pt-5 pb-8">
                             <KycStatus />
                         </div>
                     </div>

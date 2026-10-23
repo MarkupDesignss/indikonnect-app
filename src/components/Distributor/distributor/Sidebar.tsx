@@ -149,13 +149,13 @@ const menuGroups: MenuGroup[] = [
                 href: "/distributor/my-referral",
             },
             {
-                label: "Downline CV report",
+                label: "Downline",
                 icon: BarChart2,
                 href: "/distributor/downline-cv-report",
             },
         ],
     },
-    // 👇 NAYA BLOCK: Placements (Pending items ke liye)
+    //  NAYA BLOCK: Placements (Pending items ke liye)
     {
         title: "Placements",
         items: [
@@ -176,7 +176,7 @@ const menuGroups: MenuGroup[] = [
             //     href: "/distributor/wallet",
             // },
             {
-                label: "Transactions",
+                label: "Balance History",
                 icon: ReceiptText,
                 href: "/distributor/transactions",
             },
@@ -219,12 +219,7 @@ const menuGroups: MenuGroup[] = [
                     },
                 ],
             },
-            {
-                label: "Logout",
-                icon: LogOut,
-                href: "#",
-                action: "logout",
-            },
+           
         ],
     },
 ];

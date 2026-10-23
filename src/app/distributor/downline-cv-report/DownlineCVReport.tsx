@@ -610,7 +610,7 @@ const DownlineCVReport = () => {
   return (
     <div
       style={{ fontFamily: "'Lato', sans-serif" }}
-      className="min-w-0 rounded-[16px] border border-[#e7e9ee] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.03)] sm:p-6 lg:p-8"
+      className="min-w-0 rounded-[16px] border border-[#e7e9ee] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.03)] sm:p-4 lg:p-6"
     >
       <FontImport />
 
@@ -619,7 +619,7 @@ const DownlineCVReport = () => {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           <h1 className="text-[16px] font-black tracking-[-0.01em] text-[#101828] sm:text-[18px]">
-            Downline CV report
+            Downline
           </h1>
 
           <p className=" text-[12px] leading-5 text-[#667085] sm:text-[13.5px]">
