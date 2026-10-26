@@ -519,370 +519,12 @@ function DealBanner({ rawProduct, index, router, parallaxRef, userType }: any) {
   );
 }
 
-/* =========================================================
-   CATEGORY CARD
-========================================================= */
 
-function CategoryCard({ category, index, router }: any) {
-  const categoryTitle = category?.title || category?.name || "Category";
+export const productCardWidthClass =
+  "w-[calc(50%_-_6px)] sm:w-[calc(33.333%_-_10.667px)] md:w-[calc(33.333%_-_13.333px)] lg:w-[calc(16.666%_-_20px)]";
 
-  const categoryImage =
-    category?.image ||
-    category?.image_url ||
-    category?.banner ||
-    getPlaceholderImage();
-
-  return (
-    <motion.div
-      key={category.id || `${categoryTitle}-${index}`}
-      initial={{
-        opacity: 0,
-        y: 34,
-        scale: 0.94,
-      }}
-      whileInView={{
-        opacity: 1,
-        y: 0,
-        scale: 1,
-      }}
-      viewport={{
-        once: false,
-        amount: 0.16,
-      }}
-      whileHover={{
-        y: -6,
-      }}
-      whileTap={{
-        scale: 0.985,
-      }}
-      transition={{
-        duration: 0.65,
-        delay: Math.min(index * 0.07, 0.56),
-        ease: [0.16, 1, 0.3, 1],
-      }}
-      onClick={() =>
-        router.push(`/products/?category=${encodeURIComponent(categoryTitle)}`)
-      }
-      className="
-        group
-        w-[clamp(94px,24vw,150px)]
-        shrink-0
-        cursor-pointer
-        text-center
-        sm:w-[145px]
-        md:w-[165px]
-        lg:w-[185px]
-        xl:w-[205px]
-      "
-    >
-      <div
-        className="
-          relative
-          aspect-[4/5]
-          w-full
-          overflow-hidden
-          rounded-[14px]
-          bg-[#f3f3f3]
-          shadow-[0_1px_3px_rgba(0,0,0,0.04)]
-          ring-1
-          ring-black/[0.045]
-          transition-all
-          duration-500
-          group-hover:shadow-[0_16px_34px_rgba(0,0,0,0.12)]
-        "
-      >
-        <motion.img
-          src={categoryImage}
-          alt={categoryTitle}
-          loading={index < 5 ? "eager" : "lazy"}
-          className="
-            h-full
-            w-full
-            object-cover
-            transition-transform
-            duration-700
-          "
-          whileHover={{
-            scale: 1.075,
-          }}
-          transition={{
-            duration: 0.75,
-            ease: [0.16, 1, 0.3, 1],
-          }}
-          onError={(e) => {
-            e.currentTarget.src = getPlaceholderImage();
-          }}
-        />
-
-        <motion.div
-          initial={{
-            opacity: 0,
-          }}
-          whileHover={{
-            opacity: 1,
-          }}
-          className="
-            pointer-events-none
-            absolute
-            inset-0
-            bg-gradient-to-t
-            from-[#071A41]/35
-            via-transparent
-            to-white/5
-          "
-        />
-
-        <motion.div
-          initial={{
-            x: "-130%",
-            opacity: 0,
-          }}
-          whileHover={{
-            x: "130%",
-            opacity: 1,
-          }}
-          transition={{
-            duration: 0.9,
-            ease: "easeInOut",
-          }}
-          className="
-            pointer-events-none
-            absolute
-            inset-y-0
-            left-0
-            w-1/3
-            -skew-x-12
-            bg-gradient-to-r
-            from-transparent
-            via-white/25
-            to-transparent
-          "
-        />
-
-        <motion.div
-          className="
-            pointer-events-none
-            absolute
-            bottom-0
-            left-1/2
-            h-[2px]
-            -translate-x-1/2
-            bg-white
-          "
-          initial={{
-            width: 0,
-            opacity: 0,
-          }}
-          whileHover={{
-            width: "34%",
-            opacity: 1,
-          }}
-        />
-      </div>
-
-      <motion.h3
-        className="
-          mt-2
-          truncate
-          text-center
-          text-[11px]
-          font-semibold
-          leading-5
-          tracking-[-0.01em]
-          text-[#202020]
-          sm:mt-3
-          sm:text-[13px]
-          md:text-[14px]
-          lg:text-[15px]
-        "
-      >
-        {categoryTitle}
-      </motion.h3>
-    </motion.div>
-  );
-}
-
-/* =========================================================
-   BRAND CARD
-========================================================= */
-
-function BrandCard({ brand, router }: any) {
-  const image = brand?.logo || getPlaceholderImage();
-
-  const brandName = brand?.title || "Brand";
-
-  const discount = Number(brand?.discount_percentage || 0);
-
-  const handleBrandClick = () => {
-    if (!brand?.id) return;
-
-    router.push(`/products/?brand_ids=${encodeURIComponent(brand.id)}`);
-  };
-
-  return (
-    <div
-      onClick={handleBrandClick}
-      className="
-        group
-        relative
-        h-[260px]
-        w-[170px]
-        shrink-0
-        cursor-pointer
-        snap-start
-        overflow-hidden
-        rounded-[10px]
-        bg-[#111111]
-        shadow-[0_1px_3px_rgba(0,0,0,0.04)]
-        ring-1
-        ring-black/[0.045]
-        transition-all
-        duration-500
-        hover:shadow-[0_16px_34px_rgba(0,0,0,0.12)]
-        sm:h-[320px]
-        sm:w-[215px]
-        md:h-[360px]
-        md:w-[240px]
-        lg:h-[400px]
-        lg:w-[265px]
-        xl:h-[430px]
-        xl:w-[285px]
-      "
-    >
-      <img
-        src={image}
-        alt={brandName}
-        loading="lazy"
-        className="
-          absolute
-          inset-0
-          h-full
-          w-full
-          object-cover
-          transition-transform
-          duration-700
-          ease-out
-          group-hover:scale-[1.06]
-        "
-        onError={(e) => {
-          e.currentTarget.src = getPlaceholderImage();
-        }}
-      />
-
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
-
-      {discount > 0 && (
-        <div
-          className="
-            absolute
-            right-3
-            top-3
-            z-20
-            rounded-full
-            bg-white/95
-            px-2.5
-            py-1
-            text-[9px]
-            font-bold
-            text-[#111111]
-            shadow-lg
-            sm:right-4
-            sm:top-4
-            sm:px-3
-            sm:py-1.5
-            sm:text-[11px]
-          "
-        >
-          {discount}% OFF
-        </div>
-      )}
-
-      <div
-        className="
-          relative
-          z-10
-          flex
-          h-full
-          flex-col
-          items-center
-          px-4
-          pt-6
-          sm:px-5
-          sm:pt-8
-        "
-      >
-        {brand?.product_count && (
-          <p className="mt-1 text-[10px] text-white/70 sm:text-sm">
-            {brand.product_count} Products
-          </p>
-        )}
-      </div>
-
-      <div
-        className="
-          absolute
-          bottom-5
-          left-0
-          right-0
-          z-20
-          flex
-          justify-center
-          px-4
-          sm:bottom-8
-          sm:px-5
-        "
-      >
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            handleBrandClick();
-          }}
-          className="
-            w-full
-            max-w-[175px]
-            rounded-[8px]
-            bg-white
-            px-5
-            py-2.5
-            text-[10px]
-            font-semibold
-            uppercase
-            tracking-wide
-            text-[#111111]
-            shadow-lg
-            transition-all
-            duration-300
-            hover:bg-[#111111]
-            hover:text-white
-            hover:shadow-xl
-            sm:py-3
-            sm:text-[12px]
-          "
-        >
-          Shop Now
-        </button>
-      </div>
-    </div>
-  );
-}
-
-/* =========================================================
-   PRODUCT CARD WIDTH
-========================================================= */
-
-const productCardWidthClass = `
-  min-w-0
-  shrink-0
-  w-[min(100%,260px)]
-  sm:w-[calc((100%_-_32px)/3)]
-  md:w-[calc((100%_-_40px)/3)]
-  lg:w-[calc((100%_-_120px)/6)]
-`;
-
-/* =========================================================
-   PRODUCT RAIL
-========================================================= */
+const railGapClass =
+  "gap-x-3 gap-y-7 sm:gap-x-4 sm:gap-y-8 md:gap-x-5 lg:gap-x-6";
 
 function ProductRail({
   products = [],
@@ -896,7 +538,7 @@ function ProductRail({
   retry,
   labelMode = "trending",
   imagesEnabled = false,
-  showCartButtons = false,
+  showCartButtons = true,
 }: any) {
   const [imageIndices, setImageIndices] = useState<
     Record<string | number, number>
@@ -908,85 +550,22 @@ function ProductRail({
     e: React.MouseEvent,
   ) => {
     e.stopPropagation();
-
-    setImageIndices((prev) => ({
-      ...prev,
-      [productId]: index,
-    }));
+    setImageIndices((prev) => ({ ...prev, [productId]: index }));
   };
 
-  const handleMouseEnter = (
-    productId: string | number,
-    imageLength: number,
-  ) => {
-    if (!imagesEnabled || imageLength <= 1) {
-      return;
-    }
-
-    setImageIndices((prev) => {
-      const current = prev[productId] || 0;
-
-      return {
-        ...prev,
-        [productId]: (current + 1) % imageLength,
-      };
-    });
-  };
-
-  const handleMouseLeave = (productId: string | number) => {
-    if (!imagesEnabled) return;
-
-    setImageIndices((prev) => ({
-      ...prev,
-      [productId]: 0,
-    }));
-  };
-
-  /* =====================================================
-     LOADING
-  ===================================================== */
+  /* ---------------- LOADING ---------------- */
 
   if (isLoading) {
     return (
       <div
-        className="
-          mx-auto
-          flex
-          w-full
-          max-w-[min(100%,1400px)]
-          flex-wrap
-          items-stretch
-          justify-center
-          gap-x-3
-          gap-y-8
-          sm:gap-x-4
-          md:gap-x-5
-          lg:gap-x-6
-        "
+        className={`mx-auto flex w-full max-w-[min(100%,1400px)] flex-wrap items-stretch justify-start ${railGapClass}`}
       >
-        {Array.from({
-          length: 6,
-        }).map((_, index) => (
+        {Array.from({ length: 6 }).map((_, index) => (
           <div key={index} className={`${productCardWidthClass} animate-pulse`}>
-            <div
-              className="
-                  h-[160px]
-                  w-full
-                  rounded-xl
-                  bg-[#e8e6e1]
-                  sm:h-[185px]
-                  md:h-[200px]
-                  lg:h-[220px]
-                  xl:h-[235px]
-                "
-            />
-
-            <div className="mt-3 h-3 w-16 rounded-full bg-[#e8e6e1]" />
-
+            <div className="aspect-[4/5] w-full rounded-2xl bg-gradient-to-br from-[#eceae4] to-[#e1dfd8]" />
+            <div className="mt-3 h-3 w-1/2 rounded-full bg-[#e8e6e1]" />
             <div className="mt-2 h-3 w-full rounded-full bg-[#e8e6e1]" />
-
-            <div className="mt-2 h-3 w-3/4 rounded-full bg-[#e8e6e1]" />
-
+            <div className="mt-2 h-4 w-2/5 rounded-full bg-[#e8e6e1]" />
             <div className="mt-3 h-9 w-full rounded-full bg-[#e8e6e1]" />
           </div>
         ))}
@@ -994,28 +573,18 @@ function ProductRail({
     );
   }
 
-  /* =====================================================
-     ERROR
-  ===================================================== */
+  /* ---------------- ERROR ---------------- */
 
   if (isError) {
     return (
-      <div className="flex min-h-[180px] w-full items-center justify-center">
+      <div className="flex min-h-[180px] w-full flex-col items-center justify-center gap-3">
+        <p className="text-[13px] text-[#777]">
+          Couldn’t load products. Please try again.
+        </p>
         <button
           type="button"
           onClick={retry}
-          className="
-            rounded-full
-            bg-[#111111]
-            px-6
-            py-2.5
-            text-[11px]
-            font-medium
-            text-white
-            transition
-            hover:bg-[#292929]
-            sm:text-[12px]
-          "
+          className="rounded-full bg-[#111111] px-6 py-2.5 text-[12px] font-medium text-white transition hover:bg-[#2a2a2a] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#111]"
         >
           Retry
         </button>
@@ -1023,9 +592,7 @@ function ProductRail({
     );
   }
 
-  /* =====================================================
-     EMPTY
-  ===================================================== */
+  /* ---------------- EMPTY ---------------- */
 
   if (!products?.length) {
     return (
@@ -1037,34 +604,19 @@ function ProductRail({
     );
   }
 
-  /* =====================================================
-     ONLY FIRST 6
-  ===================================================== */
+  /* ---------------- ONLY FIRST 6 ---------------- */
 
   const visibleProducts = products.slice(0, 6);
-
   const isFewProducts = visibleProducts.length <= 2;
 
   return (
     <div
-      className={`
-        mx-auto
-        flex
-        w-full
-        max-w-[min(100%,1400px)]
-        flex-wrap
-        items-stretch
-        gap-x-3
-        gap-y-8
-        sm:gap-x-4
-        md:gap-x-5
-        lg:gap-x-6
-        ${isFewProducts ? "justify-center" : "justify-start"}
-      `}
+      className={`mx-auto flex w-full max-w-[min(100%,1400px)] flex-wrap items-stretch ${railGapClass} ${
+        isFewProducts ? "justify-center" : "justify-start"
+      }`}
     >
       {visibleProducts.map((product: any, index: number) => {
         const images = Array.isArray(product?.images) ? product.images : [];
-
         const imageIndex = imageIndices[product?.id] || 0;
 
         let label = "Featured";
@@ -1072,11 +624,9 @@ function ProductRail({
         if (labelMode === "trending") {
           label = index === 0 ? "Popular" : index === 1 ? "New" : "Featured";
         }
-
         if (labelMode === "offers") {
           label = index === 0 ? "Best Offer" : "Special Deal";
         }
-
         if (labelMode === "best-seller") {
           label = "Best Seller";
         }
@@ -1092,8 +642,6 @@ function ProductRail({
               handleToggleWishlist={handleToggleWishlist}
               images={imagesEnabled ? images : []}
               imageIndex={imageIndex}
-              onMouseEnter={handleMouseEnter}
-              onMouseLeave={handleMouseLeave}
               onDotClick={handleDotClick}
               label={label}
               showCartButtons={showCartButtons}
@@ -1118,28 +666,25 @@ function ProductCard({
   handleToggleWishlist,
   imageIndex = 0,
   images = [],
-  onMouseEnter,
-  onMouseLeave,
+  onDotClick,
+  label,
+  showCartButtons = true,
 }: any) {
   const routerFromHook = useRouter();
-
   const router = routerProp || routerFromHook;
-
   const dispatch = useAppDispatch();
 
   const [addToCart, { isLoading: isAddingToCart }] = useAddToCartMutation();
-
   const [checkProductStock] = useCheckProductStockMutation();
   const purchaseLockRef = useRef(false);
   const [stockUnavailable, setStockUnavailable] = useState(false);
-
   const [justAdded, setJustAdded] = useState(false);
-
   const [isBuyingNow, setIsBuyingNow] = useState(false);
 
   const price = getProductPrice(product, userType);
-
   const mrp = getProductMrp(product, userType);
+  const discount =
+    mrp > price && mrp > 0 ? Math.round(((mrp - price) / mrp) * 100) : 0;
 
   const rating =
     product?.reviews?.average_rating ??
@@ -1153,7 +698,6 @@ function ProductCard({
   ).trim();
 
   const categoryName = product?.category?.name || "All Watches";
-
   const fullTitle = product?.name || "Premium watch";
 
   const currentImage =
@@ -1170,6 +714,10 @@ function ProductCard({
       String(product?.stock_status ?? "").toLowerCase(),
     ) &&
     (product?.stock_quantity == null || Number(product.stock_quantity) > 0);
+
+  const stockQty = Number(product?.stock_quantity);
+  const lowStock =
+    inStock && Number.isFinite(stockQty) && stockQty > 0 && stockQty <= 5;
 
   useEffect(() => {
     setStockUnavailable(false);
@@ -1206,23 +754,16 @@ function ProductCard({
 
   const openProduct = () => {
     if (!product?.slug) return;
-
     router.push(`/product/${product.slug}/`);
   };
 
   useEffect(() => {
     if (!justAdded) return;
-
-    const timer = setTimeout(() => {
-      setJustAdded(false);
-    }, 2000);
-
+    const timer = setTimeout(() => setJustAdded(false), 2000);
     return () => clearTimeout(timer);
   }, [justAdded]);
 
-  /* =====================================================
-     ADD TO CART
-  ===================================================== */
+  /* ---------------- ADD TO CART ---------------- */
 
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -1253,7 +794,8 @@ function ProductCard({
     }
   };
 
-  /* BUY NOW: stock verified; no shopping-cart mutation */
+  /* ---------------- BUY NOW (stock verified, no cart mutation) ---------------- */
+
   const handleBuyNow = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -1284,300 +826,226 @@ function ProductCard({
   };
 
   return (
-    <div
-      className="
-        group/card
-        flex
-        h-full
-        w-full
-        min-w-0
-        flex-col
-        bg-white
-        transition-transform
-        duration-300
-        ease-out
-        hover:-translate-y-[3px]
-      "
+    <motion.article 
+      className="group/card flex h-full w-full min-w-0 flex-col"
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.1 }}
+      transition={{ duration: 0.6, delay: index * 0.05, ease: [0.16, 1, 0.3, 1] }}
     >
-      {/* =================================================
-          IMAGE
-      ================================================= */}
-
+      {/* =================== IMAGE =================== */}
       <div
-        onMouseEnter={
-          images.length > 1
-            ? () => onMouseEnter?.(product?.id, images.length)
-            : undefined
-        }
-        onMouseLeave={
-          images.length > 1 ? () => onMouseLeave?.(product?.id) : undefined
-        }
-        className="
-          relative
-          h-[160px]
-          w-full
-          shrink-0
-          overflow-hidden
-          rounded-xl
-          bg-white
-          sm:h-[185px]
-          md:h-[200px]
-          lg:h-[220px]
-          xl:h-[235px]
-        "
+        className="relative aspect-[4/5] w-full shrink-0 overflow-hidden rounded-2xl bg-[#f4f3ef] ring-1 ring-black/5 transition-shadow duration-500 group-hover/card:shadow-[0_18px_36px_-20px_rgba(0,0,0,0.45)]"
       >
         <img
           src={currentImage || getPlaceholderImage()}
           alt={product?.name || "Product"}
           loading={index < 6 ? "eager" : "lazy"}
-          className="
-            h-full
-            w-full
-            cursor-pointer
-            rounded-xl
-            object-cover
-            transition-transform
-            duration-700            ease-out
-            group-hover/card:scale-[1.03]
-          "
+          decoding="async"
           onClick={openProduct}
           onError={(e) => {
+            // placeholder bhi fail ho to infinite loop na bane
+            if (e.currentTarget.dataset.fallback) return;
+            e.currentTarget.dataset.fallback = "1";
             e.currentTarget.src = getPlaceholderImage();
           }}
+          className={`absolute inset-0 h-full w-full cursor-pointer object-cover object-center transition-transform duration-700 ease-out group-hover/card:scale-[1.05] motion-reduce:transition-none motion-reduce:group-hover/card:scale-100 ${
+            inStock ? "" : "opacity-60 grayscale"
+          }`}
         />
 
-        {/* =================================================
-            RATING - IMAGE BOTTOM LEFT        ================================================= */}
+        {/* soft bottom fade so rating/dots stay readable */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/4 bg-gradient-to-t from-black/15 to-transparent" />
 
-        {Number(rating) > 0 && (
-          <div
-            className="
-              absolute
-              bottom-2
-              left-2
-              z-10
-              flex
-              items-center
-              gap-1
-              rounded
-              bg-white/80
-              px-1
-              py-0.5
-              shadow-sm
-              backdrop-blur-sm
-            "
+        {/* LABEL + DISCOUNT (top-left) */}
+        <div className="absolute left-2 top-2 z-10 flex flex-col items-start gap-1">
+          {label && (
+            <span className="rounded-full bg-white/90 px-2 py-[3px] text-[10px] font-medium leading-none text-[#171717] shadow-sm backdrop-blur-sm sm:text-[11px]">
+              {label}
+            </span>
+          )}
+          {discount > 0 && (
+            <span className="rounded-full bg-[#1a8a3f] px-2 py-[3px] text-[10px] font-semibold leading-none text-white shadow-sm sm:text-[11px]">
+              {discount}% off
+            </span>
+          )}
+        </div>
+
+        {/* WISHLIST (top-right) */}
+        <button
+          type="button"
+          aria-label={
+            isWishlisted
+              ? `Remove ${product?.name || "product"} from wishlist`
+              : `Add ${product?.name || "product"} to wishlist`
+          }
+          aria-pressed={isWishlisted}
+          onClick={(e) => handleToggleWishlist(product?.id, product?.name, e)}
+          className="absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-[#171717] shadow-sm backdrop-blur-sm transition-all duration-200 hover:scale-105 hover:bg-white active:scale-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#111] sm:h-9 sm:w-9"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            className="h-[15px] w-[15px]"
+            fill={isWishlisted ? "#e0455f" : "none"}
+            stroke={isWishlisted ? "#e0455f" : "currentColor"}
+            strokeWidth="1.6"
           >
-            <span className="text-[11px] font-semibold text-[#111111]">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z"
+            />
+          </svg>
+        </button>
+
+        {/* RATING (bottom-left) */}
+        {Number(rating) > 0 && (
+          <div className="absolute bottom-2 left-2 z-10 flex items-center gap-1 rounded-full bg-white/90 px-2 py-1 shadow-sm backdrop-blur-sm">
+            <span className="text-[11px] font-semibold leading-none text-[#111111]">
               {Number(rating).toFixed(1)}
             </span>
-
             <svg
               viewBox="0 0 24 24"
-              className="
-                h-[10px]
-                w-[10px]
-                text-[#1a8a3f]
-              "
+              className="h-[10px] w-[10px] text-[#1a8a3f]"
               fill="currentColor"
+              aria-hidden="true"
             >
-              <path d="M12 2.5l2.9 6.34 6.95.63-5.24 4.66 1.56 6.87 1.56-6.87-5.24-4.66 6.95-.63L12 2.5z" />
+              <path d="M12 2.5l2.9 6.34 6.95.63-5.24 4.66 1.56 6.87L12 17.3l-6.13 3.7 1.56-6.87-5.24-4.66 6.95-.63L12 2.5z" />
             </svg>
           </div>
         )}
 
-        {/* WISHLIST */}
+        {/* IMAGE DOTS (bottom-right) – mobile par tap se image badlo */}
+        {images.length > 1 && (
+          <div className="absolute bottom-2 right-2 z-10 flex items-center rounded-full bg-black/25 px-1 backdrop-blur-sm">
+            {images.slice(0, 5).map((_: any, i: number) => (
+              <button
+                key={i}
+                type="button"
+                aria-label={`Show image ${i + 1}`}
+                onClick={(e) => onDotClick?.(product?.id, i, e)}
+                className="flex h-5 w-4 items-center justify-center"
+              >
+                <span
+                  className={`block rounded-full transition-all duration-300 ${
+                    i === imageIndex
+                      ? "h-1.5 w-3 bg-white"
+                      : "h-1.5 w-1.5 bg-white/60"
+                  }`}
+                />
+              </button>
+            ))}
+          </div>
+        )}
 
-        <div className="absolute right-2 top-2 z-10">
-          <button
-            type="button"
-            aria-label={`Add ${product?.name || "product"} to wishlist`}
-            onClick={(e) => handleToggleWishlist(product?.id, product?.name, e)}
-            className="
-              flex
-              h-8
-              w-8
-              shrink-0
-              items-center
-              justify-center
-              rounded-full
-              border
-              border-gray-200
-              bg-white/80
-              text-black
-              shadow-sm
-              transition-all
-              duration-200
-              hover:border-gray-300
-              hover:text-gray-600
-              active:scale-90
-            "
-          >
-            <svg
-              viewBox="0 0 24 24"
-              className="h-[14px] w-[14px]"
-              fill={isWishlisted ? "#e0455f" : "none"}
-              stroke={isWishlisted ? "#e0455f" : "currentColor"}
-              strokeWidth="1.5"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z"
-              />
-            </svg>
-          </button>
-        </div>
+        {/* OUT OF STOCK overlay */}
+        {!inStock && (
+          <div className="pointer-events-none absolute inset-0 z-[5] flex items-center justify-center bg-white/30">
+            <span className="rounded-full bg-[#111111]/85 px-3 py-1.5 text-[11px] font-medium text-white">
+              Out of stock
+            </span>
+          </div>
+        )}
       </div>
 
-      {/* =================================================
-          INFO
-      ================================================= */}
-
+      {/* =================== INFO =================== */}
       <div className="flex min-h-0 flex-1 flex-col">
-        {/* BRAND + CATEGORY */}
-
+        {/* BRAND | CATEGORY */}
         <p
           onClick={openProduct}
-          className="
-            mt-3
-            min-h-[20px]
-            cursor-pointer
-            truncate
-            text-[13px]
-            text-[#151515]
-          "
+          className="mt-3 min-h-[18px] cursor-pointer truncate text-[12.5px] leading-tight text-[#151515] sm:text-[13px]"
         >
           {brandName && <span className="font-semibold">{brandName}</span>}
-
           {brandName && categoryName && (
-            <span className="font-normal text-gray-600"> | </span>
+            <span className="text-gray-400"> | </span>
           )}
           {categoryName && (
             <span className="font-normal text-gray-600">{categoryName}</span>
           )}
         </p>
 
-        {/* PRODUCT TITLE */}
-
+        {/* TITLE */}
         <p
           onClick={openProduct}
-          className="
-            mt-0.5
-            min-h-[15px]
-            line-clamp-1
-            cursor-pointer
-            text-[10px]
-            text-gray-500
-          "
           title={fullTitle}
+          className="mt-1 min-h-[32px] cursor-pointer text-[11.5px] leading-[16px] text-gray-500 line-clamp-2 sm:text-xs"
         >
           {fullTitle}
         </p>
 
         {/* PRICE */}
-
-        <div className="mt-1 flex min-h-[19px] items-center gap-2">
-          <span className="text-[13px] font-bold text-[#111111]">
+        <div className="flex min-h-[22px] flex-wrap items-baseline gap-x-2">
+          <span className="text-[15px] font-bold tracking-tight text-[#111111] sm:text-base">
             ₹{price.toLocaleString("en-IN")}
           </span>
-
           {mrp > price && (
-            <span className="text-[11px] text-gray-400 line-through">
+            <span className="text-[11px] text-gray-400 line-through sm:text-xs">
               ₹{mrp.toLocaleString("en-IN")}
             </span>
           )}
         </div>
 
-        {/* ACTIONS */}
+        {/* LOW STOCK hint */}
+        <p className="mt-0.5 min-h-[14px] text-[11px] font-medium text-[#c2410c]">
+          {lowStock ? `Only ${stockQty} left` : ""}
+        </p>
 
-        <div className="mt-auto flex items-center gap-1.5 pt-2.5">
-          <button
-            type="button"
-            onClick={handleAddToCart}
-            disabled={!inStock || isAddingToCart || isBuyingNow}
-            aria-label="Add to cart"
-            title={inStock ? "Add to cart" : "Out of stock"}
-            className={`
-              flex
-              h-9
-              w-9
-              shrink-0
-              items-center
-              justify-center
-              rounded-full
-              border
-              transition-all
-              duration-200
-              active:scale-90
-              ${
+        {/* ACTIONS */}
+        {showCartButtons && (
+          <div className="mt-auto flex items-center gap-1.5 pt-2">
+            <button
+              type="button"
+              onClick={handleAddToCart}
+              disabled={!inStock || isAddingToCart || isBuyingNow}
+              aria-label="Add to cart"
+              title={inStock ? "Add to cart" : "Out of stock"}
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition-all duration-200 active:scale-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#111] sm:h-10 sm:w-10 ${
                 !inStock
                   ? "cursor-not-allowed border-[#eeeeee] bg-[#f7f7f7] text-[#cccccc]"
                   : justAdded
                     ? "border-[#1a8a3f] bg-[#eafaf0] text-[#1a8a3f]"
-                    : "border-[#e2e2e2] bg-white text-[#111111] hover:border-[#111111]"
-              }
-            `}
-          >
-            {isAddingToCart ? (
-              <Loader2 className="h-[14px] w-[14px] animate-spin" />
-            ) : justAdded ? (
-              <Check className="h-[14px] w-[14px]" />
-            ) : (
-              <ShoppingBag className="h-[14px] w-[14px]" />
-            )}
-          </button>
+                    : "border-[#d9d9d9] bg-white text-[#111111] hover:border-[#111111]"
+              }`}
+            >
+              {isAddingToCart ? (
+                <Loader2 className="h-[15px] w-[15px] animate-spin" />
+              ) : justAdded ? (
+                <Check className="h-[15px] w-[15px]" />
+              ) : (
+                <ShoppingBag className="h-[15px] w-[15px]" />
+              )}
+            </button>
 
-          <button
-            type="button"
-            onClick={handleBuyNow}
-            disabled={!inStock || isBuyingNow || isAddingToCart}
-            aria-label="Buy now"
-            className={`
-              flex
-              h-9
-              min-w-0
-              flex-1
-              items-center
-              justify-center
-              gap-1.5
-              rounded-full
-              px-2
-              text-[10.5px]
-              font-medium
-              tracking-tight
-              transition-all
-              duration-200
-              active:scale-[0.97]
-              ${
+            <button
+              type="button"
+              onClick={handleBuyNow}
+              disabled={!inStock || isBuyingNow || isAddingToCart}
+              aria-label="Buy now"
+              className={`flex h-9 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-full px-2 text-[11.5px] font-medium tracking-tight transition-all duration-200 active:scale-[0.97] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#111] sm:h-10 sm:text-xs ${
                 !inStock
                   ? "cursor-not-allowed bg-[#f0f0f0] text-[#bbbbbb]"
                   : isBuyingNow
                     ? "cursor-wait bg-[#252525] text-white"
-                    : "bg-[#111111] text-white hover:bg-[#252525]"
-              }
-            `}
-          >
-            {isBuyingNow ? (
-              <>
-                <Loader2 className="h-[13px] w-[13px] animate-spin" />
-
-                <span>Processing…</span>
-              </>
-            ) : inStock ? (
-              "Buy now"
-            ) : (
-              "Out of stock"
-            )}
-          </button>
-        </div>
+                    : "bg-[#111111] text-white hover:bg-[#2a2a2a]"
+              }`}
+            >
+              {isBuyingNow ? (
+                <>
+                  <Loader2 className="h-[13px] w-[13px] animate-spin" />
+                  <span>Processing…</span>
+                </>
+              ) : inStock ? (
+                "Buy now"
+              ) : (
+                "Out of stock"
+              )}
+            </button>
+          </div>
+        )}
       </div>
-    </div>
+    </motion.article>
   );
 }
-
-/* =========================================================
-   LIFESTYLE BANNER
-========================================================= */
 
 function LifestyleBanner({ apiResponse, router, parallaxRef }: any) {
   // Get banner data from API
@@ -1587,10 +1055,14 @@ function LifestyleBanner({ apiResponse, router, parallaxRef }: any) {
 
   const block = content?.blocks?.[0];
 
-  const primaryImage = block?.images?.find((item: any) => item?.is_primary);
+  const primaryImage = block?.images?.find(
+    (item: any) => item?.is_primary,
+  );
 
   const image =
-    primaryImage?.url || block?.images?.[0]?.url || getPromoPlaceholderImage();
+    primaryImage?.url ||
+    block?.images?.[0]?.url ||
+    getPromoPlaceholderImage();
 
   return (
     <section
@@ -1602,15 +1074,19 @@ function LifestyleBanner({ apiResponse, router, parallaxRef }: any) {
         bg-[#11101f]
       "
     >
-      {/* FULL SCREEN WIDTH BANNER */}
+      {/* BANNER */}
       <div
         className="
-
-  w-full
-  aspect-video
-  overflow-hidden
-  bg-black
-"
+          relative
+          h-[220px]
+          w-full
+          overflow-hidden
+          bg-[#11101f]
+          sm:h-[280px]
+          md:h-[320px]
+          lg:h-[360px]
+          xl:h-[400px]
+        "
       >
         {/* BACKGROUND IMAGE */}
         <div
@@ -1624,7 +1100,9 @@ function LifestyleBanner({ apiResponse, router, parallaxRef }: any) {
           <img
             src={image}
             alt={
-              primaryImage?.alt_text || content?.title || "Premium Lifestyle"
+              primaryImage?.alt_text ||
+              content?.title ||
+              "Premium Lifestyle"
             }
             className="
               block
@@ -1636,7 +1114,7 @@ function LifestyleBanner({ apiResponse, router, parallaxRef }: any) {
             onError={(e) => {
               const fallback = getPromoPlaceholderImage();
 
-              if (e.currentTarget.getAttribute("src") !== fallback) {
+              if (e.currentTarget.src !== fallback) {
                 e.currentTarget.src = fallback;
               }
             }}
@@ -1649,8 +1127,8 @@ function LifestyleBanner({ apiResponse, router, parallaxRef }: any) {
             pointer-events-none
             absolute inset-0
             bg-gradient-to-r
-            from-[#11101f]/90
-            via-[#11101f]/55
+            from-[#11101f]/85
+            via-[#11101f]/45
             to-transparent
           "
         />
@@ -1677,13 +1155,14 @@ function LifestyleBanner({ apiResponse, router, parallaxRef }: any) {
             {block?.heading && (
               <div
                 className="
-                  mb-3
+                  mb-2
                   max-w-[90%]
                   text-[10px]
                   font-medium
                   tracking-wide
                   text-white/85
-                  sm:text-[12px]
+                  sm:mb-3
+                  sm:text-xs
                 "
                 dangerouslySetInnerHTML={{
                   __html: block.heading,
@@ -1697,46 +1176,70 @@ function LifestyleBanner({ apiResponse, router, parallaxRef }: any) {
                 className="
                   max-w-[530px]
                   text-white
-
                   [&>h1]:m-0
                   [&>h2]:m-0
                   [&>h3]:m-0
                   [&>p]:m-0
-
-                  [&>h1]:text-[24px]
-                  [&>h2]:text-[24px]
-                  [&>h3]:text-[24px]
-                  [&>p]:text-[24px]
-
+                  [&_h1]:m-0
+                  [&_h2]:m-0
+                  [&_h3]:m-0
+                  [&_p]:m-0
+                  [&>h1]:text-[22px]
+                  [&>h2]:text-[22px]
+                  [&>h3]:text-[22px]
+                  [&>p]:text-[22px]
+                  [&_h1]:text-[22px]
+                  [&_h2]:text-[22px]
+                  [&_h3]:text-[22px]
+                  [&_p]:text-[22px]
                   [&>h1]:font-semibold
                   [&>h2]:font-semibold
                   [&>h3]:font-semibold
                   [&>p]:font-semibold
-
-                  [&>h1]:leading-[1.08]
-                  [&>h2]:leading-[1.08]
-                  [&>h3]:leading-[1.08]
-                  [&>p]:leading-[1.08]
-
-                  sm:[&>h1]:text-[30px]
-                  sm:[&>h2]:text-[30px]
-                  sm:[&>h3]:text-[30px]
-                  sm:[&>p]:text-[30px]
-
-                  md:[&>h1]:text-[36px]
-                  md:[&>h2]:text-[36px]
-                  md:[&>h3]:text-[36px]
-                  md:[&>p]:text-[36px]
-
-                  lg:[&>h1]:text-[44px]
-                  lg:[&>h2]:text-[44px]
-                  lg:[&>h3]:text-[44px]
-                  lg:[&>p]:text-[44px]
-
-                  xl:[&>h1]:text-[50px]
-                  xl:[&>h2]:text-[50px]
-                  xl:[&>h3]:text-[50px]
-                  xl:[&>p]:text-[50px]
+                  [&_h1]:font-semibold
+                  [&_h2]:font-semibold
+                  [&_h3]:font-semibold
+                  [&_p]:font-semibold
+                  [&>h1]:leading-tight
+                  [&>h2]:leading-tight
+                  [&>h3]:leading-tight
+                  [&>p]:leading-tight
+                  [&_h1]:leading-tight
+                  [&_h2]:leading-tight
+                  [&_h3]:leading-tight
+                  [&_p]:leading-tight
+                  sm:[&>h1]:text-[28px]
+                  sm:[&>h2]:text-[28px]
+                  sm:[&>h3]:text-[28px]
+                  sm:[&>p]:text-[28px]
+                  sm:[&_h1]:text-[28px]
+                  sm:[&_h2]:text-[28px]
+                  sm:[&_h3]:text-[28px]
+                  sm:[&_p]:text-[28px]
+                  md:[&>h1]:text-[34px]
+                  md:[&>h2]:text-[34px]
+                  md:[&>h3]:text-[34px]
+                  md:[&>p]:text-[34px]
+                  md:[&_h1]:text-[34px]
+                  md:[&_h2]:text-[34px]
+                  md:[&_h3]:text-[34px]
+                  md:[&_p]:text-[34px]
+                  lg:[&>h1]:text-[40px]
+                  lg:[&>h2]:text-[40px]
+                  lg:[&>h3]:text-[40px]
+                  lg:[&>p]:text-[40px]
+                  lg:[&_h1]:text-[40px]
+                  lg:[&_h2]:text-[40px]
+                  lg:[&_h3]:text-[40px]
+                  lg:[&_p]:text-[40px]
+                  xl:[&>h1]:text-[46px]
+                  xl:[&>h2]:text-[46px]
+                  xl:[&>h3]:text-[46px]
+                  xl:[&>p]:text-[46px]
+                  xl:[&_h1]:text-[46px]
+                  xl:[&_h2]:text-[46px]
+                  xl:[&_h3]:text-[46px]
+                  xl:[&_p]:text-[46px]
                 "
                 dangerouslySetInnerHTML={{
                   __html: block.short_description,
@@ -1753,32 +1256,33 @@ function LifestyleBanner({ apiResponse, router, parallaxRef }: any) {
               }}
               className="
                 group
-                mt-5
+                mt-4
                 inline-flex
-                h-[42px]
+                h-[36px]
                 items-center
                 gap-2
-                rounded-[9px]
+                rounded-lg
                 bg-white
-                px-5
+                px-4
                 text-[11px]
                 font-semibold
                 text-[#171717]
-                shadow-[0_8px_25px_rgba(0,0,0,0.18)]
+                shadow-md
                 transition-all
                 duration-300
-                hover:-translate-y-[2px]
+                hover:-translate-y-0.5
                 hover:bg-[#f2f2f2]
-                sm:mt-6
-                sm:h-[46px]
-                sm:px-6
-                sm:text-[13px]
+                sm:mt-5
+                sm:h-[42px]
+                sm:px-5
+                sm:text-xs
               "
             >
               Explore All Products
+
               <span
                 className="
-                  text-[16px]
+                  text-sm
                   transition-transform
                   duration-300
                   group-hover:translate-x-1
@@ -1793,6 +1297,7 @@ function LifestyleBanner({ apiResponse, router, parallaxRef }: any) {
     </section>
   );
 }
+
 
 /* =========================================================
    MAIN HOME
@@ -1855,7 +1360,7 @@ export default function IndieKonnectHome() {
   const { data: brandsData, isLoading: isBrandsLoading } = useGetBrandsQuery(
     {},
   );
-  console.log("Heyyy", brandsData);
+
   const { data: growthStepsData } = useGetGrowthStepsQuery();
 
   const [addToCartMutation] = useAddToCartMutation();

@@ -16,6 +16,10 @@ import {
     ChevronLeft,
     ChevronRight,
     Eye,
+    Maximize2,
+    Minimize2,
+    Pause,
+    Play,
     Volume2,
     VolumeX,
     X,
@@ -95,6 +99,8 @@ const FALLBACK_IMAGE = "/indiekonnect-web/images/placeholder.jpg";
 const MODAL_Z_INDEX = 2147483647;
 const FOLLOWER_STORAGE_KEY = "indiekonnect_reel_followers";
 
+const BRAND_NAVY = "#071A41";
+
 /* ================================================================
    HELPERS
 ================================================================ */
@@ -166,6 +172,11 @@ function getReelProduct(reel: Reel | null): ReelProduct | null {
         return reel.products[0];
     }
     return null;
+}
+
+function getReelCreator(reel: Reel | null): string {
+    if (!reel) return "";
+    return reel.creator_name || reel.creator_handle || reel.creator || "";
 }
 
 function getProductImage(product: ReelProduct | null): string {
@@ -291,22 +302,37 @@ function ShopReelsRow({
     openReel: (index: number) => void;
 }) {
     const scrollRef = useRef<HTMLDivElement>(null);
+    const [canScrollLeft, setCanScrollLeft] = useState(false);
+    const [canScrollRight, setCanScrollRight] = useState(true);
+
+    const updateScrollState = useCallback(() => {
+        const el = scrollRef.current;
+        if (!el) return;
+        setCanScrollLeft(el.scrollLeft > 8);
+        setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 8);
+    }, []);
+
+    useEffect(() => {
+        updateScrollState();
+        window.addEventListener("resize", updateScrollState);
+        return () => window.removeEventListener("resize", updateScrollState);
+    }, [updateScrollState, reels.length]);
 
     const scroll = (direction: "left" | "right") => {
         if (!scrollRef.current) return;
         scrollRef.current.scrollBy({
-            left: direction === "left" ? -270 : 270,
+            left: direction === "left" ? -520 : 520,
             behavior: "smooth",
         });
     };
 
     if (isLoading) {
         return (
-            <div className="flex gap-3 overflow-hidden px-1 sm:gap-4 sm:px-8 md:px-10 lg:px-12">
+            <div className="flex gap-3 overflow-hidden px-4 sm:gap-4 sm:px-8 lg:px-12">
                 {[1, 2, 3, 4, 5].map((item) => (
                     <div
                         key={item}
-                        className="h-[300px] w-[190px] shrink-0 animate-pulse rounded-[14px] bg-[#f2f1ec] sm:h-[380px] sm:w-[235px]"
+                        className="aspect-[9/16] w-[170px] shrink-0 animate-pulse rounded-2xl bg-neutral-100 sm:w-[225px]"
                     />
                 ))}
             </div>
@@ -316,13 +342,26 @@ function ShopReelsRow({
     if (error || !reels.length) return null;
 
     return (
-        <div className="relative isolate flow-root w-full">
+        <div className="relative isolate w-full">
+            {/* Edge fades */}
+            <div
+                className={`pointer-events-none absolute inset-y-0 left-0 z-10 w-8 bg-gradient-to-r from-white to-transparent transition-opacity duration-300 sm:w-14 ${
+                    canScrollLeft ? "opacity-100" : "opacity-0"
+                }`}
+            />
+            <div
+                className={`pointer-events-none absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-white to-transparent transition-opacity duration-300 sm:w-14 ${
+                    canScrollRight ? "opacity-100" : "opacity-0"
+                }`}
+            />
+
             {/* LEFT */}
             <button
                 type="button"
-                aria-label="Previous"
+                aria-label="Scroll left"
                 onClick={() => scroll("left")}
-                className="absolute left-0 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white text-black shadow-lg transition hover:scale-105 sm:flex"
+                disabled={!canScrollLeft}
+                className="absolute left-2 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-black/5 bg-white text-neutral-900 shadow-[0_6px_24px_rgba(7,26,65,0.16)] transition hover:bg-[#071A41] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#071A41] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-0 sm:flex lg:left-4"
             >
                 <ChevronLeft size={20} />
             </button>
@@ -330,16 +369,18 @@ function ShopReelsRow({
             {/* RIGHT */}
             <button
                 type="button"
-                aria-label="Next"
+                aria-label="Scroll right"
                 onClick={() => scroll("right")}
-                className="absolute right-0 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white text-black shadow-lg transition hover:scale-105 sm:flex"
+                disabled={!canScrollRight}
+                className="absolute right-2 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-black/5 bg-white text-neutral-900 shadow-[0_6px_24px_rgba(7,26,65,0.16)] transition hover:bg-[#071A41] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#071A41] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-0 sm:flex lg:right-4"
             >
                 <ChevronRight size={20} />
             </button>
 
             <div
                 ref={scrollRef}
-                className="flex gap-3 overflow-x-auto scroll-smooth px-1 pb-3 sm:gap-4 sm:px-8 md:gap-5 md:px-10 lg:px-12"
+                onScroll={updateScrollState}
+                className="flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth px-4 pb-4 pt-1 sm:gap-4 sm:px-8 lg:gap-5 lg:px-12"
                 style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
             >
                 {reels.map((reel, index) => {
@@ -354,13 +395,17 @@ function ShopReelsRow({
                         reel.id,
                         viewCount,
                     );
+                    const product = getReelProduct(reel);
+                    const productPrice = getProductPrice(product);
+                    const creator = getReelCreator(reel);
 
                     return (
                         <button
                             type="button"
                             key={String(reel.id)}
                             onClick={() => openReel(index)}
-                            className="group relative h-[300px] w-[190px] shrink-0 overflow-hidden rounded-[14px] bg-black shadow-[0_10px_30px_rgba(0,0,0,0.10)] transition-all duration-300 hover:-translate-y-1 sm:h-[380px] sm:w-[235px]"
+                            aria-label={`Open reel${creator ? ` by ${creator}` : ""}`}
+                            className="group relative aspect-[9/16] w-[170px] shrink-0 snap-start overflow-hidden rounded-2xl bg-neutral-900 text-left shadow-[0_8px_28px_rgba(7,26,65,0.12)] ring-1 ring-black/5 transition-all duration-500 ease-out hover:-translate-y-1.5 hover:shadow-[0_18px_44px_rgba(7,26,65,0.22)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#071A41] focus-visible:ring-offset-2 sm:w-[225px]"
                         >
                             {videoUrl ? (
                                 <video
@@ -371,36 +416,68 @@ function ShopReelsRow({
                                     loop
                                     playsInline
                                     preload="metadata"
-                                    className="absolute inset-0 h-full w-full object-cover"
+                                    className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
                                 />
                             ) : (
                                 <img
                                     src={thumbnail}
-                                    alt="Reel"
-                                    className="absolute inset-0 h-full w-full object-cover"
+                                    alt={reel.title || "Reel"}
+                                    loading="lazy"
+                                    className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
                                 />
                             )}
 
-                            {/* Gradient */}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/10" />
+                            {/* Gradients */}
+                            <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/45 to-transparent" />
+                            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
 
                             {/* Views */}
-                            <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full border border-white/20 bg-black/45 px-2.5 py-1.5 text-[10px] font-semibold text-white shadow-lg backdrop-blur-md">
-                                <Eye
-                                    size={12}
-                                    strokeWidth={2}
-                                    className="shrink-0 text-white"
-                                />
-                                <span className="leading-none">
+                            <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full bg-black/40 px-2.5 py-1.5 text-[11px] font-medium text-white ring-1 ring-white/15 backdrop-blur-md">
+                                <Eye size={12} strokeWidth={2.2} className="shrink-0" />
+                                <span className="leading-none tabular-nums">
                                     {formattedCount}
                                 </span>
                             </div>
 
-                            {/* Shop */}
-                            <div className="absolute bottom-3 left-0 right-0 flex justify-center">
-                                <span className="rounded-full border border-white/40 bg-white/15 px-4 py-1.5 font-serif text-[9px] uppercase tracking-[0.14em] text-white backdrop-blur-xl sm:text-[10px]">
-                                    Shop Now
-                                </span>
+                            {/* Play affordance */}
+                            <div className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-neutral-900 opacity-0 shadow-md transition-all duration-300 group-hover:opacity-100">
+                                <Play size={13} className="ml-0.5" fill="currentColor" />
+                            </div>
+
+                            {/* Bottom info */}
+                            <div className="absolute inset-x-0 bottom-0 p-3">
+                                {creator && (
+                                    <p className="mb-2 truncate px-0.5 text-[12px] font-medium text-white/90">
+                                        {creator}
+                                    </p>
+                                )}
+
+                                {product ? (
+                                    <div className="flex items-center gap-2.5 rounded-xl bg-white/90 p-1.5 pr-3 shadow-lg backdrop-blur-md transition-colors duration-300 group-hover:bg-white">
+                                        <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-neutral-100">
+                                            <img
+                                                src={getProductImage(product)}
+                                                alt=""
+                                                loading="lazy"
+                                                className="h-full w-full object-cover"
+                                            />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="truncate text-[11px] font-semibold leading-tight text-neutral-900">
+                                                {product.name || product.title || "Shop now"}
+                                            </p>
+                                            {productPrice && (
+                                                <p className="mt-0.5 text-[11px] font-medium leading-tight text-neutral-600">
+                                                    {productPrice}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <span className="flex w-full items-center justify-center rounded-xl bg-white/90 py-2.5 text-[12px] font-semibold text-neutral-900 backdrop-blur-md transition-colors group-hover:bg-white">
+                                        Shop now
+                                    </span>
+                                )}
                             </div>
                         </button>
                     );
@@ -454,14 +531,14 @@ function ReelSidePreview({
                 x: side === "left" ? -60 : 60,
                 scale: 0.88,
             }}
-            animate={{ opacity: 0.38, x: 0, scale: 0.82 }}
+            animate={{ opacity: 0.4, x: 0, scale: 0.84 }}
             exit={{
                 opacity: 0,
                 x: side === "left" ? -60 : 60,
                 scale: 0.88,
             }}
             transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-            className={`pointer-events-none absolute top-1/2 z-[20] hidden h-[76vh] w-[285px] -translate-y-1/2 overflow-hidden rounded-[15px] bg-black shadow-[0_25px_70px_rgba(0,0,0,0.38)] lg:block ${
+            className={`pointer-events-none absolute top-1/2 z-[20] hidden h-[76vh] max-h-[760px] w-[285px] -translate-y-1/2 overflow-hidden rounded-3xl bg-black shadow-[0_25px_70px_rgba(0,0,0,0.45)] ring-1 ring-white/10 lg:block ${
                 side === "left"
                     ? "right-[calc(50%+208px)]"
                     : "left-[calc(50%+208px)]"
@@ -486,7 +563,7 @@ function ReelSidePreview({
                     className="absolute inset-0 h-full w-full object-cover"
                 />
             )}
-            <div className="absolute inset-0 bg-black/48" />
+            <div className="absolute inset-0 bg-black/45" />
         </motion.div>
     );
 }
@@ -511,6 +588,7 @@ export default function ShopReels({
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [isTransitioning, setIsTransitioning] = useState(false);
     const [mounted, setMounted] = useState(false);
+    const [progress, setProgress] = useState(0);
 
     const videoRef = useRef<HTMLVideoElement | null>(null);
     const stageRef = useRef<HTMLDivElement | null>(null);
@@ -559,6 +637,7 @@ export default function ShopReels({
             setIsMuted(true);
             setIsPlaying(true);
             setIsTransitioning(false);
+            setProgress(0);
             onModalOpen?.();
         },
         [onModalOpen],
@@ -584,6 +663,7 @@ export default function ShopReels({
             setDirection(1);
             setIsTransitioning(true);
             setIsPlaying(true);
+            setProgress(0);
             setSelectedIndex((current) => {
                 if (current === null) return 0;
                 return (current + 1) % reels.length;
@@ -602,6 +682,7 @@ export default function ShopReels({
             setDirection(-1);
             setIsTransitioning(true);
             setIsPlaying(true);
+            setProgress(0);
             setSelectedIndex((current) => {
                 if (current === null) return 0;
                 return (current - 1 + reels.length) % reels.length;
@@ -757,19 +838,20 @@ export default function ShopReels({
 
     if (isLoading) {
         return (
-            <section className="w-full overflow-hidden bg-white py-8 sm:py-10 lg:py-12">
-                <div className="mx-auto w-full max-w-[1900px] px-3 sm:px-5 md:px-7 lg:px-8 xl:px-10">
-                    <div className="mb-8 text-center sm:mb-10">
-                        <div className="mx-auto h-10 w-64 animate-pulse rounded-lg bg-gray-200" />
+            <section className="w-full overflow-hidden bg-white py-10 sm:py-14 lg:py-16">
+                <div className="mx-auto w-full max-w-[1900px] px-4 sm:px-8 lg:px-12">
+                    <div className="mb-8 space-y-3">
+                        <div className="h-8 w-72 max-w-full animate-pulse rounded-lg bg-neutral-100" />
+                        <div className="h-4 w-52 animate-pulse rounded-lg bg-neutral-100" />
                     </div>
-                    <div className="flex gap-3 overflow-hidden px-1 sm:gap-4 sm:px-8 md:px-10 lg:px-12">
-                        {[1, 2, 3, 4].map((item) => (
-                            <div
-                                key={item}
-                                className="h-[380px] w-[250px] shrink-0 animate-pulse rounded-[14px] bg-[#f2f1ec]"
-                            />
-                        ))}
-                    </div>
+                </div>
+                <div className="flex gap-3 overflow-hidden px-4 sm:gap-4 sm:px-8 lg:px-12">
+                    {[1, 2, 3, 4, 5].map((item) => (
+                        <div
+                            key={item}
+                            className="aspect-[9/16] w-[170px] shrink-0 animate-pulse rounded-2xl bg-neutral-100 sm:w-[225px]"
+                        />
+                    ))}
                 </div>
             </section>
         );
@@ -782,47 +864,48 @@ export default function ShopReels({
             ? 0
             : (selectedIndex - 1 + reels.length) % reels.length;
     const nextIndex =
-        selectedIndex === null
-            ? 0
-            : (selectedIndex + 1) % reels.length;
+        selectedIndex === null ? 0 : (selectedIndex + 1) % reels.length;
     const previousReel = reels[previousIndex] || null;
     const nextReel = reels[nextIndex] || null;
     const selectedProduct = selectedReel ? getReelProduct(selectedReel) : null;
+    const selectedCreator = getReelCreator(selectedReel);
+    const selectedPrice = getProductPrice(selectedProduct);
 
     const modalContent =
         mounted && selectedReel && selectedIndex !== null
             ? createPortal(
                   <div
-                      className="fixed inset-0 z-[2147483647] flex h-[100dvh] w-full items-center justify-center overflow-hidden bg-black/80"
+                      role="dialog"
+                      aria-modal="true"
+                      aria-label="Reel viewer"
+                      className="fixed inset-0 z-[2147483647] flex h-[100dvh] w-full items-center justify-center overflow-hidden bg-black"
                       style={{ isolation: "isolate", zIndex: MODAL_Z_INDEX }}
                       onClick={closeReel}
                   >
+                      {/* Ambient backdrop */}
                       <div
-                          className="pointer-events-none absolute inset-0 scale-110 bg-cover bg-center blur-[25px]"
+                          className="pointer-events-none absolute inset-0 scale-125 bg-cover bg-center blur-[40px] transition-[background-image] duration-500"
                           style={{
                               backgroundImage: `url("${getReelThumbnail(
                                   selectedReel,
                               )}")`,
                           }}
                       />
-                      <div className="pointer-events-none absolute inset-0 bg-black/65 backdrop-blur-[9px]" />
+                      <div className="pointer-events-none absolute inset-0 bg-black/70 backdrop-blur-[6px]" />
 
-                      <div
-                          className="absolute right-4 top-3 z-[2147483647] flex flex-col items-center gap-2"
+                      {/* Close */}
+                      <button
+                          type="button"
+                          aria-label="Close"
+                          onClick={(event) => {
+                              event.stopPropagation();
+                              closeReel();
+                          }}
+                          className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white ring-1 ring-white/15 backdrop-blur-md transition hover:rotate-90 hover:bg-white hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
                           style={{ zIndex: MODAL_Z_INDEX }}
                       >
-                          <button
-                              type="button"
-                              aria-label="Close"
-                              onClick={(event) => {
-                                  event.stopPropagation();
-                                  closeReel();
-                              }}
-                              className="flex h-10 w-10 items-center justify-center text-white transition duration-200 hover:scale-110"
-                          >
-                              <X size={32} strokeWidth={2} />
-                          </button>
-                      </div>
+                          <X size={22} strokeWidth={2.2} />
+                      </button>
 
                       <motion.div
                           className="relative flex h-full w-full items-center justify-center"
@@ -868,7 +951,7 @@ export default function ShopReels({
                                       duration: 0.32,
                                       ease: [0.22, 1, 0.36, 1],
                                   }}
-                                  className="relative z-[200] h-[92vh] max-h-[900px] w-[430px] overflow-hidden bg-black shadow-[0_30px_100px_rgba(0,0,0,0.65)] md:rounded-[5px]"
+                                  className="relative z-[200] h-full w-full overflow-hidden bg-black shadow-[0_30px_100px_rgba(0,0,0,0.7)] md:h-[92vh] md:max-h-[900px] md:w-[430px] md:rounded-3xl md:ring-1 md:ring-white/10"
                               >
                                   {getReelVideo(selectedReel) ? (
                                       <video
@@ -896,88 +979,176 @@ export default function ShopReels({
                                                   isMuted,
                                               )
                                           }
+                                          onTimeUpdate={(event) => {
+                                              const v = event.currentTarget;
+                                              if (v.duration) {
+                                                  setProgress(
+                                                      (v.currentTime /
+                                                          v.duration) *
+                                                          100,
+                                                  );
+                                              }
+                                          }}
                                           onPlay={() => setIsPlaying(true)}
                                           onPause={() => setIsPlaying(false)}
                                           className="absolute inset-0 h-full w-full cursor-pointer bg-black object-cover"
                                       />
                                   ) : (
-                                      <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
+                                      <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-neutral-800 to-neutral-950">
                                           <p className="text-sm text-white/60">
-                                              No video available
+                                              Video is not available
                                           </p>
                                       </div>
                                   )}
 
-                                  <div className="pointer-events-none absolute inset-x-0 top-0 h-[16%] bg-gradient-to-b from-black/30 to-transparent" />
-                                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[23%] bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+                                  {/* Gradients */}
+                                  <div className="pointer-events-none absolute inset-x-0 top-0 h-[22%] bg-gradient-to-b from-black/60 to-transparent" />
+                                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[38%] bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
 
-                                  <button
-                                      type="button"
-                                      onClick={toggleMute}
-                                      aria-label={isMuted ? "Unmute" : "Mute"}
-                                      className="absolute right-4 top-10 z-[500] flex h-10 w-10 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-md transition hover:bg-white hover:text-black"
-                                  >
-                                      {isMuted ? (
-                                          <VolumeX size={20} />
-                                      ) : (
-                                          <Volume2 size={20} />
-                                      )}
-                                  </button>
+                                  {/* Progress */}
+                                  <div className="absolute inset-x-3 top-3 z-[500] h-[3px] overflow-hidden rounded-full bg-white/25">
+                                      <div
+                                          className="h-full rounded-full bg-white transition-[width] duration-200 ease-linear"
+                                          style={{ width: `${progress}%` }}
+                                      />
+                                  </div>
 
-                                  {selectedProduct && (
+                                  {/* Header: creator + counter */}
+                                  <div className="pointer-events-none absolute inset-x-4 top-7 z-[500] flex items-center gap-2.5 pr-24">
+                                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/20 text-[13px] font-semibold uppercase text-white ring-1 ring-white/30 backdrop-blur-md">
+                                          {(selectedCreator || "I").charAt(0)}
+                                      </div>
+                                      <div className="min-w-0">
+                                          <p className="truncate text-[13px] font-semibold leading-tight text-white drop-shadow">
+                                              {selectedCreator || "Indiekonnect"}
+                                          </p>
+                                          <p className="text-[11px] leading-tight text-white/70 tabular-nums">
+                                              {selectedIndex + 1} of {reels.length}
+                                          </p>
+                                      </div>
+                                  </div>
+
+                                  {/* Controls */}
+                                  <div className="absolute right-4 top-7 z-[500] flex items-center gap-2">
                                       <button
                                           type="button"
-                                          onClick={(event) =>
-                                              handleProductClick(
-                                                  event,
-                                                  selectedProduct,
-                                              )
+                                          onClick={toggleFullscreen}
+                                          aria-label={
+                                              isFullscreen
+                                                  ? "Exit fullscreen"
+                                                  : "Enter fullscreen"
                                           }
-                                          className="absolute bottom-5 left-4 right-4 z-[600] flex items-center gap-3 overflow-hidden rounded-[18px] border border-white/25 bg-white/[0.14] p-2.5 text-left shadow-[0_12px_45px_rgba(0,0,0,0.3)] backdrop-blur-[22px] backdrop-saturate-150 transition-all duration-300 hover:border-white/40 hover:bg-white/[0.20] active:scale-[0.99]"
+                                          className="hidden h-9 w-9 items-center justify-center rounded-full bg-black/40 text-white ring-1 ring-white/15 backdrop-blur-md transition hover:bg-white hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white md:flex"
                                       >
-                                          <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-white/[0.10] via-transparent to-white/[0.04]" />
-                                          <div className="relative z-10 h-[52px] w-[52px] shrink-0 overflow-hidden rounded-[12px] border border-white/20 bg-white/10 shadow-md">
-                                              <img
-                                                  src={getProductImage(
-                                                      selectedProduct,
-                                                  )}
-                                                  alt={
-                                                      selectedProduct.name ||
-                                                      "Product"
-                                                  }
-                                                  className="h-full w-full object-cover"
+                                          {isFullscreen ? (
+                                              <Minimize2 size={16} />
+                                          ) : (
+                                              <Maximize2 size={16} />
+                                          )}
+                                      </button>
+                                      <button
+                                          type="button"
+                                          onClick={toggleMute}
+                                          aria-label={isMuted ? "Unmute" : "Mute"}
+                                          className="flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-white ring-1 ring-white/15 backdrop-blur-md transition hover:bg-white hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                                      >
+                                          {isMuted ? (
+                                              <VolumeX size={17} />
+                                          ) : (
+                                              <Volume2 size={17} />
+                                          )}
+                                      </button>
+                                  </div>
+
+                                  {/* Center paused indicator */}
+                                  <AnimatePresence>
+                                      {!isPlaying && (
+                                          <motion.div
+                                              initial={{ opacity: 0, scale: 0.8 }}
+                                              animate={{ opacity: 1, scale: 1 }}
+                                              exit={{ opacity: 0, scale: 0.8 }}
+                                              transition={{ duration: 0.18 }}
+                                              className="pointer-events-none absolute left-1/2 top-1/2 z-[400] flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-white ring-1 ring-white/20 backdrop-blur-md"
+                                          >
+                                              <Play
+                                                  size={26}
+                                                  className="ml-1"
+                                                  fill="currentColor"
                                               />
-                                          </div>
-                                          <div className="relative z-10 min-w-0 flex-1">
-                                              <p className="truncate text-[12px] font-semibold text-white drop-shadow">
-                                                  {selectedProduct.name ||
-                                                      selectedProduct.title ||
-                                                      "Product"}
-                                              </p>
-                                              {getProductPrice(
-                                                  selectedProduct,
-                                              ) && (
-                                                  <p className="mt-1 text-[12px] font-semibold text-white/80">
-                                                      {getProductPrice(
+                                          </motion.div>
+                                      )}
+                                  </AnimatePresence>
+
+                                  {/* Bottom: title + product */}
+                                  <div className="absolute inset-x-4 bottom-5 z-[600] flex flex-col gap-3">
+                                      {selectedReel.title && (
+                                          <p className="pointer-events-none line-clamp-2 text-[14px] font-medium leading-snug text-white drop-shadow-md">
+                                              {selectedReel.title}
+                                          </p>
+                                      )}
+
+                                      {selectedProduct && (
+                                          <button
+                                              type="button"
+                                              onClick={(event) =>
+                                                  handleProductClick(
+                                                      event,
+                                                      selectedProduct,
+                                                  )
+                                              }
+                                              className="group flex items-center gap-3 rounded-2xl bg-white p-2.5 text-left shadow-[0_14px_40px_rgba(0,0,0,0.35)] transition-transform duration-200 hover:-translate-y-0.5 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+                                          >
+                                              <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-neutral-100">
+                                                  <img
+                                                      src={getProductImage(
                                                           selectedProduct,
                                                       )}
+                                                      alt={
+                                                          selectedProduct.name ||
+                                                          "Product"
+                                                      }
+                                                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                                  />
+                                              </div>
+                                              <div className="min-w-0 flex-1">
+                                                  {(selectedProduct.brand_name ||
+                                                      selectedProduct.brand) && (
+                                                      <p className="truncate text-[11px] text-neutral-500">
+                                                          {selectedProduct.brand_name ||
+                                                              selectedProduct.brand}
+                                                      </p>
+                                                  )}
+                                                  <p className="truncate text-[13px] font-semibold text-neutral-900">
+                                                      {selectedProduct.name ||
+                                                          selectedProduct.title ||
+                                                          "Product"}
                                                   </p>
-                                              )}
-                                          </div>
-                                          <span className="relative z-10 shrink-0 rounded-full border border-white/30 bg-white/[0.18] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-white shadow-md backdrop-blur-xl transition hover:bg-white/[0.27]">
-                                              Shop Now
-                                          </span>
-                                      </button>
-                                  )}
+                                                  {selectedPrice && (
+                                                      <p className="mt-0.5 text-[13px] font-semibold text-[#071A41]">
+                                                          {selectedPrice}
+                                                      </p>
+                                                  )}
+                                              </div>
+                                              <span
+                                                  className="flex shrink-0 items-center gap-1 rounded-full px-4 py-2.5 text-[12px] font-semibold text-white transition-colors group-hover:bg-black"
+                                                  style={{ backgroundColor: BRAND_NAVY }}
+                                              >
+                                                  Shop now
+                                                  <ChevronRight size={14} />
+                                              </span>
+                                          </button>
+                                      )}
+                                  </div>
                               </motion.div>
                           </AnimatePresence>
 
+                          {/* Desktop arrows */}
                           {reels.length > 1 && (
                               <button
                                   type="button"
                                   aria-label="Previous reel"
                                   onClick={handlePrevious}
-                                  className="absolute left-[calc(50%-270px)] top-1/2 z-[2147483647] hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white text-black shadow-[0_8px_25px_rgba(0,0,0,0.28)] transition-all duration-200 hover:scale-110 hover:bg-black hover:text-white lg:flex xl:left-[calc(50%-275px)]"
+                                  className="absolute left-[calc(50%-270px)] top-1/2 z-[2147483647] hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white text-black shadow-[0_8px_25px_rgba(0,0,0,0.3)] transition-all duration-200 hover:scale-110 hover:bg-black hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white lg:flex xl:left-[calc(50%-275px)]"
                                   style={{ zIndex: MODAL_Z_INDEX }}
                               >
                                   <ChevronLeft size={23} strokeWidth={2.5} />
@@ -989,22 +1160,23 @@ export default function ShopReels({
                                   type="button"
                                   aria-label="Next reel"
                                   onClick={handleNext}
-                                  className="absolute right-[calc(50%-270px)] top-1/2 z-[2147483647] flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white text-black shadow-[0_8px_25px_rgba(0,0,0,0.28)] transition-all duration-200 hover:scale-110 hover:bg-black hover:text-white lg:right-[calc(50%-275px)]"
+                                  className="absolute right-[calc(50%-270px)] top-1/2 z-[2147483647] hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white text-black shadow-[0_8px_25px_rgba(0,0,0,0.3)] transition-all duration-200 hover:scale-110 hover:bg-black hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white lg:flex lg:right-[calc(50%-275px)]"
                                   style={{ zIndex: MODAL_Z_INDEX }}
                               >
                                   <ChevronRight size={23} strokeWidth={2.5} />
                               </button>
                           )}
 
+                          {/* Tablet arrows (md → lg) */}
                           {reels.length > 1 && (
                               <button
                                   type="button"
                                   aria-label="Previous reel"
                                   onClick={handlePrevious}
-                                  className="absolute left-2 top-1/2 z-[2147483647] flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-md md:hidden"
+                                  className="absolute left-4 top-1/2 z-[2147483647] hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-black shadow-lg backdrop-blur-md md:flex lg:hidden"
                                   style={{ zIndex: MODAL_Z_INDEX }}
                               >
-                                  <ChevronLeft size={25} />
+                                  <ChevronLeft size={22} />
                               </button>
                           )}
 
@@ -1013,10 +1185,35 @@ export default function ShopReels({
                                   type="button"
                                   aria-label="Next reel"
                                   onClick={handleNext}
-                                  className="absolute right-2 top-1/2 z-[2147483647] flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-md md:hidden"
+                                  className="absolute right-4 top-1/2 z-[2147483647] hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-black shadow-lg backdrop-blur-md md:flex lg:hidden"
                                   style={{ zIndex: MODAL_Z_INDEX }}
                               >
-                                  <ChevronRight size={25} />
+                                  <ChevronRight size={22} />
+                              </button>
+                          )}
+
+                          {/* Mobile arrows */}
+                          {reels.length > 1 && (
+                              <button
+                                  type="button"
+                                  aria-label="Previous reel"
+                                  onClick={handlePrevious}
+                                  className="absolute left-2 top-[42%] z-[2147483647] flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/35 text-white backdrop-blur-md md:hidden"
+                                  style={{ zIndex: MODAL_Z_INDEX }}
+                              >
+                                  <ChevronLeft size={24} />
+                              </button>
+                          )}
+
+                          {reels.length > 1 && (
+                              <button
+                                  type="button"
+                                  aria-label="Next reel"
+                                  onClick={handleNext}
+                                  className="absolute right-2 top-[42%] z-[2147483647] flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/35 text-white backdrop-blur-md md:hidden"
+                                  style={{ zIndex: MODAL_Z_INDEX }}
+                              >
+                                  <ChevronRight size={24} />
                               </button>
                           )}
                       </motion.div>
@@ -1027,9 +1224,9 @@ export default function ShopReels({
 
     return (
         <>
-            <section className="relative isolate flow-root w-full overflow-hidden bg-white py-8 sm:py-10 lg:py-12">
+            <section className="relative isolate w-full overflow-hidden bg-white py-10 sm:py-14 lg:py-16">
                 <div className="mx-auto w-full max-w-[2000px]">
-                    <div className="mb-8 text-center sm:mb-10">
+                <div className="mb-8 text-center sm:mb-10">
                         <span className="mb-2 block text-[8px] font-semibold uppercase tracking-[0.22em] text-[#888888] sm:text-[10px]">
                             Don't Miss Out
                         </span>

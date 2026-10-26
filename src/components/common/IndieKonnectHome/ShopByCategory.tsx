@@ -15,7 +15,6 @@ export type Category = {
   logo?: string | null;
   banner?: string | null;
   status?: number | boolean;
-  // Multiple texts ke liye field
   categoryData?: string[];
 };
 
@@ -62,7 +61,6 @@ function CategoryCard({
     category.logo?.trim() ||
     "";
 
-  // Fallback logic: Agar categoryData array hai toh use karein, warna title use karein
   const displayTexts =
     category.categoryData && category.categoryData.length > 0
       ? category.categoryData
@@ -83,7 +81,6 @@ function CategoryCard({
         aria-label={`Explore ${primaryText}`}
         className="relative block aspect-[3/4] w-full overflow-hidden rounded-[22px] bg-[#e9e8e2] text-center ring-1 ring-black/5 transition-all duration-500 ease-out hover:-translate-y-1.5 hover:shadow-[0_24px_50px_-18px_rgba(30,40,25,0.45)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#55634d] motion-reduce:transition-none motion-reduce:hover:translate-y-0"
       >
-        {/* Category image or fallback */}
         {imageUrl && !imageError ? (
           <img
             src={imageUrl}
@@ -101,10 +98,8 @@ function CategoryCard({
           </div>
         )}
 
-        {/* Bottom gradient for text legibility */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-black/70 via-black/25 to-transparent transition-opacity duration-500 group-hover:from-[#2a3524]/85" />
 
-        {/* Glass label */}
         <div className="absolute inset-x-3 bottom-3 flex items-center justify-between gap-3 rounded-2xl border border-white/20 bg-white/15 px-4 py-3 backdrop-blur-md transition-colors duration-500 group-hover:bg-white/25">
           <div className="min-w-0 flex-1 text-left">
             <h3 className="truncate text-[15px] font-medium leading-tight text-white sm:text-base">
@@ -114,7 +109,8 @@ function CategoryCard({
               {secondaryText}
             </p>
           </div>
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-[#2b2b2b] transition-all duration-500 group-hover:rotate-45 group-hover:bg-[#55634d] group-hover:text-white motion-reduce:transition-none motion-reduce:group-hover:rotate-0">
+          {/* Card arrow — hover pe black */}
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-[#2b2b2b] transition-all duration-500 group-hover:rotate-45 group-hover:bg-black group-hover:text-white motion-reduce:transition-none motion-reduce:group-hover:rotate-0">
             <ArrowUpRight size={17} strokeWidth={1.8} />
           </span>
         </div>
@@ -196,7 +192,6 @@ export default function ShopByCategory({
       variants={staggerContainer}
     >
       <div className="mx-auto w-full max-w-[1900px]">
-        {/* Heading Section */}
         <motion.div
           variants={fadeInUp}
           className="mb-6 flex flex-col items-center px-4 text-center sm:mb-8"
@@ -216,25 +211,26 @@ export default function ShopByCategory({
           </p>
         </motion.div>
 
-        {/* Cards Section */}
         <div className="relative w-full">
           {!isCategoriesLoading && !isCategoriesError && items.length > 0 && (
             <>
+              {/* Prev arrow — hover pe black */}
               <button
                 type="button"
                 aria-label="Previous categories"
                 onClick={() => scrollCards(-1)}
                 disabled={!canScrollLeft}
-                className="absolute left-2 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white text-[#111] shadow-[0_5px_20px_rgba(0,0,0,0.12)] transition-all duration-300 hover:bg-[#111] hover:text-white disabled:cursor-not-allowed disabled:opacity-0 lg:flex xl:left-4"
+                className="absolute left-2 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white text-[#111] shadow-[0_5px_20px_rgba(0,0,0,0.12)] transition-all duration-300 hover:bg-black hover:text-white disabled:cursor-not-allowed disabled:opacity-0 lg:flex xl:left-4"
               >
                 <ChevronLeft size={21} strokeWidth={1.7} />
               </button>
+              {/* Next arrow — hover pe black */}
               <button
                 type="button"
                 aria-label="Next categories"
                 onClick={() => scrollCards(1)}
                 disabled={!canScrollRight}
-                className="absolute right-2 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white text-[#111] shadow-[0_5px_20px_rgba(0,0,0,0.12)] transition-all duration-300 hover:bg-[#111] hover:text-white disabled:cursor-not-allowed disabled:opacity-0 lg:flex xl:right-4"
+                className="absolute right-2 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white text-[#111] shadow-[0_5px_20px_rgba(0,0,0,0.12)] transition-all duration-300 hover:bg-black hover:text-white disabled:cursor-not-allowed disabled:opacity-0 lg:flex xl:right-4"
               >
                 <ChevronRight size={21} strokeWidth={1.7} />
               </button>

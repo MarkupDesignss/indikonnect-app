@@ -1835,381 +1835,121 @@ export default function ProductsPage() {
 
   }, [isLoading, lastPage, currentPage, updateBrowserUrl]);
 
-
-
-  /*✅ TRANSFORM PRODUCTS — WITH ALL STOCK FIELDS PASSED */
-
-
-
-  const transformedProducts = useMemo(() => {
-
-    if (!Array.isArray(productsData?.data)) return [];
-
-
-
-    return productsData.data
-
-
-
-      .filter((product: any) => {
-
-        /*Search: show every API-matched product, including non-primary variants. */
-
-
-
-        if (searchQuery.trim()) return true;
-
-
-
-        /*Browsing: show primary variants and products without a primary flag. */
-
-
-
-        const primary = product?.is_primary ?? product?.isPrimary;
-
-
-
-        return (
-
-          primary == null ||
-
-          primary === true ||
-
-          primary === 1 ||
-
-          primary === "1"
-
-        );
-
-      })
-
-
-
-      .map((product: any) => {
-
-        const price = getProductPrice(product, userType);
-
-
-
-        const mrp = getProductMrp(product, userType);
-
-
-
-        const discount = getDiscountPercentage(product, userType);
-
-
-
-        const stockQuantity = Number(
-
-          product?.stock_quantity ?? product?.stock ?? 0,
-
-        );
-
-
-
-        const stockStatus = String(
-
-          product?.stock_status ?? product?.status ?? "",
-
-        ).toLowerCase();
-
-
-
-        const active = product?.is_active ?? product?.active ?? true;
-
-
-
-        const inStock =
-
-          stockQuantity > 0 &&
-
-          active !== false &&
-
-          stockStatus !== "inactive" &&
-
-          stockStatus !== "out_of_stock";
-
-
-
-        /*Build clean string[] of image URLs */
-
-
-
-        let finalImages: string[] = [];
-
-
-
-        if (Array.isArray(product?.images) && product.images.length > 0) {
-
-          const sorted = [...product.images].sort((a: any, b: any) => {
-
-            if (typeof a === "string" || typeof b === "string") {
-
-              const aPrimary = typeof a === "object" && a?.is_primary;
-
-
-
-              const bPrimary = typeof b === "object" && b?.is_primary;
-
-
-
-              if (aPrimary && !bPrimary) return -1;
-
-
-
-              if (!aPrimary && bPrimary) return 1;
-
-
-
-              return 0;
-
-            }
-
-
-
-            if (a?.is_primary && !b?.is_primary) return -1;
-
-
-
-            if (!a?.is_primary && b?.is_primary) return 1;
-
-
-
-            return Number(a?.sort_order ?? 0) - Number(b?.sort_order ?? 0);
-
-          });
-
-
-
-          finalImages = sorted
-
-
-
-            .map((item: any) => extractImageUrl(item))
-
-
-
-            .filter((url: string) => url.length > 0);
-
-        }
-
-
-
-        if (finalImages.length === 0) {
-
-          const primary = extractImageUrl(product?.primary_image_url);
-
-
-
-          if (primary) finalImages.push(primary);
-
-        }
-
-
-
-        if (finalImages.length === 0) {
-
-          const img = extractImageUrl(product?.image);
-
-
-
-          if (img) finalImages.push(img);
-
-        }
-
-
-
-        if (finalImages.length === 0) {
-
-          const imgUrl = extractImageUrl(product?.image_url);
-
-
-
-          if (imgUrl) finalImages.push(imgUrl);
-
-        }
-
-
-
-        /*Final fallback */
-
-
-
-        if (finalImages.length === 0) {
-
-          finalImages = [PLACEHOLDER_IMAGE];
-
-        }
-
-
-
-        /*✅ CRITICAL: pass BOTH snake_case and camelCase so ProductCard works no matter which one it reads */
-
-
-
-        return {
-
-          ...product,
-
-
-
-          id: product.id,
-
-
-
-          name: product.name,
-
-
-
-          slug: product.slug,
-
-
-
-          description: product?.description ?? product?.short_description ?? "",
-
-
-
-          category:
-
-            product?.category?.name ||
-
-            product?.category?.title ||
-
-            "Uncategorized",
-
-
-
-          /*✅ REQUIRED BY PRODUCT CARD: keep category id available for the Similar Products drawer API request. */
-
-
-
-          category_id: product?.category_id ?? product?.category?.id ?? null,
-
-
-
-          categoryId: product?.category_id ?? product?.category?.id ?? null,
-
-
-
-          price,
-
-
-
-          originalPrice: mrp > price ? mrp : null,
-
-
-
-          discount: discount > 0 ? discount : null,
-
-
-
-          image: finalImages[0],
-
-
-
-          images: finalImages,
-
-
-
-          rating:
-
-            Number(
-
-              product?.reviews_summary?.average_rating ??
-
+const transformedProducts = useMemo(() => {
+  if (!Array.isArray(productsData?.data)) return [];
+
+  return productsData.data
+    .filter((product: any) => Boolean(product))
+    .map((product: any) => {
+      const price = getProductPrice(product, userType);
+
+      const mrp = getProductMrp(product, userType);
+
+      const discount = getDiscountPercentage(product, userType);
+
+      const stockQuantity = Number(
+        product?.stock_quantity ?? product?.stock ?? 0,
+      );
+
+      const stockStatus = String(
+        product?.stock_status ?? product?.status ?? "",
+      ).toLowerCase();
+
+      const active = product?.is_active ?? product?.active ?? true;
+
+      const inStock =
+        stockQuantity > 0 &&
+        active !== false &&
+        stockStatus !== "inactive" &&
+        stockStatus !== "out_of_stock";
+
+      let finalImages: string[] = [];
+
+      if (Array.isArray(product?.images) && product.images.length > 0) {
+        const sorted = [...product.images].sort((a: any, b: any) => {
+          if (typeof a === "string" || typeof b === "string") {
+            const aPrimary = typeof a === "object" && a?.is_primary;
+            const bPrimary = typeof b === "object" && b?.is_primary;
+            if (aPrimary && !bPrimary) return -1;
+            if (!aPrimary && bPrimary) return 1;
+            return 0;
+          }
+          if (a?.is_primary && !b?.is_primary) return -1;
+          if (!a?.is_primary && b?.is_primary) return 1;
+          return Number(a?.sort_order ?? 0) - Number(b?.sort_order ?? 0);
+        });
+
+        finalImages = sorted
+          .map((item: any) => extractImageUrl(item))
+          .filter((url: string) => url.length > 0);
+      }
+
+      if (finalImages.length === 0) {
+        const primary = extractImageUrl(product?.primary_image_url);
+        if (primary) finalImages.push(primary);
+      }
+
+      if (finalImages.length === 0) {
+        const img = extractImageUrl(product?.image);
+        if (img) finalImages.push(img);
+      }
+
+      if (finalImages.length === 0) {
+        const imgUrl = extractImageUrl(product?.image_url);
+        if (imgUrl) finalImages.push(imgUrl);
+      }
+
+      if (finalImages.length === 0) {
+        finalImages = [PLACEHOLDER_IMAGE];
+      }
+
+      return {
+        ...product,
+        id: product.id,
+        name: product.name,
+        slug: product.slug,
+        description: product?.description ?? product?.short_description ?? "",
+        category:
+          product?.category?.name ||
+          product?.category?.title ||
+          "Uncategorized",
+        category_id: product?.category_id ?? product?.category?.id ?? null,
+        categoryId: product?.category_id ?? product?.category?.id ?? null,
+        price,
+        originalPrice: mrp > price ? mrp : null,
+        discount: discount > 0 ? discount : null,
+        image: finalImages[0],
+        images: finalImages,
+        rating:
+          Number(
+            product?.reviews_summary?.average_rating ??
               product?.average_rating ??
-
               product?.rating ??
-
               0,
-
-            ) || 0,
-
-
-
-          reviews:
-
-            Number(
-
-              product?.reviews_summary?.total_reviews ??
-
+          ) || 0,
+        reviews:
+          Number(
+            product?.reviews_summary?.total_reviews ??
               product?.review_count ??
-
               product?.reviews_count ??
-
               0,
-
-            ) || 0,
-
-
-
-          /*---------- STOCK (pass both naming styles) ---------- */
-
-
-
-          inStock,
-
-
-
-          stockQuantity,
-
-
-
-          stockQuantityRaw: stockQuantity,
-
-
-
-          stock_quantity: stockQuantity,
-
-
-
-          stockStatus,
-
-
-
-          stock_status: product?.stock_status ?? "",
-
-
-
-          /*✅ LOW STOCK THRESHOLD — previously missing! */
-
-
-
-          lowStockThreshold: Number(product?.low_stock_threshold ?? 0),
-
-
-
-          low_stock_threshold: Number(product?.low_stock_threshold ?? 0),
-
-
-
-          /*---------- MISC ---------- */
-
-
-
-          userType,
-
-
-
-          brandId: product?.brand_id,
-
-
-
-          brandName: product?.brand_name || product?.brand?.name || "",
-
-
-
-          brandBanner:
-
-            product?.brand_banner || product?.brand?.brand_banner || "",
-
-        };
-
-      });
-
-  }, [productsData, userType, searchQuery]);
-
-
+          ) || 0,
+        inStock,
+        stockQuantity,
+        stockQuantityRaw: stockQuantity,
+        stock_quantity: stockQuantity,
+        stockStatus,
+        stock_status: product?.stock_status ?? "",
+        lowStockThreshold: Number(product?.low_stock_threshold ?? 0),
+        low_stock_threshold: Number(product?.low_stock_threshold ?? 0),
+        userType,
+        brandId: product?.brand_id,
+        brandName: product?.brand_name || product?.brand?.name || "",
+        brandBanner:
+          product?.brand_banner || product?.brand?.brand_banner || "",
+      };
+    });
+}, [productsData, userType, searchQuery]);
 
   /*ACCUMULATE PRODUCTS */
 
