@@ -1,4 +1,3 @@
-
 name: Indiekonnect cPanel Deployment
 
 on:
@@ -17,6 +16,7 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - name: Checkout repository
@@ -31,15 +31,48 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build both panels
-        run: npm run build:all
-
-      - name: Verify output
+      - name: Check environment configuration
+        env:
+          NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_APP_URL: ${{ vars.NEXT_PUBLIC_APP_URL }}
         run: |
-          test -f out-customer/index.html
-          test -f out-distributor/index.html
+          test -n "$NEXT_PUBLIC_API_URL" || {
+            echo "NEXT_PUBLIC_API_URL missing"
+            exit 1
+          }
+          test -n "$NEXT_PUBLIC_APP_URL" || {
+            echo "NEXT_PUBLIC_APP_URL missing"
+            exit 1
+          }
+          echo "Environment variables configured"
 
-      - name: Deploy Customer
+      - name: Build Customer Panel
+        env:
+          NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_APP_URL: ${{ vars.NEXT_PUBLIC_APP_URL }}
+          NODE_ENV: production
+          NEXT_PUBLIC_APP_BASE_PATH: /indiekonnect-web
+          CI: "true"
+        run: npm run build:customer
+
+      - name: Build Distributor Panel
+        env:
+          NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_APP_URL: ${{ vars.NEXT_PUBLIC_APP_URL }}
+          NODE_ENV: production
+          NEXT_PUBLIC_APP_BASE_PATH: /indiekonnect-distributor
+          CI: "true"
+        run: npm run build:distributor
+
+      - name: Verify build outputs
+        run: |
+          test -f out-customer/index.html || exit 1
+          test -f out-distributor/index.html || exit 1
+
+          echo "Customer build successful"
+          echo "Distributor build successful"
+
+      - name: Deploy Customer to cPanel
         uses: SamKirkland/FTP-Deploy-Action@v4.4.0
         with:
           server: ${{ secrets.FTP_HOST }}
@@ -50,9 +83,13 @@ jobs:
           security: strict
           local-dir: ./out-customer/
           server-dir: ./
-          dry-run: false
+          state-name: .ftp-deploy-customer.json
+          timeout: 60000
+          log-level: verbose
+          dangerous-clean-slate: false
+          dry-run: true
 
-      - name: Deploy Distributor
+      - name: Deploy Distributor to cPanel
         uses: SamKirkland/FTP-Deploy-Action@v4.4.0
         with:
           server: ${{ secrets.FTP_HOST }}
@@ -63,4 +100,8 @@ jobs:
           security: strict
           local-dir: ./out-distributor/
           server-dir: ./
-          dry-run: false
+          state-name: .ftp-deploy-distributor.json
+          timeout: 60000
+          log-level: verbose
+          dangerous-clean-slate: false
+          dry-run: true
