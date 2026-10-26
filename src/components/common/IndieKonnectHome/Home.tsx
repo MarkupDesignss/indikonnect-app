@@ -185,9 +185,9 @@ const getProductPrice = (product: any, userType?: string) => {
   if (userType === "distributor") {
     return Number(
       product.distributor_price ||
-        product.current_price ||
-        product.retail_price ||
-        0,
+      product.current_price ||
+      product.retail_price ||
+      0,
     );
   }
 
@@ -200,9 +200,9 @@ const getProductMrp = (product: any, userType?: string) => {
   if (userType === "distributor") {
     return Number(
       product.distributor_mrp ||
-        product.original_price ||
-        product.retail_mrp ||
-        0,
+      product.original_price ||
+      product.retail_mrp ||
+      0,
     );
   }
 
@@ -611,9 +611,8 @@ function ProductRail({
 
   return (
     <div
-      className={`mx-auto flex w-full max-w-[min(100%,1400px)] flex-wrap items-stretch ${railGapClass} ${
-        isFewProducts ? "justify-center" : "justify-start"
-      }`}
+      className={`mx-auto flex w-full max-w-[min(100%,1400px)] flex-wrap items-stretch ${railGapClass} ${isFewProducts ? "justify-center" : "justify-start"
+        }`}
     >
       {visibleProducts.map((product: any, index: number) => {
         const images = Array.isArray(product?.images) ? product.images : [];
@@ -826,7 +825,7 @@ function ProductCard({
   };
 
   return (
-    <motion.article 
+    <motion.article
       className="group/card flex h-full w-full min-w-0 flex-col"
       initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
@@ -849,9 +848,8 @@ function ProductCard({
             e.currentTarget.dataset.fallback = "1";
             e.currentTarget.src = getPlaceholderImage();
           }}
-          className={`absolute inset-0 h-full w-full cursor-pointer object-cover object-center transition-transform duration-700 ease-out group-hover/card:scale-[1.05] motion-reduce:transition-none motion-reduce:group-hover/card:scale-100 ${
-            inStock ? "" : "opacity-60 grayscale"
-          }`}
+          className={`absolute inset-0 h-full w-full cursor-pointer object-cover object-center transition-transform duration-700 ease-out group-hover/card:scale-[1.05] motion-reduce:transition-none motion-reduce:group-hover/card:scale-100 ${inStock ? "" : "opacity-60 grayscale"
+            }`}
         />
 
         {/* soft bottom fade so rating/dots stay readable */}
@@ -927,11 +925,10 @@ function ProductCard({
                 className="flex h-5 w-4 items-center justify-center"
               >
                 <span
-                  className={`block rounded-full transition-all duration-300 ${
-                    i === imageIndex
-                      ? "h-1.5 w-3 bg-white"
-                      : "h-1.5 w-1.5 bg-white/60"
-                  }`}
+                  className={`block rounded-full transition-all duration-300 ${i === imageIndex
+                    ? "h-1.5 w-3 bg-white"
+                    : "h-1.5 w-1.5 bg-white/60"
+                    }`}
                 />
               </button>
             ))}
@@ -999,13 +996,12 @@ function ProductCard({
               disabled={!inStock || isAddingToCart || isBuyingNow}
               aria-label="Add to cart"
               title={inStock ? "Add to cart" : "Out of stock"}
-              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition-all duration-200 active:scale-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#111] sm:h-10 sm:w-10 ${
-                !inStock
-                  ? "cursor-not-allowed border-[#eeeeee] bg-[#f7f7f7] text-[#cccccc]"
-                  : justAdded
-                    ? "border-[#1a8a3f] bg-[#eafaf0] text-[#1a8a3f]"
-                    : "border-[#d9d9d9] bg-white text-[#111111] hover:border-[#111111]"
-              }`}
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition-all duration-200 active:scale-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#111] sm:h-10 sm:w-10 ${!inStock
+                ? "cursor-not-allowed border-[#eeeeee] bg-[#f7f7f7] text-[#cccccc]"
+                : justAdded
+                  ? "border-[#1a8a3f] bg-[#eafaf0] text-[#1a8a3f]"
+                  : "border-[#d9d9d9] bg-white text-[#111111] hover:border-[#111111]"
+                }`}
             >
               {isAddingToCart ? (
                 <Loader2 className="h-[15px] w-[15px] animate-spin" />
@@ -1021,13 +1017,12 @@ function ProductCard({
               onClick={handleBuyNow}
               disabled={!inStock || isBuyingNow || isAddingToCart}
               aria-label="Buy now"
-              className={`flex h-9 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-full px-2 text-[11.5px] font-medium tracking-tight transition-all duration-200 active:scale-[0.97] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#111] sm:h-10 sm:text-xs ${
-                !inStock
-                  ? "cursor-not-allowed bg-[#f0f0f0] text-[#bbbbbb]"
-                  : isBuyingNow
-                    ? "cursor-wait bg-[#252525] text-white"
-                    : "bg-[#111111] text-white hover:bg-[#2a2a2a]"
-              }`}
+              className={`flex h-9 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-full px-2 text-[11.5px] font-medium tracking-tight transition-all duration-200 active:scale-[0.97] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#111] sm:h-10 sm:text-xs ${!inStock
+                ? "cursor-not-allowed bg-[#f0f0f0] text-[#bbbbbb]"
+                : isBuyingNow
+                  ? "cursor-wait bg-[#252525] text-white"
+                  : "bg-[#111111] text-white hover:bg-[#2a2a2a]"
+                }`}
             >
               {isBuyingNow ? (
                 <>
@@ -1638,9 +1633,8 @@ export default function IndieKonnectHome() {
         </div>
 
         <div style="flex:1;min-width:0;">
-          ${
-            productName
-              ? `
+          ${productName
+        ? `
               <div style="
                 font-size:13px;
                 font-weight:600;
@@ -1649,8 +1643,8 @@ export default function IndieKonnectHome() {
                 ${productName}
               </div>
             `
-              : ""
-          }
+        : ""
+      }
 
           <div style="
             font-size:12px;
@@ -1790,9 +1784,9 @@ export default function IndieKonnectHome() {
             return prev.map((item) =>
               item.product_id === productId
                 ? {
-                    ...item,
-                    quantity: item.quantity + 1,
-                  }
+                  ...item,
+                  quantity: item.quantity + 1,
+                }
                 : item,
             );
           }
@@ -1957,9 +1951,9 @@ export default function IndieKonnectHome() {
         prev.map((item) =>
           item.product_id === productId
             ? {
-                ...item,
-                quantity: item.quantity + change,
-              }
+              ...item,
+              quantity: item.quantity + change,
+            }
             : item,
         ),
       );
@@ -2315,11 +2309,10 @@ export default function IndieKonnectHome() {
               rounded-full
               transition-all
               duration-300
-              ${
-                index === heroIndex
-                  ? "w-7 bg-[#071a41]"
-                  : "w-[5px] bg-[#cfd3d7]"
-              }
+              ${index === heroIndex
+                    ? "w-7 bg-[#071a41]"
+                    : "w-[5px] bg-[#cfd3d7]"
+                  }
             `}
                 aria-label={`Go to banner ${index + 1}`}
               />
@@ -2358,52 +2351,8 @@ export default function IndieKonnectHome() {
           <HeroBannerCarousel />
         </div>
 
-        {/* REELS */}
-
-        <div className="relative isolate flow-root w-full">
-          <ShopReelsRow
-            reels={reelsData?.data || []}
-            isLoading={isReelsLoading}
-            error={reelsError}
-            openReel={() => setIsReelModalOpen(true)}
-            onModalOpen={handleReelModalOpen}
-            onModalClose={handleReelModalClose}
-          />
-        </div>
-
         {/* =================================================
-            TRENDING PRODUCTS
-        ================================================= */}
-
-        <TrendingProductsSection
-          products={products}
-          ProductRail={ProductRail}
-          userType={userType}
-          wish={wish}
-          router={router}
-          handleToggleWishlist={handleToggleWishlist}
-          isProductsLoading={isProductsLoading}
-          isProductsError={isProductsError}
-          refetchProducts={refetchProducts}
-          sectionContainerClass={sectionContainerClass}
-        />
-
-        {/* =================================================
-            WATCH BANNER
-        ================================================= */}
-
-        <div
-          className="relative isolate flow-root w-full"
-          style={{
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <WatchesBanner />
-        </div>
-
-        {/* =================================================
-            BEST OFFERS
+            BEST SELLERS
         ================================================= */}
 
         <motion.section
@@ -2434,10 +2383,9 @@ export default function IndieKonnectHome() {
                 flex
                 w-full
                 flex-col
-                ${
-                  bestOffers?.length <= 2
-                    ? "items-center text-center"
-                    : "items-start text-left"
+                ${bestSellers?.length <= 2
+                  ? "items-center text-center"
+                  : "items-start text-left"
                 }
               `}
             >
@@ -2453,24 +2401,79 @@ export default function IndieKonnectHome() {
                   lg:text-[20px]
                 "
               >
-                Best Offers
+                Best Sellers
               </h2>
             </motion.div>
 
             <ProductRail
-              products={bestOffers}
+              products={bestSellers}
               userType={userType}
               wish={wish}
               router={router}
               handleToggleWishlist={handleToggleWishlist}
               isLoading={isFetching}
-              isError={isError}
-              emptyText="No offers available"
-              labelMode="offers"
+              isError={false}
+              emptyText="No best sellers available"
+              labelMode="best-seller"
               imagesEnabled={true}
             />
           </div>
         </motion.section>
+
+        {/* =================================================
+            WATCH BANNER
+        ================================================= */}
+
+        <div
+          className="relative isolate flow-root w-full"
+          style={{
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <WatchesBanner />
+        </div>
+
+        {/* =================================================
+            TRENDING PRODUCTS
+        ================================================= */}
+
+        <TrendingProductsSection
+          products={products}
+          ProductRail={ProductRail}
+          userType={userType}
+          wish={wish}
+          router={router}
+          handleToggleWishlist={handleToggleWishlist}
+          isProductsLoading={isProductsLoading}
+          isProductsError={isProductsError}
+          refetchProducts={refetchProducts}
+          sectionContainerClass={sectionContainerClass}
+        />
+
+        {/* =================================================
+            NEW ARRIVALS / BRANDS
+        ================================================= */}
+
+        <NewArrivalsSection
+          brandsData={brandsData}
+          isBrandsLoading={isBrandsLoading}
+        />
+
+
+        {/* REELS */}
+
+        <div className="relative isolate flow-root w-full">
+          <ShopReelsRow
+            reels={reelsData?.data || []}
+            isLoading={isReelsLoading}
+            error={reelsError}
+            openReel={() => setIsReelModalOpen(true)}
+            onModalOpen={handleReelModalOpen}
+            onModalClose={handleReelModalClose}
+          />
+        </div>
+
 
         {/* =================================================
             DEAL BANNERS
@@ -2539,17 +2542,17 @@ export default function IndieKonnectHome() {
                     type="button"
                     aria-label={`Go to slide ${index + 1}`}
                     onClick={() => scrollToIndex(index)}
-                    className={`h-2 rounded-full transition-all duration-300 ${
-                      activeIndex === index
-                        ? "w-6 bg-gray-800"
-                        : "w-2 bg-gray-300"
-                    }`}
+                    className={`h-2 rounded-full transition-all duration-300 ${activeIndex === index
+                      ? "w-6 bg-gray-800"
+                      : "w-2 bg-gray-300"
+                      }`}
                   />
                 ))}
               </div>
             )}
           </div>
         </section>
+
 
         {/* =================================================
             LIFESTYLE
@@ -2566,16 +2569,7 @@ export default function IndieKonnectHome() {
         )}
 
         {/* =================================================
-            NEW ARRIVALS / BRANDS
-        ================================================= */}
-
-        <NewArrivalsSection
-          brandsData={brandsData}
-          isBrandsLoading={isBrandsLoading}
-        />
-
-        {/* =================================================
-            BEST SELLERS
+            BEST OFFERS
         ================================================= */}
 
         <motion.section
@@ -2606,10 +2600,9 @@ export default function IndieKonnectHome() {
                 flex
                 w-full
                 flex-col
-                ${
-                  bestSellers?.length <= 2
-                    ? "items-center text-center"
-                    : "items-start text-left"
+                ${bestOffers?.length <= 2
+                  ? "items-center text-center"
+                  : "items-start text-left"
                 }
               `}
             >
@@ -2625,24 +2618,31 @@ export default function IndieKonnectHome() {
                   lg:text-[20px]
                 "
               >
-                Best Sellers
+                Best Offers
               </h2>
             </motion.div>
 
             <ProductRail
-              products={bestSellers}
+              products={bestOffers}
               userType={userType}
               wish={wish}
               router={router}
               handleToggleWishlist={handleToggleWishlist}
               isLoading={isFetching}
-              isError={false}
-              emptyText="No best sellers available"
-              labelMode="best-seller"
+              isError={isError}
+              emptyText="No offers available"
+              labelMode="offers"
               imagesEnabled={true}
             />
           </div>
         </motion.section>
+
+
+
+
+
+
+
 
         {/* =================================================
             OTHER SECTIONS

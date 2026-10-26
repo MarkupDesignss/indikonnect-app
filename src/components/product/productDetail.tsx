@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { Layers } from "lucide-react";
 
 import {
@@ -154,11 +154,11 @@ function flyImageToCart(sourceEl: HTMLElement | null, imgSrc: string) {
   const b = target
     ? target.getBoundingClientRect()
     : ({
-      left: window.innerWidth - 60,
-      top: 20,
-      width: 24,
-      height: 24,
-    } as DOMRect);
+        left: window.innerWidth - 60,
+        top: 20,
+        width: 24,
+        height: 24,
+      } as DOMRect);
 
   const ghost = document.createElement("div");
 
@@ -336,8 +336,8 @@ const getVariantGalleryImages = (variant: any): string[] => {
 
   const images = Array.isArray(variant.images)
     ? variant.images
-      .map((img: any) => img?.image_url || img?.image)
-      .filter(Boolean)
+        .map((img: any) => img?.image_url || img?.image)
+        .filter(Boolean)
     : [];
 
   const primary =
@@ -372,9 +372,12 @@ const generateSlugFromName = (name: string): string => {
 export default function ProductDetail({ productSlug }: ProductDetailProps) {
   const router = useRouter();
 
+  const pathname = usePathname();
+
   // Variant changes update this query in place; no page navigation.
   const [activeProductSlug, setActiveProductSlug] = useState(productSlug);
   const lastLoadedProductRef = useRef<any>(null);
+
   // Only genuine route changes (not color selection) update the query slug.
   // Color selection changes activeProductSlug without modifying the browser URL.
   useEffect(() => {
@@ -525,6 +528,32 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
     return currentAppType === "distributor"
       ? "/auth/distributor/login"
       : "/auth/customer/login";
+  };
+
+  /* =========================================================
+     BUILD PRODUCT PATH
+     Preserves the app base path (e.g. /indiekonnect-distributor)
+     by stripping the trailing `/<slug>` from the current pathname.
+     Works whether or not Next `basePath` is configured.
+  ========================================================= */
+
+  const buildProductPath = (slug: string): string => {
+    const safeSlug = String(slug || "").trim();
+    if (!safeSlug) {
+      return "/products";
+    }
+
+    // If basePath is configured in next.config, pathname already
+    // contains it (e.g. /indiekonnect-distributor/product/xyz).
+    // We replace the last segment (the old slug) with the new one.
+    const current = pathname || "";
+
+    // Match `.../product/<oldSlug>` or fall back to a safe default.
+    const match = current.match(/^(.*\/product)\/[^/]+\/?$/);
+
+    const base = match ? match[1] : "/product";
+
+    return `${base}/${encodeURIComponent(safeSlug)}`;
   };
 
   /* =========================================================
@@ -704,108 +733,108 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
 
   const product = apiProduct
     ? {
-      id: apiProduct.id,
+        id: apiProduct.id,
 
-      name: apiProduct.name,
+        name: apiProduct.name,
 
-      slug: apiProduct.slug || generateSlugFromName(apiProduct.name),
+        slug: apiProduct.slug || generateSlugFromName(apiProduct.name),
 
-      description: apiProduct.description,
+        description: apiProduct.description,
 
-      specification: apiProduct.specification,
+        specification: apiProduct.specification,
 
-      category: apiProduct.category?.name || "Uncategorized",
+        category: apiProduct.category?.name || "Uncategorized",
 
-      categoryId: apiProduct.category_id || apiProduct.category?.id,
+        categoryId: apiProduct.category_id || apiProduct.category?.id,
 
-      productCode: apiProduct.product_code,
+        productCode: apiProduct.product_code,
 
-      retailMrp: Number(apiProduct.retail_mrp || 0),
+        retailMrp: Number(apiProduct.retail_mrp || 0),
 
-      distributorMrp: Number(apiProduct.distributor_mrp || 0),
+        distributorMrp: Number(apiProduct.distributor_mrp || 0),
 
-      retailPrice: Number(apiProduct.retail_price || 0),
+        retailPrice: Number(apiProduct.retail_price || 0),
 
-      distributorPrice: Number(apiProduct.distributor_price || 0),
+        distributorPrice: Number(apiProduct.distributor_price || 0),
 
-      /*
-       * FINAL PRICE
-       */
-      price:
-        userAccountType === "distributor"
-          ? Number(
-            apiProduct.distributor_price || apiProduct.retail_price || 0,
-          )
-          : Number(apiProduct.retail_price || 0),
+        /*
+         * FINAL PRICE
+         */
+        price:
+          userAccountType === "distributor"
+            ? Number(
+                apiProduct.distributor_price || apiProduct.retail_price || 0,
+              )
+            : Number(apiProduct.retail_price || 0),
 
-      /*
-       * FINAL MRP
-       */
-      mrp:
-        userAccountType === "distributor"
-          ? Number(apiProduct.distributor_mrp || apiProduct.retail_mrp || 0)
-          : Number(apiProduct.retail_mrp || 0),
+        /*
+         * FINAL MRP
+         */
+        mrp:
+          userAccountType === "distributor"
+            ? Number(apiProduct.distributor_mrp || apiProduct.retail_mrp || 0)
+            : Number(apiProduct.retail_mrp || 0),
 
-      /*
-       * ORIGINAL PRICE
-       */
-      originalPrice:
-        userAccountType === "distributor"
-          ? Number(apiProduct.distributor_mrp || apiProduct.retail_mrp || 0)
-          : Number(apiProduct.retail_mrp || 0),
+        /*
+         * ORIGINAL PRICE
+         */
+        originalPrice:
+          userAccountType === "distributor"
+            ? Number(apiProduct.distributor_mrp || apiProduct.retail_mrp || 0)
+            : Number(apiProduct.retail_mrp || 0),
 
-      /*
-       * DISCOUNT
-       */
-      discount:
-        userAccountType === "distributor"
-          ? (() => {
-            const mrp = Number(
-              apiProduct.distributor_mrp || apiProduct.retail_mrp || 0,
-            );
+        /*
+         * DISCOUNT
+         */
+        discount:
+          userAccountType === "distributor"
+            ? (() => {
+                const mrp = Number(
+                  apiProduct.distributor_mrp || apiProduct.retail_mrp || 0,
+                );
 
-            const price = Number(
-              apiProduct.distributor_price || apiProduct.retail_price || 0,
-            );
+                const price = Number(
+                  apiProduct.distributor_price || apiProduct.retail_price || 0,
+                );
 
-            return mrp > price && price > 0
-              ? Math.round(((mrp - price) / mrp) * 100)
-              : null;
-          })()
-          : (() => {
-            const mrp = Number(apiProduct.retail_mrp || 0);
+                return mrp > price && price > 0
+                  ? Math.round(((mrp - price) / mrp) * 100)
+                  : null;
+              })()
+            : (() => {
+                const mrp = Number(apiProduct.retail_mrp || 0);
 
-            const price = Number(apiProduct.retail_price || 0);
+                const price = Number(apiProduct.retail_price || 0);
 
-            return mrp > price && price > 0
-              ? Math.round(((mrp - price) / mrp) * 100)
-              : null;
-          })(),
+                return mrp > price && price > 0
+                  ? Math.round(((mrp - price) / mrp) * 100)
+                  : null;
+              })(),
 
-      image:
-        apiProduct.primary_image_url ||
-        apiProduct.images?.[0]?.image_url ||
-        PLACEHOLDER,
+        image:
+          apiProduct.primary_image_url ||
+          apiProduct.images?.[0]?.image_url ||
+          PLACEHOLDER,
 
-      images: apiProduct.images || [],
+        images: apiProduct.images || [],
 
-      rating: Number(reviewsSummary?.average_rating || 0),
+        rating: Number(reviewsSummary?.average_rating || 0),
 
-      reviews: Number(reviewsSummary?.total_reviews || 0),
+        reviews: Number(reviewsSummary?.total_reviews || 0),
 
-      // "low_stock" still means the product is available for purchase.
-      // The API's stock_quantity is the source of truth for availability.
-      inStock: Number(apiProduct.stock_quantity ?? 0) > 0,
+        // "low_stock" still means the product is available for purchase.
+        // The API's stock_quantity is the source of truth for availability.
+        inStock: Number(apiProduct.stock_quantity ?? 0) > 0,
 
-      stockQuantity: Number(apiProduct.stock_quantity ?? 0),
+        stockQuantity: Number(apiProduct.stock_quantity ?? 0),
 
-      isLowStock:
-        Number(apiProduct.stock_quantity ?? 0) > 0 &&
-        Number(apiProduct.stock_quantity ?? 0) <=
-        Number(apiProduct.low_stock_threshold ?? 10),
+        isLowStock:
+          Number(apiProduct.stock_quantity ?? 0) > 0 &&
+          Number(apiProduct.stock_quantity ?? 0) <=
+            Number(apiProduct.low_stock_threshold ?? 10),
 
-      lowStockThreshold: Number(apiProduct.low_stock_threshold || 10),
-    }
+        lowStockThreshold: Number(apiProduct.low_stock_threshold || 10),
+      }
     : null;
 
   /* =========================================================
@@ -819,8 +848,8 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
 
     const images = Array.isArray(product.images)
       ? product.images
-        .map((img: any) => img?.image_url || img?.image)
-        .filter(Boolean)
+          .map((img: any) => img?.image_url || img?.image)
+          .filter(Boolean)
       : [];
 
     return Array.from(new Set([product.image, ...images]));
@@ -1002,9 +1031,13 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
   ========================================================= */
 
   const handleSelectMainProduct = () => {
-    if (product?.slug) {
-      setActiveProductSlug(product.slug);
+    // Navigate back to the main product slug so the URL reflects
+    // the currently displayed product. The `productSlug` prop effect
+    // below will sync `activeProductSlug` and trigger a refetch.
+    if (product?.slug && product.slug !== activeProductSlug) {
+      router.replace(buildProductPath(product.slug), { scroll: false });
     }
+
     setSelectedVariantId(null);
 
     setSelectedVariantAttributes({});
@@ -1022,9 +1055,11 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
       return;
     }
 
-    // Fetch the standalone variant product in this same component.
-    // All product fields (gallery, name, price, stock, specs, cart ID)
-    // update from the new API response without reloading Header/Footer.
+    // A variant whose product_id differs from the current product is a
+    // standalone sibling product. Navigate to its slug so the URL updates
+    // (like a real product page) while the component stays mounted — the
+    // `productSlug` prop effect syncs `activeProductSlug` and refetches
+    // name/price/gallery/stock/specs without a full reload.
     if (
       variant?.slug &&
       String(variant?.product_id ?? variant?.id) !== String(product?.id)
@@ -1035,7 +1070,10 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
       );
       setActiveImage(0);
       setQuantity(1);
-      setActiveProductSlug(variant.slug);
+
+      if (variant.slug !== activeProductSlug) {
+        router.replace(buildProductPath(variant.slug), { scroll: false });
+      }
       return;
     }
 
@@ -1251,9 +1289,9 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
         return prev.map((c) =>
           c.id === item.id
             ? {
-              ...c,
-              quantity: Math.min(c.quantity + qty, 10),
-            }
+                ...c,
+                quantity: Math.min(c.quantity + qty, 10),
+              }
             : c,
         );
       }
@@ -1439,8 +1477,8 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
     );
     const variantId =
       !isMainProductSelected &&
-        selectedVariant &&
-        selectedVariantProductId === productId
+      selectedVariant &&
+      selectedVariantProductId === productId
         ? (selectedVariant.product_variant_id ?? selectedVariant.variant_id)
         : undefined;
 
@@ -1885,66 +1923,66 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
 
   const similarProducts = Array.isArray(categoryProductsData?.data)
     ? categoryProductsData.data
-      .filter((p: any) => String(p.id) !== String(product?.id))
-      .slice(0, 10)
-      .map((p: any) => {
-        const distributor = userAccountType === "distributor";
+        .filter((p: any) => String(p.id) !== String(product?.id))
+        .slice(0, 10)
+        .map((p: any) => {
+          const distributor = userAccountType === "distributor";
 
-        const price = distributor
-          ? Number(p.distributor_price || p.retail_price || 0)
-          : Number(p.retail_price || 0);
+          const price = distributor
+            ? Number(p.distributor_price || p.retail_price || 0)
+            : Number(p.retail_price || 0);
 
-        const mrp = distributor
-          ? Number(p.distributor_mrp || p.retail_mrp || 0)
-          : Number(p.retail_mrp || 0);
+          const mrp = distributor
+            ? Number(p.distributor_mrp || p.retail_mrp || 0)
+            : Number(p.retail_mrp || 0);
 
-        return {
-          id: p.id,
+          return {
+            id: p.id,
 
-          name: p.name,
+            name: p.name,
 
-          slug: p.slug || generateSlugFromName(p.name),
+            slug: p.slug || generateSlugFromName(p.name),
 
-          category: p.category?.name || p.category_name || "",
-          brand: p.brand_name || p.brandName || p.brand || "",
-          description: p.short_description || p.description || "",
-          stockQuantity: Number(p.stock_quantity || 0),
-          lowStockThreshold: Number(p.low_stock_threshold || 0),
-          peopleBought: Number(
-            p.people_bought_this_week || p.peopleBoughtThisWeek || 0,
-          ),
-          badge:
-            p.badge ||
-            (p.is_deal_of_the_day
-              ? "Deal of the Day"
-              : p.sale_type === "today_best"
-                ? "Best Seller"
-                : ""),
+            category: p.category?.name || p.category_name || "",
+            brand: p.brand_name || p.brandName || p.brand || "",
+            description: p.short_description || p.description || "",
+            stockQuantity: Number(p.stock_quantity || 0),
+            lowStockThreshold: Number(p.low_stock_threshold || 0),
+            peopleBought: Number(
+              p.people_bought_this_week || p.peopleBoughtThisWeek || 0,
+            ),
+            badge:
+              p.badge ||
+              (p.is_deal_of_the_day
+                ? "Deal of the Day"
+                : p.sale_type === "today_best"
+                  ? "Best Seller"
+                  : ""),
 
-          price,
+            price,
 
-          originalPrice: mrp,
+            originalPrice: mrp,
 
-          discount:
-            mrp > price && price > 0
-              ? Math.round(((mrp - price) / mrp) * 100)
-              : null,
+            discount:
+              mrp > price && price > 0
+                ? Math.round(((mrp - price) / mrp) * 100)
+                : null,
 
-          image:
-            p.primary_image_url ||
-            p.images?.find((img: any) => img?.is_primary)?.image_url ||
-            p.images?.[0]?.image_url ||
-            PLACEHOLDER,
+            image:
+              p.primary_image_url ||
+              p.images?.find((img: any) => img?.is_primary)?.image_url ||
+              p.images?.[0]?.image_url ||
+              PLACEHOLDER,
 
-          rating: Number(p.reviews?.summary?.average_rating || 0),
+            rating: Number(p.reviews?.summary?.average_rating || 0),
 
-          reviews: Number(p.reviews?.summary?.total_reviews || 0),
+            reviews: Number(p.reviews?.summary?.total_reviews || 0),
 
-          inStock: Number(p.stock_quantity || 0) > 0,
+            inStock: Number(p.stock_quantity || 0) > 0,
 
-          createdAt: p.created_at || p.createdAt || null,
-        };
-      })
+            createdAt: p.created_at || p.createdAt || null,
+          };
+        })
     : [];
 
   /* =========================================================
@@ -2030,7 +2068,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
     item: (typeof similarProducts)[number],
     index: number,
   ) => {
-    const url = `/product/${encodeURIComponent(item.slug || generateSlugFromName(item.name) || String(item.id))}`;
+    const url = `${buildProductPath(item.slug || generateSlugFromName(item.name) || String(item.id))}`;
     const discounted = item.originalPrice > item.price && item.price > 0;
     const discountPercent = discounted
       ? Math.round((1 - item.price / item.originalPrice) * 100)
@@ -2229,20 +2267,20 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
   const specRows =
     Object.keys(specification).length > 0
       ? Object.entries(specification).map(([key, value]) => [
-        key.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase()),
+          key.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase()),
 
-        String(value),
-      ])
+          String(value),
+        ])
       : [
-        ["Product Type", product.category],
-        ["Product Code", product.productCode || "N/A"],
-        ["Availability", product.inStock ? "In Stock" : "Out of Stock"],
-        ["Stock Quantity", product.stockQuantity],
-        ["UOM", apiProduct?.uom || "NOS"],
-        ["HSN Code", apiProduct?.hsn_code || "N/A"],
-        ["Warranty", "1 Year"],
-        ["Return Policy", "7 Days"],
-      ];
+          ["Product Type", product.category],
+          ["Product Code", product.productCode || "N/A"],
+          ["Availability", product.inStock ? "In Stock" : "Out of Stock"],
+          ["Stock Quantity", product.stockQuantity],
+          ["UOM", apiProduct?.uom || "NOS"],
+          ["HSN Code", apiProduct?.hsn_code || "N/A"],
+          ["Warranty", "1 Year"],
+          ["Return Policy", "7 Days"],
+        ];
 
   /* =========================================================
      RENDER
@@ -2307,10 +2345,11 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                     onMouseEnter={() => {
                       if (!(isLastVisible && hasMore)) setActiveImage(index);
                     }}
-                    className={`relative h-[62px] w-[62px] flex-shrink-0 overflow-hidden rounded-[7px] border-2 bg-white transition sm:h-[70px] sm:w-[70px] lg:h-[74px] lg:w-[74px] ${activeImage === index
-                      ? "border-[#111]"
-                      : "border-[#E4E4E4] hover:border-[#999]"
-                      }`}
+                    className={`relative h-[62px] w-[62px] flex-shrink-0 overflow-hidden rounded-[7px] border-2 bg-white transition sm:h-[70px] sm:w-[70px] lg:h-[74px] lg:w-[74px] ${
+                      activeImage === index
+                        ? "border-[#111]"
+                        : "border-[#E4E4E4] hover:border-[#999]"
+                    }`}
                   >
                     <Image
                       src={img || PLACEHOLDER}
@@ -2420,8 +2459,9 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                     }
                   >
                     <Heart
-                      className={`h-4 w-4 ${isWishlisted ? "fill-[#111] text-[#111]" : "text-[#111]"
-                        }`}
+                      className={`h-4 w-4 ${
+                        isWishlisted ? "fill-[#111] text-[#111]" : "text-[#111]"
+                      }`}
                     />
                   </button>
 
@@ -2470,8 +2510,9 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                       <div
                         className="absolute inset-0 bg-cover bg-no-repeat"
                         style={{
-                          backgroundImage: `url(${gallery[activeImage] || product.image || PLACEHOLDER
-                            })`,
+                          backgroundImage: `url(${
+                            gallery[activeImage] || product.image || PLACEHOLDER
+                          })`,
                           backgroundPosition: `${zoomPosition.x}% ${zoomPosition.y}%`,
                           backgroundSize: "250%",
                         }}
@@ -2505,10 +2546,11 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                 {[1, 2, 3, 4, 5].map((n) => (
                   <Star
                     key={n}
-                    className={`h-3.5 w-3.5 ${n <= Math.floor(product.rating)
-                      ? "fill-[#F6BE16] text-[#F6BE16]"
-                      : "fill-[#F6BE16]/15 text-[#F6BE16]"
-                      }`}
+                    className={`h-3.5 w-3.5 ${
+                      n <= Math.floor(product.rating)
+                        ? "fill-[#F6BE16] text-[#F6BE16]"
+                        : "fill-[#F6BE16]/15 text-[#F6BE16]"
+                    }`}
                   />
                 ))}
               </div>
@@ -2618,10 +2660,11 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                                 onClick={() =>
                                   handleAttributeSelect(attributeKey, value)
                                 }
-                                className={`rounded-full border px-4 py-1.5 text-[11px] font-semibold transition ${selected
-                                  ? "border-[#111] bg-[#111] text-white"
-                                  : "border-[#D7D7D7] bg-white text-[#222] hover:border-[#111]"
-                                  }`}
+                                className={`rounded-full border px-4 py-1.5 text-[11px] font-semibold transition ${
+                                  selected
+                                    ? "border-[#111] bg-[#111] text-white"
+                                    : "border-[#D7D7D7] bg-white text-[#222] hover:border-[#111]"
+                                }`}
                               >
                                 {value}
                               </button>
@@ -2682,10 +2725,11 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                           <button
                             type="button"
                             onClick={() => handleSelectVariant(variant)}
-                            className={`relative h-[58px] w-[58px] overflow-hidden rounded-[8px] border-2 bg-white transition ${isSelected
-                              ? "border-[#111] ring-1 ring-[#111]"
-                              : "border-[#E3E3E3] hover:border-[#999]"
-                              }`}
+                            className={`relative h-[58px] w-[58px] overflow-hidden rounded-[8px] border-2 bg-white transition ${
+                              isSelected
+                                ? "border-[#111] ring-1 ring-[#111]"
+                                : "border-[#E3E3E3] hover:border-[#999]"
+                            }`}
                             aria-label={colorName || product.name}
                           >
                             <Image
@@ -2699,8 +2743,9 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
 
                           {!isMain && colorName && (
                             <span
-                              className={`mt-1 max-w-[60px] truncate text-center text-[9px] font-medium ${isSelected ? "text-[#111]" : "text-[#888]"
-                                }`}
+                              className={`mt-1 max-w-[60px] truncate text-center text-[9px] font-medium ${
+                                isSelected ? "text-[#111]" : "text-[#888]"
+                              }`}
                               title={colorName}
                             >
                               {colorName}
@@ -2812,14 +2857,16 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
               <button
                 type="button"
                 onClick={(e) => handleWishlistToggle(e)}
-                className={`flex h-[46px] w-[46px] flex-shrink-0 items-center justify-center rounded-[4px] border-2 ${isWishlisted
-                  ? "border-[#111] bg-[#111] text-white"
-                  : "border-[#D7D7D7] bg-white text-[#111]"
-                  }`}
+                className={`flex h-[46px] w-[46px] flex-shrink-0 items-center justify-center rounded-[4px] border-2 ${
+                  isWishlisted
+                    ? "border-[#111] bg-[#111] text-white"
+                    : "border-[#D7D7D7] bg-white text-[#111]"
+                }`}
               >
                 <Heart
-                  className={`h-[18px] w-[18px] ${isWishlisted ? "fill-white" : ""
-                    }`}
+                  className={`h-[18px] w-[18px] ${
+                    isWishlisted ? "fill-white" : ""
+                  }`}
                 />
               </button>
             </div>
@@ -2925,10 +2972,11 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                 key={key}
                 type="button"
                 onClick={() => setActiveTab(key)}
-                className={`relative pb-3 text-[12px] font-semibold transition ${activeTab === key
-                  ? "text-[#111]"
-                  : "text-[#999] hover:text-[#333]"
-                  }`}
+                className={`relative pb-3 text-[12px] font-semibold transition ${
+                  activeTab === key
+                    ? "text-[#111]"
+                    : "text-[#999] hover:text-[#333]"
+                }`}
               >
                 {label}
 
@@ -2974,8 +3022,9 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                         .map(([label, value], index) => (
                           <div
                             key={label}
-                            className={`flex justify-between gap-4 border-b border-[#EFEFEF] px-4 py-2.5 text-[10px] ${index % 2 === 0 ? "bg-white" : "bg-[#FCFCFC]"
-                              }`}
+                            className={`flex justify-between gap-4 border-b border-[#EFEFEF] px-4 py-2.5 text-[10px] ${
+                              index % 2 === 0 ? "bg-white" : "bg-[#FCFCFC]"
+                            }`}
                           >
                             <span className="text-[#888]">{label}</span>
 
@@ -3075,10 +3124,11 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                               onClick={() => setReviewRating(star)}
                             >
                               <Star
-                                className={`h-5 w-5 ${star <= reviewRating
-                                  ? "fill-[#F6BE16] text-[#F6BE16]"
-                                  : "text-[#CCC]"
-                                  }`}
+                                className={`h-5 w-5 ${
+                                  star <= reviewRating
+                                    ? "fill-[#F6BE16] text-[#F6BE16]"
+                                    : "text-[#CCC]"
+                                }`}
                               />
                             </button>
                           ))}
@@ -3173,8 +3223,8 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                         {reviewsList.map((review: any) => {
                           const reviewImageUrls = Array.isArray(review.images)
                             ? review.images
-                              .map((img: any) => img?.image_url)
-                              .filter(Boolean)
+                                .map((img: any) => img?.image_url)
+                                .filter(Boolean)
                             : [];
 
                           const visibleReviewImages = reviewImageUrls.slice(
@@ -3224,10 +3274,11 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                                   {[1, 2, 3, 4, 5].map((n) => (
                                     <Star
                                       key={n}
-                                      className={`h-3 w-3 ${n <= Number(review.rating)
-                                        ? "fill-[#F6BE16] text-[#F6BE16]"
-                                        : "text-[#DADADA]"
-                                        }`}
+                                      className={`h-3 w-3 ${
+                                        n <= Number(review.rating)
+                                          ? "fill-[#F6BE16] text-[#F6BE16]"
+                                          : "text-[#DADADA]"
+                                      }`}
                                     />
                                   ))}
                                 </div>
@@ -3305,10 +3356,11 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                     {[1, 2, 3, 4, 5].map((n) => (
                       <Star
                         key={n}
-                        className={`h-4 w-4 ${n <= Math.round(product.rating)
-                          ? "fill-[#F6BE16] text-[#F6BE16]"
-                          : "text-[#DADADA]"
-                          }`}
+                        className={`h-4 w-4 ${
+                          n <= Math.round(product.rating)
+                            ? "fill-[#F6BE16] text-[#F6BE16]"
+                            : "text-[#DADADA]"
+                        }`}
                       />
                     ))}
                   </div>
@@ -3531,10 +3583,11 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
 
                     setFullscreenImageIndex(index);
                   }}
-                  className={`relative h-10 w-10 flex-shrink-0 overflow-hidden rounded border-2 ${fullscreenImageIndex === index
-                    ? "border-white"
-                    : "border-transparent opacity-50"
-                    }`}
+                  className={`relative h-10 w-10 flex-shrink-0 overflow-hidden rounded border-2 ${
+                    fullscreenImageIndex === index
+                      ? "border-white"
+                      : "border-transparent opacity-50"
+                  }`}
                   aria-label={`Open image ${index + 1}`}
                 >
                   <Image
@@ -3628,10 +3681,11 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                     type="button"
                     key={`${img}-${index}`}
                     onClick={() => setReviewViewerIndex(index)}
-                    className={`relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-[6px] border-2 transition ${reviewViewerIndex === index
-                      ? "border-white"
-                      : "border-transparent opacity-50 hover:opacity-100"
-                      }`}
+                    className={`relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-[6px] border-2 transition ${
+                      reviewViewerIndex === index
+                        ? "border-white"
+                        : "border-transparent opacity-50 hover:opacity-100"
+                    }`}
                     aria-label={`Open review image ${index + 1}`}
                   >
                     <Image
@@ -3805,10 +3859,11 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                         setActiveImage(index);
                         setShowAllThumbnails(false);
                       }}
-                      className={`relative aspect-square overflow-hidden rounded-[8px] border-2 bg-[#F3F3F3] transition ${activeImage === index
-                        ? "border-[#111]"
-                        : "border-transparent hover:border-[#999]"
-                        }`}
+                      className={`relative aspect-square overflow-hidden rounded-[8px] border-2 bg-[#F3F3F3] transition ${
+                        activeImage === index
+                          ? "border-[#111]"
+                          : "border-transparent hover:border-[#999]"
+                      }`}
                     >
                       <Image
                         src={img || PLACEHOLDER}
