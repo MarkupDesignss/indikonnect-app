@@ -125,7 +125,7 @@ export interface CheckoutSummaryParams {
   address_id?: number;
   coupon_code?: string;
   coins?: number;
-  // Buy Now
+  // Buy Now*
   product_id?: number;
   quantity?: number;
 }
@@ -137,7 +137,7 @@ export interface PlaceOrderRequest {
   grand_total: number;
   payment_gateway: "razorpay" | string;
   checkout_type: "cart" | "buy_now";
-  // Buy Now
+  // Buy Now*
   product_id?: number;
   quantity?: number;
   summary_data?: {
@@ -369,6 +369,44 @@ export interface ConfirmedOrderResponse {
 // =========================================================
 // CHECKOUT API
 // =========================================================
+
+// =========================================================
+// HDFC PAYMENT API TYPES
+// =========================================================
+export type HdfcPaymentStatus =
+  | "not_started"
+  | "creating"
+  | "active"
+  | "unknown"
+  | "pending"
+  | "cancel_requested"
+  | "paid"
+  | "cancelled"
+  | "failed";
+
+export interface HdfcApiResult {
+  success: boolean;
+  order_id?: number;
+  attempt_id?: number;
+  payment_url?: string | null;
+  can_resume?: boolean;
+  resumed?: boolean;
+  payment_status?: HdfcPaymentStatus;
+  status?: HdfcPaymentStatus;
+  gateway_status?: string;
+  gateway_order_id?: string;
+  message?: string;
+  local_link_expires_at?: string | null;
+  data?: HdfcApiResult;
+}
+
+const hdfcOrderRoute = (orderId: number): string => {
+  if (!Number.isSafeInteger(orderId) || orderId <= 0) {
+    throw new Error("Valid numeric database order ID is required");
+  }
+  return `/payments/hdfc/orders/${orderId}`;
+};
+
 export const checkoutApi = baseApi.injectEndpoints({
   overrideExisting: true,
   endpoints: (builder) => ({
@@ -450,6 +488,28 @@ export const checkoutApi = baseApi.injectEndpoints({
         method: "GET",
       }),
     }),
+
+    // =====================================================
+    // HDFC SMARTGATEWAY — AUTHENTICATED ORDER APIs
+    // =====================================================
+    initiateHdfcPayment: builder.mutation<HdfcApiResult, number>({
+      query: (orderId) => ({
+        url: `${hdfcOrderRoute(orderId)}/initiate`,
+        method: "POST",
+      }),
+    }),
+    cancelHdfcPayment: builder.mutation<HdfcApiResult, number>({
+      query: (orderId) => ({
+        url: `${hdfcOrderRoute(orderId)}/cancel`,
+        method: "POST",
+      }),
+    }),
+    getHdfcPaymentStatus: builder.query<HdfcApiResult, number>({
+      query: (orderId) => ({
+        url: `${hdfcOrderRoute(orderId)}/status`,
+        method: "GET",
+      }),
+    }),
   }),
 });
 // =========================================================
@@ -459,4 +519,8 @@ export const {
   useGetCheckoutSummaryQuery,
   usePlaceOrderMutation,
   useGetConfirmedOrderQuery,
+  useInitiateHdfcPaymentMutation,
+  useCancelHdfcPaymentMutation,
+  useGetHdfcPaymentStatusQuery,
+  useLazyGetHdfcPaymentStatusQuery,
 } = checkoutApi;

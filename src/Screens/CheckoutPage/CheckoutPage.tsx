@@ -41,6 +41,10 @@ import {
 import {
   useGetCheckoutSummaryQuery,
   usePlaceOrderMutation,
+  useInitiateHdfcPaymentMutation,
+  useCancelHdfcPaymentMutation,
+  useLazyGetHdfcPaymentStatusQuery,
+  type HdfcApiResult,
 } from "@/lib/redux/api/checkoutApi";
 import {
   useGetCouponsQuery,
@@ -439,9 +443,8 @@ function CartSummary({
             return (
               <div
                 key={`${item.product_id}-${index}`}
-                className={`flex items-center gap-3 ${
-                  isUnavailable ? "opacity-70" : ""
-                }`}
+                className={`flex items-center gap-3 ${isUnavailable ? "opacity-70" : ""
+                  }`}
               >
                 <div className="relative h-[62px] w-[62px] shrink-0">
                   <div className="relative h-full w-full overflow-hidden rounded-xl border border-[#EFEFEF] bg-[#F8F8F8]">
@@ -518,9 +521,8 @@ function CartSummary({
           >
             {showCouponList ? "Hide coupons" : "View coupons"}
             <ChevronDown
-              className={`h-3 w-3 transition-transform ${
-                showCouponList ? "rotate-180" : ""
-              }`}
+              className={`h-3 w-3 transition-transform ${showCouponList ? "rotate-180" : ""
+                }`}
             />
           </button>
         </div>
@@ -763,10 +765,9 @@ function PaymentMethodModal({
   if (!open) return null;
 
   const optionClass = (selected: boolean) =>
-    `group relative w-full rounded-2xl border p-4 text-left transition-all duration-200 sm:p-5 ${
-      selected
-        ? "border-[#191919] bg-[#F9F9F8] shadow-[0_0_0_1px_#191919]"
-        : "border-[#E7E7E5] bg-white hover:border-[#999] hover:bg-[#FCFCFC]"
+    `group relative w-full rounded-2xl border p-4 text-left transition-all duration-200 sm:p-5 ${selected
+      ? "border-[#191919] bg-[#F9F9F8] shadow-[0_0_0_1px_#191919]"
+      : "border-[#E7E7E5] bg-white hover:border-[#999] hover:bg-[#FCFCFC]"
     }`;
 
   return (
@@ -881,11 +882,10 @@ function PaymentMethodModal({
                 </p>
               </div>
               <span
-                className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
-                  gateway === "razorpay"
+                className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${gateway === "razorpay"
                     ? "border-black bg-black text-white"
                     : "border-[#C8C8C8]"
-                }`}
+                  }`}
               >
                 {gateway === "razorpay" && <Check className="h-3 w-3" />}
               </span>
@@ -912,11 +912,10 @@ function PaymentMethodModal({
                 </p>
               </div>
               <span
-                className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
-                  gateway === "hdfc"
+                className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${gateway === "hdfc"
                     ? "border-black bg-black text-white"
                     : "border-[#C8C8C8]"
-                }`}
+                  }`}
               >
                 {gateway === "hdfc" && <Check className="h-3 w-3" />}
               </span>
@@ -941,11 +940,10 @@ function PaymentMethodModal({
                       disabled={!canPay}
                       onClick={() => setMerchantName(merchant.legalName)}
                       aria-pressed={selected}
-                      className={`flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left transition ${
-                        selected
+                      className={`flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left transition ${selected
                           ? "border-[#191919] bg-white shadow-sm"
                           : "border-[#E5E5E5] bg-white/70 hover:border-[#AAAAAA]"
-                      }`}
+                        }`}
                     >
                       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#F2F2F2] text-[#424242]">
                         <Building2 className="h-4 w-4" />
@@ -959,11 +957,10 @@ function PaymentMethodModal({
                         </span>
                       </span>
                       <span
-                        className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border ${
-                          selected
+                        className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border ${selected
                             ? "border-black bg-black text-white"
                             : "border-[#C8C8C8]"
-                        }`}
+                          }`}
                       >
                         {selected && <Check className="h-3 w-3" />}
                       </span>
@@ -1016,13 +1013,30 @@ function PaymentMethodModal({
 type PendingHdfcOrder = {
   orderId: number;
   orderReference: string;
-  gatewayOrderId: string;
-  paymentUrl: string;
   amount: number;
   createdAt: number;
 };
 
-const PENDING_HDFC_ORDER_KEY = "indiekonnect_pending_hdfc_order";
+const PENDING_HDFC_ORDER_KEY = "indiekonnect_pending_hdfc_order_v2";
+
+// Only redirect to the known configured hosted HDFC payment domain.
+// Update the allowlist only after your bank confirms additional domains.
+function getSafeHdfcUrl(value: unknown): string {
+  if (typeof value !== "string" || !value.trim()) {
+    throw new Error("HDFC payment URL is unavailable. Check payment status.");
+  }
+  const url = new URL(value);
+  if (
+    url.protocol !== "https:" ||
+    url.hostname !== "smartgateway.hdfc.bank.in"
+  ) {
+    throw new Error("Unexpected HDFC payment destination.");
+  }
+  return url.href;
+}
+function unwrapHdfc(result: HdfcApiResult): HdfcApiResult {
+  return result.data && typeof result.data === "object" ? result.data : result;
+}
 
 /* =========================================================
    MAIN CHECKOUT PAGE COMPONENT
@@ -1108,6 +1122,11 @@ export default function CheckoutPage() {
   const [deleteAddress] = useDeleteAddressMutation();
   const [setDefaultAddress] = useSetDefaultAddressMutation();
   const [placeOrder] = usePlaceOrderMutation();
+  const [initiateHdfcPayment] = useInitiateHdfcPaymentMutation();
+  const [cancelHdfcPayment] = useCancelHdfcPaymentMutation();
+  const [getHdfcPaymentStatus] = useLazyGetHdfcPaymentStatusQuery();
+  const [hdfcActionBusy, setHdfcActionBusy] = useState(false);
+  const [hdfcStatusMessage, setHdfcStatusMessage] = useState("");
 
   const { data: couponsData, isLoading: isLoadingCoupons } =
     useGetCouponsQuery();
@@ -1177,10 +1196,10 @@ export default function CheckoutPage() {
       ...(appliedCoupon ? { coupon_code: appliedCoupon.trim() } : {}),
       ...(isDirectCheckout
         ? {
-            product_id: productId,
-            quantity,
-            ...(variantId > 0 ? { variant_id: variantId } : {}),
-          }
+          product_id: productId,
+          quantity,
+          ...(variantId > 0 ? { variant_id: variantId } : {}),
+        }
         : {}),
     }),
     [
@@ -1207,7 +1226,7 @@ export default function CheckoutPage() {
   // UI follows the checkout type returned by the summary API.
   const displayCheckoutType: "cart" | "buy_now" =
     summaryData?.checkout_type === "buy_now" ||
-    summaryData?.checkout_type === "cart"
+      summaryData?.checkout_type === "cart"
       ? summaryData.checkout_type
       : checkoutType;
 
@@ -1658,6 +1677,38 @@ export default function CheckoutPage() {
     void verifyPaymentSelection();
   };
 
+  // Resume only the dynamic order ID saved when Place Order succeeded.
+  // This function never creates another local order.
+  const resumeExistingHdfc = async (pending: PendingHdfcOrder) => {
+    const response = unwrapHdfc(
+      await getHdfcPaymentStatus(pending.orderId, false).unwrap(),
+    );
+    const state = String(response.payment_status ?? response.status ?? "unknown")
+      .trim()
+      .toLowerCase();
+    if (state === "paid") {
+      sessionStorage.removeItem(PENDING_HDFC_ORDER_KEY);
+      setPendingHdfcOrder(null);
+      goToOrderConfirmation(pending.orderId, pending.orderReference);
+      return "paid" as const;
+    }
+    if (["failed", "cancelled", "canceled", "not_started"].includes(state)) {
+      return state;
+    }
+    if (state !== "pending") {
+      throw new Error(`Existing HDFC payment is ${state}. Verify or cancel it first.`);
+    }
+    // Status is a freshly verified bank response; do not initiate a new local
+    // order. Prefer the status-provided URL, then idempotent backend resume.
+    if (response.can_resume === true && response.payment_url) {
+      window.location.assign(getSafeHdfcUrl(response.payment_url));
+      return "redirecting" as const;
+    }
+    throw new Error(
+      "Bank payment is pending but the session cannot be safely resumed. Request cancellation and verify bank status before another payment.",
+    );
+  };
+
   /* =========================================================
      HANDLE PAY NOW (Place Order)
   ========================================================= */
@@ -1672,11 +1723,138 @@ export default function CheckoutPage() {
     const verifiedType = verifiedCheckoutTypeRef.current;
     if (!verifiedType) return;
 
+    // Verify any prior HDFC attempt before creating a new order, regardless
+    // of the newly selected payment method. Avoid duplicate payable orders.
     paymentActionInProgress.current = true;
     setIsSubmitting(true);
 
     let latestSummary: CheckoutSummaryData;
     try {
+      if (pendingHdfcOrder) {
+        let state: string;
+        let priorHdfcStatus: HdfcApiResult | null = null;
+        try {
+          const result = unwrapHdfc(
+            await getHdfcPaymentStatus(
+              pendingHdfcOrder.orderId,
+              false,
+            ).unwrap(),
+          );
+          priorHdfcStatus = result;
+          state = String(result.payment_status ?? result.status ?? "unknown")
+            .trim()
+            .toLowerCase();
+        } catch (statusError) {
+          setIsPaymentModalOpen(false);
+          setHdfcStatusMessage(
+            getErrorMessage(
+              statusError,
+              "Unable to verify previous HDFC order.",
+            ),
+          );
+          throw new Error(
+            "Previous HDFC payment could not be verified. Check its status before starting another payment.",
+          );
+        }
+
+        if (state === "paid") {
+          sessionStorage.removeItem(PENDING_HDFC_ORDER_KEY);
+          setPendingHdfcOrder(null);
+          setIsPaymentModalOpen(false);
+          goToOrderConfirmation(
+            pendingHdfcOrder.orderId,
+            pendingHdfcOrder.orderReference,
+          );
+          return;
+        }
+
+        if (
+          state === "not_started" ||
+          state === "cancelled" ||
+          state === "canceled" ||
+          state === "failed"
+        ) {
+          // not_started means the current database has no recorded attempt;
+          // it does NOT independently prove a pre-migration bank session never existed.
+          // Normal price/stock checks below are required for a new order.
+          sessionStorage.removeItem(PENDING_HDFC_ORDER_KEY);
+          setPendingHdfcOrder(null);
+          setHdfcStatusMessage("");
+        } else {
+          // Gateway switch: customer explicitly selected Razorpay. First
+          // request bank-side cancellation of the older HDFC attempt and
+          // verify it is terminal. Never proceed on a mere cancel request.
+          if (paymentChoice.gateway === "razorpay") {
+            setIsPaymentModalOpen(false);
+            setHdfcStatusMessage(
+              "Switching to Razorpay: requesting cancellation of your previous HDFC session...",
+            );
+            try {
+              const cancellation = unwrapHdfc(
+                await cancelHdfcPayment(pendingHdfcOrder.orderId).unwrap(),
+              );
+              if (cancellation.success === false) {
+                throw new Error(
+                  cancellation.message || "HDFC cancellation could not be confirmed.",
+                );
+              }
+              // Cancel API commonly returns 202/cancel_requested. It is NOT
+              // proof the bank stopped accepting payments.
+              const checked = unwrapHdfc(
+                await getHdfcPaymentStatus(pendingHdfcOrder.orderId, false).unwrap(),
+              );
+              const checkedState = String(
+                checked.payment_status ?? checked.status ?? "unknown",
+              ).trim().toLowerCase();
+              if (checkedState === "paid") {
+                sessionStorage.removeItem(PENDING_HDFC_ORDER_KEY);
+                setPendingHdfcOrder(null);
+                goToOrderConfirmation(
+                  pendingHdfcOrder.orderId,
+                  pendingHdfcOrder.orderReference,
+                );
+                return;
+              }
+              if (!["cancelled", "canceled", "failed"].includes(checkedState)) {
+                throw new Error(
+                  `HDFC cancellation has not been confirmed by the bank (status: ${checkedState}). ` +
+                  "Please use Check payment status and try Razorpay again once cancellation is confirmed.",
+                );
+              }
+              sessionStorage.removeItem(PENDING_HDFC_ORDER_KEY);
+              setPendingHdfcOrder(null);
+              setHdfcStatusMessage("");
+              // Cancellation is terminal: allow a fresh Razorpay order after
+              // the stock and amount are rechecked by the code below.
+            } catch (switchError) {
+              const message = getErrorMessage(
+                switchError,
+                "Previous HDFC payment must be cancelled and verified before switching to Razorpay.",
+              );
+              setHdfcStatusMessage(message);
+              throw new Error(message);
+            }
+          } else {
+            // Resume exactly the SAME bank session after a fresh verified
+            // pending status, rather than creating another payable order.
+            // Never send a link that the backend has not explicitly approved.
+            if (paymentChoice.gateway === "hdfc" && state === "pending") {
+              // Dynamic saved order ID; resume the existing bank order instead
+              // of placing a new order. This is not an order-id hardcode.
+              setIsPaymentModalOpen(false);
+              const result = await resumeExistingHdfc(pendingHdfcOrder);
+              if (result === "redirecting" || result === "paid") return;
+            }
+            setIsPaymentModalOpen(false);
+            setHdfcStatusMessage(
+              `Previous HDFC payment is ${state}. Use Resume HDFC checkout or cancel the earlier bank session.`,
+            );
+            throw new Error(
+              `Previous HDFC payment is ${state}. Use Resume HDFC checkout or request cancellation.`,
+            );
+          }
+        }
+      }
       // STEP 2: Recheck stock immediately before placeOrder.
       await validateCheckoutStock(verifiedType);
       latestSummary = await refreshAndValidateTotal(
@@ -1704,7 +1882,7 @@ export default function CheckoutPage() {
           paymentChoice.gateway === "razorpay"
             ? "razorpay"
             : paymentChoice.merchantName ===
-                "INDIEKONNECT ENTERPRISES PVT LTD SG"
+              "INDIEKONNECT ENTERPRISES PVT LTD SG"
               ? "hdfc_sg"
               : "hdfc_ie",
         summary_data: {
@@ -1755,9 +1933,9 @@ export default function CheckoutPage() {
       );
       const orderReference = String(
         firstOrder?.order_reference ??
-          anyData?.order_reference ??
-          orderReferences?.[0] ??
-          "",
+        anyData?.order_reference ??
+        orderReferences?.[0] ??
+        "",
       ).trim();
       const razorpayOrderId = String(anyData?.razorpay_order_id || "").trim();
       const razorpayKey = String(anyData?.razorpay_key || "").trim();
@@ -1766,36 +1944,47 @@ export default function CheckoutPage() {
       );
 
       if (paymentChoice.gateway === "hdfc") {
-        const hdfcUrl = anyData?.hdfc_payment_link;
-        if (typeof hdfcUrl !== "string" || !hdfcUrl.trim()) {
-          throw new Error("HDFC payment link was not returned by the server.");
+        // This API starts ONE payment attempt per database order.
+        // For a multi-seller order group, backend must provide a dedicated
+        // group-level payment session before the group can be paid together.
+        const uniqueIds = [
+          ...new Set(
+            [
+              ...orderIds.map(Number),
+              ...orders.map((o: any) => Number(o.order_id)),
+            ].filter((id) => Number.isSafeInteger(id) && id > 0),
+          ),
+        ];
+        if (uniqueIds.length > 1) {
+          throw new Error(
+            "This checkout created multiple seller orders. The HDFC API accepts only one order ID, so combined payment needs a backend group-payment endpoint. No payment was initiated. Check your orders before retrying.",
+          );
         }
-        let verifiedPaymentUrl: URL;
-        try {
-          verifiedPaymentUrl = new URL(hdfcUrl);
-        } catch {
-          throw new Error("HDFC payment URL is invalid.");
+        if (!Number.isSafeInteger(orderId) || orderId <= 0) {
+          throw new Error(
+            "Place Order did not return a valid database order_id.",
+          );
         }
-        if (
-          verifiedPaymentUrl.protocol !== "https:" ||
-          verifiedPaymentUrl.hostname !== "smartgateway.hdfc.bank.in"
-        ) {
-          throw new Error("Unexpected HDFC payment destination.");
-        }
-
+        // Persist the already-created LOCAL order before contacting HDFC.
+        // If the initiation times out, do not create another order.
         const pending: PendingHdfcOrder = {
           orderId,
-          orderReference:
-            orderReference || String(anyData?.hdfc_order_id || ""),
-          gatewayOrderId: String(anyData?.hdfc_order_id || ""),
-          paymentUrl: verifiedPaymentUrl.href,
+          orderReference,
           amount,
           createdAt: Date.now(),
         };
         sessionStorage.setItem(PENDING_HDFC_ORDER_KEY, JSON.stringify(pending));
         setPendingHdfcOrder(pending);
         setIsPaymentModalOpen(false);
-        window.location.assign(verifiedPaymentUrl.href);
+
+        const initiation = unwrapHdfc(
+          await initiateHdfcPayment(orderId).unwrap(),
+        );
+        if (!initiation.success) {
+          throw new Error(initiation.message || "HDFC initiation failed");
+        }
+        const url = getSafeHdfcUrl(initiation.payment_url);
+        window.location.assign(url);
         return;
       }
 
@@ -1860,54 +2049,125 @@ export default function CheckoutPage() {
       >
         {pendingHdfcOrder && (
           <div className="mx-auto mb-6 max-w-[1160px] rounded-xl border border-[#dedede] bg-white p-4 shadow-sm">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm font-semibold text-[#171717]">
-                  HDFC payment awaiting verification
-                </p>
-                <p className="mt-1 text-xs leading-5 text-[#666]">
-                  Order {pendingHdfcOrder.orderReference} ·{" "}
-                  {formatPrice(pendingHdfcOrder.amount)}. Returning to checkout
-                  is not confirmation of payment. Check your order status with
-                  the merchant before placing another order.
-                </p>
-              </div>
-              <div className="flex shrink-0 gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    try {
-                      const url = new URL(pendingHdfcOrder.paymentUrl);
-                      if (
-                        url.protocol !== "https:" ||
-                        url.hostname !== "smartgateway.hdfc.bank.in"
-                      )
-                        throw new Error("Untrusted bank URL");
-                      window.location.assign(url.href);
-                    } catch {
-                      dispatch(
-                        showToast({
-                          message: "Invalid stored payment link",
-                          type: "error",
-                        }),
+            <p className="text-sm font-semibold text-[#171717]">
+              HDFC payment awaiting verification
+            </p>
+            <p className="mt-1 text-xs leading-5 text-[#666]">
+              Order{" "}
+              {pendingHdfcOrder.orderReference ||
+                `#${pendingHdfcOrder.orderId}`}
+              {" · "}
+              {formatPrice(pendingHdfcOrder.amount)}. Payment is not confirmed
+              until the bank verifies it. Do not place another order.
+            </p>
+            {hdfcStatusMessage && (
+              <p className="mt-2 text-xs text-[#555]" role="status">
+                {hdfcStatusMessage}
+              </p>
+            )}
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={hdfcActionBusy}
+                onClick={async () => {
+                  setHdfcActionBusy(true);
+                  try {
+                    const result = unwrapHdfc(
+                      await getHdfcPaymentStatus(
+                        pendingHdfcOrder.orderId,
+                        false,
+                      ).unwrap(),
+                    );
+                    const status = String(
+                      result.payment_status || result.status || "unknown",
+                    )
+                      .trim()
+                      .toLowerCase();
+                    setHdfcStatusMessage(
+                      status === "not_started"
+                        ? "No HDFC payment attempt is recorded for this order. If a bank session was created before tracking was installed, reconcile it before paying again."
+                        : `Verified payment state: ${status}`,
+                    );
+                    if (status === "paid") {
+                      sessionStorage.removeItem(PENDING_HDFC_ORDER_KEY);
+                      setPendingHdfcOrder(null);
+                      goToOrderConfirmation(
+                        pendingHdfcOrder.orderId,
+                        pendingHdfcOrder.orderReference,
+                      );
+                    } else if (
+                      ["not_started", "cancelled", "canceled", "failed"].includes(status)
+                    ) {
+                      sessionStorage.removeItem(PENDING_HDFC_ORDER_KEY);
+                      setPendingHdfcOrder(null);
+                    }
+                  } catch (err) {
+                    setHdfcStatusMessage(
+                      getErrorMessage(err, "Unable to verify payment"),
+                    );
+                  } finally {
+                    setHdfcActionBusy(false);
+                  }
+                }}
+                className="rounded-lg border border-[#ddd] px-4 py-2 text-xs font-medium disabled:opacity-50"
+              >
+                Check payment status
+              </button>
+              <button
+                type="button"
+                disabled={hdfcActionBusy}
+                onClick={async () => {
+                  setHdfcActionBusy(true);
+                  try {
+                    const result = await resumeExistingHdfc(pendingHdfcOrder);
+                    if (result !== "redirecting" && result !== "paid") {
+                      setHdfcStatusMessage(
+                        `Payment is ${result}. Resume is unavailable until bank status is resolved.`,
                       );
                     }
-                  }}
-                  className="rounded-lg bg-[#171717] px-4 py-2 text-xs font-semibold text-white"
-                >
-                  Resume HDFC checkout
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    sessionStorage.removeItem(PENDING_HDFC_ORDER_KEY);
-                    setPendingHdfcOrder(null);
-                  }}
-                  className="rounded-lg border border-[#ddd] px-3 py-2 text-xs font-medium"
-                >
-                  Dismiss
-                </button>
-              </div>
+                  } catch (err) {
+                    setHdfcStatusMessage(
+                      getErrorMessage(err, "Unable to resume payment"),
+                    );
+                  } finally {
+                    setHdfcActionBusy(false);
+                  }
+                }}
+                className="rounded-lg bg-[#171717] px-4 py-2 text-xs font-semibold text-white disabled:opacity-50"
+              >
+                Resume HDFC checkout
+              </button>
+              <button
+                type="button"
+                disabled={hdfcActionBusy}
+                onClick={async () => {
+                  setHdfcActionBusy(true);
+                  try {
+                    const result = unwrapHdfc(
+                      await cancelHdfcPayment(
+                        pendingHdfcOrder.orderId,
+                      ).unwrap(),
+                    );
+                    setHdfcStatusMessage(
+                      result.message ||
+                      "Cancellation requested. Check gateway status to confirm.",
+                    );
+                    // Never dismiss based on 202: cancellation is not necessarily final.
+                  } catch (err) {
+                    setHdfcStatusMessage(
+                      getErrorMessage(
+                        err,
+                        "Cancellation could not be confirmed",
+                      ),
+                    );
+                  } finally {
+                    setHdfcActionBusy(false);
+                  }
+                }}
+                className="rounded-lg border border-[#ddd] px-4 py-2 text-xs font-medium disabled:opacity-50"
+              >
+                Request cancellation
+              </button>
             </div>
           </div>
         )}
@@ -1990,11 +2250,10 @@ export default function CheckoutPage() {
                             type="button"
                             onClick={() => setSelectedDeliveryAddress(address)}
                             aria-pressed={selected}
-                            className={`relative min-h-[178px] rounded-xl border p-4 text-left transition-all duration-200 sm:p-5 ${
-                              selected
+                            className={`relative min-h-[178px] rounded-xl border p-4 text-left transition-all duration-200 sm:p-5 ${selected
                                 ? "border-[#191919] bg-[#FCFCFC] shadow-[0_0_0_1px_#191919]"
                                 : "border-[#E8E8E8] bg-white hover:border-[#B9B9B9]"
-                            }`}
+                              }`}
                           >
                             <div className="mb-3 flex items-center justify-between gap-2">
                               <span className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.1em] text-[#727272]">
@@ -2002,11 +2261,10 @@ export default function CheckoutPage() {
                                 {address.type || "Address"}
                               </span>
                               <span
-                                className={`flex h-5 w-5 items-center justify-center rounded-full border ${
-                                  selected
+                                className={`flex h-5 w-5 items-center justify-center rounded-full border ${selected
                                     ? "border-[#171717] bg-[#171717] text-white"
                                     : "border-[#CFCFCF]"
-                                }`}
+                                  }`}
                               >
                                 {selected && <Check className="h-3 w-3" />}
                               </span>
