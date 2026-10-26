@@ -1,0 +1,66 @@
+
+name: Indiekonnect cPanel Deployment
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: indiekonnect-deployment
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build both panels
+        run: npm run build:all
+
+      - name: Verify output
+        run: |
+          test -f out-customer/index.html
+          test -f out-distributor/index.html
+
+      - name: Deploy Customer
+        uses: SamKirkland/FTP-Deploy-Action@v4.4.0
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_CUSTOMER_USERNAME }}
+          password: ${{ secrets.FTP_CUSTOMER_PASSWORD }}
+          protocol: ftps
+          port: 21
+          security: strict
+          local-dir: ./out-customer/
+          server-dir: ./
+          dry-run: true
+
+      - name: Deploy Distributor
+        uses: SamKirkland/FTP-Deploy-Action@v4.4.0
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_DISTRIBUTOR_USERNAME }}
+          password: ${{ secrets.FTP_DISTRIBUTOR_PASSWORD }}
+          protocol: ftps
+          port: 21
+          security: strict
+          local-dir: ./out-distributor/
+          server-dir: ./
+          dry-run: true
