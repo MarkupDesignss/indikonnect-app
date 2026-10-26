@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, type Variants } from "framer-motion";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export type Category = {
@@ -15,6 +15,8 @@ export type Category = {
   logo?: string | null;
   banner?: string | null;
   status?: number | boolean;
+  // Multiple texts ke liye field
+  categoryData?: string[];
 };
 
 type CategoriesResponse = { data?: Category[] | { data?: Category[] } };
@@ -52,37 +54,69 @@ function CategoryCard({
   onClick: () => void;
 }) {
   const [imageError, setImageError] = useState(false);
+
   const imageUrl =
     category.image_url?.trim() ||
     category.image?.trim() ||
     category.banner?.trim() ||
     category.logo?.trim() ||
     "";
-  const title = category.name || category.title || "Category";
 
-  useEffect(() => setImageError(false), [imageUrl]);
+  // Fallback logic: Agar categoryData array hai toh use karein, warna title use karein
+  const displayTexts =
+    category.categoryData && category.categoryData.length > 0
+      ? category.categoryData
+      : [category.name || category.title || "Category", "Shop now"];
+
+  const primaryText = displayTexts[0] || "Category";
+  const secondaryText = displayTexts[1] || "Shop now";
+
+  useEffect(() => {
+    setImageError(false);
+  }, [imageUrl]);
 
   return (
     <motion.div variants={fadeInUp} className={`group shrink-0 ${cardSize}`}>
       <button
         type="button"
         onClick={onClick}
-        aria-label={`Explore ${title}`}
-        className="block w-full overflow-hidden rounded-xl bg-[#f3f2ee] text-left shadow-[0_4px_18px_rgba(0,0,0,0.05)] transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(0,0,0,0.13)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#55634d]"
+        aria-label={`Explore ${primaryText}`}
+        className="relative block aspect-[3/4] w-full overflow-hidden rounded-[22px] bg-[#e9e8e2] text-center ring-1 ring-black/5 transition-all duration-500 ease-out hover:-translate-y-1.5 hover:shadow-[0_24px_50px_-18px_rgba(30,40,25,0.45)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#55634d] motion-reduce:transition-none motion-reduce:hover:translate-y-0"
       >
-        <div className="relative w-full aspect-[2/3] overflow-hidden">
-          {imageUrl && !imageError ? (
-            <img
-              src={imageUrl}
-              alt={title}
-              loading={index < 2 ? "eager" : "lazy"}
-              decoding="async"
-              onError={() => setImageError(true)}
-              className="absolute inset-0 h-full w-full object-contain object-center transition-transform duration-500 group-hover:scale-[1.02]"
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center bg-[#f3f2ee]" />
-          )}
+        {/* Category image or fallback */}
+        {imageUrl && !imageError ? (
+          <img
+            src={imageUrl}
+            alt=""
+            loading={index < 2 ? "eager" : "lazy"}
+            decoding="async"
+            onError={() => setImageError(true)}
+            className="absolute inset-0 h-full w-full object-cover object-center transition-transform duration-[900ms] ease-out group-hover:scale-[1.06] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#dfe4d8] via-[#cfd6c4] to-[#b9c3ab]">
+            <span className="font-serif text-7xl text-[#55634d]/40">
+              {primaryText.charAt(0).toUpperCase()}
+            </span>
+          </div>
+        )}
+
+        {/* Bottom gradient for text legibility */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-black/70 via-black/25 to-transparent transition-opacity duration-500 group-hover:from-[#2a3524]/85" />
+
+        {/* Glass label */}
+        <div className="absolute inset-x-3 bottom-3 flex items-center justify-between gap-3 rounded-2xl border border-white/20 bg-white/15 px-4 py-3 backdrop-blur-md transition-colors duration-500 group-hover:bg-white/25">
+          <div className="min-w-0 flex-1 text-left">
+            <h3 className="truncate text-[15px] font-medium leading-tight text-white sm:text-base">
+              {primaryText}
+            </h3>
+            <p className="mt-0.5 truncate text-[11px] text-white/70 transition-all duration-500 sm:text-xs">
+              {secondaryText}
+            </p>
+          </div>
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-[#2b2b2b] transition-all duration-500 group-hover:rotate-45 group-hover:bg-[#55634d] group-hover:text-white motion-reduce:transition-none motion-reduce:group-hover:rotate-0">
+            <ArrowUpRight size={17} strokeWidth={1.8} />
+          </span>
         </div>
       </button>
     </motion.div>
@@ -141,12 +175,10 @@ export default function ShopByCategory({
     });
   };
 
-  // ✅ FIXED REDIRECT LOGIC HERE
   const handleCategoryClick = (category: Category) => {
     const categoryName = category.name || category.title;
-    
+
     if (categoryName) {
-      // Aapke format ke hisaab se URL build kiya
       router.push(`/products/?category=${encodeURIComponent(categoryName)}`);
     } else if (category.slug) {
       router.push(`/products/?category=${encodeURIComponent(category.slug)}`);
