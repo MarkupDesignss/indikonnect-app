@@ -29,6 +29,7 @@ import type {
   IgnitePointTransaction,
   IgnitePointType,
 } from "../../../lib/redux/api/distributor/ignitePointTransactionsApi";
+import Loding from "@/components/common/Loding";
 
 // ==================================================
 // DESIGN TOKENS
@@ -217,11 +218,7 @@ function getOrderNumber(
 function TransactionsLoader() {
   return (
     <div className="flex min-h-[300px] flex-col items-center justify-center gap-3 rounded-[16px] border border-[#e7e9ee] bg-white">
-      <Loader2 size={28} className="animate-spin text-[#3955A6]" />
-
-      <p className="text-[13px] font-semibold text-[#667085]">
-        Loading transaction history...
-      </p>
+      <Loding />
     </div>
   );
 }

@@ -32,6 +32,7 @@ import AddressComponent from "@/components/profile/AddressComponent";
 
 import { showToast } from "@/lib/slices/toastSlice";
 import DistributorPVCSection from "./DistributorPVCSection";
+import Loding from "@/components/common/Loding";
 
 // --------------------------------------------------
 // Design tokens
@@ -1431,14 +1432,7 @@ export default function DistributorProfilePage() {
         `}</style>
 
         <div className="flex flex-col items-center gap-3">
-          <Loader2
-            className="h-8 w-8 animate-spin"
-            style={{ color: NAVY }}
-          />
-
-          <p className="text-[12px] font-semibold text-[#667085]">
-            Loading profile...
-          </p>
+        <Loding />
         </div>
       </div>
     );

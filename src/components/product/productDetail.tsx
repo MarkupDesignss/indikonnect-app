@@ -64,6 +64,7 @@ import { useGetUserProfileQuery } from "@/lib/redux/api/authApi";
 import { getAppType } from "@/lib/appConfig";
 
 import { useTokenCheck } from "@/hooks/useTokenCheck";
+import Loding from "../common/Loding";
 
 /* =========================================================
    FONT
@@ -2221,7 +2222,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
   if (isProductLoading && !product) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-white">
-        <Loader width={200} height={200} />
+        <Loding width={200} height={200} />
       </div>
     );
   }

@@ -29,6 +29,7 @@ import {
 
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { showToast } from "../../lib/slices/toastSlice";
+import Loding from "../common/Loding";
 
 interface WishlistProductImage {
     id: number;
@@ -412,10 +413,7 @@ export default function WishlistComponent({
         return (
             <div className="flex items-center justify-center py-16 font-sans">
                 <div className="flex flex-col items-center gap-3">
-                    <Loader2 className="h-7 w-7 animate-spin text-[#111111]" />
-                    <span className="text-[12px] text-[#888888]">
-                        Loading wishlist...
-                    </span>
+                   <Loding />
                 </div>
             </div>
         );

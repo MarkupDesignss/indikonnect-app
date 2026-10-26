@@ -29,6 +29,7 @@ import {
 import type {
   PendingPlacement,
 } from "@/lib/redux/api/distributor/distributorPendingPlacementsApi";
+import Loding from "@/components/common/Loding";
 
 // ==================================================
 // DESIGN TOKENS
@@ -90,10 +91,7 @@ function FontImport() {
 function PendingPlacementsLoader() {
   return (
     <div className="flex min-h-[320px] flex-col items-center justify-center gap-3 rounded-[16px] border border-[#e7e9ee] bg-white">
-      <Loader2 size={30} className="animate-spin text-[#3955A6]" />
-      <p className="text-[13px] font-semibold text-[#667085]">
-        Loading pending placements...
-      </p>
+     <Loding />
     </div>
   );
 }

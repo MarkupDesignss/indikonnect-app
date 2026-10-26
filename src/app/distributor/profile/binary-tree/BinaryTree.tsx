@@ -27,6 +27,7 @@ import type {
   GenealogyMember,
   DistributorGenealogyData,
 } from "../../../../lib/redux/api/distributor/distributorGenealogyApi";
+import Loding from "@/components/common/Loding";
 
 // --------------------------------------------------
 // COLORS
@@ -156,11 +157,7 @@ function TreeLoader() {
   return (
     <div className="flex min-h-[350px] w-full items-center justify-center rounded-xl border border-[#edf0f3] bg-white">
       <div className="flex flex-col items-center gap-3">
-        <Loader2 className="h-8 w-8 animate-spin text-[#3c78e9]" />
-
-        <p className="text-[13px] font-semibold text-[#667085]">
-          Loading genealogy tree...
-        </p>
+       <Loding />
       </div>
     </div>
   );

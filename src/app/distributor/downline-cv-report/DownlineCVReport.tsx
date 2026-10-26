@@ -23,6 +23,7 @@ import {
 import type {
   DistributorDownlineMember,
 } from "../../../lib/redux/api/distributor/distributorDownlineApi"
+import Loding from "@/components/common/Loding";
 
 // --------------------------------------------------
 // DESIGN TOKENS
@@ -105,11 +106,7 @@ function DownlineLoader() {
       style={{ fontFamily: "'Lato', sans-serif" }}
       className="flex min-h-[350px] w-full flex-col items-center justify-center rounded-[16px] border border-[#e7e9ee] bg-white"
     >
-      <Loader2 size={30} className="animate-spin text-[#3955A6]" />
-
-      <p className="mt-3 text-[13px] font-semibold text-[#667085]">
-        Loading downline report...
-      </p>
+      <Loding />
     </div>
   );
 }

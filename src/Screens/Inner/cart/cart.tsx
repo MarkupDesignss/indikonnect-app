@@ -32,6 +32,7 @@ import {
   useCheckCartStockMutation,
 } from "@/lib/redux/api/cartApi";
 import { useGetProductsQuery } from "@/lib/redux/api/productApi";
+import Loding from "@/components/common/Loding";
 
 const PAGE_BG = "#FFFFFF";
 const poppins = Poppins({
@@ -1213,12 +1214,7 @@ export default function CartPage() {
         />
         <main className="mx-auto flex min-h-[65vh] w-full max-w-[1200px] items-center justify-center px-4">
           <div className="text-center">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-[#E4E4E2] bg-white">
-              <Loader2 className="h-5 w-5 animate-spin text-[#111111]" />
-            </div>
-            <p className="mt-4 text-[9px] font-medium uppercase tracking-[0.16em] text-[#999999]">
-              Preparing your cart
-            </p>
+           <Loding />
           </div>
         </main>
         <Footer />

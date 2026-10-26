@@ -2,10 +2,13 @@
 
 import {
   Activity,
+  CalendarDays,
+  Check,
   ChevronDown,
   Coins,
   HandCoins,
   Loader2,
+  Search,
   ShoppingBag,
   UsersRound,
 } from "lucide-react";
@@ -26,6 +29,8 @@ import type {
 } from "@/lib/redux/api/distributor/userDashboardApi";
 
 import { useGetUserDashboardQuery } from "@/lib/redux/api/distributor/userDashboardApi";
+import { useGetPairingsQuery } from "@/lib/redux/api/distributor/pairingsApi";
+import Loding from "@/components/common/Loding";
 
 // --------------------------------------------------
 // Design tokens
@@ -127,11 +132,10 @@ function SectionTitle({
       />
 
       <h2
-        className={`font-black tracking-[-0.01em] text-[#101828] ${
-          large
+        className={`font-black tracking-[-0.01em] text-[#101828] ${large
             ? "text-[18px] sm:text-[20px]"
             : "text-[16px] sm:text-[18px]"
-        }`}
+          }`}
       >
         {children}
       </h2>
@@ -148,19 +152,12 @@ function DashboardLoader() {
     <div
       suppressHydrationWarning
       style={{ fontFamily: "'Lato', sans-serif" }}
-      className="flex min-h-dvh w-full items-center justify-center overflow-hidden bg-[#f5f6fa] px-4"
+      className="flex min-h-dvh w-full items-center bg-white justify-center overflow-hidden px-4"
     >
       <FontImport />
 
-      <div className="flex flex-col items-center gap-3 rounded-[18px] border border-[#e7e9ee] bg-white px-8 py-7">
-        <Loader2
-          className="h-7 w-7 animate-spin"
-          style={{ color: NAVY }}
-        />
-
-        <p className="text-center text-[13px] font-semibold text-[#667085]">
-          Loading dashboard...
-        </p>
+      <div className="flex flex-col items-center gap-3 rounded-[18px] bg-white px-8 py-7">
+        <Loding />
       </div>
     </div>
   );
@@ -579,16 +576,14 @@ function AccountSummary({
         </span>
 
         <span
-          className={`inline-flex max-w-full items-center gap-1.5 break-words rounded-full px-3 py-1 text-[11px] font-bold ${
-            isActive
+          className={`inline-flex max-w-full items-center gap-1.5 break-words rounded-full px-3 py-1 text-[11px] font-bold ${isActive
               ? "bg-[#eaf7f0] text-[#1f9d6b]"
               : "bg-[#f2f4f7] text-[#667085]"
-          }`}
+            }`}
         >
           <span
-            className={`h-1.5 w-1.5 rounded-full ${
-              isActive ? "bg-[#1f9d6b]" : "bg-[#98a2b3]"
-            }`}
+            className={`h-1.5 w-1.5 rounded-full ${isActive ? "bg-[#1f9d6b]" : "bg-[#98a2b3]"
+              }`}
           />
 
           {formatStatus(ignite?.membership_status)}
@@ -719,14 +714,12 @@ function AccountTable({
               </span>
 
               <span
-                className={`flex min-w-0 items-center gap-1 text-[10px] font-semibold sm:gap-2 sm:text-[12px] ${
-                  isActive ? "text-[#1f9d6b]" : "text-[#667085]"
-                }`}
+                className={`flex min-w-0 items-center gap-1 text-[10px] font-semibold sm:gap-2 sm:text-[12px] ${isActive ? "text-[#1f9d6b]" : "text-[#667085]"
+                  }`}
               >
                 <span
-                  className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-                    isActive ? "bg-[#1f9d6b]" : "bg-[#98a2b3]"
-                  }`}
+                  className={`h-1.5 w-1.5 shrink-0 rounded-full ${isActive ? "bg-[#1f9d6b]" : "bg-[#98a2b3]"
+                    }`}
                 />
 
                 <span className="min-w-0 break-words">
@@ -737,11 +730,10 @@ function AccountTable({
               <span className="flex w-6 items-center justify-center text-[#8a92a6]">
                 <ChevronDown
                   size={16}
-                  className={`transition-transform duration-300 motion-reduce:transition-none ${
-                    expanded
+                  className={`transition-transform duration-300 motion-reduce:transition-none ${expanded
                       ? "rotate-180 text-[#0E1B3D]"
                       : "group-hover:text-[#0E1B3D]"
-                  }`}
+                    }`}
                 />
               </span>
             </button>
@@ -830,27 +822,24 @@ function RecentActivity({
 
       {activity.length > 0 ? (
         <div
-          className={`thin-scroll mt-3 ${
-            hasOverflow ? "overflow-y-auto pr-1" : ""
-          }`}
+          className={`thin-scroll mt-3 ${hasOverflow ? "overflow-y-auto pr-1" : ""
+            }`}
           style={
             hasOverflow
               ? {
-                  maxHeight: `${
-                    MAX_VISIBLE_ACTIVITY * ACTIVITY_ITEM_HEIGHT
+                maxHeight: `${MAX_VISIBLE_ACTIVITY * ACTIVITY_ITEM_HEIGHT
                   }px`,
-                }
+              }
               : undefined
           }
         >
           {activity.map((item, index) => (
             <div
               key={`${item.type}-${item.created_timestamp}-${index}`}
-              className={`flex min-w-0 gap-3 py-3 ${
-                index !== activity.length - 1
+              className={`flex min-w-0 gap-3 py-3 ${index !== activity.length - 1
                   ? "border-b border-[#f0f2f5]"
                   : ""
-              }`}
+                }`}
             >
               <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] bg-[#EAF3FF] text-[#3955A6]">
                 <Activity size={15} />
@@ -979,71 +968,636 @@ function LatestOrderSection({
 }
 
 // --------------------------------------------------
-// CV filters
+// CV filters + Sales calendar
 // --------------------------------------------------
 
-function CvFilters() {
-  const fieldClass =
-    "flex h-11 min-w-0 w-full items-center justify-between gap-2 rounded-[12px] border border-[#e5e9ef] bg-white px-3 text-left text-[12px] text-[#101828] transition-colors hover:border-[#0E1B3D]/40 focus:border-[#0E1B3D] focus:outline-none focus:ring-2 focus:ring-[#0E1B3D]/10 sm:px-4 sm:text-[13px]";
+type SalesCalendarWeek = {
+  year?: number;
+  week_no?: number;
+  start?: string | null;
+  end?: string | null;
+  is_settled?: boolean;
+};
+
+type SalesCalendar = {
+  year?: number;
+  current_month?: {
+    year?: number;
+    month_no?: number;
+    label?: string;
+    start?: string | null;
+    end?: string | null;
+  };
+  current_week?: SalesCalendarWeek;
+};
+
+type CvSearchFilters = {
+  year: number;
+  week_no: number;
+};
+
+type PairingsQueryResult = {
+  data?: any;
+  isLoading?: boolean;
+  isFetching?: boolean;
+  isError?: boolean;
+  error?: unknown;
+  refetch?: () => Promise<unknown> | unknown;
+};
+
+function parseCalendarDate(value?: string | null): Date | null {
+  if (!value) return null;
+
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!match) return null;
+
+  const date = new Date(
+    Number(match[1]),
+    Number(match[2]) - 1,
+    Number(match[3]),
+  );
+
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatCalendarDate(value?: string | null): string {
+  const date = parseCalendarDate(value);
+  if (!date) return value || "—";
+
+  return date.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+  });
+}
+
+function formatDateObject(date: Date): string {
+  return date.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+  });
+}
+
+function getCalendarYear(calendar?: SalesCalendar): number {
+  const calendarYear = Number(
+    calendar?.current_week?.year ?? calendar?.year,
+  );
+
+  return Number.isFinite(calendarYear) && calendarYear > 0
+    ? calendarYear
+    : new Date().getFullYear();
+}
+
+function getCurrentCalendarWeek(calendar?: SalesCalendar): number {
+  const weekNo = Number(calendar?.current_week?.week_no);
+  return Number.isFinite(weekNo) && weekNo > 0 ? weekNo : 1;
+}
+
+/**
+ * The sales calendar uses Saturday-to-Friday settlement weeks. For the
+ * selected API calendar year, use its current week as the anchor. For older
+ * years, derive the Saturday-to-Friday weeks from the first Saturday of that
+ * year so that the Week selector remains usable.
+ */
+function buildCvWeekOptions(
+  year: number,
+  calendar?: SalesCalendar,
+): Array<{ value: number; label: string; description: string }> {
+  const calendarYear = getCalendarYear(calendar);
+  const apiWeekNo = getCurrentCalendarWeek(calendar);
+  const apiWeekStart = parseCalendarDate(calendar?.current_week?.start);
+
+  let firstWeekStart: Date;
+
+  if (year === calendarYear && apiWeekStart) {
+    firstWeekStart = new Date(apiWeekStart);
+    firstWeekStart.setDate(
+      firstWeekStart.getDate() - (apiWeekNo - 1) * 7,
+    );
+  } else {
+    firstWeekStart = new Date(year, 0, 1);
+    const daysUntilSaturday = (6 - firstWeekStart.getDay() + 7) % 7;
+    firstWeekStart.setDate(firstWeekStart.getDate() + daysUntilSaturday);
+  }
+
+  const options: Array<{ value: number; label: string; description: string }> = [];
+
+  for (let weekNo = 1; weekNo <= 53; weekNo += 1) {
+    const startDate = new Date(firstWeekStart);
+    startDate.setDate(startDate.getDate() + (weekNo - 1) * 7);
+
+    if (startDate.getFullYear() !== year) break;
+
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + 6);
+
+    const isApiCurrentWeek =
+      year === calendarYear && weekNo === apiWeekNo && apiWeekStart;
+    const apiEndDate = isApiCurrentWeek
+      ? parseCalendarDate(calendar?.current_week?.end)
+      : null;
+    const finalEndDate = apiEndDate || endDate;
+
+    options.push({
+      value: weekNo,
+      label: `Week ${weekNo}`,
+      description: `${formatDateObject(startDate)} – ${formatDateObject(finalEndDate)} ${year}`,
+    });
+  }
+
+  return options;
+}
+
+function getCvYearOptions(calendar?: SalesCalendar): number[] {
+  const currentYear = getCalendarYear(calendar);
+  return Array.from({ length: 6 }, (_, index) => currentYear - index);
+}
+
+function getPairingsMetrics(response: any): Record<string, any> | null {
+  if (!response) return null;
+
+  const root = response?.data ?? response;
+  const candidates = [
+    root?.ignite,
+    root?.cv_counter,
+    root?.cv_summary,
+    root?.summary,
+    root?.stats,
+    root,
+  ];
+
+  const metricKeys = [
+    "cv_left",
+    "cv_right",
+    "total_cv_left",
+    "total_cv_right",
+    "floating_cv_left",
+    "floating_cv_right",
+    "left_cv",
+    "right_cv",
+    "left_total_cv",
+    "right_total_cv",
+  ];
+
+  for (const candidate of candidates) {
+    if (
+      candidate &&
+      typeof candidate === "object" &&
+      metricKeys.some((key) => candidate[key] !== undefined)
+    ) {
+      const normalized = { ...candidate };
+
+      if (normalized.cv_left === undefined && normalized.left_cv !== undefined) {
+        normalized.cv_left = normalized.left_cv;
+      }
+      if (normalized.cv_right === undefined && normalized.right_cv !== undefined) {
+        normalized.cv_right = normalized.right_cv;
+      }
+      if (
+        normalized.total_cv_left === undefined &&
+        (normalized.left_total_cv !== undefined || normalized.left_cv !== undefined)
+      ) {
+        normalized.total_cv_left = normalized.left_total_cv ?? normalized.left_cv;
+      }
+      if (
+        normalized.total_cv_right === undefined &&
+        (normalized.right_total_cv !== undefined || normalized.right_cv !== undefined)
+      ) {
+        normalized.total_cv_right = normalized.right_total_cv ?? normalized.right_cv;
+      }
+
+      return normalized;
+    }
+  }
+
+  return null;
+}
+
+type DropdownOption<T extends string | number> = {
+  value: T;
+  label: string;
+  description?: string;
+};
+
+type SearchableDropdownProps<T extends string | number> = {
+  id: string;
+  label: string;
+  options: DropdownOption<T>[];
+  value: T;
+  onChange: (value: T) => void;
+  searchPlaceholder: string;
+  emptyMessage: string;
+  disabled?: boolean;
+  featuredOption?: DropdownOption<T>;
+  featuredLabel?: string;
+};
+
+/**
+ * Compact custom dropdown with a built-in search field. The menu closes when
+ * the user clicks outside it or presses Escape, and works on touch screens.
+ */
+function SearchableDropdown<T extends string | number,>({
+  id,
+  label,
+  options,
+  value,
+  onChange,
+  searchPlaceholder,
+  emptyMessage,
+  disabled = false,
+  featuredOption,
+  featuredLabel = "CURRENT WEEK",
+}: SearchableDropdownProps<T>) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const rootRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+        setQuery("");
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+        setQuery("");
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open]);
+
+  const selectedOption = options.find((option) => option.value === value);
+  const normalizedQuery = query.trim().toLowerCase();
+  const matchesQuery = (option: DropdownOption<T>) =>
+    `${option.label} ${option.description ?? ""}`
+      .toLowerCase()
+      .includes(normalizedQuery);
+
+  const showFeaturedOption = Boolean(
+    featuredOption && matchesQuery(featuredOption),
+  );
+  const filteredOptions = options.filter(
+    (option) =>
+      matchesQuery(option) &&
+      !(featuredOption && option.value === featuredOption.value),
+  );
+
+  const chooseOption = (option: DropdownOption<T>) => {
+    onChange(option.value);
+    setOpen(false);
+    setQuery("");
+  };
+
+  return (
+    <div ref={rootRef} className="relative min-w-0">
+      <label
+        id={`${id}-label`}
+        htmlFor={`${id}-trigger`}
+        className="mb-2 block text-[12px] font-semibold text-[#5a6276] sm:text-[13px]"
+      >
+        {label}
+      </label>
+
+      <button
+        id={`${id}-trigger`}
+        type="button"
+        aria-label={`${label}: ${selectedOption?.label ?? "Select an option"}`}
+        aria-labelledby={`${id}-label ${id}-value`}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-controls={`${id}-listbox`}
+        disabled={disabled}
+        onClick={() => setOpen((previous) => !previous)}
+        className="group flex h-12 w-full min-w-0 items-center justify-between gap-3 rounded-[13px] border border-[#e3e8f0] bg-white px-3.5 text-left outline-none transition-all hover:border-[#aebbd0] hover:bg-[#fcfdff] focus-visible:border-[#3955A6] focus-visible:ring-4 focus-visible:ring-[#3955A6]/10 disabled:cursor-not-allowed disabled:bg-[#f7f8fa] disabled:text-[#98a2b3] sm:px-4"
+      >
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span
+            id={`${id}-value`}
+            className="truncate text-[13px] font-bold leading-5 text-[#101828]"
+          >
+            {selectedOption?.label ?? "Select an option"}
+          </span>
+          {selectedOption?.description && (
+            <span className="truncate text-[10px] leading-4 text-[#8a92a6] sm:text-[11px]">
+              {selectedOption.description}
+            </span>
+          )}
+        </span>
+
+        <ChevronDown
+          size={16}
+          className={`shrink-0 text-[#7c879b] transition-transform duration-200 group-hover:text-[#0E1B3D] ${
+            open ? "rotate-180 text-[#0E1B3D]" : ""
+          }`}
+        />
+      </button>
+
+      <AnimatePresence>
+        {open && !disabled && (
+          <motion.div
+            initial={{ opacity: 0, y: -5, scale: 0.99 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -5, scale: 0.99 }}
+            transition={{ duration: 0.16, ease: "easeOut" }}
+            className="absolute left-0 top-[calc(100%+8px)] z-[80] w-full min-w-[220px] overflow-hidden rounded-[16px] border border-[#e3e8f0] bg-white shadow-[0_16px_44px_rgba(14,27,61,0.16)]"
+          >
+            <div className="border-b border-[#eef1f5] p-3">
+              <div className="flex h-10 items-center gap-2.5 rounded-[11px] border border-[#e6eaf0] bg-[#f8fafc] px-3 transition-colors focus-within:border-[#3955A6] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#3955A6]/10">
+                <Search size={15} className="shrink-0 text-[#8a92a6]" />
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder={searchPlaceholder}
+                  aria-label={`Search ${label.toLowerCase()} options`}
+                  autoComplete="off"
+                  className="h-full min-w-0 flex-1 bg-transparent text-[12px] font-medium text-[#101828] outline-none placeholder:text-[#98a2b3]"
+                />
+                {query && (
+                  <button
+                    type="button"
+                    onClick={() => setQuery("")}
+                    aria-label="Clear search"
+                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[16px] leading-none text-[#8a92a6] hover:bg-[#e9edf4] hover:text-[#101828]"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+              <p className="mt-2 px-1 text-[10px] font-semibold uppercase tracking-[0.09em] text-[#98a2b3]">
+                {filteredOptions.length + (showFeaturedOption ? 1 : 0)} options
+              </p>
+            </div>
+
+            <div
+              id={`${id}-listbox`}
+              role="listbox"
+              aria-label={`${label} options`}
+              className="thin-scroll max-h-[270px] overflow-y-auto p-2"
+            >
+              {showFeaturedOption && featuredOption && (
+                <div className="mb-2">
+                  <p className="px-2 pb-1.5 pt-1 text-[9px] font-black tracking-[0.12em] text-[#1f9d6b]">
+                    {featuredLabel}
+                  </p>
+                  <button
+                    type="button"
+                    role="option"
+                    aria-selected={featuredOption.value === value}
+                    onClick={() => chooseOption(featuredOption)}
+                    className={`flex w-full items-center gap-2.5 rounded-[11px] border px-3 py-2.5 text-left transition-colors ${
+                      featuredOption.value === value
+                        ? "border-[#ccebdc] bg-[#f0fbf5]"
+                        : "border-[#e0f2e8] bg-[#f8fdf9] hover:bg-[#eefaf3]"
+                    }`}
+                  >
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] bg-white text-[#1f9d6b] ring-1 ring-[#d9eee2]">
+                      <CalendarDays size={15} />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[12px] font-extrabold text-[#101828]">
+                        {featuredOption.label}
+                      </span>
+                      {featuredOption.description && (
+                        <span className="mt-0.5 block truncate text-[10px] text-[#667085]">
+                          {featuredOption.description}
+                        </span>
+                      )}
+                    </span>
+                    {featuredOption.value === value && (
+                      <Check size={15} className="shrink-0 text-[#1f9d6b]" />
+                    )}
+                  </button>
+                </div>
+              )}
+
+              {filteredOptions.length > 0 ? (
+                <div className="space-y-1">
+                  {filteredOptions.map((option) => {
+                    const isSelected = option.value === value;
+
+                    return (
+                      <button
+                        key={String(option.value)}
+                        type="button"
+                        role="option"
+                        aria-selected={isSelected}
+                        onClick={() => chooseOption(option)}
+                        className={`flex w-full items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-left transition-colors ${
+                          isSelected
+                            ? "bg-[#eef3ff] text-[#243e80]"
+                            : "text-[#344054] hover:bg-[#f6f8fb]"
+                        }`}
+                      >
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[12px] font-bold">
+                            {option.label}
+                          </span>
+                          {option.description && (
+                            <span className="mt-0.5 block truncate text-[10px] text-[#8a92a6]">
+                              {option.description}
+                            </span>
+                          )}
+                        </span>
+                        {isSelected && (
+                          <Check size={15} className="shrink-0 text-[#3955A6]" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : !showFeaturedOption ? (
+                <div className="px-3 py-7 text-center">
+                  <span className="mx-auto flex h-9 w-9 items-center justify-center rounded-full bg-[#f2f4f7] text-[#8a92a6]">
+                    <Search size={15} />
+                  </span>
+                  <p className="mt-2 text-[11px] font-bold text-[#475467]">
+                    No results found
+                  </p>
+                  <p className="mt-1 text-[10px] text-[#98a2b3]">
+                    {emptyMessage}
+                  </p>
+                </div>
+              ) : null}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function CvFilters({
+  calendar,
+  selectedYear,
+  selectedWeek,
+  onYearChange,
+  onWeekChange,
+  onSearch,
+  isFetching,
+  isError,
+  hasSearched,
+  searchedYear,
+  searchedWeek,
+}: {
+  calendar?: SalesCalendar;
+  selectedYear: number;
+  selectedWeek: number;
+  onYearChange: (year: number) => void;
+  onWeekChange: (week: number) => void;
+  onSearch: () => void;
+  isFetching: boolean;
+  isError: boolean;
+  hasSearched: boolean;
+  searchedYear?: number;
+  searchedWeek?: number;
+}) {
+  const yearOptions = getCvYearOptions(calendar).map((year) => ({
+    value: year,
+    label: String(year),
+  }));
+  const weekOptions = buildCvWeekOptions(selectedYear, calendar);
+  const selectedWeekOption = weekOptions.find(
+    (option) => option.value === selectedWeek,
+  );
+  const calendarYear = getCalendarYear(calendar);
+  const currentWeekNo = getCurrentCalendarWeek(calendar);
+  const featuredWeekOption =
+    selectedYear === calendarYear
+      ? weekOptions.find((option) => option.value === currentWeekNo)
+      : undefined;
+  const currentWeek = calendar?.current_week;
+  const currentMonth = calendar?.current_month;
+  const currentWeekLabel = currentWeek?.start && currentWeek?.end
+    ? `Week ${currentWeek.week_no ?? "—"}: ${formatCalendarDate(currentWeek.start)} – ${formatCalendarDate(currentWeek.end)} ${currentWeek.year ?? calendar?.year ?? ""}`.trim()
+    : "Sales calendar from dashboard";
+  const currentMonthLabel = currentMonth?.start && currentMonth?.end
+    ? `${formatCalendarDate(currentMonth.start)} – ${formatCalendarDate(currentMonth.end)} ${currentMonth.year ?? calendar?.year ?? ""}`.trim()
+    : currentMonth?.label || "—";
 
   return (
     <div className={`${CARD} mt-4 p-4 sm:p-5`}>
-      <div className="grid min-w-0 grid-cols-1 items-end gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-[1.1fr_1.25fr_.4fr_auto]">
-        <div className="min-w-0">
-          <label className="mb-2 block text-[12px] font-semibold text-[#5a6276] sm:text-[13px]">
-            TC account
-          </label>
-
-          <button type="button" className={fieldClass}>
-            <span className="min-w-0 flex-1 truncate">TC-001</span>
-
-            <ChevronDown
-              size={16}
-              className="shrink-0 text-[#98a2b3]"
-            />
-          </button>
+      <div className="mb-4 flex min-w-0 flex-col gap-3 border-b border-[#f0f2f5] pb-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-start gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#EAF3FF] text-[#3955A6]">
+            <CalendarDays size={18} />
+          </span>
+          <div className="min-w-0">
+            <h3 className="text-[13px] font-black text-[#101828] sm:text-[14px]">
+              Sales calendar
+            </h3>
+            <p className="mt-1 break-words text-[11px] leading-4 text-[#667085] sm:text-[12px]">
+              Current week: {currentWeekLabel}
+            </p>
+            <p className="mt-0.5 break-words text-[10px] leading-4 text-[#98a2b3] sm:text-[11px]">
+              Current month: {currentMonthLabel}
+              {currentMonth?.label ? ` · ${currentMonth.label}` : ""}
+            </p>
+          </div>
         </div>
 
-        <div className="min-w-0">
-          <label className="mb-2 block text-[12px] font-semibold text-[#5a6276] sm:text-[13px]">
-            Week
-          </label>
-
-          <button type="button" className={fieldClass}>
-            <span className="min-w-0 flex-1 truncate">
-              Week 34 (22 Aug – 28 Aug 2026)
-            </span>
-
-            <ChevronDown
-              size={16}
-              className="shrink-0 text-[#98a2b3]"
+        {currentWeek?.is_settled !== undefined && (
+          <span
+            className={`inline-flex w-fit shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold sm:text-[11px] ${
+              currentWeek.is_settled
+                ? "bg-[#eaf7f0] text-[#1f9d6b]"
+                : "bg-[#fff4e5] text-[#a15c07]"
+            }`}
+          >
+            <span
+              className={`h-1.5 w-1.5 rounded-full ${
+                currentWeek.is_settled ? "bg-[#1f9d6b]" : "bg-[#f79009]"
+              }`}
             />
-          </button>
-        </div>
+            {currentWeek.is_settled ? "Settled" : "Pending settlement"}
+          </span>
+        )}
+      </div>
 
-        <div className="min-w-0">
-          <label className="mb-2 block text-[12px] font-semibold text-[#5a6276] sm:text-[13px]">
-            Year
-          </label>
+      <div className="grid min-w-0 grid-cols-1 items-end gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(150px,0.8fr)_minmax(260px,1.8fr)_auto] sm:gap-4">
+        <SearchableDropdown
+          id="cv-calendar-year"
+          label="Year"
+          value={selectedYear}
+          options={yearOptions}
+          onChange={onYearChange}
+          searchPlaceholder="Search year..."
+          emptyMessage="Try another year."
+        />
 
-          <button type="button" className={fieldClass}>
-            <span className="min-w-0 flex-1 truncate">2026</span>
-
-            <ChevronDown
-              size={16}
-              className="shrink-0 text-[#98a2b3]"
-            />
-          </button>
-        </div>
+        <SearchableDropdown
+          id="cv-calendar-week"
+          label="Week"
+          value={selectedWeek}
+          options={weekOptions}
+          onChange={onWeekChange}
+          searchPlaceholder="Search week or date..."
+          emptyMessage="Try a week number or date, e.g. Oct."
+          disabled={weekOptions.length === 0}
+          featuredOption={featuredWeekOption}
+          featuredLabel="CURRENT WEEK · QUICK SELECT"
+        />
 
         <button
           type="button"
-          className="h-11 w-full min-w-0 rounded-[12px] px-6 text-[13px] font-bold text-white transition-all hover:opacity-90 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E1B3D]/30 focus-visible:ring-offset-2 sm:text-[13.5px] xl:w-auto xl:min-w-[100px]"
+          onClick={onSearch}
+          disabled={isFetching || weekOptions.length === 0}
+          className="inline-flex h-12 w-full min-w-0 items-center justify-center gap-2 rounded-[13px] px-5 text-[13px] font-bold text-white transition-all hover:opacity-90 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E1B3D]/30 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 sm:text-[13.5px] xl:w-auto xl:min-w-[118px]"
           style={{ backgroundColor: NAVY }}
         >
-          Search
+          {isFetching ? (
+            <Loader2 size={15} className="animate-spin" />
+          ) : (
+            <Search size={15} />
+          )}
+          {isFetching ? "Searching..." : "Search"}
         </button>
       </div>
+
+      {selectedWeekOption && (
+        <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-[#8a92a6] sm:text-[11px]">
+          <span className="inline-flex items-center gap-1 rounded-full bg-[#f6f8fb] px-2.5 py-1 font-bold text-[#475467]">
+            <CalendarDays size={12} />
+            Selected period
+          </span>
+          <span className="font-semibold text-[#667085]">
+            {selectedWeekOption.label} · {selectedWeekOption.description}
+          </span>
+        </div>
+      )}
+
+      {hasSearched && searchedYear !== undefined && searchedWeek !== undefined && (
+        <div
+          role={isError ? "alert" : "status"}
+          className={`mt-4 flex min-w-0 items-start gap-2 rounded-[11px] px-3 py-2.5 text-[11px] leading-5 sm:text-[12px] ${
+            isError
+              ? "border border-[#f2c6c3] bg-[#fff4f3] text-[#b42318]"
+              : isFetching
+                ? "border border-[#dbe6fb] bg-[#f4f8ff] text-[#3955A6]"
+                : "border border-[#ccebdc] bg-[#f1fbf5] text-[#18794e]"
+          }`}
+        >
+          {isFetching && <Loader2 size={14} className="mt-0.5 shrink-0 animate-spin" />}
+          <span className="min-w-0 break-words">
+            {isError
+              ? `Unable to load CV data for Year ${searchedYear}, Week ${searchedWeek}. Click Search to try again.`
+              : isFetching
+                ? `Loading CV data for Year ${searchedYear}, Week ${searchedWeek}...`
+                : `CV search completed for Year ${searchedYear}, Week ${searchedWeek}.`}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
@@ -1061,6 +1615,12 @@ export default function DistributorDashboardPage() {
   >("checking");
 
   const [mounted, setMounted] = useState(false);
+  const [selectedCvYear, setSelectedCvYear] = useState<number>(
+    new Date().getFullYear(),
+  );
+  const [selectedCvWeek, setSelectedCvWeek] = useState<number>(1);
+  const [submittedCvFilters, setSubmittedCvFilters] =
+    useState<CvSearchFilters | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -1130,6 +1690,61 @@ export default function DistributorDashboardPage() {
   const activity: DashboardActivity[] =
     dashboard?.recent_activity ?? [];
 
+  // sales_calendar is returned by the dashboard endpoint. Keep this local type
+  // so the component also works if the generated API interface has not yet
+  // been updated with the sales_calendar property.
+  const salesCalendar = (dashboard as any)?.sales_calendar as
+    | SalesCalendar
+    | undefined;
+  const calendarYear = getCalendarYear(salesCalendar);
+  const calendarWeek = getCurrentCalendarWeek(salesCalendar);
+  const calendarWeekStart = salesCalendar?.current_week?.start ?? "";
+  const hasSalesCalendar = Boolean(salesCalendar);
+
+  useEffect(() => {
+    if (!hasSalesCalendar) return;
+    setSelectedCvYear(calendarYear);
+    setSelectedCvWeek(calendarWeek);
+  }, [calendarYear, calendarWeek, calendarWeekStart, hasSalesCalendar]);
+
+  // The query is deliberately skipped until Search is clicked. The API hook
+  // is cast here because the pairings endpoint's generated argument interface
+  // may differ between app versions; the request carries year + week_no.
+  const pairingsQuery = useGetPairingsQuery(
+    (submittedCvFilters
+      ? {
+        year: submittedCvFilters.year,
+        week_no: submittedCvFilters.week_no,
+      }
+      : undefined) as any,
+    {
+      skip: !submittedCvFilters,
+      refetchOnMountOrArgChange: true,
+    },
+  ) as unknown as PairingsQueryResult;
+
+  const handleCvSearch = () => {
+    const nextFilters: CvSearchFilters = {
+      year: selectedCvYear,
+      week_no: selectedCvWeek,
+    };
+
+    if (
+      submittedCvFilters?.year === nextFilters.year &&
+      submittedCvFilters?.week_no === nextFilters.week_no
+    ) {
+      void pairingsQuery.refetch?.();
+      return;
+    }
+
+    setSubmittedCvFilters(nextFilters);
+  };
+
+  const periodIgniteMetrics = getPairingsMetrics(pairingsQuery.data);
+  const cvCounterIgnite = periodIgniteMetrics
+    ? ({ ...(ignite ?? {}), ...periodIgniteMetrics } as IgniteDashboard)
+    : ignite;
+
   if (!mounted || authStatus !== "authorized" || isLoading) {
     return <DashboardLoader />;
   }
@@ -1196,18 +1811,35 @@ export default function DistributorDashboardPage() {
 
             {/* CV counter */}
             <section className="mt-5 min-w-0 sm:mt-5">
-              <SectionTitle large>CV counter</SectionTitle>
+              <SectionTitle large>Sales calendar</SectionTitle>
 
-              <CvFilters />
+              <CvFilters
+                calendar={salesCalendar}
+                selectedYear={selectedCvYear}
+                selectedWeek={selectedCvWeek}
+                onYearChange={(year) => {
+                  setSelectedCvYear(year);
+                  setSelectedCvWeek(
+                    year === calendarYear ? calendarWeek : 1,
+                  );
+                }}
+                onWeekChange={setSelectedCvWeek}
+                onSearch={handleCvSearch}
+                isFetching={Boolean(pairingsQuery.isFetching || pairingsQuery.isLoading)}
+                isError={Boolean(pairingsQuery.isError)}
+                hasSearched={Boolean(submittedCvFilters)}
+                searchedYear={submittedCvFilters?.year}
+                searchedWeek={submittedCvFilters?.week_no}
+              />
 
               <div className="mt-4 grid min-w-0 grid-cols-1 gap-4 sm:mt-5 sm:gap-5 xl:grid-cols-2">
                 <div className="flex min-w-0 flex-col gap-4 sm:gap-5">
                   <CoinsSection ignite={ignite} />
 
-                  <AccountSummary ignite={ignite} />
+                  <AccountSummary ignite={cvCounterIgnite} />
                 </div>
 
-                <AccountTable ignite={ignite} />
+                <AccountTable ignite={cvCounterIgnite} />
               </div>
             </section>
 

@@ -75,6 +75,7 @@ import MostFollowedReel from "./MostFollowedReel";
 import TrendingProductsSection from "./TrendingProductsSection";
 import NewArrivalsSection from "./NewArrivalsSection";
 import ShopByCategory from "./ShopByCategory";
+import Loding from "../Loding";
 /* =========================================================
    DISTRIBUTOR / WEB BASE PATH
 ========================================================= */
@@ -2070,15 +2071,7 @@ export default function IndieKonnectHome() {
         className={`${s.page} isolate relative flex w-full min-w-0 flex-col overflow-x-hidden bg-white`}
       >
         <Header />
-
-        <div className={s.loadingContainer}>
-          <div className={s.loaderRing}>
-            <div className={s.loaderRingInner} />
-          </div>
-
-          <p className={s.loadingText}>Loading experience...</p>
-        </div>
-
+        <Loding />
         <Footer />
       </div>
     );

@@ -31,6 +31,7 @@ import type {
     RankCondition,
     RankProgress,
 } from "../../../lib/redux/api/distributor/distributorStatsApi";
+import Loding from "@/components/common/Loding";
 
 interface TrackingDashboardProps {
     variant?: "cv" | "commission";
@@ -105,11 +106,7 @@ function DashboardLoader() {
             <FontImport />
 
             <div className="flex flex-col items-center gap-3">
-                <Loader2 size={30} className="animate-spin" style={{ color: NAVY }} />
-
-                <p className="text-[13px] font-semibold text-[#667085]">
-                    Loading distributor statistics...
-                </p>
+            <Loding />
             </div>
         </div>
     );
