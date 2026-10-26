@@ -3,12 +3,12 @@
 import "./premium-header.css";
 
 import { Suspense, useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useDispatch } from "react-redux";
-
 import { useTokenCheck } from "@/hooks/useTokenCheck";
 import { getAppType } from "@/lib/appConfig";
 
@@ -92,6 +92,9 @@ const SCROLL_EXPAND_AT = 10;
 
 const NAV_COLLAPSE_AT = 260;
 const NAV_EXPAND_AT = 140;
+
+/* Initial header height — must match HeaderSkeleton */
+const INITIAL_HEADER_HEIGHT = 112;
 
 /* =========================================================
    LOGOUT MODAL
@@ -218,6 +221,13 @@ function HeaderInner({
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAllCategoriesOpen, setIsAllCategoriesOpen] = useState(false);
+  /* Desktop "ALL CATEGORIES" dropdown (portal based, always on top) */
+  const [isAllDropdownOpen, setIsAllDropdownOpen] = useState(false);
+  const [allDropdownPos, setAllDropdownPos] = useState<{
+    top: number;
+    left: number;
+    width: number;
+  }>({ top: 0, left: 0, width: 260 });
   const [mobileExpandedCategoryId, setMobileExpandedCategoryId] = useState<
     number | null
   >(null);
@@ -239,7 +249,7 @@ function HeaderInner({
   /* SCROLL STATE */
   const [isScrolled, setIsScrolled] = useState(false);
   const [isNavCollapsed, setIsNavCollapsed] = useState(false);
-  const [headerHeight, setHeaderHeight] = useState(0);
+  const [headerHeight, setHeaderHeight] = useState(INITIAL_HEADER_HEIGHT);
 
   /* LOCATION STATES */
   const [locationLoading, setLocationLoading] = useState(false);
@@ -261,6 +271,8 @@ function HeaderInner({
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const voiceRecognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const headerRef = useRef<HTMLElement>(null);
+  const allCategoriesBtnRef = useRef<HTMLButtonElement>(null);
+  const allDropdownRef = useRef<HTMLDivElement>(null);
   const lastScrollY = useRef(0);
   const ticking = useRef(false);
 
@@ -322,11 +334,18 @@ function HeaderInner({
   useEffect(() => {
     if (typeof window === "undefined" || !headerRef.current) return;
     const el = headerRef.current;
+
+    const setMeasuredHeight = () => {
+      const h = el.getBoundingClientRect().height;
+      // Ignore transient 0 values (e.g. before CSS loads)
+      if (h > 0) setHeaderHeight(h);
+    };
+
     const ro = new ResizeObserver(() => {
-      setHeaderHeight(el.getBoundingClientRect().height);
+      setMeasuredHeight();
     });
     ro.observe(el);
-    setHeaderHeight(el.getBoundingClientRect().height);
+    setMeasuredHeight();
     return () => ro.disconnect();
   }, []);
 
@@ -337,6 +356,50 @@ function HeaderInner({
       setHoveredCategoryId(null);
     }
   }, [isScrolled]);
+
+  /* Nav collapse hone par desktop All Categories dropdown band */
+  useEffect(() => {
+    if (isNavCollapsed) setIsAllDropdownOpen(false);
+  }, [isNavCollapsed]);
+
+  /* ALL CATEGORIES DROPDOWN: position, outside click, escape, resize */
+  useEffect(() => {
+    if (!isAllDropdownOpen) return;
+
+    const updatePosition = () => {
+      const btn = allCategoriesBtnRef.current;
+      if (!btn) return;
+      const rect = btn.getBoundingClientRect();
+      setAllDropdownPos({
+        top: rect.bottom + 6,
+        left: rect.left,
+        width: Math.max(rect.width, 260),
+      });
+    };
+
+    const handleMouseDown = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (allDropdownRef.current?.contains(target)) return;
+      if (allCategoriesBtnRef.current?.contains(target)) return;
+      setIsAllDropdownOpen(false);
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsAllDropdownOpen(false);
+    };
+
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, { passive: true });
+    document.addEventListener("mousedown", handleMouseDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition);
+      document.removeEventListener("mousedown", handleMouseDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isAllDropdownOpen]);
 
   /* RESTORE SAVED LOCATION */
   useEffect(() => {
@@ -655,6 +718,7 @@ function HeaderInner({
   const closeHeaderOverlays = () => {
     setIsMobileMenuOpen(false);
     setIsAllCategoriesOpen(false);
+    setIsAllDropdownOpen(false);
     setMobileExpandedCategoryId(null);
     setIsSearchFocused(false);
     setIsSearchHovered(false);
@@ -1406,9 +1470,64 @@ function HeaderInner({
         isLoading={isLoggingOut}
       />
 
-      {/* Spacer to prevent layout shift */}
+      {/* ALL CATEGORIES DROPDOWN — portal to <body>, so it is never clipped
+          by header overflow and always renders above every other element */}
+      {isAllDropdownOpen &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            ref={allDropdownRef}
+            role="menu"
+            aria-label="All categories"
+            className="font-lato"
+            style={{
+              position: "fixed",
+              top: allDropdownPos.top,
+              left: allDropdownPos.left,
+              minWidth: allDropdownPos.width,
+              maxHeight: `calc(100vh - ${allDropdownPos.top + 16}px)`,
+              overflowY: "auto",
+              zIndex: 2147483000,
+              background: "#ffffff",
+              border: "1px solid #E4E4E2",
+              borderRadius: 8,
+              boxShadow: "0 18px 50px rgba(0,0,0,0.18)",
+              padding: "6px 0",
+            }}
+          >
+            {categories.length === 0 && (
+              <p
+                style={{
+                  padding: "12px 16px",
+                  fontSize: 13,
+                  color: "#777777",
+                }}
+              >
+                No categories available
+              </p>
+            )}
+            {categories.map((category: any) => (
+              <button
+                key={category.id}
+                type="button"
+                role="menuitem"
+                onClick={() =>
+                  goToProducts(category.slug || category.title || category.name)
+                }
+                className="flex w-full items-center justify-between gap-6 px-4 py-2.5 text-left text-[13px] font-medium text-[#222222] transition-colors duration-150 hover:bg-[#F4F4F3]"
+              >
+                {category.title || category.name}
+                <ChevronRight size={15} />
+              </button>
+            ))}
+          </div>,
+          document.body,
+        )}
+
+      {/* Spacer to prevent layout shift — ALWAYS renders with a valid height
+          (initial height matches HeaderSkeleton / default header size) */}
       <div
-        style={{ height: headerHeight || undefined }}
+        style={{ height: headerHeight }}
         aria-hidden="true"
         className="premium-header-spacer"
       />
@@ -1487,7 +1606,6 @@ function HeaderInner({
         {/* ── MAIN ROW (hamesha visible) ── */}
         <div className="premium-main">
           <div className="premium-shell premium-main-content">
-            
             {/* LEFT: Brand Logo */}
             <Link
               href="/home"
@@ -1775,41 +1893,18 @@ function HeaderInner({
           >
             <nav className="premium-nav">
               <div className="premium-shell premium-nav-inner">
-                <div
-                  className="premium-nav-category"
-                  onMouseLeave={() => setIsAllCategoriesOpen(false)}
-                >
+                <div className="premium-nav-category">
                   <button
+                    ref={allCategoriesBtnRef}
                     type="button"
                     className="premium-all-categories"
-                    onClick={() => setIsAllCategoriesOpen((prev) => !prev)}
-                    aria-expanded={isAllCategoriesOpen}
+                    onClick={() => setIsAllDropdownOpen((prev) => !prev)}
+                    aria-expanded={isAllDropdownOpen}
                     aria-haspopup="true"
                     tabIndex={isNavCollapsed ? -1 : 0}
                   >
                     <Menu size={22} /> ALL CATEGORIES
                   </button>
-                  <div
-                    className="premium-all-dropdown"
-                    style={
-                      isAllCategoriesOpen ? { display: "block" } : undefined
-                    }
-                  >
-                    {categories.map((category: any) => (
-                      <button
-                        key={category.id}
-                        type="button"
-                        onClick={() =>
-                          goToProducts(
-                            category.slug || category.title || category.name,
-                          )
-                        }
-                      >
-                        {category.title || category.name}
-                        <ChevronRight size={15} />
-                      </button>
-                    ))}
-                  </div>
                 </div>
                 <span className="premium-nav-separator" />
                 <div className="premium-nav-links">
@@ -1967,7 +2062,7 @@ function HeaderSkeleton() {
   return (
     <header
       style={{
-        height: 112,
+        height: INITIAL_HEADER_HEIGHT,
         background: "#fff",
         borderBottom: "1px solid #EAEAEA",
       }}

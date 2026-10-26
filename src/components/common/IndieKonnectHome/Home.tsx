@@ -1347,8 +1347,7 @@ function ProductCard({
         />
 
         {/* =================================================
-            RATING - IMAGE BOTTOM LEFT
-        ================================================= */}
+            RATING - IMAGE BOTTOM LEFT        ================================================= */}
 
         {Number(rating) > 0 && (
           <div
@@ -2558,14 +2557,20 @@ export default function IndieKonnectHome() {
 
   /* =======================================================
      LOADING
+     -------------------------------------------------------
+     IMPORTANT: Do not wrap <Header /> in any sticky wrapper.
+     Header is `position: fixed` and renders its own spacer,
+     so it must live directly inside the page shell in BOTH
+     loading and success states — otherwise the loader will
+     overlap the header on first paint.
   ======================================================= */
 
   if (isLoading) {
     return (
-      <div className={s.page}>
-        <div className={s.stickyHeaderWrapper}>
-          <Header />
-        </div>
+      <div
+        className={`${s.page} isolate relative flex w-full min-w-0 flex-col overflow-x-hidden bg-white`}
+      >
+        <Header />
 
         <div className={s.loadingContainer}>
           <div className={s.loaderRing}>

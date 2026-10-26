@@ -15,12 +15,16 @@ import {
   ChevronDown,
   Network,
   ShoppingBag,
+  ArrowLeftRight,
+  X,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 import {
   useGetDistributorPendingPlacementsQuery,
+  useSetDistributorPlacementMutation,
 } from "@/lib/redux/api/distributor/distributorPendingPlacementsApi";
 import type {
   PendingPlacement,
@@ -177,13 +181,162 @@ function PlacementStatus({ member }: { member: PendingPlacement }) {
 }
 
 // ==================================================
+// PLACE ACTION CELL
+// ==================================================
+
+function PlaceAction({
+  member,
+  isPlacing,
+  onPlace,
+}: {
+  member: PendingPlacement;
+  isPlacing: boolean;
+  onPlace: (baId: string, side: 1 | 2) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!open || isPlacing) {
+      setMenuPosition(null);
+      return;
+    }
+
+    // Keep the menu attached to the Place button even when the table scrolls.
+    // Rendering through a portal prevents the table's overflow-x-auto from clipping it.
+    const MENU_WIDTH = 144;
+    const MENU_HEIGHT = 84;
+    const VIEWPORT_GAP = 8;
+
+    const updateMenuPosition = () => {
+      const trigger = triggerRef.current;
+      if (!trigger) return;
+
+      const rect = trigger.getBoundingClientRect();
+      const menuWidth = menuRef.current?.offsetWidth || MENU_WIDTH;
+      const menuHeight = menuRef.current?.offsetHeight || MENU_HEIGHT;
+      const maxLeft = Math.max(VIEWPORT_GAP, window.innerWidth - menuWidth - VIEWPORT_GAP);
+      const left = Math.max(VIEWPORT_GAP, Math.min(rect.right - menuWidth, maxLeft));
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const openAbove =
+        spaceBelow < menuHeight + VIEWPORT_GAP && rect.top > menuHeight + VIEWPORT_GAP;
+
+      const preferredTop = openAbove ? rect.top - menuHeight - 4 : rect.bottom + 4;
+      const maxTop = Math.max(VIEWPORT_GAP, window.innerHeight - menuHeight - VIEWPORT_GAP);
+      const top = Math.max(VIEWPORT_GAP, Math.min(preferredTop, maxTop));
+
+      setMenuPosition({ top, left });
+    };
+
+    updateMenuPosition();
+    window.addEventListener("resize", updateMenuPosition);
+    // Capture scroll events from the table and other scrollable containers too.
+    window.addEventListener("scroll", updateMenuPosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updateMenuPosition);
+      window.removeEventListener("scroll", updateMenuPosition, true);
+    };
+  }, [open, isPlacing]);
+
+  const placeMember = (side: 1 | 2) => {
+    setOpen(false);
+    setMenuPosition(null);
+    onPlace(member.ba_id, side);
+  };
+
+  return (
+    <div className="relative inline-flex">
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        disabled={isPlacing}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        className="inline-flex items-center gap-1.5 rounded-[8px] border border-[#e5e9ef] bg-white px-2.5 py-1.5 text-[11px] font-bold text-[#3955A6] transition-colors hover:bg-[#f7f8fa] disabled:opacity-50"
+      >
+        {isPlacing ? (
+          <Loader2 size={12} className="animate-spin" />
+        ) : (
+          <ArrowLeftRight size={12} />
+        )}
+        Place
+        <ChevronDown
+          size={12}
+          className={open ? "rotate-180 transition-transform" : "transition-transform"}
+        />
+      </button>
+
+      {open && !isPlacing && menuPosition && typeof document !== "undefined"
+        ? createPortal(
+            <>
+              {/* Full-screen click-away layer; the menu is stacked above it. */}
+              <button
+                type="button"
+                aria-label="Close placement menu"
+                onClick={() => {
+                  setOpen(false);
+                  setMenuPosition(null);
+                }}
+                className="fixed inset-0 z-[2147483646] m-0 cursor-default border-0 bg-transparent p-0"
+              />
+
+              <div
+                ref={menuRef}
+                role="menu"
+                style={{ top: menuPosition.top, left: menuPosition.left }}
+                className="fixed z-[2147483647] w-36 overflow-hidden rounded-[10px] border border-[#e5e9ef] bg-white shadow-[0_8px_24px_-10px_rgba(16,24,40,0.2)]"
+              >
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => placeMember(1)}
+                  className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[11px] font-semibold text-[#344054] hover:bg-[#f7f8fa]"
+                >
+                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#eaf7f0] text-[9px] font-black text-[#18794e]">
+                    L
+                  </span>
+                  Place Left
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => placeMember(2)}
+                  className="flex w-full items-center gap-2 border-t border-[#f0f2f5] px-3 py-2.5 text-left text-[11px] font-semibold text-[#344054] hover:bg-[#f7f8fa]"
+                >
+                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#eceffb] text-[9px] font-black text-[#3955A6]">
+                    R
+                  </span>
+                  Place Right
+                </button>
+              </div>
+            </>,
+            document.body,
+          )
+        : null}
+    </div>
+  );
+}
+
+// ==================================================
 // MEMBER TABLE
 // ==================================================
 
-function MemberTable({ members }: { members: PendingPlacement[] }) {
+function MemberTable({
+  members,
+  placingBaId,
+  onPlace,
+}: {
+  members: PendingPlacement[];
+  placingBaId: string | null;
+  onPlace: (baId: string, side: 1 | 2) => void;
+}) {
   return (
     <div className="overflow-x-auto rounded-[14px] border border-[#e7e9ee] bg-white">
-      <table className="w-full min-w-[760px] border-collapse text-left">
+      <table className="w-full min-w-[860px] border-collapse text-left">
         <thead>
           <tr className="border-b border-[#e7e9ee] bg-[#f7f8fa]">
             <th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wide text-[#667085]">
@@ -204,6 +357,9 @@ function MemberTable({ members }: { members: PendingPlacement[] }) {
             <th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wide text-[#667085]">
               Order status
             </th>
+            <th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wide text-[#667085]">
+              Action
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -212,7 +368,7 @@ function MemberTable({ members }: { members: PendingPlacement[] }) {
               key={member.member_id}
               className="border-b border-[#f0f2f5] transition-colors last:border-b-0 hover:bg-[#fafcff]"
             >
-              {/* Member */}
+              {/* Member (name only — ba_id removed) */}
               <td className="px-4 py-4">
                 <div className="flex min-w-0 items-center gap-3">
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[#eceffb] text-[#3955A6]">
@@ -221,9 +377,6 @@ function MemberTable({ members }: { members: PendingPlacement[] }) {
                   <div className="min-w-0">
                     <p className="break-words text-[13px] font-bold text-[#101828]">
                       {displayValue(member.fullname)}
-                    </p>
-                    <p className="mt-0.5 break-all font-mono text-[11px] font-semibold text-[#3955A6]">
-                      {displayValue(member.ba_id)}
                     </p>
                   </div>
                 </div>
@@ -279,6 +432,15 @@ function MemberTable({ members }: { members: PendingPlacement[] }) {
                   {member.has_ordered ? "Order placed" : "No order yet"}
                 </span>
               </td>
+
+              {/* Action */}
+              <td className="px-4 py-4">
+                <PlaceAction
+                  member={member}
+                  isPlacing={placingBaId === member.ba_id}
+                  onPlace={onPlace}
+                />
+              </td>
             </tr>
           ))}
         </tbody>
@@ -302,9 +464,21 @@ export default function PendingPlacements() {
     refetchOnMountOrArgChange: true,
   });
 
+  const [setPlacement, { isLoading: isPlacingMutation }] =
+    useSetDistributorPlacementMutation();
+
   const [searchQuery, setSearchQuery] = useState("");
   const [orderFilter, setOrderFilter] = useState("all");
   const [deadlineFilter, setDeadlineFilter] = useState("all");
+
+  // track which member is currently being placed (for per-row spinner)
+  const [placingBaId, setPlacingBaId] = useState<string | null>(null);
+
+  // toast-like feedback
+  const [feedback, setFeedback] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
 
   const members = response?.data ?? [];
 
@@ -346,6 +520,36 @@ export default function PendingPlacements() {
     (sum, member) => sum + (member.unplaced_downline_count ?? 0),
     0,
   );
+
+  const handlePlace = async (baId: string, side: 1 | 2) => {
+    setPlacingBaId(baId);
+    setFeedback(null);
+    try {
+      const result = await setPlacement({ ba_id: baId, side }).unwrap();
+      if (result.success === false) {
+        setFeedback({
+          type: "error",
+          message: result.message || "Failed to set placement.",
+        });
+        return;
+      }
+      setFeedback({
+        type: "success",
+        message:
+          result.message ||
+          `Member placed successfully on the ${side === 1 ? "left" : "right"} side.`,
+      });
+      // refetch to reflect updated pending list
+      void refetch();
+    } catch (err: unknown) {
+      const message =
+        (err as { data?: { message?: string } })?.data?.message ||
+        "Something went wrong while setting placement.";
+      setFeedback({ type: "error", message });
+    } finally {
+      setPlacingBaId(null);
+    }
+  };
 
   if (isLoading) return <PendingPlacementsLoader />;
 
@@ -398,6 +602,34 @@ export default function PendingPlacements() {
           {isFetching ? "Refreshing..." : "Refresh"}
         </button>
       </div>
+
+      {/* =========================================
+          FEEDBACK BANNER
+      ========================================= */}
+      {feedback && (
+        <div
+          className={`flex items-start gap-2.5 rounded-[10px] border px-3.5 py-3 text-[12px] font-semibold ${
+            feedback.type === "success"
+              ? "border-[#bfe8d4] bg-[#eaf7f0] text-[#18794e]"
+              : "border-[#f5c6c2] bg-[#fff0ef] text-[#b42318]"
+          }`}
+        >
+          {feedback.type === "success" ? (
+            <CheckCircle2 size={16} className="mt-0.5 shrink-0" />
+          ) : (
+            <AlertCircle size={16} className="mt-0.5 shrink-0" />
+          )}
+          <p className="flex-1">{feedback.message}</p>
+          <button
+            type="button"
+            onClick={() => setFeedback(null)}
+            className="shrink-0 opacity-70 hover:opacity-100"
+            aria-label="Dismiss"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
 
       {/* =========================================
           SUMMARY CARDS
@@ -520,7 +752,11 @@ export default function PendingPlacements() {
           MEMBER TABLE
       ========================================= */}
       {filteredMembers.length ? (
-        <MemberTable members={filteredMembers} />
+        <MemberTable
+          members={filteredMembers}
+          placingBaId={placingBaId}
+          onPlace={handlePlace}
+        />
       ) : (
         <div className="flex min-h-[240px] flex-col items-center justify-center gap-3 rounded-[14px] bg-[#f7f8fa] p-6 text-center">
           <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white">
@@ -554,11 +790,12 @@ export default function PendingPlacements() {
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#f0f2f5] pt-4">
         <p className="text-[11px] text-[#8a92a6]">
           Pending placements data is loaded from the distributor genealogy API.
+          {isPlacingMutation && " · Setting placement..."}
         </p>
         <button
           type="button"
           onClick={() => void refetch()}
-          disabled={isFetching}
+          disabled={isFetching || isPlacingMutation}
           className="flex items-center gap-2 text-[12px] font-semibold text-[#3955A6] hover:underline disabled:opacity-50"
         >
           <RefreshCw size={13} className={isFetching ? "animate-spin" : ""} />
