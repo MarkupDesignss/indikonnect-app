@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Layers } from "lucide-react";
 
 import {
   Star,
@@ -2307,8 +2308,8 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                       if (!(isLastVisible && hasMore)) setActiveImage(index);
                     }}
                     className={`relative h-[62px] w-[62px] flex-shrink-0 overflow-hidden rounded-[7px] border-2 bg-white transition sm:h-[70px] sm:w-[70px] lg:h-[74px] lg:w-[74px] ${activeImage === index
-                        ? "border-[#111]"
-                        : "border-[#E4E4E4] hover:border-[#999]"
+                      ? "border-[#111]"
+                      : "border-[#E4E4E4] hover:border-[#999]"
                       }`}
                   >
                     <Image
@@ -2424,8 +2425,6 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                     />
                   </button>
 
-                  {/* VIEW SIMILAR */}
-
                   {/* VIEW SIMILAR — CARD STACK ICON */}
                   <button
                     type="button"
@@ -2434,22 +2433,13 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                       setShowRelatedSheet(true);
                     }}
                     aria-label="View similar products"
-                    className="group absolute bottom-3 right-3 z-10 flex h-11 items-center gap-0 overflow-hidden rounded-full bg-white/95 pl-3 pr-3 shadow-md backdrop-blur transition-all duration-300 ease-out hover:gap-2 hover:pl-4 hover:pr-5 hover:shadow-lg sm:h-12"
+                    className="group absolute bottom-3 right-3 z-10 flex h-11 items-center overflow-hidden rounded-full bg-white/95 pl-3 pr-3 shadow-md backdrop-blur transition-all duration-300 ease-out hover:pl-4 hover:pr-5 hover:shadow-lg sm:h-12"
                   >
-                    {/* Card stack icon — black, smaller side cards */}
-                    <span className="relative flex h-[22px] w-[26px] flex-shrink-0 items-center justify-center sm:h-[24px] sm:w-[28px]">
-                      {/* Left card — smaller, tilted left, behind center */}
-                      <span className="absolute left-0 top-1/2 h-[12px] w-[8px] -translate-y-1/2 -rotate-[18deg] rounded-[2px] border-[1.5px] border-[#111] sm:h-[14px] sm:w-[9px]" />
+                    {/* Lucide Layers icon — card stack jaisa */}
+                    <Layers className="h-[22px] w-[22px] flex-shrink-0 text-[#111] sm:h-[24px] sm:w-[24px]" strokeWidth={1.8} />
 
-                      {/* Right card — smaller, tilted right, behind center */}
-                      <span className="absolute right-0 top-1/2 h-[12px] w-[8px] -translate-y-1/2 rotate-[18deg] rounded-[2px] border-[1.5px] border-[#111] sm:h-[14px] sm:w-[9px]" />
-
-                      {/* Center card — bigger, upright, on top */}
-                      <span className="relative z-10 h-[18px] w-[12px] rounded-[2px] border-[1.5px] border-[#111] bg-white sm:h-[20px] sm:w-[13px]" />
-                    </span>
-
-                    {/* Text — hidden by default, shown on hover */}
-                    <span className="max-w-0 overflow-hidden whitespace-nowrap text-[11px] font-bold uppercase tracking-wider text-[#000000] opacity-0 transition-all duration-300 ease-out group-hover:max-w-[140px] group-hover:opacity-100 sm:text-[12px]">
+                    {/* Text — hover par expand */}
+                    <span className="max-w-0 overflow-hidden whitespace-nowrap text-[11px] font-bold uppercase tracking-wider text-black opacity-0 transition-all duration-300 ease-out group-hover:ml-2 group-hover:max-w-[140px] group-hover:opacity-100 sm:text-[12px]">
                       View Similar
                     </span>
                   </button>
@@ -2516,8 +2506,8 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                   <Star
                     key={n}
                     className={`h-3.5 w-3.5 ${n <= Math.floor(product.rating)
-                        ? "fill-[#F6BE16] text-[#F6BE16]"
-                        : "fill-[#F6BE16]/15 text-[#F6BE16]"
+                      ? "fill-[#F6BE16] text-[#F6BE16]"
+                      : "fill-[#F6BE16]/15 text-[#F6BE16]"
                       }`}
                   />
                 ))}
@@ -2629,8 +2619,8 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                                   handleAttributeSelect(attributeKey, value)
                                 }
                                 className={`rounded-full border px-4 py-1.5 text-[11px] font-semibold transition ${selected
-                                    ? "border-[#111] bg-[#111] text-white"
-                                    : "border-[#D7D7D7] bg-white text-[#222] hover:border-[#111]"
+                                  ? "border-[#111] bg-[#111] text-white"
+                                  : "border-[#D7D7D7] bg-white text-[#222] hover:border-[#111]"
                                   }`}
                               >
                                 {value}
@@ -2693,8 +2683,8 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                             type="button"
                             onClick={() => handleSelectVariant(variant)}
                             className={`relative h-[58px] w-[58px] overflow-hidden rounded-[8px] border-2 bg-white transition ${isSelected
-                                ? "border-[#111] ring-1 ring-[#111]"
-                                : "border-[#E3E3E3] hover:border-[#999]"
+                              ? "border-[#111] ring-1 ring-[#111]"
+                              : "border-[#E3E3E3] hover:border-[#999]"
                               }`}
                             aria-label={colorName || product.name}
                           >
@@ -2823,8 +2813,8 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                 type="button"
                 onClick={(e) => handleWishlistToggle(e)}
                 className={`flex h-[46px] w-[46px] flex-shrink-0 items-center justify-center rounded-[4px] border-2 ${isWishlisted
-                    ? "border-[#111] bg-[#111] text-white"
-                    : "border-[#D7D7D7] bg-white text-[#111]"
+                  ? "border-[#111] bg-[#111] text-white"
+                  : "border-[#D7D7D7] bg-white text-[#111]"
                   }`}
               >
                 <Heart
@@ -2936,8 +2926,8 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                 type="button"
                 onClick={() => setActiveTab(key)}
                 className={`relative pb-3 text-[12px] font-semibold transition ${activeTab === key
-                    ? "text-[#111]"
-                    : "text-[#999] hover:text-[#333]"
+                  ? "text-[#111]"
+                  : "text-[#999] hover:text-[#333]"
                   }`}
               >
                 {label}
@@ -3086,8 +3076,8 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                             >
                               <Star
                                 className={`h-5 w-5 ${star <= reviewRating
-                                    ? "fill-[#F6BE16] text-[#F6BE16]"
-                                    : "text-[#CCC]"
+                                  ? "fill-[#F6BE16] text-[#F6BE16]"
+                                  : "text-[#CCC]"
                                   }`}
                               />
                             </button>
@@ -3235,8 +3225,8 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                                     <Star
                                       key={n}
                                       className={`h-3 w-3 ${n <= Number(review.rating)
-                                          ? "fill-[#F6BE16] text-[#F6BE16]"
-                                          : "text-[#DADADA]"
+                                        ? "fill-[#F6BE16] text-[#F6BE16]"
+                                        : "text-[#DADADA]"
                                         }`}
                                     />
                                   ))}
@@ -3316,8 +3306,8 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                       <Star
                         key={n}
                         className={`h-4 w-4 ${n <= Math.round(product.rating)
-                            ? "fill-[#F6BE16] text-[#F6BE16]"
-                            : "text-[#DADADA]"
+                          ? "fill-[#F6BE16] text-[#F6BE16]"
+                          : "text-[#DADADA]"
                           }`}
                       />
                     ))}
@@ -3542,8 +3532,8 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                     setFullscreenImageIndex(index);
                   }}
                   className={`relative h-10 w-10 flex-shrink-0 overflow-hidden rounded border-2 ${fullscreenImageIndex === index
-                      ? "border-white"
-                      : "border-transparent opacity-50"
+                    ? "border-white"
+                    : "border-transparent opacity-50"
                     }`}
                   aria-label={`Open image ${index + 1}`}
                 >
@@ -3639,8 +3629,8 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                     key={`${img}-${index}`}
                     onClick={() => setReviewViewerIndex(index)}
                     className={`relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-[6px] border-2 transition ${reviewViewerIndex === index
-                        ? "border-white"
-                        : "border-transparent opacity-50 hover:opacity-100"
+                      ? "border-white"
+                      : "border-transparent opacity-50 hover:opacity-100"
                       }`}
                     aria-label={`Open review image ${index + 1}`}
                   >
@@ -3816,8 +3806,8 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                         setShowAllThumbnails(false);
                       }}
                       className={`relative aspect-square overflow-hidden rounded-[8px] border-2 bg-[#F3F3F3] transition ${activeImage === index
-                          ? "border-[#111]"
-                          : "border-transparent hover:border-[#999]"
+                        ? "border-[#111]"
+                        : "border-transparent hover:border-[#999]"
                         }`}
                     >
                       <Image
