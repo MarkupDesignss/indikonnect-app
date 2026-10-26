@@ -50,7 +50,7 @@ jobs:
           security: strict
           local-dir: ./out-customer/
           server-dir: ./
-          dry-run: true
+          dry-run: false
 
       - name: Deploy Distributor
         uses: SamKirkland/FTP-Deploy-Action@v4.4.0
@@ -63,4 +63,4 @@ jobs:
           security: strict
           local-dir: ./out-distributor/
           server-dir: ./
-          dry-run: true
+          dry-run: false
