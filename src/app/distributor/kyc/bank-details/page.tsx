@@ -7,7 +7,7 @@ import DistributorBankDetails from "./DistributorBankDetails";
 
 export default function BankDetails() {
     return (
-        <div className="min-h-screen w-full bg-white">
+         <div className="min-h-screen w-full bg-white">
             <div className="w-full h-full">
                 <div className="w-full bg-white">
                     <DashboardHeader distributorId="AIA603525" />
