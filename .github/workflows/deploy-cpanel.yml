@@ -1,0 +1,185 @@
+name: Indiekonnect cPanel Deployment
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: indiekonnect-deployment
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build and Deploy Both Panels
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      # =========================================
+      # 1. CHECKOUT REPOSITORY
+      # =========================================
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # =========================================
+      # 2. SETUP NODE.JS
+      # =========================================
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      # =========================================
+      # 3. INSTALL DEPENDENCIES
+      # =========================================
+      - name: Install dependencies
+        run: npm ci
+
+      # =========================================
+      # 4. VALIDATE GITHUB SECRETS
+      # =========================================
+      - name: Check environment variables
+        env:
+          API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+          CUSTOMER_URL: ${{ secrets.CUSTOMER_APP_URL }}
+          DISTRIBUTOR_URL: ${{ secrets.DISTRIBUTOR_APP_URL }}
+        run: |
+          if [ -z "$API_URL" ]; then
+            echo "::error::NEXT_PUBLIC_API_URL missing"
+            exit 1
+          fi
+
+          if [ -z "$CUSTOMER_URL" ]; then
+            echo "::error::CUSTOMER_APP_URL missing"
+            exit 1
+          fi
+
+          if [ -z "$DISTRIBUTOR_URL" ]; then
+            echo "::error::DISTRIBUTOR_APP_URL missing"
+            exit 1
+          fi
+
+          echo "All environment secrets configured"
+
+      # =========================================
+      # 5. BUILD CUSTOMER PANEL
+      # =========================================
+      - name: Build Customer Panel
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_APP_URL: ${{ secrets.CUSTOMER_APP_URL }}
+          NEXT_PUBLIC_APP_BASE_PATH: /indiekonnect-web
+          CI: "true"
+        run: npm run build:customer
+
+      # =========================================
+      # 6. BUILD DISTRIBUTOR PANEL
+      # =========================================
+      - name: Build Distributor Panel
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_APP_URL: ${{ secrets.DISTRIBUTOR_APP_URL }}
+          NEXT_PUBLIC_APP_BASE_PATH: /indiekonnect-distributor
+          CI: "true"
+        run: npm run build:distributor
+
+      # =========================================
+      # 7. VERIFY BUILD OUTPUTS
+      # =========================================
+      - name: Verify build outputs
+        run: |
+          if [ ! -f out-customer/index.html ]; then
+            echo "::error::Customer index.html missing"
+            exit 1
+          fi
+
+          if [ ! -f out-distributor/index.html ]; then
+            echo "::error::Distributor index.html missing"
+            exit 1
+          fi
+
+          echo "Both Next.js builds generated successfully"
+
+      # =========================================
+      # 8. VALIDATE FTP SECRETS
+      # =========================================
+      - name: Validate FTP credentials
+        env:
+          FTP_HOST: ${{ secrets.FTP_HOST }}
+          FTP_CUSTOMER_USERNAME: ${{ secrets.FTP_CUSTOMER_USERNAME }}
+          FTP_CUSTOMER_PASSWORD: ${{ secrets.FTP_CUSTOMER_PASSWORD }}
+          FTP_DISTRIBUTOR_USERNAME: ${{ secrets.FTP_DISTRIBUTOR_USERNAME }}
+          FTP_DISTRIBUTOR_PASSWORD: ${{ secrets.FTP_DISTRIBUTOR_PASSWORD }}
+        run: |
+          for key in \
+            FTP_HOST \
+            FTP_CUSTOMER_USERNAME \
+            FTP_CUSTOMER_PASSWORD \
+            FTP_DISTRIBUTOR_USERNAME \
+            FTP_DISTRIBUTOR_PASSWORD
+          do
+            if [ -z "${!key}" ]; then
+              echo "::error::$key missing"
+              exit 1
+            fi
+          done
+
+          echo "FTP credentials are configured"
+
+      # =========================================
+      # 9. DEPLOY CUSTOMER PANEL
+      # =========================================
+      - name: Deploy Customer to cPanel
+        uses: SamKirkland/FTP-Deploy-Action@v4.4.0
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_CUSTOMER_USERNAME }}
+          password: ${{ secrets.FTP_CUSTOMER_PASSWORD }}
+          protocol: ftps
+          port: 21
+          security: strict
+          local-dir: ./out-customer/
+          server-dir: ./
+          state-name: .ftp-deploy-customer.json
+          timeout: 60000
+          log-level: standard
+          dangerous-clean-slate: false
+          dry-run: true
+
+      # =========================================
+      # 10. DEPLOY DISTRIBUTOR PANEL
+      # =========================================
+      - name: Deploy Distributor to cPanel
+        uses: SamKirkland/FTP-Deploy-Action@v4.4.0
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_DISTRIBUTOR_USERNAME }}
+          password: ${{ secrets.FTP_DISTRIBUTOR_PASSWORD }}
+          protocol: ftps
+          port: 21
+          security: strict
+          local-dir: ./out-distributor/
+          server-dir: ./
+          state-name: .ftp-deploy-distributor.json
+          timeout: 60000
+          log-level: standard
+          dangerous-clean-slate: false
+          dry-run: true
+
+      # =========================================
+      # 11. COMPLETION
+      # =========================================
+      - name: Deployment checks completed
+        run: |
+          echo "================================"
+          echo "Indiekonnect CI/CD checks passed"
+          echo "Customer build successful"
+          echo "Distributor build successful"
+          echo "FTPS dry-run checks completed"
+          echo "================================"
