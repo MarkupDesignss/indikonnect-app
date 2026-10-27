@@ -121,9 +121,8 @@ const getInitials = (name?: string) => {
     return parts[0].slice(0, 2).toUpperCase();
   }
 
-  return `${parts[0]?.[0] || ""}${
-    parts[parts.length - 1]?.[0] || ""
-  }`.toUpperCase();
+  return `${parts[0]?.[0] || ""}${parts[parts.length - 1]?.[0] || ""
+    }`.toUpperCase();
 };
 
 const formatCurrency = (value: any) => {
@@ -282,7 +281,6 @@ function DashboardSidebar({
 
   const handleTabClick = (tab: TabType) => {
     onTabChange(tab);
-
     if (onMobileToggle) {
       onMobileToggle();
     }
@@ -329,30 +327,30 @@ function DashboardSidebar({
           lg:shadow-none
         `}
       >
-        {/* MOBILE CLOSE */}
-        <button
-          type="button"
-          aria-label="Close sidebar"
-          onClick={onMobileToggle}
-          className="
-            absolute right-4 top-4 z-[180]
-            flex h-9 w-9 items-center justify-center
-            rounded-full
-            border border-[#E4E5DF]
-            bg-white
-            text-[#666862]
-            shadow-[0_8px_20px_-12px_rgba(0,0,0,0.35)]
-            transition-all duration-200
-            hover:bg-[#F4F5F1]
-            hover:text-[#1B1B1A]
-            active:scale-95
-            lg:hidden
-          "
-        >
-          <X className="h-4 w-4" />
-        </button>
-
         <div className="flex h-screen min-h-0 flex-col px-4 py-5">
+          {/* MOBILE CLOSE (Positioned neatly inside the flow) */}
+          <div className="mb-4 flex shrink-0 items-center justify-end lg:hidden">
+            <button
+              type="button"
+              aria-label="Close sidebar"
+              onClick={onMobileToggle}
+              className="
+                flex h-9 w-9 items-center justify-center
+                rounded-full
+                border border-[#E4E5DF]
+                bg-white
+                text-[#666862]
+                shadow-[0_8px_20px_-12px_rgba(0,0,0,0.35)]
+                transition-all duration-200
+                hover:bg-[#F4F5F1]
+                hover:text-[#1B1B1A]
+                active:scale-95
+              "
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
           {/* PROFILE CARD */}
           <button
             type="button"
@@ -364,7 +362,6 @@ function DashboardSidebar({
               border border-[#E8E8E4]
               bg-white
               px-3.5 py-3
-              pr-[58px]
               text-left
               shadow-[0_6px_20px_-18px_rgba(0,0,0,0.25)]
               transition
@@ -435,18 +432,17 @@ function DashboardSidebar({
                       text-left
                       transition-all duration-200
 
-                      ${
-                        active
-                          ? "text-white shadow-[0_8px_20px_-13px_rgba(22,40,28,0.85)]"
-                          : "text-[#62635E] hover:bg-[#F0F1EC]"
+                      ${active
+                        ? "text-white shadow-[0_8px_20px_-13px_rgba(22,40,28,0.85)]"
+                        : "text-[#62635E] hover:bg-[#F0F1EC]"
                       }
                     `}
                     style={
                       active
                         ? {
-                            background:
-                              "linear-gradient(135deg, #203B28 0%, #16281C 100%)",
-                          }
+                          background:
+                            "linear-gradient(135deg, #203B28 0%, #16281C 100%)",
+                        }
                         : undefined
                     }
                   >
@@ -462,10 +458,9 @@ function DashboardSidebar({
                           rounded-[9px]
                           transition-all
 
-                          ${
-                            active
-                              ? "bg-white/10 text-white"
-                              : "bg-white text-[#898A84] shadow-[0_3px_11px_-8px_rgba(0,0,0,0.45)]"
+                          ${active
+                            ? "bg-white/10 text-white"
+                            : "bg-white text-[#898A84] shadow-[0_3px_11px_-8px_rgba(0,0,0,0.45)]"
                           }
                         `}
                       >
@@ -488,10 +483,9 @@ function DashboardSidebar({
                           text-[8px]
                           font-bold
 
-                          ${
-                            active
-                              ? "bg-white/15 text-white"
-                              : "bg-[#EFF0EB] text-[#7B7D76]"
+                          ${active
+                            ? "bg-white/15 text-white"
+                            : "bg-[#EFF0EB] text-[#7B7D76]"
                           }
                         `}
                       >
@@ -521,18 +515,17 @@ function DashboardSidebar({
                     text-left
                     transition-all
 
-                    ${
-                      activeTab === "settings"
-                        ? "text-white shadow-[0_8px_20px_-13px_rgba(22,40,28,0.85)]"
-                        : "text-[#62635E] hover:bg-[#F0F1EC]"
+                    ${activeTab === "settings"
+                      ? "text-white shadow-[0_8px_20px_-13px_rgba(22,40,28,0.85)]"
+                      : "text-[#62635E] hover:bg-[#F0F1EC]"
                     }
                   `}
                   style={
                     activeTab === "settings"
                       ? {
-                          background:
-                            "linear-gradient(135deg, #203B28 0%, #16281C 100%)",
-                        }
+                        background:
+                          "linear-gradient(135deg, #203B28 0%, #16281C 100%)",
+                      }
                       : undefined
                   }
                 >
@@ -542,10 +535,9 @@ function DashboardSidebar({
                       items-center justify-center
                       rounded-[9px]
 
-                      ${
-                        activeTab === "settings"
-                          ? "bg-white/10"
-                          : "bg-white shadow-[0_3px_11px_-8px_rgba(0,0,0,0.45)]"
+                      ${activeTab === "settings"
+                        ? "bg-white/10"
+                        : "bg-white shadow-[0_3px_11px_-8px_rgba(0,0,0,0.45)]"
                       }
                     `}
                   >
@@ -820,10 +812,9 @@ function LatestOrderCard({
                     font-bold uppercase
                     tracking-[0.08em]
 
-                    ${
-                      orderStatus === "confirmed"
-                        ? "border-[#CFE0D4] bg-[#F1F7F3] text-[#3F765A]"
-                        : "border-[#E8E8E3] bg-[#F9F9F7] text-[#777870]"
+                    ${orderStatus === "confirmed"
+                      ? "border-[#CFE0D4] bg-[#F1F7F3] text-[#3F765A]"
+                      : "border-[#E8E8E3] bg-[#F9F9F7] text-[#777870]"
                     }
                   `}
                 >
@@ -1193,15 +1184,18 @@ function RecommendedProducts({
           className="
             group flex items-center gap-1.5
             rounded-full
-            border border-[#E4E4DE]
-            bg-white
-            px-3 py-1.5
+            border border-black
+            bg-black
+            px-4 py-2
             text-[9px]
-            font-semibold
-            text-[#222]
-            transition
-            hover:border-[#D2D3CC]
-            hover:bg-[#FAFAF8]
+            font-bold
+            text-white
+            shadow-[0_8px_18px_-12px_rgba(0,0,0,0.75)]
+            transition-all duration-200
+            hover:border-[#262626]
+            hover:bg-[#262626]
+            hover:shadow-[0_10px_22px_-12px_rgba(0,0,0,0.55)]
+            active:scale-[0.98]
           "
         >
           View All
@@ -1255,14 +1249,14 @@ function RecommendedProducts({
 
               const price = Number(
                 product?.retail_price ??
-                  product?.price ??
-                  0,
+                product?.price ??
+                0,
               );
 
               const oldPrice = Number(
                 product?.distributor_price ??
-                  product?.mrp ??
-                  0,
+                product?.mrp ??
+                0,
               );
 
               return (
@@ -1357,25 +1351,29 @@ function RecommendedProducts({
                         }
                       }}
                       className="
-                        mt-4 flex h-[40px]
+                        mt-4 flex h-[42px]
                         w-full
                         items-center justify-center
                         gap-2
                         rounded-[10px]
+                        border border-black
+                        bg-black
                         text-[9px]
                         font-bold uppercase
-                        tracking-[0.1em]
+                        tracking-[0.12em]
                         text-white
-                        shadow-[0_10px_22px_-14px_rgba(22,40,28,0.9)]
-                        transition-all
+                        shadow-[0_10px_22px_-14px_rgba(0,0,0,0.9)]
+                        transition-all duration-200
                         hover:-translate-y-0.5
-                        hover:brightness-110
+                        hover:border-[#262626]
+                        hover:bg-[#262626]
+                        hover:shadow-[0_14px_26px_-14px_rgba(0,0,0,0.75)]
                         active:scale-[0.98]
+                        focus-visible:outline-none
+                        focus-visible:ring-2
+                        focus-visible:ring-black
+                        focus-visible:ring-offset-2
                       "
-                      style={{
-                        background:
-                          "linear-gradient(135deg, #294532 0%, #16281C 100%)",
-                      }}
                     >
                       Shop Now
                       <ArrowRight className="h-3 w-3" />
@@ -1559,10 +1557,10 @@ export default function Profile() {
   const memberSince =
     profileUser?.created_at
       ? new Date(
-          profileUser.created_at,
-        )
-          .getFullYear()
-          .toString()
+        profileUser.created_at,
+      )
+        .getFullYear()
+        .toString()
       : dashboardUser?.member_since || "2026";
 
   const userData = {
@@ -1668,6 +1666,8 @@ export default function Profile() {
 
   /* ========================================================================= */
   /* SHELL                                                                     */
+  /* Sidebar = full height from the very top.                                  */
+  /* Header + content = right column, starting beside the sidebar.             */
   /* ========================================================================= */
 
   const Shell = ({
@@ -1676,7 +1676,7 @@ export default function Profile() {
     children: React.ReactNode;
   }) => (
     <div className="flex h-screen overflow-hidden bg-[#F4F5F1] font-sans text-[#171717]">
-      {/* DESKTOP SIDEBAR + MOBILE DRAWER */}
+      {/* SIDEBAR (starts from top of the screen) */}
       <DashboardSidebar
         userData={userData}
         stats={stats}
@@ -1691,10 +1691,28 @@ export default function Profile() {
         }
       />
 
+      {/* RIGHT SIDE: HEADER + MAIN */}
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        {/* HEADER */}
-        <div className="relative z-[100] shrink-0 bg-white shadow-[0_2px_12px_-10px_rgba(0,0,0,0.3)]">
-          {/* MOBILE MENU BUTTON */}
+        {/* HEADER (now begins from the sidebar's right edge) */}
+        <div
+          className="
+            relative z-[100] shrink-0
+            bg-white
+            shadow-[0_2px_12px_-10px_rgba(0,0,0,0.3)]
+
+            [&_header]:!static
+            [&_header]:!inset-auto
+            [&_header]:!w-full
+            [&_header]:!max-w-full
+            
+            /* Hides the spacer */
+            [&_.premium-header-spacer]:!hidden
+
+            /* HIDES THE DEFAULT HEADER MOBILE MENU ICON */
+            [&_.premium-mobile-menu]:!hidden
+          "
+        >
+          {/* MOBILE MENU BUTTON (Fixed layout so it aligns perfectly) */}
           <button
             type="button"
             aria-label="Open account menu"
@@ -1704,7 +1722,7 @@ export default function Profile() {
             }
             className="
               absolute
-              left-[58px]
+              left-16
               top-1/2
               z-[130]
               flex
@@ -1959,11 +1977,11 @@ export default function Profile() {
             value={
               isDistributor
                 ? commissionData?.total_points ||
-                  stats?.points_earned ||
-                  0
+                stats?.points_earned ||
+                0
                 : Number(
-                    stats?.average_rating || 0,
-                  ).toFixed(1)
+                  stats?.average_rating || 0,
+                ).toFixed(1)
             }
             label={
               isDistributor
@@ -1973,13 +1991,11 @@ export default function Profile() {
             icon={Award}
             subtitle={
               isDistributor
-                ? `${
-                    commissionData?.rank?.current_rank ||
-                    "Bronze"
-                  } rank`
-                : `${
-                    stats?.total_reviews || 0
-                  } reviews`
+                ? `${commissionData?.rank?.current_rank ||
+                "Bronze"
+                } rank`
+                : `${stats?.total_reviews || 0
+                } reviews`
             }
           />
         </div>
@@ -2085,44 +2101,44 @@ export default function Profile() {
 
             {commissionData?.rank?.progress_percentage !==
               undefined && (
-              <div className="mt-5">
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="text-[9px] text-[#8B8C86]">
-                    Progress to{" "}
-                    {commissionData?.rank?.next_rank ||
-                      "Next Rank"}
-                  </span>
+                <div className="mt-5">
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-[9px] text-[#8B8C86]">
+                      Progress to{" "}
+                      {commissionData?.rank?.next_rank ||
+                        "Next Rank"}
+                    </span>
 
-                  <span className="text-[9px] font-bold text-[#252625]">
-                    {
-                      commissionData?.rank
-                        ?.progress_percentage
-                    }
-                    %
-                  </span>
-                </div>
+                    <span className="text-[9px] font-bold text-[#252625]">
+                      {
+                        commissionData?.rank
+                          ?.progress_percentage
+                      }
+                      %
+                    </span>
+                  </div>
 
-                <div className="h-2 overflow-hidden rounded-full bg-[#E9ECE6]">
-                  <div
-                    className="h-full rounded-full transition-all duration-500"
-                    style={{
-                      background:
-                        "linear-gradient(90deg, #3B5B43, #16281C)",
-                      width: `${Math.min(
-                        100,
-                        Math.max(
-                          0,
-                          Number(
-                            commissionData?.rank
-                              ?.progress_percentage || 0,
+                  <div className="h-2 overflow-hidden rounded-full bg-[#E9ECE6]">
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{
+                        background:
+                          "linear-gradient(90deg, #3B5B43, #16281C)",
+                        width: `${Math.min(
+                          100,
+                          Math.max(
+                            0,
+                            Number(
+                              commissionData?.rank
+                                ?.progress_percentage || 0,
+                            ),
                           ),
-                        ),
-                      )}%`,
-                    }}
-                  />
+                        )}%`,
+                      }}
+                    />
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
           </div>
         </motion.div>
       )}
@@ -2284,10 +2300,9 @@ export default function Profile() {
               font-bold uppercase
               tracking-[0.1em]
 
-              ${
-                isDistributor
-                  ? "border-[#EBD9B4] bg-[#FBF3E4] text-[#A9711F]"
-                  : "border-[#DFE5DF] bg-[#F4F7F3] text-[#47604E]"
+              ${isDistributor
+                ? "border-[#EBD9B4] bg-[#FBF3E4] text-[#A9711F]"
+                : "border-[#DFE5DF] bg-[#F4F7F3] text-[#47604E]"
               }
             `}
           >

@@ -9,13 +9,7 @@ import {
   ShieldCheck,
   LockKeyhole,
   CreditCard,
-  Building2,
-  Landmark,
   AlertTriangle,
-} from "lucide-react";
-import Header from "@/components/common/Header";
-import Footer from "@/components/Footer/Footer";
-import {
   Loader2,
   Plus,
   Pencil,
@@ -29,6 +23,9 @@ import {
   ChevronDown,
   BadgePercent,
 } from "lucide-react";
+import { SiRazorpay } from "react-icons/si";
+import { BsBank2, BsCreditCard2Front, BsQrCodeScan } from "react-icons/bs";
+import { MdOutlineAccountBalance } from "react-icons/md";
 import { useDispatch } from "react-redux";
 import { showToast } from "@/lib/slices/toastSlice";
 import {
@@ -42,8 +39,6 @@ import {
   useGetCheckoutSummaryQuery,
   usePlaceOrderMutation,
   useInitiateHdfcPaymentMutation,
-  useCancelHdfcPaymentMutation,
-  useLazyGetHdfcPaymentStatusQuery,
   type HdfcApiResult,
 } from "@/lib/redux/api/checkoutApi";
 import {
@@ -52,6 +47,9 @@ import {
   useCheckCartStockMutation,
 } from "@/lib/redux/api/cartApi";
 import { useCheckProductStockMutation } from "@/lib/redux/api/productApi";
+import Header from "@/components/common/Header";
+import Footer from "@/components/Footer/Footer";
+import { useGetPaymentGatewaySettingsQuery } from "@/lib/redux/api/paymentGatewaySettingsApi";
 
 import AddressFormModal from "./AddressFormModal";
 
@@ -176,18 +174,21 @@ const INK = "#111111";
 const HDFC_MERCHANTS = [
   {
     id: "sg",
+    gatewayKey: "HDFC_SG",
     display: "IndieKonnect SG",
     legalName: "INDIEKONNECT ENTERPRISES PVT LTD SG",
   },
   {
     id: "india",
+    gatewayKey: "HDFC_IE",
     display: "IndieKonnect India",
     legalName: "INDIEKONNECT ENTERPRISES PRIVATE LIMITED",
   },
 ] as const;
 
 type PaymentChoice =
-  { gateway: "razorpay" } | { gateway: "hdfc"; merchantName: string };
+  | { gateway: "razorpay" }
+  | { gateway: "hdfc"; merchantName: string };
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -356,7 +357,6 @@ function CouponListPanel({
   );
 }
 
-// 🔥 CART SUMMARY COMPONENT
 function CartSummary({
   summaryData,
   loading,
@@ -433,7 +433,6 @@ function CartSummary({
         </h2>
       </div>
 
-      {/* PRODUCT LIST */}
       <div className="space-y-4 px-6 pb-5">
         {items.length > 0 ? (
           items.map((item, index) => {
@@ -443,8 +442,9 @@ function CartSummary({
             return (
               <div
                 key={`${item.product_id}-${index}`}
-                className={`flex items-center gap-3 ${isUnavailable ? "opacity-70" : ""
-                  }`}
+                className={`flex items-center gap-3 ${
+                  isUnavailable ? "opacity-70" : ""
+                }`}
               >
                 <div className="relative h-[62px] w-[62px] shrink-0">
                   <div className="relative h-full w-full overflow-hidden rounded-xl border border-[#EFEFEF] bg-[#F8F8F8]">
@@ -521,8 +521,9 @@ function CartSummary({
           >
             {showCouponList ? "Hide coupons" : "View coupons"}
             <ChevronDown
-              className={`h-3 w-3 transition-transform ${showCouponList ? "rotate-180" : ""
-                }`}
+              className={`h-3 w-3 transition-transform ${
+                showCouponList ? "rotate-180" : ""
+              }`}
             />
           </button>
         </div>
@@ -680,7 +681,6 @@ function CartSummary({
           </div>
         )}
 
-        {/* 🔥 FIXED BUTTON */}
         <button
           type="button"
           onClick={onPay}
@@ -713,10 +713,45 @@ function CartSummary({
       <div className="border-t border-[#F0F0F0] bg-[#FAFAFA] px-6 py-4">
         <div className="flex items-center justify-center gap-2 text-[10px] text-[#737373]">
           <LockKeyhole className="h-3.5 w-3.5" />
-          Secure checkout · Choose Razorpay or HDFC Bank
+          Secure checkout · Choose your preferred payment method
         </div>
       </div>
     </div>
+  );
+}
+
+/* =========================================================
+   PAYMENT METHOD MODAL
+========================================================= */
+
+function RazorpayLogo() {
+  return (
+    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-none border border-[#DCE9FF] bg-[#F2F7FF]">
+      <SiRazorpay className="h-6 w-6 text-[#3395FF]" aria-hidden="true" />
+    </div>
+  );
+}
+
+function HdfcLogo() {
+  return (
+    <div className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-none bg-[#004C8F]">
+      <BsBank2 className="h-5 w-5 text-white" aria-hidden="true" />
+      <span className="absolute bottom-0 left-0 h-[5px] w-full bg-[#ED232A]" />
+    </div>
+  );
+}
+
+function RadioDot({ selected }: { selected: boolean }) {
+  return (
+    <span
+      className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-none border ${
+        selected
+          ? "border-[#10B981] bg-[#10B981]"
+          : "border-gray-300 bg-white"
+      }`}
+    >
+      {selected && <Check className="h-3 w-3 text-white" />}
+    </span>
   );
 }
 
@@ -740,13 +775,52 @@ function PaymentMethodModal({
   onConfirm: (choice: PaymentChoice) => void;
 }) {
   const [gateway, setGateway] = useState<"razorpay" | "hdfc">("razorpay");
-  const [merchantName, setMerchantName] = useState<string>(
-    HDFC_MERCHANTS[0].legalName,
+
+  const { data: gwData, isLoading: isGwLoading } =
+    useGetPaymentGatewaySettingsQuery();
+
+  const razorpayActive = Boolean(
+    gwData?.data?.find((g) => g.key === "Razorpay (Axis)")?.is_active,
   );
 
-  // Define before useEffect: dependencies are evaluated during render.
+  const activeHdfcMerchants = useMemo(() => {
+    const settings = Array.isArray(gwData?.data) ? gwData.data : [];
+    const activeMerchants = HDFC_MERCHANTS.filter((merchant) =>
+      settings.some(
+        (setting) =>
+          setting.key === merchant.gatewayKey && setting.is_active === true,
+      ),
+    );
+    const activeGatewayKey = String((gwData as any)?.active_gateway || "");
+    const preferredMerchant = activeMerchants.find(
+      (merchant) => merchant.gatewayKey === activeGatewayKey,
+    );
+
+    if (preferredMerchant) return [preferredMerchant];
+    return activeMerchants.length ? [activeMerchants[0]] : [];
+  }, [gwData]);
+
+  const hdfcActive = activeHdfcMerchants.length > 0;
+  const merchantName =
+    activeHdfcMerchants[0]?.legalName || HDFC_MERCHANTS[0].legalName;
+  const noGatewayActive =
+    !isGwLoading && Boolean(gwData?.data) && !razorpayActive && !hdfcActive;
+
+  useEffect(() => {
+    if (!gwData?.data) return;
+    if (gateway === "hdfc" && !hdfcActive && razorpayActive) {
+      setGateway("razorpay");
+    } else if (gateway === "razorpay" && !razorpayActive && hdfcActive) {
+      setGateway("hdfc");
+    }
+  }, [gwData, gateway, hdfcActive, razorpayActive]);
+
   const isChecking = verificationStatus === "checking";
-  const canPay = verificationStatus === "ready" && !busy;
+  const gatewayReady =
+    (gateway === "razorpay" && razorpayActive) ||
+    (gateway === "hdfc" && hdfcActive);
+  const canPay =
+    verificationStatus === "ready" && !busy && !isGwLoading && gatewayReady;
 
   useEffect(() => {
     if (!open) return;
@@ -765,281 +839,219 @@ function PaymentMethodModal({
   if (!open) return null;
 
   const optionClass = (selected: boolean) =>
-    `group relative w-full rounded-2xl border p-4 text-left transition-all duration-200 sm:p-5 ${selected
-      ? "border-[#191919] bg-[#F9F9F8] shadow-[0_0_0_1px_#191919]"
-      : "border-[#E7E7E5] bg-white hover:border-[#999] hover:bg-[#FCFCFC]"
+    `group relative w-full rounded-none border p-4 text-left transition-all duration-150 focus:outline-none disabled:cursor-not-allowed ${
+      selected
+        ? "border-[#10B981] bg-[#F0FDF7]"
+        : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50/50"
     }`;
 
-  return (
-    <div
-      className="fixed inset-0 z-[100000] flex items-center justify-center overflow-y-auto bg-black/60 p-3 backdrop-blur-[5px] sm:p-6"
-      role="presentation"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget && !busy && !isChecking)
-          onClose();
-      }}
-    >
-      <section
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="payment-choice-title"
-        className="my-auto w-full max-w-[540px] overflow-hidden rounded-[24px] bg-white shadow-[0_35px_110px_rgba(0,0,0,.3)]"
+    return (
+      <div
+        className="fixed inset-0 z-[100000] rounded flex items-end justify-center overflow-y-auto bg-black/45 p-0 backdrop-blur-sm sm:items-center sm:p-6"
+        role="presentation"
+        onMouseDown={(event) => {
+          if (event.target === event.currentTarget && !busy && !isChecking)
+            onClose();
+        }}
       >
-        <div className="relative overflow-hidden bg-[#151515] px-6 pb-7 pt-7 text-white sm:px-8">
-          <div className="pointer-events-none absolute -right-14 -top-24 h-64 w-64 rounded-full border border-white/10" />
-          <div className="pointer-events-none absolute -right-4 -top-12 h-44 w-44 rounded-full border border-white/10" />
-          <div className="relative flex items-start justify-between gap-4">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/15 bg-white/10">
-              <LockKeyhole className="h-5 w-5" />
-            </div>
+        <section
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="payment-choice-title"
+          className="w-full max-w-[480px] rounded-2xl overflow-hidden bg-white shadow-2xl"
+        >
+          {/* Header */}
+          <div className="relative border-b border-gray-100 px-6 pb-4 pt-6">
             <button
               type="button"
               aria-label="Close payment options"
               onClick={onClose}
               disabled={busy || isChecking}
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/10 transition hover:bg-white/20 disabled:opacity-50"
+              className="absolute right-4 top-4 flex h-7 w-7 items-center justify-center rounded-full text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 disabled:opacity-50"
             >
               <X className="h-4 w-4" />
             </button>
+  
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400">
+                IndieKonnect · Secure
+              </p>
+              <h2
+                id="payment-choice-title"
+                className="mt-1 text-[18px] font-semibold leading-tight text-gray-900"
+              >
+                Select payment method
+              </h2>
+            </div>
           </div>
-          <p className="relative mt-5 text-[10px] font-semibold uppercase tracking-[0.25em] text-white/60">
-            IndieKonnect · Secure checkout
-          </p>
-          <h2
-            id="payment-choice-title"
-            className="relative mt-2 text-[24px] font-semibold tracking-tight sm:text-[27px]"
-          >
-            How would you like to pay?
-          </h2>
-          <p className="relative mt-2 text-[12px] leading-5 text-white/65">
-            Choose your preferred payment partner to continue.
-          </p>
-          <div className="relative mt-5 flex items-center justify-between rounded-xl border border-white/15 bg-white/10 px-4 py-3">
-            <span className="text-[11px] text-white/70">Order total</span>
-            <strong className="text-[21px] font-semibold tracking-tight">
-              {formatPrice(amount)}
-            </strong>
-          </div>
-        </div>
-
-        <div className="px-5 pt-5 sm:px-8" aria-live="polite">
-          {isChecking && (
-            <div className="flex items-start gap-3 rounded-xl border border-[#DFE6F2] bg-[#F5F8FD] p-4">
-              <Loader2 className="mt-0.5 h-5 w-5 shrink-0 animate-spin text-[#37558B]" />
+  
+          {/* Amount */}
+          <div className="px-6 pt-4">
+            <div className="flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
               <div>
-                <p className="text-[12px] font-semibold text-[#243A63]">
-                  Verifying your order…
+                <p className="text-[11px] font-semibold text-gray-500">
+                  Amount to pay
                 </p>
-                <p className="mt-1 text-[11px] leading-5 text-[#5B6B84]">
-                  Checking latest product availability and total. Payment
-                  options will be ready automatically.
+                <p className="text-[10px] text-gray-400">
+                  Incl. taxes & shipping
                 </p>
               </div>
+              <strong className="text-[18px] font-bold tracking-tight text-gray-900">
+                {formatPrice(amount)}
+              </strong>
+            </div>
+          </div>
+  
+          {/* Verification error */}
+          {(isChecking || verificationStatus === "error") && (
+            <div className="px-6 pt-4">
+              {verificationStatus === "error" && (
+                <div className="rounded-xl border border-red-100 bg-red-50 p-4">
+                  <p className="flex items-center gap-2 text-[12px] font-semibold text-red-700">
+                    <AlertTriangle className="h-4 w-4" /> Unable to continue
+                  </p>
+                  <p className="mt-1 text-[11px] leading-4 text-red-600">
+                    {verificationError}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={onRetryVerification}
+                    className="mt-3 rounded-lg bg-red-600 px-3 py-1.5 text-[11px] font-semibold text-white transition hover:bg-red-700"
+                  >
+                    Try again
+                  </button>
+                </div>
+              )}
             </div>
           )}
-          {verificationStatus === "error" && (
-            <div className="rounded-xl border border-[#F0C8C5] bg-[#FFF6F5] p-4">
-              <p className="flex items-center gap-2 text-[12px] font-semibold text-[#A7372E]">
-                <AlertTriangle className="h-4 w-4" /> Unable to continue
-              </p>
-              <p className="mt-2 text-[11px] leading-5 text-[#924840]">
-                {verificationError}
-              </p>
+  
+          {/* Gateway options */}
+          <div className="max-h-[46vh] space-y-3 overflow-y-auto px-6 py-4">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-gray-400">
+              Pay with
+            </p>
+  
+            {isGwLoading && (
+              <div className="space-y-3">
+                <div className="h-[80px] animate-pulse rounded-xl bg-gray-100" />
+                <div className="h-[80px] animate-pulse rounded-xl bg-gray-100" />
+              </div>
+            )}
+  
+            {noGatewayActive && (
+              <div className="rounded-xl border border-amber-100 bg-amber-50 p-4 text-center">
+                <AlertTriangle className="mx-auto h-5 w-5 text-amber-600" />
+                <p className="mt-2 text-[13px] font-semibold text-amber-800">
+                  No payment method available
+                </p>
+                <p className="mt-1 text-[11px] text-amber-700">
+                  Payments are temporarily unavailable. Please try again shortly.
+                </p>
+              </div>
+            )}
+  
+            {!isGwLoading && razorpayActive && (
               <button
                 type="button"
-                onClick={onRetryVerification}
-                className="mt-3 rounded-lg bg-[#171717] px-4 py-2 text-[11px] font-semibold text-white"
+                disabled={busy || isChecking}
+                onClick={() => setGateway("razorpay")}
+                aria-pressed={gateway === "razorpay"}
+                className={optionClass(gateway === "razorpay")}
               >
-                Try again
+                <div className="flex items-center gap-4">
+                  <RazorpayLogo />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="text-[14px] font-semibold text-gray-900">
+                        Razorpay
+                      </p>
+                      <span className="rounded-full bg-[#E6F6EF] px-2 py-0.5 text-[9px] font-bold text-[#0E8F63]">
+                        Recommended
+                      </span>
+                    </div>
+                    <p className="mt-0.5 text-[11px] text-gray-500">
+                      Cards, UPI, Netbanking & Wallets
+                    </p>
+                    <div className="mt-2 flex items-center gap-1.5">
+                      <span className="inline-flex items-center gap-1 rounded-md bg-gray-100 px-1.5 py-1 text-[9px] font-medium text-gray-600">
+                        <BsQrCodeScan className="h-3 w-3" /> UPI
+                      </span>
+                      <span className="inline-flex items-center gap-1 rounded-md bg-gray-100 px-1.5 py-1 text-[9px] font-medium text-gray-600">
+                        <BsCreditCard2Front className="h-3 w-3" /> Cards
+                      </span>
+                      <span className="inline-flex items-center gap-1 rounded-md bg-gray-100 px-1.5 py-1 text-[9px] font-medium text-gray-600">
+                        <MdOutlineAccountBalance className="h-3 w-3" /> Netbanking
+                      </span>
+                    </div>
+                  </div>
+                  <RadioDot selected={gateway === "razorpay"} />
+                </div>
               </button>
-            </div>
-          )}
-          {verificationStatus === "ready" && (
-            <p className="flex items-center gap-2 text-[11px] font-medium text-[#347454]">
-              <Check className="h-4 w-4" /> Order verified. Select your payment
-              method.
-            </p>
-          )}
-        </div>
-        <div className="max-h-[58vh] space-y-3 overflow-y-auto px-5 py-6 sm:px-8">
-          <button
-            type="button"
-            disabled={!canPay}
-            onClick={() => setGateway("razorpay")}
-            aria-pressed={gateway === "razorpay"}
-            className={optionClass(gateway === "razorpay")}
-          >
-            <div className="flex items-center gap-3">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#F0F0F0] text-[#242424]">
-                <CreditCard className="h-5 w-5" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="text-[14px] font-semibold text-[#202020]">
-                  Razorpay
-                </p>
-                <p className="mt-1 text-[10px] text-[#777]">
-                  Continue through Razorpay secure checkout
-                </p>
-              </div>
-              <span
-                className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${gateway === "razorpay"
-                    ? "border-black bg-black text-white"
-                    : "border-[#C8C8C8]"
-                  }`}
-              >
-                {gateway === "razorpay" && <Check className="h-3 w-3" />}
-              </span>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            disabled={!canPay}
-            onClick={() => setGateway("hdfc")}
-            aria-pressed={gateway === "hdfc"}
-            className={optionClass(gateway === "hdfc")}
-          >
-            <div className="flex items-center gap-3">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#F1F2F4] text-[#222]">
-                <Landmark className="h-5 w-5" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="text-[14px] font-semibold text-[#202020]">
-                  HDFC Bank
-                </p>
-                <p className="mt-1 text-[10px] text-[#777]">
-                  Choose one of the two IndieKonnect merchant accounts
-                </p>
-              </div>
-              <span
-                className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${gateway === "hdfc"
-                    ? "border-black bg-black text-white"
-                    : "border-[#C8C8C8]"
-                  }`}
-              >
-                {gateway === "hdfc" && <Check className="h-3 w-3" />}
-              </span>
-            </div>
-          </button>
-
-          {gateway === "hdfc" && (
-            <div className="rounded-2xl border border-[#E9E9E9] bg-[#FAFAFA] p-4">
-              <div className="mb-3 flex items-center gap-2">
-                <Building2 className="h-4 w-4 text-[#555]" />
-                <h3 className="text-[12px] font-semibold text-[#333]">
-                  Select IndieKonnect account
-                </h3>
-              </div>
-              <div className="space-y-2">
-                {HDFC_MERCHANTS.map((merchant) => {
-                  const selected = merchantName === merchant.legalName;
-                  return (
-                    <button
-                      key={merchant.id}
-                      type="button"
-                      disabled={!canPay}
-                      onClick={() => setMerchantName(merchant.legalName)}
-                      aria-pressed={selected}
-                      className={`flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left transition ${selected
-                          ? "border-[#191919] bg-white shadow-sm"
-                          : "border-[#E5E5E5] bg-white/70 hover:border-[#AAAAAA]"
-                        }`}
-                    >
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#F2F2F2] text-[#424242]">
-                        <Building2 className="h-4 w-4" />
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block text-[12px] font-semibold text-[#202020]">
-                          {merchant.display}
-                        </span>
-                        <span className="mt-1 block break-words text-[9px] leading-4 text-[#888]">
-                          {merchant.legalName}
-                        </span>
-                      </span>
-                      <span
-                        className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border ${selected
-                            ? "border-black bg-black text-white"
-                            : "border-[#C8C8C8]"
-                          }`}
-                      >
-                        {selected && <Check className="h-3 w-3" />}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </div>
-        <div className="border-t border-[#ECECEC] bg-white px-5 pb-6 pt-5 sm:px-8">
-          <button
-            type="button"
-            disabled={!canPay}
-            onClick={() =>
-              onConfirm(
-                gateway === "razorpay"
-                  ? { gateway }
-                  : { gateway, merchantName },
-              )
-            }
-            className="flex h-[52px] w-full items-center justify-center gap-2 rounded-xl bg-[#191919] px-5 text-[12px] font-semibold text-white transition hover:bg-[#303030] disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {isChecking ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" /> Verifying order...
-              </>
-            ) : busy ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" /> Processing...
-              </>
-            ) : (
-              <>
-                <ShieldCheck className="h-4 w-4" /> Continue to{" "}
-                {gateway === "hdfc" ? "HDFC Bank" : "Razorpay"}{" "}
-                <ArrowLeft className="h-4 w-4 rotate-180" />
-              </>
             )}
-          </button>
-          <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-[10px] text-[#888]">
-            <LockKeyhole className="h-3 w-3" /> Payment processing is handled by
-            your selected gateway
-          </p>
-        </div>
-      </section>
-    </div>
-  );
-}
-
-type PendingHdfcOrder = {
-  orderId: number;
-  orderReference: string;
-  amount: number;
-  createdAt: number;
-};
-
-const PENDING_HDFC_ORDER_KEY = "indiekonnect_pending_hdfc_order_v2";
-
-// Only redirect to the known configured hosted HDFC payment domain.
-// Update the allowlist only after your bank confirms additional domains.
-function getSafeHdfcUrl(value: unknown): string {
-  if (typeof value !== "string" || !value.trim()) {
-    throw new Error("HDFC payment URL is unavailable. Check payment status.");
-  }
-  const url = new URL(value);
-  if (
-    url.protocol !== "https:" ||
-    url.hostname !== "smartgateway.hdfc.bank.in"
-  ) {
-    throw new Error("Unexpected HDFC payment destination.");
-  }
-  return url.href;
-}
-function unwrapHdfc(result: HdfcApiResult): HdfcApiResult {
-  return result.data && typeof result.data === "object" ? result.data : result;
+  
+            {!isGwLoading && hdfcActive && (
+              <button
+                type="button"
+                disabled={busy || isChecking}
+                onClick={() => setGateway("hdfc")}
+                aria-pressed={gateway === "hdfc"}
+                className={optionClass(gateway === "hdfc")}
+              >
+                <div className="flex items-center gap-4">
+                  <HdfcLogo />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[14px] font-semibold text-gray-900">
+                      HDFC Bank
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-gray-500">
+                      SmartGateway · Cards & Netbanking
+                    </p>
+                  </div>
+                  <RadioDot selected={gateway === "hdfc"} />
+                </div>
+              </button>
+            )}
+          </div>
+  
+          {/* Footer */}
+          <div className="border-t border-gray-100 px-6 pb-5 pt-4">
+            <button
+              type="button"
+              disabled={!canPay}
+              onClick={() =>
+                onConfirm(
+                  gateway === "razorpay" ? { gateway } : { gateway, merchantName },
+                )
+              }
+              className="flex h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-[#111111] px-5 text-[13px] font-semibold text-white transition hover:bg-black active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isChecking ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" /> Verifying...
+                </>
+              ) : busy ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" /> Processing...
+                </>
+              ) : (
+                <>
+                  <LockKeyhole className="h-4 w-4" />
+                  Pay {formatPrice(amount)} securely
+                </>
+              )}
+            </button>
+            <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-[10px] text-gray-400">
+              <ShieldCheck className="h-3.5 w-3.5" /> 256-bit encrypted · Your
+              card details are never stored
+            </p>
+          </div>
+        </section>
+      </div>
+    );
 }
 
 /* =========================================================
-   MAIN CHECKOUT PAGE COMPONENT
+   MAIN CHECKOUT PAGE
 ========================================================= */
 
 export default function CheckoutPage() {
@@ -1075,29 +1087,9 @@ export default function CheckoutPage() {
   const [verificationError, setVerificationError] = useState("");
   const verifiedCheckoutTypeRef = useRef<"cart" | "buy_now" | null>(null);
   const verificationRequestRef = useRef(0);
-  const [pendingHdfcOrder, setPendingHdfcOrder] =
-    useState<PendingHdfcOrder | null>(null);
-
-  /* =========================================================
-     STOCK STATE (Highlights unavailable items)
-  ========================================================= */
   const [unavailableProductIds, setUnavailableProductIds] = useState<
     Set<number>
   >(new Set());
-
-  useEffect(() => {
-    try {
-      const stored = sessionStorage.getItem(PENDING_HDFC_ORDER_KEY);
-      if (stored) {
-        const pending = JSON.parse(stored) as PendingHdfcOrder;
-        if (pending?.orderReference && pending?.createdAt) {
-          setPendingHdfcOrder(pending);
-        }
-      }
-    } catch {
-      sessionStorage.removeItem(PENDING_HDFC_ORDER_KEY);
-    }
-  }, []);
 
   const [couponInput, setCouponInput] = useState(urlCouponCode);
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(
@@ -1108,9 +1100,6 @@ export default function CheckoutPage() {
   const [pendingCoupon, setPendingCoupon] = useState<string | null>(null);
   const previousSummaryResponseRef = useRef<any>(null);
 
-  /* =========================================================
-     RTK QUERIES & MUTATIONS
-  ========================================================= */
   const {
     data: addressesData,
     isLoading: isLoadingAddresses,
@@ -1123,17 +1112,11 @@ export default function CheckoutPage() {
   const [setDefaultAddress] = useSetDefaultAddressMutation();
   const [placeOrder] = usePlaceOrderMutation();
   const [initiateHdfcPayment] = useInitiateHdfcPaymentMutation();
-  const [cancelHdfcPayment] = useCancelHdfcPaymentMutation();
-  const [getHdfcPaymentStatus] = useLazyGetHdfcPaymentStatusQuery();
-  const [hdfcActionBusy, setHdfcActionBusy] = useState(false);
-  const [hdfcStatusMessage, setHdfcStatusMessage] = useState("");
 
   const { data: couponsData, isLoading: isLoadingCoupons } =
     useGetCouponsQuery();
 
   const [triggerGetCart] = useLazyGetCartQuery();
-
-  // Stock mutations
   const [checkCartStock] = useCheckCartStockMutation();
   const [checkProductStock] = useCheckProductStockMutation();
 
@@ -1196,10 +1179,10 @@ export default function CheckoutPage() {
       ...(appliedCoupon ? { coupon_code: appliedCoupon.trim() } : {}),
       ...(isDirectCheckout
         ? {
-          product_id: productId,
-          quantity,
-          ...(variantId > 0 ? { variant_id: variantId } : {}),
-        }
+            product_id: productId,
+            quantity,
+            ...(variantId > 0 ? { variant_id: variantId } : {}),
+          }
         : {}),
     }),
     [
@@ -1223,22 +1206,16 @@ export default function CheckoutPage() {
   const summaryData: CheckoutSummaryData | undefined =
     checkoutSummaryResponse?.data;
 
-  // UI follows the checkout type returned by the summary API.
   const displayCheckoutType: "cart" | "buy_now" =
     summaryData?.checkout_type === "buy_now" ||
-      summaryData?.checkout_type === "cart"
+    summaryData?.checkout_type === "cart"
       ? summaryData.checkout_type
       : checkoutType;
 
-  // Summary can be authoritative, but URL remains fallback for older API responses.
   const getCheckoutTypeFromSummary = (response: any): "cart" | "buy_now" => {
     const apiType = response?.data?.checkout_type ?? response?.checkout_type;
     return apiType === "buy_now" || apiType === "cart" ? apiType : checkoutType;
   };
-
-  /* =========================================================
-     AUTO-REFETCH SUMMARY (Product Detail List)
-  ========================================================= */
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -1251,14 +1228,10 @@ export default function CheckoutPage() {
     };
   }, [refetchCheckoutSummary]);
 
-  /* =========================================================
-     LIVE STOCK CHECK (Run once on checkout mount if CART type)
-  ========================================================= */
   useEffect(() => {
     const fetchAndCheckCartStock = async () => {
-      if (checkoutType !== "cart") return; // Only for cart, not buy now
+      if (checkoutType !== "cart") return;
       try {
-        // Fetch cart to get latest ID
         const cartResp = await triggerGetCart().unwrap();
         const cartId = Number((cartResp as any)?.data?.id);
 
@@ -1282,9 +1255,6 @@ export default function CheckoutPage() {
     fetchAndCheckCartStock();
   }, [checkoutType, triggerGetCart, checkCartStock]);
 
-  /* =========================================================
-     COUPON LOGIC
-  ========================================================= */
   const handleApplyCoupon = (codeOverride?: string) => {
     const code = (codeOverride ?? couponInput).trim().toUpperCase();
     if (!code || isApplyingCoupon) return;
@@ -1356,9 +1326,6 @@ export default function CheckoutPage() {
     dispatch(showToast({ message: "Coupon removed", type: "success" }));
   };
 
-  /* =========================================================
-     ADDRESS HANDLERS
-  ========================================================= */
   const handleCreateAddress = async (data: AddressFormData) => {
     try {
       const payload = {
@@ -1443,9 +1410,6 @@ export default function CheckoutPage() {
     }
   };
 
-  /* =========================================================
-     PAYMENT / RAZORPAY HANDLERS
-  ========================================================= */
   const goToOrderConfirmation = (orderId: number, orderReference: string) => {
     const params = new URLSearchParams();
     if (orderReference) params.set("order_reference", orderReference);
@@ -1465,7 +1429,7 @@ export default function CheckoutPage() {
         return;
       }
       const script = document.createElement("script");
-      script.src = "https\://checkout.razorpay.com/v1/checkout.js";
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
       script.async = true;
       script.onload = launch;
       script.onerror = () => reject(new Error("Failed to load Razorpay SDK"));
@@ -1536,10 +1500,6 @@ export default function CheckoutPage() {
     }
   };
 
-  /* =========================================================
-     LIVE STOCK VALIDATION — shared by both payment steps
-     buy_now -> individual product; cart -> complete cart
-  ========================================================= */
   const validateCheckoutStock = async (activeType: "cart" | "buy_now") => {
     if (activeType === "buy_now") {
       if (
@@ -1569,7 +1529,6 @@ export default function CheckoutPage() {
       return;
     }
 
-    // Force a new cart request, not cached data.
     const cartResponse = await triggerGetCart().unwrap();
     const cartId = Number((cartResponse as any)?.data?.id);
     if (!Number.isInteger(cartId) || cartId <= 0) {
@@ -1594,10 +1553,8 @@ export default function CheckoutPage() {
     }
   };
 
-  // Prevent double click while React's pending state is being scheduled.
   const paymentActionInProgress = useRef(false);
 
-  // Never open a payment gateway using an outdated displayed order total.
   const refreshAndValidateTotal = async (previousTotal: number) => {
     const latestResponse = await refetchCheckoutSummary();
     if (latestResponse.error || !latestResponse.data?.data) {
@@ -1608,7 +1565,6 @@ export default function CheckoutPage() {
     if (!Number.isFinite(latestTotal) || latestTotal <= 0) {
       throw new Error("Invalid updated checkout total.");
     }
-    // Compare in paise to avoid floating point rounding issues.
     if (Math.round(latestTotal * 100) !== Math.round(previousTotal * 100)) {
       throw new Error(
         "Your order total has changed. Please review the new total and choose payment again.",
@@ -1617,10 +1573,6 @@ export default function CheckoutPage() {
     return latest;
   };
 
-  /* =========================================================
-     STEP 1: MODAL OPENS INSTANTLY; SUMMARY -> STOCK VERIFY
-     No invisible waiting on the first click.
-  ========================================================= */
   const verifyPaymentSelection = async () => {
     if (paymentActionInProgress.current) return;
     const requestId = ++verificationRequestRef.current;
@@ -1630,7 +1582,6 @@ export default function CheckoutPage() {
     verifiedCheckoutTypeRef.current = null;
 
     try {
-      // Summary FIRST, giving an authoritative checkout type when available.
       const verifiedSummary = await refreshAndValidateTotal(
         Number(summaryData?.grand_total || 0),
       );
@@ -1672,46 +1623,10 @@ export default function CheckoutPage() {
       );
       return;
     }
-    // Immediate UI feedback, without waiting for API requests.
     setIsPaymentModalOpen(true);
     void verifyPaymentSelection();
   };
 
-  // Resume only the dynamic order ID saved when Place Order succeeded.
-  // This function never creates another local order.
-  const resumeExistingHdfc = async (pending: PendingHdfcOrder) => {
-    const response = unwrapHdfc(
-      await getHdfcPaymentStatus(pending.orderId, false).unwrap(),
-    );
-    const state = String(response.payment_status ?? response.status ?? "unknown")
-      .trim()
-      .toLowerCase();
-    if (state === "paid") {
-      sessionStorage.removeItem(PENDING_HDFC_ORDER_KEY);
-      setPendingHdfcOrder(null);
-      goToOrderConfirmation(pending.orderId, pending.orderReference);
-      return "paid" as const;
-    }
-    if (["failed", "cancelled", "canceled", "not_started"].includes(state)) {
-      return state;
-    }
-    if (state !== "pending") {
-      throw new Error(`Existing HDFC payment is ${state}. Verify or cancel it first.`);
-    }
-    // Status is a freshly verified bank response; do not initiate a new local
-    // order. Prefer the status-provided URL, then idempotent backend resume.
-    if (response.can_resume === true && response.payment_url) {
-      window.location.assign(getSafeHdfcUrl(response.payment_url));
-      return "redirecting" as const;
-    }
-    throw new Error(
-      "Bank payment is pending but the session cannot be safely resumed. Request cancellation and verify bank status before another payment.",
-    );
-  };
-
-  /* =========================================================
-     HANDLE PAY NOW (Place Order)
-  ========================================================= */
   const handlePayNow = async (paymentChoice: PaymentChoice) => {
     if (paymentActionInProgress.current) return;
     if (
@@ -1723,139 +1638,11 @@ export default function CheckoutPage() {
     const verifiedType = verifiedCheckoutTypeRef.current;
     if (!verifiedType) return;
 
-    // Verify any prior HDFC attempt before creating a new order, regardless
-    // of the newly selected payment method. Avoid duplicate payable orders.
     paymentActionInProgress.current = true;
     setIsSubmitting(true);
 
     let latestSummary: CheckoutSummaryData;
     try {
-      if (pendingHdfcOrder) {
-        let state: string;
-        let priorHdfcStatus: HdfcApiResult | null = null;
-        try {
-          const result = unwrapHdfc(
-            await getHdfcPaymentStatus(
-              pendingHdfcOrder.orderId,
-              false,
-            ).unwrap(),
-          );
-          priorHdfcStatus = result;
-          state = String(result.payment_status ?? result.status ?? "unknown")
-            .trim()
-            .toLowerCase();
-        } catch (statusError) {
-          setIsPaymentModalOpen(false);
-          setHdfcStatusMessage(
-            getErrorMessage(
-              statusError,
-              "Unable to verify previous HDFC order.",
-            ),
-          );
-          throw new Error(
-            "Previous HDFC payment could not be verified. Check its status before starting another payment.",
-          );
-        }
-
-        if (state === "paid") {
-          sessionStorage.removeItem(PENDING_HDFC_ORDER_KEY);
-          setPendingHdfcOrder(null);
-          setIsPaymentModalOpen(false);
-          goToOrderConfirmation(
-            pendingHdfcOrder.orderId,
-            pendingHdfcOrder.orderReference,
-          );
-          return;
-        }
-
-        if (
-          state === "not_started" ||
-          state === "cancelled" ||
-          state === "canceled" ||
-          state === "failed"
-        ) {
-          // not_started means the current database has no recorded attempt;
-          // it does NOT independently prove a pre-migration bank session never existed.
-          // Normal price/stock checks below are required for a new order.
-          sessionStorage.removeItem(PENDING_HDFC_ORDER_KEY);
-          setPendingHdfcOrder(null);
-          setHdfcStatusMessage("");
-        } else {
-          // Gateway switch: customer explicitly selected Razorpay. First
-          // request bank-side cancellation of the older HDFC attempt and
-          // verify it is terminal. Never proceed on a mere cancel request.
-          if (paymentChoice.gateway === "razorpay") {
-            setIsPaymentModalOpen(false);
-            setHdfcStatusMessage(
-              "Switching to Razorpay: requesting cancellation of your previous HDFC session...",
-            );
-            try {
-              const cancellation = unwrapHdfc(
-                await cancelHdfcPayment(pendingHdfcOrder.orderId).unwrap(),
-              );
-              if (cancellation.success === false) {
-                throw new Error(
-                  cancellation.message || "HDFC cancellation could not be confirmed.",
-                );
-              }
-              // Cancel API commonly returns 202/cancel_requested. It is NOT
-              // proof the bank stopped accepting payments.
-              const checked = unwrapHdfc(
-                await getHdfcPaymentStatus(pendingHdfcOrder.orderId, false).unwrap(),
-              );
-              const checkedState = String(
-                checked.payment_status ?? checked.status ?? "unknown",
-              ).trim().toLowerCase();
-              if (checkedState === "paid") {
-                sessionStorage.removeItem(PENDING_HDFC_ORDER_KEY);
-                setPendingHdfcOrder(null);
-                goToOrderConfirmation(
-                  pendingHdfcOrder.orderId,
-                  pendingHdfcOrder.orderReference,
-                );
-                return;
-              }
-              if (!["cancelled", "canceled", "failed"].includes(checkedState)) {
-                throw new Error(
-                  `HDFC cancellation has not been confirmed by the bank (status: ${checkedState}). ` +
-                  "Please use Check payment status and try Razorpay again once cancellation is confirmed.",
-                );
-              }
-              sessionStorage.removeItem(PENDING_HDFC_ORDER_KEY);
-              setPendingHdfcOrder(null);
-              setHdfcStatusMessage("");
-              // Cancellation is terminal: allow a fresh Razorpay order after
-              // the stock and amount are rechecked by the code below.
-            } catch (switchError) {
-              const message = getErrorMessage(
-                switchError,
-                "Previous HDFC payment must be cancelled and verified before switching to Razorpay.",
-              );
-              setHdfcStatusMessage(message);
-              throw new Error(message);
-            }
-          } else {
-            // Resume exactly the SAME bank session after a fresh verified
-            // pending status, rather than creating another payable order.
-            // Never send a link that the backend has not explicitly approved.
-            if (paymentChoice.gateway === "hdfc" && state === "pending") {
-              // Dynamic saved order ID; resume the existing bank order instead
-              // of placing a new order. This is not an order-id hardcode.
-              setIsPaymentModalOpen(false);
-              const result = await resumeExistingHdfc(pendingHdfcOrder);
-              if (result === "redirecting" || result === "paid") return;
-            }
-            setIsPaymentModalOpen(false);
-            setHdfcStatusMessage(
-              `Previous HDFC payment is ${state}. Use Resume HDFC checkout or cancel the earlier bank session.`,
-            );
-            throw new Error(
-              `Previous HDFC payment is ${state}. Use Resume HDFC checkout or request cancellation.`,
-            );
-          }
-        }
-      }
-      // STEP 2: Recheck stock immediately before placeOrder.
       await validateCheckoutStock(verifiedType);
       latestSummary = await refreshAndValidateTotal(
         Number(summaryData.grand_total),
@@ -1882,7 +1669,7 @@ export default function CheckoutPage() {
           paymentChoice.gateway === "razorpay"
             ? "razorpay"
             : paymentChoice.merchantName ===
-              "INDIEKONNECT ENTERPRISES PVT LTD SG"
+                "INDIEKONNECT ENTERPRISES PVT LTD SG"
               ? "hdfc_sg"
               : "hdfc_ie",
         summary_data: {
@@ -1933,9 +1720,9 @@ export default function CheckoutPage() {
       );
       const orderReference = String(
         firstOrder?.order_reference ??
-        anyData?.order_reference ??
-        orderReferences?.[0] ??
-        "",
+          anyData?.order_reference ??
+          orderReferences?.[0] ??
+          "",
       ).trim();
       const razorpayOrderId = String(anyData?.razorpay_order_id || "").trim();
       const razorpayKey = String(anyData?.razorpay_key || "").trim();
@@ -1944,9 +1731,6 @@ export default function CheckoutPage() {
       );
 
       if (paymentChoice.gateway === "hdfc") {
-        // This API starts ONE payment attempt per database order.
-        // For a multi-seller order group, backend must provide a dedicated
-        // group-level payment session before the group can be paid together.
         const uniqueIds = [
           ...new Set(
             [
@@ -1965,16 +1749,6 @@ export default function CheckoutPage() {
             "Place Order did not return a valid database order_id.",
           );
         }
-        // Persist the already-created LOCAL order before contacting HDFC.
-        // If the initiation times out, do not create another order.
-        const pending: PendingHdfcOrder = {
-          orderId,
-          orderReference,
-          amount,
-          createdAt: Date.now(),
-        };
-        sessionStorage.setItem(PENDING_HDFC_ORDER_KEY, JSON.stringify(pending));
-        setPendingHdfcOrder(pending);
         setIsPaymentModalOpen(false);
 
         const initiation = unwrapHdfc(
@@ -2021,9 +1795,6 @@ export default function CheckoutPage() {
     }
   };
 
-  /* =========================================================
-     RENDER
-  ========================================================= */
   return (
     <>
       <PaymentMethodModal
@@ -2047,131 +1818,6 @@ export default function CheckoutPage() {
       <main
         className={`${poppins.className} min-h-screen bg-[#FAFAFA] px-4 pb-20 pt-8 text-[#171717] sm:px-6 sm:pt-11`}
       >
-        {pendingHdfcOrder && (
-          <div className="mx-auto mb-6 max-w-[1160px] rounded-xl border border-[#dedede] bg-white p-4 shadow-sm">
-            <p className="text-sm font-semibold text-[#171717]">
-              HDFC payment awaiting verification
-            </p>
-            <p className="mt-1 text-xs leading-5 text-[#666]">
-              Order{" "}
-              {pendingHdfcOrder.orderReference ||
-                `#${pendingHdfcOrder.orderId}`}
-              {" · "}
-              {formatPrice(pendingHdfcOrder.amount)}. Payment is not confirmed
-              until the bank verifies it. Do not place another order.
-            </p>
-            {hdfcStatusMessage && (
-              <p className="mt-2 text-xs text-[#555]" role="status">
-                {hdfcStatusMessage}
-              </p>
-            )}
-            <div className="mt-3 flex flex-wrap gap-2">
-              <button
-                type="button"
-                disabled={hdfcActionBusy}
-                onClick={async () => {
-                  setHdfcActionBusy(true);
-                  try {
-                    const result = unwrapHdfc(
-                      await getHdfcPaymentStatus(
-                        pendingHdfcOrder.orderId,
-                        false,
-                      ).unwrap(),
-                    );
-                    const status = String(
-                      result.payment_status || result.status || "unknown",
-                    )
-                      .trim()
-                      .toLowerCase();
-                    setHdfcStatusMessage(
-                      status === "not_started"
-                        ? "No HDFC payment attempt is recorded for this order. If a bank session was created before tracking was installed, reconcile it before paying again."
-                        : `Verified payment state: ${status}`,
-                    );
-                    if (status === "paid") {
-                      sessionStorage.removeItem(PENDING_HDFC_ORDER_KEY);
-                      setPendingHdfcOrder(null);
-                      goToOrderConfirmation(
-                        pendingHdfcOrder.orderId,
-                        pendingHdfcOrder.orderReference,
-                      );
-                    } else if (
-                      ["not_started", "cancelled", "canceled", "failed"].includes(status)
-                    ) {
-                      sessionStorage.removeItem(PENDING_HDFC_ORDER_KEY);
-                      setPendingHdfcOrder(null);
-                    }
-                  } catch (err) {
-                    setHdfcStatusMessage(
-                      getErrorMessage(err, "Unable to verify payment"),
-                    );
-                  } finally {
-                    setHdfcActionBusy(false);
-                  }
-                }}
-                className="rounded-lg border border-[#ddd] px-4 py-2 text-xs font-medium disabled:opacity-50"
-              >
-                Check payment status
-              </button>
-              <button
-                type="button"
-                disabled={hdfcActionBusy}
-                onClick={async () => {
-                  setHdfcActionBusy(true);
-                  try {
-                    const result = await resumeExistingHdfc(pendingHdfcOrder);
-                    if (result !== "redirecting" && result !== "paid") {
-                      setHdfcStatusMessage(
-                        `Payment is ${result}. Resume is unavailable until bank status is resolved.`,
-                      );
-                    }
-                  } catch (err) {
-                    setHdfcStatusMessage(
-                      getErrorMessage(err, "Unable to resume payment"),
-                    );
-                  } finally {
-                    setHdfcActionBusy(false);
-                  }
-                }}
-                className="rounded-lg bg-[#171717] px-4 py-2 text-xs font-semibold text-white disabled:opacity-50"
-              >
-                Resume HDFC checkout
-              </button>
-              <button
-                type="button"
-                disabled={hdfcActionBusy}
-                onClick={async () => {
-                  setHdfcActionBusy(true);
-                  try {
-                    const result = unwrapHdfc(
-                      await cancelHdfcPayment(
-                        pendingHdfcOrder.orderId,
-                      ).unwrap(),
-                    );
-                    setHdfcStatusMessage(
-                      result.message ||
-                      "Cancellation requested. Check gateway status to confirm.",
-                    );
-                    // Never dismiss based on 202: cancellation is not necessarily final.
-                  } catch (err) {
-                    setHdfcStatusMessage(
-                      getErrorMessage(
-                        err,
-                        "Cancellation could not be confirmed",
-                      ),
-                    );
-                  } finally {
-                    setHdfcActionBusy(false);
-                  }
-                }}
-                className="rounded-lg border border-[#ddd] px-4 py-2 text-xs font-medium disabled:opacity-50"
-              >
-                Request cancellation
-              </button>
-            </div>
-          </div>
-        )}
-
         <div className="mx-auto w-full max-w-[1160px]">
           <nav className="mb-6 flex items-center gap-2 text-[11px] font-medium text-[#858585]">
             <button
@@ -2250,10 +1896,11 @@ export default function CheckoutPage() {
                             type="button"
                             onClick={() => setSelectedDeliveryAddress(address)}
                             aria-pressed={selected}
-                            className={`relative min-h-[178px] rounded-xl border p-4 text-left transition-all duration-200 sm:p-5 ${selected
+                            className={`relative min-h-[178px] rounded-xl border p-4 text-left transition-all duration-200 sm:p-5 ${
+                              selected
                                 ? "border-[#191919] bg-[#FCFCFC] shadow-[0_0_0_1px_#191919]"
                                 : "border-[#E8E8E8] bg-white hover:border-[#B9B9B9]"
-                              }`}
+                            }`}
                           >
                             <div className="mb-3 flex items-center justify-between gap-2">
                               <span className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.1em] text-[#727272]">
@@ -2261,10 +1908,11 @@ export default function CheckoutPage() {
                                 {address.type || "Address"}
                               </span>
                               <span
-                                className={`flex h-5 w-5 items-center justify-center rounded-full border ${selected
+                                className={`flex h-5 w-5 items-center justify-center rounded-full border ${
+                                  selected
                                     ? "border-[#171717] bg-[#171717] text-white"
                                     : "border-[#CFCFCF]"
-                                  }`}
+                                }`}
                               >
                                 {selected && <Check className="h-3 w-3" />}
                               </span>
@@ -2366,7 +2014,7 @@ export default function CheckoutPage() {
               <CartSummary
                 summaryData={summaryData}
                 loading={isLoadingCheckoutSummary && !summaryData}
-                onPay={handleOpenPayment} // <-- Yahan handleOpenPayment pass kiya
+                onPay={handleOpenPayment}
                 isSubmitting={isSubmitting}
                 disabled={
                   !selectedDeliveryAddress?.id ||
@@ -2416,4 +2064,22 @@ export default function CheckoutPage() {
       <Footer />
     </>
   );
+}
+
+function getSafeHdfcUrl(value: unknown): string {
+  if (typeof value !== "string" || !value.trim()) {
+    throw new Error("HDFC payment URL is unavailable. Please try again.");
+  }
+  const url = new URL(value);
+  if (
+    url.protocol !== "https:" ||
+    url.hostname !== "smartgateway.hdfc.bank.in"
+  ) {
+    throw new Error("Unexpected HDFC payment destination.");
+  }
+  return url.href;
+}
+
+function unwrapHdfc(result: HdfcApiResult): HdfcApiResult {
+  return result.data && typeof result.data === "object" ? result.data : result;
 }

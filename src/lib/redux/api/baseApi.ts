@@ -495,6 +495,7 @@ export const baseApi = createApi({
     // -----------------------------------------------------
     "Notifications",
     "KYCStatus",
+    "PaymentGatewaySettings",
   ],
 
   endpoints: () => ({}),
