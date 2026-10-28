@@ -20,30 +20,30 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      # =========================================
+      # ==========================================
       # 1. CHECKOUT REPOSITORY
-      # =========================================
+      # ==========================================
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # =========================================
+      # ==========================================
       # 2. SETUP NODE.JS
-      # =========================================
+      # ==========================================
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: "npm"
 
-      # =========================================
+      # ==========================================
       # 3. INSTALL DEPENDENCIES
-      # =========================================
+      # ==========================================
       - name: Install dependencies
         run: npm ci
 
-      # =========================================
-      # 4. VALIDATE GITHUB SECRETS
-      # =========================================
+      # ==========================================
+      # 4. VALIDATE ENVIRONMENT VARIABLES
+      # ==========================================
       - name: Check environment variables
         env:
           API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
@@ -65,11 +65,11 @@ jobs:
             exit 1
           fi
 
-          echo "All environment secrets configured"
+          echo "All environment variables configured"
 
-      # =========================================
+      # ==========================================
       # 5. BUILD CUSTOMER PANEL
-      # =========================================
+      # ==========================================
       - name: Build Customer Panel
         env:
           NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
@@ -78,9 +78,9 @@ jobs:
           CI: "true"
         run: npm run build:customer
 
-      # =========================================
+      # ==========================================
       # 6. BUILD DISTRIBUTOR PANEL
-      # =========================================
+      # ==========================================
       - name: Build Distributor Panel
         env:
           NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
@@ -89,9 +89,9 @@ jobs:
           CI: "true"
         run: npm run build:distributor
 
-      # =========================================
+      # ==========================================
       # 7. VERIFY BUILD OUTPUTS
-      # =========================================
+      # ==========================================
       - name: Verify build outputs
         run: |
           if [ ! -f out-customer/index.html ]; then
@@ -106,9 +106,15 @@ jobs:
 
           echo "Both Next.js builds generated successfully"
 
-      # =========================================
-      # 8. VALIDATE FTP SECRETS
-      # =========================================
+          echo "Customer build size:"
+          du -sh out-customer/
+
+          echo "Distributor build size:"
+          du -sh out-distributor/
+
+      # ==========================================
+      # 8. VALIDATE FTP CREDENTIALS
+      # ==========================================
       - name: Validate FTP credentials
         env:
           FTP_HOST: ${{ secrets.FTP_HOST }}
@@ -132,54 +138,63 @@ jobs:
 
           echo "FTP credentials are configured"
 
-      # =========================================
-      # 9. DEPLOY CUSTOMER PANEL
-      # =========================================
+      # ==========================================
+      # 9. DEPLOY CUSTOMER PANEL TO CPANEL
+      # ==========================================
       - name: Deploy Customer to cPanel
         uses: SamKirkland/FTP-Deploy-Action@v4.4.0
         with:
           server: ${{ secrets.FTP_HOST }}
           username: ${{ secrets.FTP_CUSTOMER_USERNAME }}
           password: ${{ secrets.FTP_CUSTOMER_PASSWORD }}
+
           protocol: ftps
           port: 21
           security: strict
+
           local-dir: ./out-customer/
           server-dir: ./
+
           state-name: .ftp-deploy-customer.json
           timeout: 60000
           log-level: standard
-          dangerous-clean-slate: false
-          dry-run: true
 
-      # =========================================
-      # 10. DEPLOY DISTRIBUTOR PANEL
-      # =========================================
+          dangerous-clean-slate: false
+          dry-run: false
+
+      # ==========================================
+      # 10. DEPLOY DISTRIBUTOR PANEL TO CPANEL
+      # ==========================================
       - name: Deploy Distributor to cPanel
         uses: SamKirkland/FTP-Deploy-Action@v4.4.0
         with:
           server: ${{ secrets.FTP_HOST }}
           username: ${{ secrets.FTP_DISTRIBUTOR_USERNAME }}
           password: ${{ secrets.FTP_DISTRIBUTOR_PASSWORD }}
+
           protocol: ftps
           port: 21
           security: strict
+
           local-dir: ./out-distributor/
           server-dir: ./
+
           state-name: .ftp-deploy-distributor.json
           timeout: 60000
           log-level: standard
-          dangerous-clean-slate: false
-          dry-run: true
 
-      # =========================================
-      # 11. COMPLETION
-      # =========================================
+          dangerous-clean-slate: false
+          dry-run: false
+
+      # ==========================================
+      # 11. DEPLOYMENT COMPLETED
+      # ==========================================
       - name: Deployment checks completed
         run: |
-          echo "================================"
-          echo "Indiekonnect CI/CD checks passed"
-          echo "Customer build successful"
-          echo "Distributor build successful"
-          echo "FTPS dry-run checks completed"
-          echo "================================"
+          echo "======================================="
+          echo "INDIEKONNECT DEPLOYMENT COMPLETED"
+          echo "======================================="
+          echo "Customer Panel: Build and FTP successful"
+          echo "Distributor Panel: Build and FTP successful"
+          echo "Deployment mode: LIVE"
+          echo "======================================="

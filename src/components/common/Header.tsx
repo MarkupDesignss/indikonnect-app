@@ -1171,7 +1171,7 @@ function HeaderInner({
   const goToCart = () => {
     setIsCartOpen(false);
     if (hasToken !== true) return goToLogin();
-    router.push("/cart");
+    router.push("/checkout");
     closeHeaderOverlays();
   };
   const goToTrackOrder = () => {
@@ -1626,7 +1626,7 @@ function HeaderInner({
               />
               <span className="premium-brand-divider" />
               <span
-                style={{ fontSize: "8px" }}
+                style={{ fontSize: "8px" } }
                 className="premium-brand-tagline"
               >
                 CONNECT

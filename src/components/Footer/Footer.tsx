@@ -14,7 +14,6 @@ import {
 
 import { useGetFooterQuery } from "@/lib/redux/api/Home/contentApi";
 
-/* ⬇️ HEADER WALA SAME IMPORT PATTERN */
 import { useTokenCheck } from "@/hooks/useTokenCheck";
 import { getDistributorDomain } from "@/lib/appConfig";
 
@@ -508,31 +507,33 @@ export default function Footer() {
               `© ${new Date().getFullYear()} IndieKonnect. All rights reserved.`}
           </p>
 
+
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[#8B887F]">
-            <span className="inline-flex items-center gap-1.5 font-medium text-[#33332F]">
-              <span
-                aria-hidden
-                className="flex h-[8px] w-[13px] overflow-hidden rounded-[2px] ring-1 ring-black/10"
-              >
-                <span className="w-1/3 bg-[#FF9933]" />
-                <span className="w-1/3 bg-white" />
-                <span className="w-1/3 bg-[#138808]" />
-              </span>
-              Made in India
-            </span>
+  <span className="inline-flex items-center gap-1.5 font-medium text-[#33332F]">
+    <span
+      aria-hidden
+      className="flex h-[13px] w-[13px] flex-col overflow-hidden rounded-[2px] ring-1 ring-black/10"
+    >
+      <span className="h-1/3 w-full bg-[#FF9933]" />
+      <span className="h-1/3 w-full bg-white" />
+      <span className="h-1/3 w-full bg-[#138808]" />
+    </span>
+    Made in India
+  </span>
 
-            <span
-              aria-hidden
-              className="hidden h-3 w-px bg-[#D3D0C8] sm:block"
-            />
+  <span
+    aria-hidden
+    className="hidden h-3 w-px bg-[#D3D0C8] sm:block"
+  />
 
-            <span>
-              Marketed by{" "}
-              <span className="font-medium text-[#555550]">
-                {footer?.marketed_by || "Indie Konnect Pvt Ltd"}
-              </span>
-            </span>
-          </div>
+  <span>
+    Marketed by{" "}
+    <span className="font-medium text-[#555550]">
+      {footer?.marketed_by || "Indie Konnect Pvt Ltd"}
+    </span>
+  </span>
+</div>
+
         </div>
       </div>
     </footer>

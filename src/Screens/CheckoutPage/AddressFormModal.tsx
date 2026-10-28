@@ -56,7 +56,6 @@ const ADDRESS_TYPES = [
   { value: "Other", label: "Other", icon: MapPin },
 ] as const;
 
-
 export default function AddressFormModal({
   isOpen,
   onClose,
@@ -384,18 +383,19 @@ export default function AddressFormModal({
      INPUT STYLES
   ============================================================ */
 
+  // Updated to greenish theme
   const inputClass = (error?: string) =>
     `h-[44px] w-full rounded-[6px] border bg-white pl-10 pr-3 text-[12px] text-[#222222] outline-none transition-all duration-150 placeholder:text-[#999999] ${
       error
         ? "border-[#D66A6A] bg-[#FFF9F9] focus:border-[#C94D4D] focus:ring-1 focus:ring-[#C94D4D]/10"
-        : "border-[#D7D7D5] hover:border-[#BDBDBA] focus:border-[#999999] focus:ring-1 focus:ring-black/5"
+        : "border-[#DDE7DF] hover:border-[#B9CFC1] focus:border-[#16845B] focus:ring-2 focus:ring-[#16845B]/10"
     }`;
 
   const simpleInputClass = (error?: string) =>
     `h-[44px] w-full rounded-[6px] border bg-white px-3 text-[12px] text-[#222222] outline-none transition-all duration-150 placeholder:text-[#999999] ${
       error
         ? "border-[#D66A6A] bg-[#FFF9F9] focus:border-[#C94D4D] focus:ring-1 focus:ring-[#C94D4D]/10"
-        : "border-[#D7D7D5] hover:border-[#BDBDBA] focus:border-[#999999] focus:ring-1 focus:ring-black/5"
+        : "border-[#DDE7DF] hover:border-[#B9CFC1] focus:border-[#16845B] focus:ring-2 focus:ring-[#16845B]/10"
     }`;
 
   const FieldError = ({ children }: { children?: string }) =>
@@ -416,7 +416,7 @@ export default function AddressFormModal({
     children: React.ReactNode;
     optional?: boolean;
   }) => (
-    <label className="mb-1.5 block text-[10px] font-medium uppercase tracking-[0.06em] text-[#666666]">
+    <label className="mb-1.5 block text-[10px] font-medium uppercase tracking-[0.06em] text-[#667168]">
       {children}
       {optional && (
         <span className="ml-1 font-normal normal-case tracking-normal text-[#999999]">
@@ -440,7 +440,7 @@ export default function AddressFormModal({
     subtitle: string;
   }) => (
     <div className="mb-4 flex items-center gap-3">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] bg-[#111111] text-white">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] bg-[#173E2B] text-white">
         {icon}
       </div>
 
@@ -476,8 +476,8 @@ export default function AddressFormModal({
               }
               className={`flex h-[44px] items-center justify-center gap-2 rounded-[6px] border text-[11px] font-medium transition-all duration-150 ${
                 isSelected
-                  ? "border-[#111111] bg-[#111111] text-white"
-                  : "border-[#D7D7D5] bg-white text-[#555555] hover:border-[#BDBDBA] hover:bg-[#FAFAF9]"
+                  ? "border-[#16845B] bg-[#EAF6EF] text-[#16845B]"
+                  : "border-[#DDE7DF] bg-white text-[#667168] hover:border-[#B9CFC1] hover:bg-[#F8FBF8]"
               }`}
             >
               <Icon className="h-[14px] w-[14px]" />
@@ -503,7 +503,7 @@ export default function AddressFormModal({
       <div className={inline ? "w-full" : "flex-1 overflow-y-auto"}>
         <div className={inline ? "space-y-5" : "px-4 py-4 sm:px-5 sm:py-5"}>
           {/* DELIVERY ADDRESS */}
-          <section className="overflow-hidden rounded-[7px] border border-[#E6E6E4] bg-white">
+          <section className="overflow-hidden rounded-[7px] border border-[#E4EBE6] bg-white">
             <div className="px-4 pb-4 pt-5">
               <SectionHeader
                 icon={<MapPin className="h-4 w-4" />}
@@ -685,15 +685,15 @@ export default function AddressFormModal({
             <label
               className={`group flex cursor-pointer items-center justify-between gap-4 rounded-[7px] border px-3.5 py-3 transition-all duration-150 ${
                 formData.is_default
-                  ? "border-[#111111] bg-[#FAFAF9]"
-                  : "border-[#E6E6E4] bg-white hover:border-[#CFCFCD]"
+                  ? "border-[#16845B] bg-[#F1FAF4]"
+                  : "border-[#E4EBE6] bg-white hover:border-[#B9CFC1]"
               }`}
             >
               <div className="flex min-w-0 items-center gap-2.5">
                 <div
                   className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] ${
                     formData.is_default
-                      ? "bg-[#111111] text-white"
+                      ? "bg-[#16845B] text-white"
                       : "bg-[#F2F2F0] text-[#888888]"
                   }`}
                 >
@@ -719,15 +719,15 @@ export default function AddressFormModal({
                     is_default: e.target.checked,
                   })
                 }
-                className="h-4 w-4 shrink-0 cursor-pointer accent-black"
+                className="h-4 w-4 shrink-0 cursor-pointer accent-[#16845B]"
               />
             </label>
 
             {/* BILLING */}
-            <div className="overflow-hidden rounded-[7px] border border-[#E6E6E4] bg-white">
+            <div className="overflow-hidden rounded-[7px] border border-[#E4EBE6] bg-white">
               <label
                 className={`flex cursor-pointer items-center justify-between gap-4 px-3.5 py-3 transition-colors ${
-                  formData.is_billing ? "bg-white" : "bg-[#FAFAF9]"
+                  formData.is_billing ? "bg-white" : "bg-[#F8FBF8]"
                 }`}
               >
                 <div className="flex min-w-0 items-center gap-2.5">
@@ -735,7 +735,7 @@ export default function AddressFormModal({
                     className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] ${
                       formData.is_billing
                         ? "bg-[#F2F2F0] text-[#222222]"
-                        : "bg-[#111111] text-white"
+                        : "bg-[#173E2B] text-white"
                     }`}
                   >
                     <CreditCard className="h-4 w-4" />
@@ -766,7 +766,7 @@ export default function AddressFormModal({
                       setBillingErrors({});
                     }
                   }}
-                  className="h-4 w-4 shrink-0 cursor-pointer accent-black"
+                  className="h-4 w-4 shrink-0 cursor-pointer accent-[#16845B]"
                 />
               </label>
 
@@ -780,9 +780,9 @@ export default function AddressFormModal({
                     transition={{ duration: 0.25, ease: "easeInOut" }}
                     className="overflow-hidden"
                   >
-                    <div className="border-t border-[#E6E6E4] bg-[#FAFAF9] p-3.5 sm:p-4">
+                    <div className="border-t border-[#E4EBE6] bg-[#F8FBF8] p-3.5 sm:p-4">
                       <div className="mb-4 flex items-center gap-2.5">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-[6px] bg-[#111111] text-white">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-[6px] bg-[#173E2B] text-white">
                           <CreditCard className="h-3.5 w-3.5" />
                         </div>
 
@@ -998,8 +998,8 @@ export default function AddressFormModal({
       <div
         className={
           inline
-            ? "mt-4 border-t border-[#E6E6E4] pt-4"
-            : "shrink-0 border-t border-[#E6E6E4] bg-white px-4 py-3.5 sm:px-5"
+            ? "mt-4 border-t border-[#E4EBE6] pt-4"
+            : "shrink-0 border-t border-[#E4EBE6] bg-white px-4 py-3.5 sm:px-5"
         }
       >
         <div
@@ -1010,7 +1010,7 @@ export default function AddressFormModal({
               type="button"
               onClick={onClose}
               disabled={isLoading}
-              className="h-[44px] flex-1 rounded-[6px] border border-[#D7D7D5] bg-white px-4 text-[11px] font-medium text-[#555555] transition hover:border-[#BDBDBA] hover:bg-[#FAFAF9] disabled:cursor-not-allowed disabled:opacity-50"
+              className="h-[44px] flex-1 rounded-[6px] border border-[#DDE7DF] bg-white px-4 text-[11px] font-medium text-[#555555] transition hover:border-[#B9CFC1] hover:bg-[#F8FBF8] disabled:cursor-not-allowed disabled:opacity-50"
             >
               Cancel
             </button>
@@ -1019,7 +1019,7 @@ export default function AddressFormModal({
           <button
             type="submit"
             disabled={isLoading}
-            className={`flex h-[44px] items-center justify-center gap-2 rounded-[6px] bg-[#111111] px-5 text-[11px] font-semibold text-white transition hover:bg-[#222222] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 ${
+            className={`flex h-[44px] items-center justify-center gap-2 rounded-[6px] bg-[#173E2B] px-5 text-[11px] font-semibold text-white transition hover:bg-[#1B5538] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 ${
               inline ? "w-full sm:flex-1" : "flex-1"
             }`}
           >
@@ -1040,11 +1040,11 @@ export default function AddressFormModal({
         </div>
 
         <div className="mt-2 flex items-center justify-center gap-1.5">
-          <span className="h-1 w-1 rounded-full bg-[#111111]" />
+          <span className="h-1 w-1 rounded-full bg-[#16845B]" />
           <p className="text-center text-[9px] text-[#999999]">
             Your address details are securely saved
           </p>
-          <span className="h-1 w-1 rounded-full bg-[#111111]" />
+          <span className="h-1 w-1 rounded-full bg-[#16845B]" />
         </div>
       </div>
     </form>
@@ -1093,14 +1093,14 @@ export default function AddressFormModal({
             className="fixed inset-0 z-[9999] flex items-center justify-center p-3 font-sans sm:p-5"
           >
             <div
-              className="flex max-h-[92vh] w-full max-w-[640px] flex-col overflow-hidden rounded-[8px] border border-[#E6E6E4] bg-[#F7F7F6] shadow-[0_18px_60px_rgba(0,0,0,0.14)]"
+              className="flex max-h-[92vh] w-full max-w-[640px] flex-col overflow-hidden rounded-[8px] border border-[#E4EBE6] bg-[#F7FAF8] shadow-[0_18px_60px_rgba(0,0,0,0.14)]"
               onClick={(e) => e.stopPropagation()}
             >
               {/* HEADER */}
-              <div className="shrink-0 border-b border-[#E6E6E4] bg-white px-4 py-4 sm:px-5">
+              <div className="shrink-0 border-b border-[#E4EBE6] bg-white px-4 py-4 sm:px-5">
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex min-w-0 items-center gap-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[6px] bg-[#111111] text-white">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[6px] bg-[#173E2B] text-white">
                       <MapPin className="h-4 w-4" />
                     </div>
 
@@ -1130,7 +1130,7 @@ export default function AddressFormModal({
                     onClick={onClose}
                     disabled={isLoading}
                     aria-label="Close"
-                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] border border-[#D7D7D5] bg-white text-[#777777] transition hover:border-[#BDBDBA] hover:bg-[#F7F7F6] hover:text-[#111111] disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] border border-[#DDE7DF] bg-white text-[#777777] transition hover:border-[#B9CFC1] hover:bg-[#F8FBF8] hover:text-[#173E2B] disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <X className="h-[15px] w-[15px]" />
                   </button>
@@ -1143,7 +1143,7 @@ export default function AddressFormModal({
                       initial={{ width: 0 }}
                       animate={{ width: "100%" }}
                       transition={{ duration: 0.45, delay: 0.05 }}
-                      className="h-full rounded-full bg-[#111111]"
+                      className="h-full rounded-full bg-[#16845B]"
                     />
                   </div>
 
