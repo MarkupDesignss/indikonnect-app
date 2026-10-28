@@ -686,7 +686,7 @@ function QuantitySelect({
         <div
           role="listbox"
           aria-label={ariaLabel}
-          className="absolute left-0 top-[calc(100%+4px)] z-[100] max-h-[180px] w-[80px] overflow-y-auto overscroll-contain rounded-lg border border-[#DDE7DF] bg-white py-1 shadow-[0_10px_28px_-14px_rgba(15,45,30,0.4)] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#C7D6CC] [&::-webkit-scrollbar-track]:bg-transparent"
+          className="absolute left-0 top-[calc(100%+4px)] z-[100] max-h-[180px] w-[85px] overflow-y-auto overscroll-contain rounded-lg border border-[#DDE7DF] bg-white py-1 shadow-[0_10px_28px_-14px_rgba(15,45,30,0.4)] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#C7D6CC] [&::-webkit-scrollbar-track]:bg-transparent"
         >
           {options.map((qty) => {
             const isSelected = qty === value;
@@ -766,7 +766,7 @@ function TaxBreakdownPopup({
       </button>
 
       {open && (
-        <div className="absolute bottom-[calc(100%+8px)] right-0 z-[9999] w-[260px] rounded-xl border border-[#E1EAE3] bg-white p-3 shadow-[0_16px_40px_-20px_rgba(15,45,30,0.45)]">
+        <div className="absolute bottom-[calc(100%+8px)] left-12 z-[9999] w-[calc(100vw-32px)] max-w-[280px] -translate-x-1/2 rounded-xl border border-[#E1EAE3] bg-white p-3 shadow-[0_16px_40px_-20px_rgba(15,45,30,0.45)] sm:left-auto sm:right-0 sm:translate-x-0 sm:w-[260px]">
           <div className="mb-2 flex items-center justify-between">
             <p className="text-[11px] font-semibold text-[#1B2C20]">
               Tax breakdown
@@ -1018,12 +1018,12 @@ function CartSummary({
             return (
               <div
                 key={`${item.product_id}-${item.variant_id ?? "none"}-${index}`}
-                className={`flex items-center gap-3 ${
+                className={`flex items-start gap-3 ${
                   isUnavailable ? "opacity-70" : ""
                 }`}
               >
                 {/* Product image + qty badge */}
-                <div className="relative h-[42px] w-[42px] shrink-0">
+                <div className="relative h-[42px] w-[42px] shrink-0 mt-0.5">
                   <div className="relative h-full w-full overflow-hidden rounded-lg border border-[#E9EEEA] bg-[#F8FAF8]">
                     {imageUrl ? (
                       <Image
@@ -2671,7 +2671,7 @@ export default function CheckoutPage() {
     <>
       <Header />
       <main
-        className={`${poppins.className} min-h-screen bg-[#F7FAF8] px-4 pt-2 text-[#17231A] sm:px-6 sm:pt-3 lg:pb-12`}
+        className={`${poppins.className} min-h-screen bg-[#F7FAF8] px-4 pb-4 pt-2 text-[#17231A] sm:px-6 sm:pt-3 lg:pb-12`}
       >
         <div className="mx-auto w-full max-w-[1160px]">
           {/* Breadcrumb */}
@@ -2709,7 +2709,7 @@ export default function CheckoutPage() {
                   </div>
                 ) : availableDeliveryAddresses.length > 0 ? (
                   <div>
-                    <div className="flex items-center justify-between gap-3 rounded-xl border border-[#D5E6DB] bg-[#F1FAF4] px-4 py-4 sm:px-5">
+                    <div className="flex flex-col gap-3 rounded-xl border border-[#D5E6DB] bg-[#F1FAF4] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
                       <div className="min-w-0">
                         <p className="truncate text-[14px] text-[#526258]">
                           Deliver to:{" "}
@@ -2718,7 +2718,7 @@ export default function CheckoutPage() {
                             {selectedDeliveryAddress?.postcode}
                           </span>
                         </p>
-                        <p className="mt-1 truncate text-[12px] text-[#718077]">
+                        <p className="mt-1 line-clamp-2 text-[12px] text-[#718077] sm:truncate">
                           {selectedDeliveryAddress?.address_line_1}
                           {selectedDeliveryAddress?.address_line_2
                             ? `, ${selectedDeliveryAddress.address_line_2}`
@@ -2730,7 +2730,7 @@ export default function CheckoutPage() {
                       <button
                         type="button"
                         onClick={() => setIsSelectorModalOpen(true)}
-                        className="inline-flex h-10 shrink-0 items-center justify-center rounded-lg border border-[#16845B] bg-white px-4 text-[11px] font-semibold uppercase tracking-wide text-[#16845B] transition hover:bg-[#E6F4EA]"
+                        className="inline-flex h-10 w-full shrink-0 items-center justify-center rounded-lg border border-[#16845B] bg-white px-4 text-[11px] font-semibold uppercase tracking-wide text-[#16845B] transition hover:bg-[#E6F4EA] sm:w-auto"
                       >
                         Change Address
                       </button>
@@ -2762,7 +2762,7 @@ export default function CheckoutPage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex items-center justify-between gap-3 rounded-xl border border-dashed border-[#CFE0D5] bg-[#F5FBF6] px-3.5 py-2.5 sm:px-4">
+                  <div className="flex flex-col gap-3 rounded-xl border border-dashed border-[#CFE0D5] bg-[#F5FBF6] px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4 sm:py-2.5">
                     <div className="flex items-center gap-2.5">
                       <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-[#16845B] ring-1 ring-[#E4EBE6]">
                         <MapPin className="h-4 w-4" />
@@ -2779,7 +2779,7 @@ export default function CheckoutPage() {
                     <button
                       type="button"
                       onClick={openAddAddress}
-                      className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg bg-[#173E2B] px-3 text-[10.5px] font-semibold text-white transition hover:bg-[#20543A]"
+                      className="inline-flex h-8 w-full shrink-0 items-center justify-center gap-1.5 rounded-lg bg-[#173E2B] px-3 text-[10.5px] font-semibold text-white transition hover:bg-[#20543A] sm:w-auto"
                     >
                       <Plus className="h-3.5 w-3.5" />
                       Add address
@@ -2823,35 +2823,35 @@ export default function CheckoutPage() {
                           setSelectedGatewayId(option.id);
                           setHasManuallySelectedGateway(true);
                         }}
-                        className={`group flex w-full items-center gap-4 rounded-xl border px-4 py-3 text-left transition-all duration-200 ${
+                        className={`group flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left transition-all duration-200 sm:gap-4 sm:px-4 ${
                           isSelected
                             ? "border-[#7CA2E8] bg-[#F8FBFF] shadow-[0_0_0_2px_rgba(59,112,207,0.10),0_6px_18px_-15px_rgba(20,76,160,0.45)]"
                             : "border-[#E5ECF6] bg-white hover:border-[#B9CDED] hover:bg-[#FBFDFF]"
                         }`}
                       >
-                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[#E8EEF8] bg-[#F0F5FD]">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#E8EEF8] bg-[#F0F5FD] sm:h-10 sm:w-10">
                           <GatewayBrandIcon
                             icon={option.icon}
-                            className={`h-5 w-5 ${iconColor}`}
+                            className={`h-4 w-4 sm:h-5 sm:w-5 ${iconColor}`}
                           />
                         </span>
                         <span className="min-w-0 flex-1">
-                          <span className="block text-[14px] font-bold leading-tight tracking-[-0.02em] text-[#182A40]">
+                          <span className="block text-[13px] font-bold leading-tight tracking-[-0.02em] text-[#182A40] sm:text-[14px]">
                             {option.title}
                           </span>
-                          <span className="mt-0.5 block text-[11.5px] leading-[16px] text-[#64758B]">
+                          <span className="mt-0.5 block text-[11px] leading-[16px] text-[#64758B] sm:text-[11.5px]">
                             {option.description}
                           </span>
                         </span>
                         <span
-                          className={`flex h-[24px] w-[24px] shrink-0 items-center justify-center rounded-full border transition-colors ${
+                          className={`flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full border transition-colors sm:h-[24px] sm:w-[24px] ${
                             isSelected
                               ? "border-[#1557AD] bg-[#1557AD] text-white"
                               : "border-[#D6E0EF] bg-white text-transparent group-hover:border-[#9CB7E1]"
                           }`}
                         >
                           {isSelected ? (
-                            <Check className="h-3.5 w-3.5 stroke-[3]" />
+                            <Check className="h-3 w-3 stroke-[3] sm:h-3.5 sm:w-3.5" />
                           ) : (
                             <span className="h-2 w-2 rounded-full bg-transparent" />
                           )}
