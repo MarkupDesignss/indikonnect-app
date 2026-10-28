@@ -1,3 +1,4 @@
+
 import { baseApi } from "../baseApi";
 
 import {
@@ -17,7 +18,11 @@ import {
 // RETRY PAYMENT TYPES
 // =====================================================
 
-export type PaymentGateway = "razorpay" | "hdfc_sg" | "hdfc_ie";
+export type PaymentGateway =
+  | "razorpay"
+  | "hdfc_sg"
+  | "hdfc_ie"
+  | "axispg";
 
 export interface RetryOrderRequest {
   orderReference: string;
@@ -65,6 +70,12 @@ export interface RetryOrderResponse {
       currTime?: string;
       xRoutingId?: string;
     };
+
+    // Axis payment gateway
+    axis_order_id?: string;
+    axis_payment_link?: string;
+
+    [key: string]: unknown;
   };
 }
 
@@ -83,7 +94,6 @@ export const orderApi = baseApi.injectEndpoints({
         url: "/my-orders",
         method: "GET",
       }),
-
       providesTags: ["Order"],
     }),
 
@@ -96,20 +106,21 @@ export const orderApi = baseApi.injectEndpoints({
         url: "/orders/statuses",
         method: "GET",
       }),
-
       providesTags: ["OrderStatus"],
     }),
 
     // =====================================================
-    // RETRY PAYMENT - NEW
+    // RETRY PAYMENT
     // POST /retry-order/{orderReference}
     // =====================================================
 
-    retryOrder: builder.mutation<RetryOrderResponse, RetryOrderRequest>({
+    retryOrder: builder.mutation<
+      RetryOrderResponse,
+      RetryOrderRequest
+    >({
       query: ({ orderReference, payment_gateway }) => ({
         url: `/retry-order/${encodeURIComponent(orderReference)}`,
         method: "POST",
-
         body: {
           payment_gateway,
         },
@@ -122,13 +133,15 @@ export const orderApi = baseApi.injectEndpoints({
     // CANCEL RETURN
     // =====================================================
 
-    cancelReturn: builder.mutation<CancelReturnResponse, CancelReturnRequest>({
+    cancelReturn: builder.mutation<
+      CancelReturnResponse,
+      CancelReturnRequest
+    >({
       query: ({ returnId }) => ({
         url: `/returns/${returnId}/cancel`,
         method: "POST",
         body: {},
       }),
-
       invalidatesTags: ["Order"],
     }),
 
@@ -145,20 +158,19 @@ export const orderApi = baseApi.injectEndpoints({
       }
     >({
       query: ({ orderReference, orderLineId, reason }) => ({
-        url: `/orders/${orderReference}/cancel/${orderLineId}`,
+        url: `/orders/${encodeURIComponent(
+          orderReference,
+        )}/cancel/${orderLineId}`,
         method: "POST",
-
         body: {
           reason,
         },
       }),
-
       invalidatesTags: ["Order"],
     }),
 
     // =====================================================
-    // WITHDRAW CANCEL REQUEST
-    // ORDER LEVEL (LEGACY)
+    // WITHDRAW CANCEL REQUEST - LEGACY
     // =====================================================
 
     withdrawCancelRequest: builder.mutation<
@@ -168,17 +180,17 @@ export const orderApi = baseApi.injectEndpoints({
       }
     >({
       query: ({ orderReference }) => ({
-        url: `/orders/${orderReference}/withdrawCancel`,
+        url: `/orders/${encodeURIComponent(
+          orderReference,
+        )}/withdrawCancel`,
         method: "POST",
         body: {},
       }),
-
       invalidatesTags: ["Order"],
     }),
 
     // =====================================================
-    // WITHDRAW CANCEL REQUEST
-    // LINE LEVEL
+    // WITHDRAW CANCEL REQUEST - LINE LEVEL
     // =====================================================
 
     withdrawCancelOrder: builder.mutation<
@@ -188,7 +200,6 @@ export const orderApi = baseApi.injectEndpoints({
         data?: {
           order_id?: number;
           order_reference?: string;
-
           order_lines?: Array<{
             id: number;
             order_id: number;
@@ -209,17 +220,17 @@ export const orderApi = baseApi.injectEndpoints({
       }
     >({
       query: ({ orderReference, orderLineId }) => ({
-        url: `/orders/${orderReference}/withdrawCancel/${orderLineId}`,
+        url: `/orders/${encodeURIComponent(
+          orderReference,
+        )}/withdrawCancel/${orderLineId}`,
         method: "POST",
         body: {},
       }),
-
       invalidatesTags: ["Order"],
     }),
 
     // =====================================================
     // INITIATE RETURN
-    // POST /returns/initiate
     // =====================================================
 
     initiateReturn: builder.mutation<
@@ -235,37 +246,43 @@ export const orderApi = baseApi.injectEndpoints({
       }) => {
         const formData = new FormData();
 
-        // Order Reference
-        formData.append("order_reference", String(order_reference));
+        formData.append(
+          "order_reference",
+          String(order_reference),
+        );
 
-        // Return Method
         formData.append("return_method", return_method);
 
-        // Courier
         if (return_method === "courier" && courier) {
           formData.append("courier", courier);
         }
 
-        // Tracking ID
         if (return_method === "courier" && tracking_id) {
           formData.append("tracking_id", tracking_id);
         }
 
-        // Items
         items.forEach((item, index) => {
           formData.append(
             `items[${index}][order_line_id]`,
             String(item.order_line_id),
           );
 
-          formData.append(`items[${index}][quantity]`, String(item.quantity));
+          formData.append(
+            `items[${index}][quantity]`,
+            String(item.quantity),
+          );
 
-          formData.append(`items[${index}][reason]`, item.reason);
+          formData.append(
+            `items[${index}][reason]`,
+            item.reason,
+          );
 
-          // Return Images
-          if (item.images && item.images.length > 0) {
+          if (item.images?.length) {
             item.images.forEach((image) => {
-              formData.append(`items[${index}][images][]`, image);
+              formData.append(
+                `items[${index}][images][]`,
+                image,
+              );
             });
           }
         });
@@ -276,7 +293,6 @@ export const orderApi = baseApi.injectEndpoints({
           body: formData,
         };
       },
-
       invalidatesTags: ["Order"],
     }),
 
@@ -284,7 +300,10 @@ export const orderApi = baseApi.injectEndpoints({
     // GET INVOICE BY ORDER ID
     // =====================================================
 
-    getInvoiceByOrderId: builder.query<InvoiceResponse, number | string>({
+    getInvoiceByOrderId: builder.query<
+      InvoiceResponse,
+      number | string
+    >({
       query: (orderId) => ({
         url: `/invoice/order/${orderId}`,
         method: "GET",
@@ -309,25 +328,24 @@ export const orderApi = baseApi.injectEndpoints({
       }) => {
         const formData = new FormData();
 
-        // Rating
         formData.append("rating", String(rating));
-
-        // Review Text
         formData.append("review_text", review_text);
 
-        // Order ID
         if (order_id) {
           formData.append("order_id", String(order_id));
         }
 
-        // Order Line ID
-        formData.append("order_line_id", String(order_line_id));
+        formData.append(
+          "order_line_id",
+          String(order_line_id),
+        );
 
-        // Product ID
-        formData.append("product_id", String(product_id));
+        formData.append(
+          "product_id",
+          String(product_id),
+        );
 
-        // Multiple Images
-        if (images && images.length > 0) {
+        if (images?.length) {
           images.forEach((image) => {
             formData.append("images[]", image);
           });
@@ -339,10 +357,11 @@ export const orderApi = baseApi.injectEndpoints({
           body: formData,
         };
       },
-
       invalidatesTags: ["Order"],
     }),
   }),
+
+  overrideExisting: false,
 });
 
 // =====================================================
@@ -356,12 +375,19 @@ export const {
   // Retry Payment
   useRetryOrderMutation,
 
+  // Cancel Order
   useCancelOrderMutation,
   useWithdrawCancelRequestMutation,
   useWithdrawCancelOrderMutation,
+
+  // Returns
   useInitiateReturnMutation,
   useCancelReturnMutation,
+
+  // Invoice
   useGetInvoiceByOrderIdQuery,
   useLazyGetInvoiceByOrderIdQuery,
+
+  // Reviews
   useAddRatingReviewMutation,
 } = orderApi;

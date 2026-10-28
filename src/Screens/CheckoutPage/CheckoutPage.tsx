@@ -47,6 +47,7 @@ import { useGetPaymentGatewaySettingsQuery } from "@/lib/redux/api/paymentGatewa
 import Header from "@/components/common/Header";
 import Footer from "@/components/Footer/Footer";
 import AddressFormModal from "./AddressFormModal";
+import { useRetryOrderMutation } from "@/lib/redux/api/order/orderApi";
 
 /* =========================================================
    TYPES
@@ -200,7 +201,7 @@ const PAYMENT_GATEWAY_OPTIONS: PaymentGatewayOption[] = [
     id: "hdfc-ie",
     settingKey: "HDFC_IE",
     title: "HDFC Bank",
-    description: "Pay securely via HDFC SmartGateway.",
+    description: "Pay securely via HDFC SmartGateway (Merchant 1).",
     paymentGateway: "hdfc_ie",
     kind: "hdfc",
     icon: "hdfc",
@@ -210,7 +211,7 @@ const PAYMENT_GATEWAY_OPTIONS: PaymentGatewayOption[] = [
     id: "hdfc-sg",
     settingKey: "HDFC_SG",
     title: "HDFC Bank",
-    description: "Pay securely via HDFC SmartGateway.",
+    description: "Pay securely via HDFC SmartGateway (Merchant 2).",
     paymentGateway: "hdfc_sg",
     kind: "hdfc",
     icon: "hdfc",
@@ -300,7 +301,7 @@ const getInitialGatewayId = (value: unknown): PaymentGatewayId => {
     .replace(/[\s-]+/g, "_");
 
   if (code === "HDFC_IE") return "hdfc-ie";
-  if (code === "HDFC_SG") return "hdfc-sg";
+  if (code === "HDFC_SG" || code === "HDFC") return "hdfc-sg";
   if (code.includes("FREECHARGE")) return "freecharge-axis";
   if (code.includes("RAZORPAY")) return "razorpay-axis";
   if (code.includes("AXIS")) return "razorpay-axis";
@@ -339,13 +340,15 @@ function PlaceOrderButton({
   gatewayLoading,
   disabled,
   compact = false,
+  retryMode = false,
 }: {
   onClick: () => void;
   isSubmitting: boolean;
   gatewayLoading: boolean;
   disabled: boolean;
-  total: number;
+  total?: number;
   compact?: boolean;
+  retryMode?: boolean;
 }) {
   return (
     <button
@@ -365,7 +368,7 @@ function PlaceOrderButton({
       {isSubmitting ? (
         <>
           <Loader2 className="h-4 w-4 animate-spin" />
-          <span>Processing order...</span>
+          <span>{retryMode ? "Processing payment..." : "Processing order..."}</span>
         </>
       ) : gatewayLoading ? (
         <>
@@ -374,7 +377,7 @@ function PlaceOrderButton({
         </>
       ) : (
         <>
-          <span>Place Order</span>
+          <span>{retryMode ? "Retry Payment" : "Place Order"}</span>
           <ChevronRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
         </>
       )}
@@ -475,6 +478,9 @@ function CartSummary({
   checkoutType,
   selectedGateway,
   gatewayLoading,
+  retryMode = false,
+  retryOrderReference = "",
+  onExitPayment,
 }: {
   summaryData?: CheckoutSummaryData;
   loading: boolean;
@@ -495,6 +501,9 @@ function CartSummary({
   checkoutType: "cart" | "buy_now";
   selectedGateway: PaymentGatewayOption;
   gatewayLoading: boolean;
+  retryMode?: boolean;
+  retryOrderReference?: string;
+  onExitPayment: () => void;
 }) {
   if (loading) {
     return (
@@ -523,17 +532,33 @@ function CartSummary({
   const items = normalizeSummaryItems(summaryData);
   const hasCoupon =
     !!summaryData.coupon || Number(summaryData.coupon_discount || 0) > 0;
-  const hasUnavailable = unavailableProductIds.size > 0;
-  const buttonDisabled =
-    isSubmitting || disabled || hasUnavailable || gatewayLoading;
+  const hasUnavailable = !retryMode && unavailableProductIds.size > 0;
+  const buttonDisabled = retryMode
+    ? isSubmitting || gatewayLoading || !retryOrderReference
+    : isSubmitting || disabled || hasUnavailable || gatewayLoading;
 
   return (
     <div className="overflow-hidden rounded-2xl border border-[#E4EBE6] bg-white shadow-[0_16px_45px_-32px_rgba(15,45,30,0.28)]">
+      {retryMode && (
+        <div className="border-b border-[#F2D9B8] bg-gradient-to-r from-[#FFF8ED] to-white px-4 py-3.5 sm:px-5">
+          <div className="flex items-start gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#FFF0D9] text-[#A65A11]">
+              <AlertTriangle className="h-4.5 w-4.5" />
+            </span>
+            <div className="min-w-0">
+              <h2 className="text-[16px] font-semibold tracking-[-0.03em] text-[#392B1C]">Payment pending</h2>
+              <p className="mt-1 text-[11px] leading-5 text-[#806B55]">
+                Your previous payment was cancelled or not completed. Retry payment for this order without placing a new order.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="border-b border-[#EDF1EE] bg-gradient-to-r from-[#F6FBF7] to-white px-4 py-2.5 sm:px-5">
         <div className="flex items-center justify-between gap-2">
           <div>
             <h2 className="text-[16px] font-semibold tracking-[-0.03em] text-[#16241B]">Order Summary</h2>
-            <p className="mt-0.5 text-[11px] text-[#7B877F]">Review your items before placing the order</p>
+            <p className="mt-0.5 text-[11px] text-[#7B877F]">{retryMode ? "Review your items before retrying payment" : "Review your items before placing the order"}</p>
           </div>
           <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white text-[#16845B] shadow-sm ring-1 ring-[#E4EBE6]">
             <Package className="h-4 w-4" />
@@ -545,7 +570,7 @@ function CartSummary({
         {items.length > 0 ? (
           items.map((item, index) => {
             const imageUrl = getItemImage(item);
-            const isUnavailable = unavailableProductIds.has(item.product_id);
+            const isUnavailable = !retryMode && unavailableProductIds.has(item.product_id);
 
             return (
               <div
@@ -732,9 +757,21 @@ function CartSummary({
             gatewayLoading={gatewayLoading}
             disabled={buttonDisabled}
             total={summaryData.grand_total}
+            retryMode={retryMode}
           />
         </div>
-        {disabled && !isSubmitting && (
+        {retryMode && (
+          <button
+            type="button"
+            onClick={onExitPayment}
+            disabled={isSubmitting}
+            className="mt-2 hidden min-h-[42px] w-full items-center justify-center gap-2 rounded-xl border border-[#D8E1DB] bg-white px-4 py-2.5 text-[12px] font-semibold text-[#405247] transition hover:border-[#AEBDB3] hover:bg-[#F7FAF8] disabled:cursor-not-allowed disabled:opacity-60 lg:flex"
+          >
+            <X className="h-4 w-4" />
+            Exit Payment
+          </button>
+        )}
+        {disabled && !retryMode && !isSubmitting && (
           <p className="mt-2 text-center text-[10px] leading-4 text-[#888888]">Select a delivery address and finish coupon updates to continue.</p>
         )}
         <div className="mt-2.5 rounded-lg border border-[#E5ECE7] bg-white px-2.5 py-1.5">
@@ -878,6 +915,16 @@ export default function CheckoutPage() {
   const checkoutType: "cart" | "buy_now" = isDirectCheckout ? "buy_now" : "cart";
   const urlCouponCode = searchParams.get("coupon_code") || "";
 
+  // Payment gateway redirects back here with these flags when payment was cancelled/pending.
+  const retryOrderReference = String(searchParams.get("order_reference") || "").trim();
+  const retryGatewayParam = String(searchParams.get("gateway") || "").trim().toLowerCase();
+  const retryPaymentStatus = String(searchParams.get("payment_status") || "").trim().toLowerCase();
+  const isRetryPaymentFlow =
+    searchParams.get("cancelled") === "true" &&
+    searchParams.get("show_repay") === "true" &&
+    Boolean(retryOrderReference) &&
+    ["pending", "failed", "cancelled", "unpaid"].includes(retryPaymentStatus);
+
   const [selectedDeliveryAddress, setSelectedDeliveryAddress] = useState<Address | null>(null);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false); // For Form
   const [isSelectorModalOpen, setIsSelectorModalOpen] = useState(false); // For List
@@ -907,6 +954,7 @@ export default function CheckoutPage() {
   const [setDefaultAddress] = useSetDefaultAddressMutation();
   const [placeOrder] = usePlaceOrderMutation();
   const [initiateHdfcPayment] = useInitiateHdfcPaymentMutation();
+  const [retryOrder] = useRetryOrderMutation();
 
   const { data: couponsData, isLoading: isLoadingCoupons } = useGetCouponsQuery();
   const {
@@ -924,9 +972,36 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     if (isLoadingGatewaySettings || hasManuallySelectedGateway) return;
+
     const configuredGateway = (paymentGatewaySettings as any)?.active_gateway;
-    setSelectedGatewayId(getInitialGatewayId(configuredGateway));
-  }, [paymentGatewaySettings, isLoadingGatewaySettings, hasManuallySelectedGateway]);
+    const configuredGatewayId = getInitialGatewayId(configuredGateway);
+
+    if (isRetryPaymentFlow && retryGatewayParam) {
+      if (retryGatewayParam.includes("hdfc")) {
+        // The return URL can say only "hdfc". Prefer the configured HDFC subtype
+        // when available; otherwise default to HDFC SG. The user can still change it.
+        setSelectedGatewayId(
+          configuredGatewayId === "hdfc-ie" || configuredGatewayId === "hdfc-sg"
+            ? configuredGatewayId
+            : getInitialGatewayId(retryGatewayParam),
+        );
+        return;
+      }
+
+      if (retryGatewayParam.includes("razorpay") || retryGatewayParam.includes("axis")) {
+        setSelectedGatewayId(getInitialGatewayId(retryGatewayParam));
+        return;
+      }
+    }
+
+    setSelectedGatewayId(configuredGatewayId);
+  }, [
+    paymentGatewaySettings,
+    isLoadingGatewaySettings,
+    hasManuallySelectedGateway,
+    isRetryPaymentFlow,
+    retryGatewayParam,
+  ]);
 
   const coupons: CouponListItem[] = useMemo(() => {
     const list = (couponsData as any)?.data?.data;
@@ -1267,6 +1342,102 @@ export default function CheckoutPage() {
     return latest;
   };
 
+  const handleRetryPayment = async () => {
+    if (paymentActionInProgress.current) return;
+
+    if (!isRetryPaymentFlow || !retryOrderReference) {
+      dispatch(showToast({ message: "Order reference is missing. Please reopen the payment retry link.", type: "error" }));
+      return;
+    }
+
+    if (isLoadingGatewaySettings) {
+      dispatch(showToast({ message: "Please wait while payment settings load", type: "info" }));
+      return;
+    }
+
+    if (!selectedGateway) {
+      dispatch(showToast({ message: "Please choose a payment method", type: "error" }));
+      return;
+    }
+
+    paymentActionInProgress.current = true;
+    setIsSubmitting(true);
+
+    try {
+      // Retry the existing order reference. Do not call place-order or create a new order here.
+      const response = await retryOrder({
+        orderReference: retryOrderReference,
+        payment_gateway: selectedGateway.paymentGateway,
+      }).unwrap();
+
+      if (!response?.success || !response?.data) {
+        throw new Error(response?.message || "Unable to retry payment. Please try again.");
+      }
+
+      const data = response.data;
+      const returnedGateway = data.gateway || selectedGateway.paymentGateway;
+      if (returnedGateway !== selectedGateway.paymentGateway) {
+        throw new Error(
+          `The server returned ${returnedGateway} instead of the selected ${selectedGateway.paymentGateway} gateway. Please select the correct payment method and retry.`,
+        );
+      }
+
+      const returnedOrderReference = String(data.order_reference || retryOrderReference).trim();
+      const databaseOrderId = Number(data.order_id || 0);
+      const amount = Number(data.total_amount || 0);
+
+      if (selectedGateway.paymentGateway === "razorpay") {
+        if (!Number.isSafeInteger(databaseOrderId) || databaseOrderId <= 0) {
+          throw new Error("A valid order ID was not returned by the retry API.");
+        }
+
+        const razorpayOrderId = String(data.razorpay_order_id || "").trim();
+        const razorpayKey = String(data.razorpay_key || "").trim();
+
+        if (!razorpayOrderId || !razorpayKey) {
+          throw new Error("Razorpay retry details were not returned by the server.");
+        }
+        if (!Number.isFinite(amount) || amount <= 0) {
+          throw new Error("Invalid payment amount returned by the server.");
+        }
+
+        dispatch(showToast({ message: "Opening secure payment checkout...", type: "info" }));
+        await openRazorpay({
+          orderId: databaseOrderId,
+          orderReference: returnedOrderReference,
+          amount,
+          razorpayOrderId,
+          razorpayKey,
+        });
+        return;
+      }
+
+      if (selectedGateway.paymentGateway === "hdfc_sg" || selectedGateway.paymentGateway === "hdfc_ie") {
+        const paymentLink = String(data.hdfc_payment_link || "").trim();
+        if (paymentLink) {
+          dispatch(showToast({ message: "Redirecting to secure HDFC payment...", type: "info" }));
+          window.location.assign(getSafeHdfcUrl(paymentLink));
+          return;
+        }
+
+        // Do not silently create a new payment attempt through the normal place-order flow.
+        // This message makes a missing retry link from the backend explicit.
+        if (data.hdfc_sdk_payload) {
+          throw new Error("HDFC retry details were returned without a payment link. Please check the HDFC retry SDK response handling.");
+        }
+        throw new Error("HDFC payment link was not returned by the retry API. Please try again or contact support.");
+      }
+
+      throw new Error("The selected payment gateway is not supported for retry.");
+    } catch (error: any) {
+      console.error("Retry payment error:", error);
+      dispatch(showToast({ message: getErrorMessage(error, "Failed to retry payment"), type: "error" }));
+    } finally {
+      paymentActionInProgress.current = false;
+      setIsSubmitting(false);
+    }
+  };
+
   const handlePlaceOrder = async () => {
     if (paymentActionInProgress.current) return;
 
@@ -1381,13 +1552,20 @@ export default function CheckoutPage() {
   };
 
   const hasUnavailable = unavailableProductIds.size > 0;
-  const placeOrderDisabled =
-    isSubmitting ||
-    !selectedDeliveryAddress?.id ||
-    isApplyingCoupon ||
-    Boolean(pendingCoupon) ||
-    hasUnavailable ||
-    isLoadingGatewaySettings;
+  const placeOrderDisabled = isRetryPaymentFlow
+    ? isSubmitting || isLoadingGatewaySettings || !retryOrderReference
+    : isSubmitting ||
+      !selectedDeliveryAddress?.id ||
+      isApplyingCoupon ||
+      Boolean(pendingCoupon) ||
+      hasUnavailable ||
+      isLoadingGatewaySettings;
+
+  const handleExitPayment = () => {
+    // Return to the regular checkout route and remove the gateway callback parameters.
+    // Next.js applies the configured basePath (for example /indiekonnect-web).
+    router.replace("/checkout");
+  };
 
   const openAddAddress = () => {
     setEditingAddress(null);
@@ -1397,7 +1575,7 @@ export default function CheckoutPage() {
   return (
     <>
       <Header />
-      <main className={`${poppins.className} min-h-screen bg-[#F7FAF8] px-4 pb-28 pt-2 text-[#17231A] sm:px-6 sm:pt-3 lg:pb-12`}>
+      <main className={`${poppins.className} min-h-screen bg-[#F7FAF8] px-4 pt-2 text-[#17231A] sm:px-6 sm:pt-3 lg:pb-12`}>
         <div className="mx-auto w-full max-w-[1160px]">
           <nav className="mb-1.5 flex items-center gap-2 text-[10px] font-medium text-[#87918A]">
             <button type="button" onClick={() => router.push("/")} className="transition hover:text-[#173E2B]">Home</button>
@@ -1417,8 +1595,8 @@ export default function CheckoutPage() {
             {/* LEFT COLUMN */}
             <div className="space-y-4">
 
-              {/* DELIVER TO — compact bar only (no section header) */}
-              {isLoadingAddresses ? (
+              {/* Existing orders do not need an address edit for payment retry. */}
+              {!isRetryPaymentFlow && (isLoadingAddresses ? (
                 <div className="rounded-xl border border-[#E4EAE6] bg-[#F5FBF6] px-4 py-3">
                   <CheckoutSkeleton />
                 </div>
@@ -1484,7 +1662,7 @@ export default function CheckoutPage() {
                     <Plus className="h-3.5 w-3.5" /> Add address
                   </button>
                 </div>
-              )}
+              ))}
 
               {/* PAYMENT METHODS - ALWAYS VISIBLE */}
               <section className="overflow-hidden rounded-2xl border border-[#E4EBE6] bg-white shadow-[0_14px_40px_-32px_rgba(15,45,30,0.25)]">
@@ -1554,7 +1732,7 @@ export default function CheckoutPage() {
               <CartSummary
                 summaryData={summaryData}
                 loading={isLoadingCheckoutSummary && !summaryData}
-                onPlaceOrder={handlePlaceOrder}
+                onPlaceOrder={isRetryPaymentFlow ? handleRetryPayment : handlePlaceOrder}
                 isSubmitting={isSubmitting}
                 disabled={!selectedDeliveryAddress?.id || isApplyingCoupon || Boolean(pendingCoupon)}
                 couponInput={couponInput}
@@ -1571,6 +1749,9 @@ export default function CheckoutPage() {
                 checkoutType={displayCheckoutType}
                 selectedGateway={selectedGateway}
                 gatewayLoading={isLoadingGatewaySettings}
+                retryMode={isRetryPaymentFlow}
+                retryOrderReference={retryOrderReference}
+                onExitPayment={handleExitPayment}
               />
             </aside>
           </div>
@@ -1580,8 +1761,12 @@ export default function CheckoutPage() {
               <div className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-[#EAF6EF] px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-[#16845B]">
                 <ShieldCheck className="h-3 w-3" /> Safe & secure checkout
               </div>
-              <h1 className="text-[18px] font-semibold tracking-[-0.04em] text-[#17251B] sm:text-[22px]">Checkout</h1>
-              <p className="mt-0.5 hidden text-[11px] leading-5 text-[#78847C] sm:block">Confirm your delivery address and review your order before placing it.</p>
+              <h1 className="text-[18px] font-semibold tracking-[-0.04em] text-[#17251B] sm:text-[22px]">{isRetryPaymentFlow ? "Complete Your Payment" : "Checkout"}</h1>
+              <p className="mt-0.5 hidden text-[11px] leading-5 text-[#78847C] sm:block">
+                {isRetryPaymentFlow
+                  ? "Retry your previous payment without creating a new order."
+                  : "Confirm your delivery address and review your order before placing it."}
+              </p>
             </div>
             <div className="flex items-center gap-2 rounded-xl border border-[#E1EAE3] bg-white/80 px-3 py-2 text-[10px] font-medium text-[#526258]">
               <LockKeyhole className="h-4 w-4 text-[#16845B]" /> Encrypted payment
@@ -1589,27 +1774,41 @@ export default function CheckoutPage() {
           </div>
         </div>
 
-        {/* Mobile sticky Place Order bar */}
-        {summaryData && (
+        {/* Mobile sticky payment action bar */}
+        {(summaryData || isRetryPaymentFlow) && (
           <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[#E4EBE6] bg-white/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-12px_30px_-18px_rgba(15,45,30,0.35)] backdrop-blur lg:hidden">
             <div className="mx-auto flex max-w-[520px] items-center gap-3">
               <div className="shrink-0">
-                <span className="block text-[9px] uppercase tracking-wide text-[#89928B]">Total</span>
-                <span className="block text-[17px] font-bold leading-tight tracking-[-0.03em] text-[#17251B]">
-                  {formatPrice(summaryData.grand_total)}
+                <span className="block text-[9px] uppercase tracking-wide text-[#89928B]">
+                  {isRetryPaymentFlow ? "Payment" : "Total"}
+                </span>
+                <span className="block text-[15px] font-bold leading-tight tracking-[-0.03em] text-[#17251B]">
+                  {summaryData ? formatPrice(summaryData.grand_total) : "Pending"}
                 </span>
               </div>
               <div className="min-w-0 flex-1">
                 <PlaceOrderButton
-                  onClick={handlePlaceOrder}
+                  onClick={isRetryPaymentFlow ? handleRetryPayment : handlePlaceOrder}
                   isSubmitting={isSubmitting}
                   gatewayLoading={isLoadingGatewaySettings}
                   disabled={placeOrderDisabled}
-                  total={summaryData.grand_total}
+                  total={summaryData?.grand_total}
                   compact
+                  retryMode={isRetryPaymentFlow}
                 />
               </div>
             </div>
+            {isRetryPaymentFlow && (
+              <button
+                type="button"
+                onClick={handleExitPayment}
+                disabled={isSubmitting}
+                className="mx-auto mt-2 flex min-h-[34px] w-full max-w-[520px] items-center justify-center gap-2 rounded-lg border border-[#D8E1DB] bg-white px-4 py-1.5 text-[11px] font-semibold text-[#526258] transition hover:bg-[#F7FAF8] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <X className="h-3.5 w-3.5" />
+                Exit Payment
+              </button>
+            )}
           </div>
         )}
 
