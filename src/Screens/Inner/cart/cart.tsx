@@ -1,23 +1,23 @@
 "use client";
-import { useMemo, useRef, useState, type MouseEvent } from "react";
+
+import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type RefObject } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Poppins } from "next/font/google";
 import {
   ArrowLeft,
   ArrowRight,
-  Minus,
-  Plus,
-  Trash2,
-  ShoppingBag,
-  ShieldCheck,
-  RotateCcw,
-  Loader2,
-  Sparkles,
+  Check,
+  ChevronDown,
   ChevronRight,
   Home,
+  Info,
+  Loader2,
+  ShieldCheck,
+  ShoppingBag,
+  Sparkles,
+  X,
   AlertTriangle,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
@@ -35,11 +35,22 @@ import { useGetProductsQuery } from "@/lib/redux/api/productApi";
 import Loding from "@/components/common/Loding";
 
 const PAGE_BG = "#FFFFFF";
+const PLACEHOLDER_IMAGE = "/indiekonnect-web/images/placeholder.jpg";
+const MAX_CART_QUANTITY = 10;
+
 const poppins = Poppins({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   display: "swap",
 });
+
+interface ProductTaxonomy {
+  id?: number;
+  title?: string | null;
+  name?: string | null;
+  slug?: string | null;
+  category_id?: number;
+}
 
 interface VariantData {
   id: number;
@@ -50,14 +61,23 @@ interface VariantData {
   distributor_price?: string | null;
   stock_quantity?: number | null;
 }
+
 interface CartProduct {
   id: number;
   name: string;
   slug: string;
   product_code: string;
   retail_price?: string | null;
+  retail_mrp?: string | null;
   distributor_price?: string | null;
+  distributor_mrp?: string | null;
+  stock_quantity?: number | null;
+  available_stock?: number | null;
+  category?: ProductTaxonomy | null;
+  subcategory?: ProductTaxonomy | null;
+  brand?: ProductTaxonomy | null;
 }
+
 interface CartItemApi {
   id: number;
   product_id: number;
@@ -73,8 +93,9 @@ interface CartItemApi {
   image_url?: string | null;
   current_price_type?: string | null;
 }
+
 interface CartItemView {
-  id: number; // Cart item ID, not product ID
+  id: number;
   cartItemId: number;
   productId: number;
   variantId: number | null;
@@ -85,6 +106,9 @@ interface CartItemView {
   originalPrice?: number;
   productCode: string;
   sku: string;
+  category: string;
+  subcategory: string;
+  brand: string;
   variantLabel: string;
   variantAttributes: Record<string, string>;
   quantity: number;
@@ -92,7 +116,6 @@ interface CartItemView {
   priceType: string;
 }
 
-const PLACEHOLDER_IMAGE = "/indiekonnect-web/images/placeholder.jpg";
 const getImageUrl = (url?: string | null): string => {
   if (!url || typeof url !== "string") return PLACEHOLDER_IMAGE;
   const value = url.trim().replace(/\\\//g, "/");
@@ -100,8 +123,7 @@ const getImageUrl = (url?: string | null): string => {
   if (/^https?:\/\//i.test(value)) return value;
   if (value.startsWith("//")) return `https:${value}`;
   if (value.startsWith("/indiekonnect-web/")) return value;
-  const path = value.replace(/^\/+/, "");
-  return `https://www.markupdesigns.net/indikonnect/${path}`;
+  return `https://www.markupdesigns.net/indikonnect/${value.replace(/^\/+/, "")}`;
 };
 
 const getRecommendedImage = (product: any): string => {
@@ -124,36 +146,35 @@ const getRecommendedImage = (product: any): string => {
     readImage(product?.product?.images?.[0]);
   return getImageUrl(url);
 };
-const parsePrice = (value?: string | number | null) => {
+
+const parsePrice = (value?: string | number | null): number => {
   const parsed = Number(value ?? 0);
   return Number.isFinite(parsed) ? parsed : 0;
 };
-const formatPrice = (value: number) => {
-  return `₹${Number(value || 0).toLocaleString("en-IN", {
-    maximumFractionDigits: 0,
+
+const formatPrice = (value: number): string =>
+  `₹${Number(value || 0).toLocaleString("en-IN", {
+    maximumFractionDigits: 2,
+    minimumFractionDigits: 0,
   })}`;
-};
-const formatAttributeName = (value: string) => {
-  return value
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
-};
+
+const formatAttributeName = (value: string): string =>
+  value.replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+
+const getTaxonomyName = (value?: ProductTaxonomy | null): string =>
+  String(value?.title || value?.name || "").trim();
+
 const getVariantLabel = (
   variant?: VariantData | null,
   variantAttributes?: Record<string, string> | null,
-) => {
-  if (variant?.attribute_string?.trim()) {
-    return variant.attribute_string.trim();
-  }
+): string => {
+  if (variant?.attribute_string?.trim()) return variant.attribute_string.trim();
   const attributes = variantAttributes || variant?.attributes || {};
-  const entries = Object.entries(attributes);
-  if (!entries.length) {
-    return "";
-  }
-  return entries
+  return Object.entries(attributes)
     .map(([key, value]) => `${formatAttributeName(key)}: ${value}`)
     .join(" • ");
 };
+
 const getOriginalPrice = (item: CartItemApi, currentPrice: number) => {
   const isDistributor =
     String(item.current_price_type || "").toLowerCase() === "distributor";
@@ -161,8 +182,8 @@ const getOriginalPrice = (item: CartItemApi, currentPrice: number) => {
     ? parsePrice(item.variant?.distributor_price)
     : parsePrice(item.variant?.retail_price);
   const productPrice = isDistributor
-    ? parsePrice(item.product?.distributor_price)
-    : parsePrice(item.product?.retail_price);
+    ? parsePrice(item.product?.distributor_mrp ?? item.product?.distributor_price)
+    : parsePrice(item.product?.retail_mrp ?? item.product?.retail_price);
   const candidate =
     variantPrice > 0 ? variantPrice : productPrice > 0 ? productPrice : 0;
   return candidate > currentPrice ? candidate : undefined;
@@ -170,46 +191,20 @@ const getOriginalPrice = (item: CartItemApi, currentPrice: number) => {
 
 const Breadcrumb = ({ currentPage = "Cart" }: { currentPage?: string }) => {
   const router = useRouter();
-  const breadcrumbItems = [
-    {
-      label: "Home",
-      path: "/",
-      icon: Home,
-    },
-    {
-      label: "Cart",
-      path: null,
-      isCurrent: true,
-    },
-  ];
   return (
     <nav
       aria-label="Breadcrumb"
-      className="mb-5 flex items-center gap-1.5 overflow-x-auto whitespace-nowrap px-1 py-1 text-[11px] font-medium sm:mb-6 sm:px-0"
+      className="mb-4 flex items-center gap-1.5 overflow-x-auto whitespace-nowrap py-1 text-[11px] font-medium sm:mb-5"
     >
-      {breadcrumbItems.map((item, index) => {
-        const isLast = index === breadcrumbItems.length - 1;
-        const Icon = item.icon;
-        return (
-          <div key={item.label} className="flex items-center gap-1.5">
-            {index > 0 && (
-              <ChevronRight className="h-3 w-3 shrink-0 text-[#B0B0AD]" />
-            )}
-            {isLast ? (
-              <span className="text-[#111111]">{currentPage}</span>
-            ) : (
-              <button
-                type="button"
-                onClick={() => router.push(item.path || "/")}
-                className="flex items-center gap-1 text-[#777777] transition hover:text-[#111111]"
-              >
-                {Icon && <Icon className="h-3.5 w-3.5" />}
-                {item.label}
-              </button>
-            )}
-          </div>
-        );
-      })}
+      <button
+        type="button"
+        onClick={() => router.push("/")}
+        className="flex items-center gap-1 text-[#777] transition hover:text-black"
+      >
+        <Home className="h-3.5 w-3.5" /> Home
+      </button>
+      <ChevronRight className="h-3 w-3 shrink-0 text-[#B0B0AD]" />
+      <span className="text-[#111]">{currentPage}</span>
     </nav>
   );
 };
@@ -217,73 +212,26 @@ const Breadcrumb = ({ currentPage = "Cart" }: { currentPage?: string }) => {
 const EmptyCart = () => {
   const router = useRouter();
   return (
-    <section className="rounded-2xl border border-[#EAEAEA] bg-white px-5 py-16 text-center sm:py-20">
-      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#F1F1F0]">
-        <ShoppingBag className="h-6 w-6 text-[#111111]" strokeWidth={1.5} />
+    <section className="rounded-xl border border-[#E8E8E8] bg-white px-5 py-16 text-center sm:py-20">
+      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#F4F4F4]">
+        <ShoppingBag className="h-6 w-6 text-[#222]" strokeWidth={1.5} />
       </div>
-      <h2 className="mt-5 text-[20px] font-semibold text-[#111111]">
-        Your cart is empty
-      </h2>
-      <p className="mx-auto mt-2 max-w-sm text-[12px] leading-5 text-[#777777]">
+      <h2 className="mt-5 text-[20px] font-semibold text-[#111]">Your cart is empty</h2>
+      <p className="mx-auto mt-2 max-w-sm text-[12px] leading-5 text-[#777]">
         Discover something beautiful from our curated collection.
       </p>
       <button
         type="button"
         onClick={() => router.push("/products")}
-        className="mt-6 inline-flex h-10 items-center gap-2 rounded-[6px] bg-black px-5 text-[11px] font-semibold uppercase tracking-wide text-white transition hover:bg-[#49372B]"
+        className="mt-6 inline-flex h-10 items-center gap-2 rounded-md bg-black px-5 text-[11px] font-semibold uppercase tracking-wide text-white transition hover:bg-[#333]"
       >
-        Continue Shopping
-        <ArrowRight className="h-3.5 w-3.5" />
+        Continue Shopping <ArrowRight className="h-3.5 w-3.5" />
       </button>
     </section>
   );
 };
 
-const VariantDetails = ({
-  variantLabel,
-  sku,
-  variantAttributes,
-}: {
-  variantLabel: string;
-  sku: string;
-  variantAttributes: Record<string, string>;
-}) => {
-  const hasAttributes = Object.keys(variantAttributes).length > 0;
-  if (!variantLabel && !sku && !hasAttributes) {
-    return null;
-  }
-  return (
-    <div className="mt-1.5 space-y-1">
-      {variantLabel && (
-        <div className="inline-flex max-w-full items-center rounded-[4px] border border-[#E1E1DF] bg-[#FAFAF9] px-2 py-1">
-          <span className="truncate text-[9px] font-medium text-[#555555]">
-            {variantLabel}
-          </span>
-        </div>
-      )}
-      {hasAttributes && !variantLabel && (
-        <div className="flex flex-wrap gap-1">
-          {Object.entries(variantAttributes).map(([key, value]) => (
-            <span
-              key={key}
-              className="rounded-[4px] border border-[#E1E1DF] bg-[#FAFAF9] px-2 py-1 text-[8px] text-[#666666]"
-            >
-              {formatAttributeName(key)}:{" "}
-              <span className="font-medium text-[#222222]">{value}</span>
-            </span>
-          ))}
-        </div>
-      )}
-      {sku && (
-        <p className="text-[8px] text-[#999999]">
-          SKU: <span className="font-medium text-[#777777]">{sku}</span>
-        </p>
-      )}
-    </div>
-  );
-};
-
-const CartProductItem = ({
+function CartProductItem({
   item,
   isUpdating,
   isRemoving,
@@ -295,69 +243,104 @@ const CartProductItem = ({
   isUpdating: boolean;
   isRemoving: boolean;
   isUnavailable: boolean;
-  updateQuantity: (id: number, action: "increment" | "decrement") => void;
+  updateQuantity: (id: number, quantity: number) => void;
   removeItem: (id: number) => void;
-}) => {
-  const originalTotal = item.originalPrice
-    ? item.originalPrice * item.quantity
-    : null;
-  const itemTotal = item.price * item.quantity;
+}) {
+  const originalPrice = item.originalPrice;
+  const discountAmount = originalPrice ? originalPrice - item.price : 0;
+  const maxQuantity = Math.min(
+    MAX_CART_QUANTITY,
+    item.stockQuantity !== null && item.stockQuantity > 0
+      ? item.stockQuantity
+      : MAX_CART_QUANTITY,
+  );
+
+  const [qtyOpen, setQtyOpen] = useState(false);
+  const qtyRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!qtyOpen) return;
+    const handler = (event: globalThis.MouseEvent) => {
+      if (qtyRef.current && !qtyRef.current.contains(event.target as Node)) {
+        setQtyOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [qtyOpen]);
+
+  const quantityOptions = Array.from(
+    { length: Math.max(maxQuantity, item.quantity) },
+    (_, index) => index + 1,
+  );
+
+  const handleQtySelect = (quantity: number) => {
+    setQtyOpen(false);
+    if (quantity !== item.quantity) updateQuantity(item.id, quantity);
+  };
+
+  const categoryAndBrand = [item.category, item.subcategory, item.brand]
+    .filter((value, index, values) => Boolean(value) && values.indexOf(value) === index)
+    .join(" · ");
+
   return (
     <motion.article
       layout
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, height: 0 }}
-      transition={{ duration: 0.2 }}
-      className={`group grid grid-cols-[88px_minmax(0,1fr)] gap-4 border-b border-[#EEEEEE] py-6 last:border-0 sm:grid-cols-[132px_minmax(0,1fr)] sm:gap-6 sm:py-7 ${isUnavailable ? "relative" : ""
-        }`}
+      exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+      transition={{ duration: 0.18 }}
+      className="grid min-h-[128px] grid-cols-[88px_minmax(0,1fr)] gap-2.5 rounded-[5px] border border-[#E5E5E5] bg-white px-2.5 py-2 sm:min-h-[170px] sm:grid-cols-[112px_minmax(0,1fr)] sm:gap-3 sm:px-3 sm:py-2.5"
     >
       <Link
         href={`/product/${item.slug}`}
-        className={`relative block h-[105px] w-[88px] overflow-hidden rounded-xl bg-[#F7F7F7] sm:h-[150px] sm:w-[132px] ${isUnavailable ? "opacity-60" : ""
-          }`}
+        className={`relative block h-[112px] w-[88px] self-center overflow-hidden bg-[#F3F3F3] sm:h-[150px] sm:w-[112px] ${
+          isUnavailable ? "opacity-65" : ""
+        }`}
       >
-        <Image
+        <img
           src={item.image}
           alt={item.name}
-          fill
-          sizes="(max-width:640px) 88px, 132px"
-          className="object-contain p-2.5 transition-transform duration-500 group-hover:scale-105"
+          loading="lazy"
+          referrerPolicy="no-referrer"
+          className="absolute inset-0 h-full w-full object-cover"
+          onError={(event) => {
+            const image = event.currentTarget;
+            if (!image.src.endsWith(PLACEHOLDER_IMAGE)) image.src = PLACEHOLDER_IMAGE;
+          }}
         />
         {isUnavailable && (
-          <span className="absolute inset-0 flex items-center justify-center bg-black/45">
-            <span className="rounded-[4px] bg-white px-2 py-1 text-[9px] font-bold uppercase tracking-wide text-[#B64339]">
-              Out of Stock
+          <span className="absolute inset-0 flex items-center justify-center bg-black/35">
+            <span className="rounded-sm bg-white px-1.5 py-1 text-center text-[8px] font-bold uppercase text-[#B64339] sm:text-[9px]">
+              Out of stock
             </span>
           </span>
         )}
       </Link>
-      <div className="flex min-w-0 flex-col justify-between gap-3">
-        <div className="flex items-start justify-between gap-3">
+
+      <div className="flex min-w-0 flex-col justify-between gap-1.5 py-0.5">
+        <div className="flex min-w-0 items-start justify-between gap-2">
           <div className="min-w-0">
-            <p className="mb-1.5 text-[10px] font-medium uppercase tracking-[0.13em] text-[#959595]">
-              {item.productCode
-                ? `Product ${item.productCode}`
-                : "Selected for you"}
-            </p>
             <Link
               href={`/product/${item.slug}`}
-              className="line-clamp-2 text-[14px] font-semibold leading-6 text-[#1D1D1D] transition-colors hover:text-[#656565] sm:text-[16px]"
+              className="line-clamp-1 text-[12.5px] font-semibold leading-[1.3] text-[#172033] hover:text-black sm:line-clamp-2 sm:text-[14.5px] sm:leading-[1.35]"
             >
               {item.name}
             </Link>
-            <VariantDetails
-              variantLabel={item.variantLabel}
-              sku={item.sku}
-              variantAttributes={item.variantAttributes}
-            />
-            {isUnavailable && (
-              <div className="mt-2 inline-flex items-center gap-1.5 rounded-[4px] border border-[#F1C8C4] bg-[#FFF2F1] px-2 py-1">
-                <AlertTriangle className="h-3 w-3 text-[#B64339]" />
-                <span className="text-[9px] font-semibold uppercase tracking-wide text-[#B64339]">
-                  Currently unavailable
-                </span>
-              </div>
+            {categoryAndBrand && (
+              <p className="mt-1 truncate text-[9.5px] font-medium leading-3.5 text-[#666] sm:text-[10.5px]">
+                {categoryAndBrand}
+              </p>
+            )}
+            {item.productCode && (
+              <p className="mt-0.5 truncate text-[9.5px] leading-3.5 text-[#8A8A8A] sm:text-[10.5px]">
+                Product code: {item.productCode}
+              </p>
+            )}
+            {item.sku && (
+              <p className="truncate text-[9.5px] leading-3.5 text-[#8A8A8A] sm:text-[10.5px]">
+                SKU: {item.sku}
+              </p>
             )}
           </div>
           <button
@@ -366,75 +349,120 @@ const CartProductItem = ({
             title="Remove item"
             onClick={() => removeItem(item.id)}
             disabled={isRemoving}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#999] transition hover:bg-[#FFF2F1] hover:text-[#B64339] disabled:opacity-40"
+            className="-mr-1 -mt-1 flex h-6 w-6 shrink-0 items-center justify-center text-[#111] transition hover:text-[#E43D5C] disabled:opacity-40 sm:h-7 sm:w-7"
           >
             {isRemoving ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
-              <Trash2 className="h-4 w-4" strokeWidth={1.6} />
+              <X className="h-5 w-5" strokeWidth={1.4} />
             )}
           </button>
         </div>
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div
-            className="inline-flex h-10 items-center overflow-hidden rounded-lg border border-[#DEDEDE] bg-white"
-            aria-label="Quantity selector"
-          >
-            <button
-              type="button"
-              aria-label="Decrease quantity"
-              disabled={item.quantity <= 1 || isUpdating}
-              onClick={() => updateQuantity(item.id, "decrement")}
-              className="grid h-full w-10 place-items-center text-[#292929] transition hover:bg-[#F6F6F6] disabled:opacity-30"
-            >
-              <Minus className="h-3.5 w-3.5" />
-            </button>
-            <span
-              className="grid h-full min-w-[32px] place-items-center text-[13px] font-semibold text-[#1B1B1B]"
-              aria-live="polite"
-            >
-              {isUpdating ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                item.quantity
-              )}
+
+        <div className="flex flex-wrap items-center gap-1.5">
+          {item.variantLabel && (
+            <span className="inline-flex h-6 max-w-full items-center gap-1 rounded-[3px] bg-[#F4F4F4] px-1.5 text-[9.5px] font-semibold text-[#252525] sm:text-[11px]">
+              <span className="max-w-[140px] truncate">
+                {item.variantLabel.toLowerCase().startsWith("size") ||
+                item.variantLabel.includes(":")
+                  ? item.variantLabel
+                  : `Size: ${item.variantLabel}`}
+              </span>
+              <ChevronDown className="h-3 w-3 shrink-0" />
             </span>
+          )}
+
+          <div className="relative" ref={qtyRef}>
             <button
               type="button"
-              aria-label="Increase quantity"
-              disabled={
-                item.quantity >= Math.min(10, item.stockQuantity ?? 10) ||
-                isUpdating ||
-                isUnavailable
-              }
-              onClick={() => updateQuantity(item.id, "increment")}
-              className="grid h-full w-10 place-items-center text-[#292929] transition hover:bg-[#F6F6F6] disabled:opacity-30"
+              aria-label={`Quantity for ${item.name}`}
+              aria-haspopup="listbox"
+              aria-expanded={qtyOpen}
+              disabled={isUpdating || isUnavailable}
+              onClick={() => setQtyOpen((value) => !value)}
+              className={`inline-flex h-6 items-center gap-1 rounded-[3px] border bg-[#F4F4F4] pl-2 pr-1.5 text-[10px] font-semibold text-[#252525] transition hover:border-[#FF3E69]/60 disabled:cursor-not-allowed disabled:opacity-60 sm:text-[11px] ${
+                qtyOpen ? "border-[#FF3E69]" : "border-transparent"
+              }`}
             >
-              <Plus className="h-3.5 w-3.5" />
+              <span className="text-[#8A8A8A]">Qty:</span>
+              <span className="min-w-[12px] text-center">{item.quantity}</span>
+              <ChevronDown
+                className={`h-3 w-3 shrink-0 text-[#555] transition-transform ${
+                  qtyOpen ? "rotate-180" : ""
+                }`}
+              />
             </button>
+
+            <AnimatePresence>
+              {qtyOpen && (
+                <motion.ul
+                  role="listbox"
+                  initial={{ opacity: 0, y: -4, scale: 0.97 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -4, scale: 0.97 }}
+                  transition={{ duration: 0.12 }}
+                  className="absolute left-0 top-full z-30 mt-1 max-h-44 w-[64px] overflow-y-auto rounded-[5px] border border-[#E5E5E5] bg-white py-1 shadow-[0_6px_20px_rgba(0,0,0,0.12)]"
+                >
+                  {quantityOptions.map((quantity) => {
+                    const active = quantity === item.quantity;
+                    return (
+                      <li key={quantity}>
+                        <button
+                          type="button"
+                          role="option"
+                          aria-selected={active}
+                          onClick={() => handleQtySelect(quantity)}
+                          className={`flex w-full items-center justify-between px-2 py-[5px] text-[11px] font-medium transition ${
+                            active
+                              ? "bg-[#FFF1F4] text-[#E43D5C]"
+                              : "text-[#252525] hover:bg-[#F5F5F5]"
+                          }`}
+                        >
+                          {quantity}
+                          {active && <Check className="h-3 w-3" strokeWidth={3} />}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </motion.ul>
+              )}
+            </AnimatePresence>
           </div>
-          <div className="text-right">
-            <p className="text-[16px] font-semibold tracking-[-0.02em] text-[#151515] sm:text-[18px]">
-              {formatPrice(itemTotal)}
-            </p>
-            {originalTotal && originalTotal > itemTotal ? (
-              <p className="mt-0.5 text-[11px] text-[#9C9C9C] line-through">
-                {formatPrice(originalTotal)}
-              </p>
-            ) : null}
-          </div>
+
+          {item.stockQuantity !== null && item.stockQuantity > 0 && (
+            <span className="inline-flex h-[22px] items-center rounded-[3px] border border-[#FF755D] px-1.5 text-[9.5px] font-medium text-[#F04430]">
+              {item.stockQuantity} left
+            </span>
+          )}
+        </div>
+
+        <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+          <span className="text-[13px] font-bold tracking-[-0.02em] text-[#171717] sm:text-[15px]">
+            {formatPrice(item.price)}
+          </span>
+          {originalPrice && originalPrice > item.price && (
+            <>
+              <span className="text-[11px] text-[#929292] line-through sm:text-[12.5px]">
+                {formatPrice(originalPrice)}
+              </span>
+              {discountAmount > 0 && (
+                <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-[#FF514A] sm:text-[12px]">
+                  {formatPrice(discountAmount)} OFF <Info className="h-2.5 w-2.5" />
+                </span>
+              )}
+            </>
+          )}
         </div>
       </div>
     </motion.article>
   );
-};
+}
 
-const OrderSummary = ({
+function OrderSummary({
   subtotal,
   totalSavings,
   total,
   itemCount,
-  cartItems,
   isCheckingStock,
   unavailableCount,
   onCheckout,
@@ -443,224 +471,130 @@ const OrderSummary = ({
   totalSavings: number;
   total: number;
   itemCount: number;
-  cartItems: CartItemView[];
   isCheckingStock: boolean;
   unavailableCount: number;
   onCheckout: () => void;
-}) => {
+}) {
   const router = useRouter();
   return (
-    <section className="rounded-2xl border border-[#E9E9E9] bg-white p-6 sm:p-7">
-      <div className="mb-7 flex items-center justify-between gap-3">
-        <h2 className="text-[19px] font-semibold tracking-[-0.025em] text-[#171717]">
-          Order Summary
-        </h2>
-        <span className="rounded-full bg-[#F6F6F6] px-3 py-1 text-[11px] font-medium text-[#777]">
+    <section className="rounded-xl border border-[#E5E5E5] bg-white p-4 sm:p-5">
+      <div className="mb-5 flex items-center justify-between gap-3">
+        <h2 className="text-[17px] font-semibold text-[#171717]">Order Summary</h2>
+        <span className="rounded-full bg-[#F4F4F4] px-2.5 py-1 text-[10px] font-medium text-[#777]">
           {itemCount} {itemCount === 1 ? "item" : "items"}
         </span>
       </div>
-      <div className="space-y-4 text-[13px]">
+      <div className="space-y-3 text-[12px]">
         <div className="flex items-center justify-between gap-4">
           <span className="text-[#777]">Subtotal</span>
-          <span className="font-medium text-[#282828]">
-            {formatPrice(subtotal)}
-          </span>
+          <span className="font-medium text-[#282828]">{formatPrice(subtotal)}</span>
         </div>
         {totalSavings > 0 && (
           <div className="flex items-center justify-between gap-4">
             <span className="text-[#777]">Your savings</span>
-            <span className="font-semibold text-[#28815C]">
-              −{formatPrice(totalSavings)}
-            </span>
+            <span className="font-semibold text-[#28815C]">−{formatPrice(totalSavings)}</span>
           </div>
         )}
       </div>
-      <div className="my-6 h-px bg-[#EBEBEB]" />
-      <div className="mb-6 flex items-end justify-between gap-3">
+      <div className="my-5 h-px bg-[#EBEBEB]" />
+      <div className="mb-5 flex items-end justify-between gap-3">
         <div>
-          <p className="text-[14px] font-semibold text-[#222]">Total</p>
-          <p className="mt-1 text-[11px] text-[#999]">
-            Calculated from your cart
-          </p>
+          <p className="text-[13px] font-semibold text-[#222]">Total</p>
+          <p className="mt-1 text-[10px] text-[#999]">Calculated from your cart</p>
         </div>
-        <p className="text-[24px] font-semibold tracking-[-0.04em] text-[#111]">
+        <p className="text-[22px] font-semibold tracking-[-0.04em] text-[#111]">
           {formatPrice(total)}
         </p>
       </div>
-
       {unavailableCount > 0 && (
         <div className="mb-4 flex items-start gap-2 rounded-lg border border-[#F1C8C4] bg-[#FFF2F1] p-3">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[#B64339]" />
           <div>
             <p className="text-[11px] font-semibold text-[#B64339]">
-              {unavailableCount}{" "}
-              {unavailableCount === 1 ? "item is" : "items are"} out of stock
+              {unavailableCount} {unavailableCount === 1 ? "item is" : "items are"} out of stock
             </p>
             <p className="mt-0.5 text-[10px] leading-4 text-[#8A4A44]">
-              Please remove the unavailable items to continue checkout.
+              Remove unavailable items to continue checkout.
             </p>
           </div>
         </div>
       )}
-
       <button
         type="button"
         onClick={onCheckout}
-        disabled={isCheckingStock || !cartItems.length}
-        className="flex h-[52px] w-full items-center justify-center gap-3 rounded-xl bg-[#171717] px-5 text-[13px] font-semibold text-white transition hover:bg-[#373737] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black disabled:cursor-not-allowed disabled:opacity-60"
+        disabled={isCheckingStock || itemCount === 0}
+        className="flex h-[46px] w-full items-center justify-center gap-2 rounded-md bg-[#171717] px-4 text-[12px] font-semibold text-white transition hover:bg-[#373737] disabled:cursor-not-allowed disabled:opacity-60"
       >
         {isCheckingStock ? (
           <>
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Checking stock...
+            <Loader2 className="h-4 w-4 animate-spin" /> Checking stock...
           </>
         ) : (
-          <>
-            Proceed to Checkout <ArrowRight className="h-4 w-4" />
-          </>
+          <>Proceed to Checkout <ArrowRight className="h-4 w-4" /></>
         )}
       </button>
       <button
         type="button"
         onClick={() => router.push("/products")}
-        className="mx-auto mt-5 flex items-center gap-2 text-[12px] font-medium text-[#707070] transition hover:text-[#111]"
+        className="mx-auto mt-4 flex items-center gap-2 text-[11px] font-medium text-[#707070] transition hover:text-[#111]"
       >
         <ArrowLeft className="h-3.5 w-3.5" /> Continue Shopping
       </button>
-      <div className="mt-6 flex items-center justify-center gap-2 border-t border-[#EFEFEF] pt-5 text-[11px] text-[#8B8B8B]">
+      <div className="mt-5 flex items-center justify-center gap-2 border-t border-[#EFEFEF] pt-4 text-[10px] text-[#8B8B8B]">
         <ShieldCheck className="h-4 w-4" strokeWidth={1.7} /> Secure checkout
       </div>
     </section>
   );
-};
+}
 
-const RecommendedSection = ({
+function RecommendedSection({
   recommended,
   addingProductId,
   handleRecommendedAddToCart,
   scrollRecommended,
   recommendedScrollRef,
-}: any) => {
+}: {
+  recommended: any[];
+  addingProductId: number | string | null;
+  handleRecommendedAddToCart: (product: any, event?: ReactMouseEvent<HTMLButtonElement>) => void;
+  scrollRecommended: (direction: "left" | "right") => void;
+  recommendedScrollRef: RefObject<HTMLDivElement | null>;
+}) {
   return (
-    <section
-      className="
-        rounded-xl
-        border
-        border-[#E6E6E4]
-        bg-white
-        p-4
-        sm:p-[18px]
-      "
-    >
-      <div className="mb-4 flex items-center justify-between">
+    <section className="rounded-xl border border-[#E6E6E4] bg-white p-4 sm:p-[18px]">
+      <div className="mb-4 flex items-center justify-between gap-2">
         <div>
           <div className="mb-1 flex items-center gap-1.5">
-            <Sparkles className="h-3.5 w-3.5 text-[#333333]" />
-            <span className="text-[9px] font-medium uppercase tracking-[0.14em] text-[#999999]">
+            <Sparkles className="h-3.5 w-3.5 text-[#333]" />
+            <span className="text-[9px] font-medium uppercase tracking-[0.14em] text-[#999]">
               Curated for you
             </span>
           </div>
-          <h2 className="text-[16px] font-semibold text-[#171717]">
-            You might also like
-          </h2>
+          <h2 className="text-[15px] font-semibold text-[#171717]">You might also like</h2>
         </div>
         <div className="flex items-center gap-2">
-          <Link
-            href="/products"
-            className="hidden text-[9px] font-medium uppercase tracking-wide text-[#777777] underline underline-offset-4 transition hover:text-[#111111] sm:block"
-          >
+          <Link href="/products" className="hidden text-[9px] font-medium uppercase tracking-wide text-[#777] underline underline-offset-4 hover:text-black sm:block">
             View all
           </Link>
           {recommended.length > 1 && (
             <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => scrollRecommended("left")}
-                className="
-                  flex
-                  h-7
-                  w-7
-                  items-center
-                  justify-center
-                  rounded-[5px]
-                  border
-                  border-[#D8D8D6]
-                  bg-white
-                  text-[#333333]
-                  transition
-                  hover:bg-[#F3F3F2]
-                "
-                aria-label="Scroll left"
-              >
+              <button type="button" onClick={() => scrollRecommended("left")} aria-label="Scroll left" className="flex h-7 w-7 items-center justify-center rounded-[5px] border border-[#D8D8D6] bg-white text-[#333] hover:bg-[#F3F3F2]">
                 <ArrowLeft className="h-3 w-3" />
               </button>
-              <button
-                type="button"
-                onClick={() => scrollRecommended("right")}
-                className="
-                  flex
-                  h-7
-                  w-7
-                  items-center
-                  justify-center
-                  rounded-[5px]
-                  bg-[#111111]
-                  text-white
-                  transition
-                  hover:bg-[#49372B]
-                "
-                aria-label="Scroll right"
-              >
+              <button type="button" onClick={() => scrollRecommended("right")} aria-label="Scroll right" className="flex h-7 w-7 items-center justify-center rounded-[5px] bg-black text-white hover:bg-[#333]">
                 <ArrowRight className="h-3 w-3" />
               </button>
             </div>
           )}
         </div>
       </div>
-
-      <div
-        ref={recommendedScrollRef}
-        className="
-          flex
-          gap-3
-          overflow-x-auto
-          pb-1
-          scroll-smooth
-          snap-x
-          snap-mandatory
-          [-ms-overflow-style:none]
-          [scrollbar-width:none]
-          [&::-webkit-scrollbar]:hidden
-        "
-      >
+      <div ref={recommendedScrollRef} className="flex gap-3 overflow-x-auto pb-1 scroll-smooth snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {recommended.map((product: any) => {
           const isAdding = addingProductId === product.id;
           return (
-            <div
-              key={product.id}
-              className="
-                  group
-                  w-[132px]
-                  shrink-0
-                  snap-start
-                  sm:w-[145px]
-                  md:w-[155px]
-                "
-            >
+            <div key={product.id} className="group w-[128px] shrink-0 snap-start sm:w-[140px] md:w-[150px]">
               <Link href={`/product/${product.slug}`}>
-                <div
-                  className="
-                      relative
-                      aspect-square
-                      overflow-hidden
-                      rounded-[6px]
-                      border
-                      border-[#E5E5E3]
-                      bg-[#F1F1F0]
-                      transition
-                      group-hover:border-[#111111]
-                    "
-                >
+                <div className="relative aspect-square overflow-hidden rounded-[5px] border border-[#E5E5E3] bg-[#F1F1F0] transition group-hover:border-black">
                   <img
                     src={getRecommendedImage(product)}
                     alt={product.name || "Recommended product"}
@@ -669,51 +603,23 @@ const RecommendedSection = ({
                     className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"
                     onError={(event) => {
                       const image = event.currentTarget;
-                      if (!image.src.endsWith(PLACEHOLDER_IMAGE)) {
-                        image.src = PLACEHOLDER_IMAGE;
-                      }
+                      if (!image.src.endsWith(PLACEHOLDER_IMAGE)) image.src = PLACEHOLDER_IMAGE;
                     }}
                   />
                 </div>
               </Link>
               <div className="pt-2">
-                <p className="truncate text-[10px] font-medium text-[#222222]">
-                  {product.name}
-                </p>
-                <p className="mt-0.5 text-[13px] font-semibold text-[#111111]">
+                <p className="truncate text-[10px] font-medium text-[#222]">{product.name}</p>
+                <p className="mt-0.5 text-[12px] font-semibold text-[#111]">
                   {formatPrice(parsePrice(product.retail_price))}
                 </p>
                 <button
                   type="button"
-                  onClick={(e: MouseEvent<HTMLButtonElement>) =>
-                    handleRecommendedAddToCart(product, e)
-                  }
+                  onClick={(event) => handleRecommendedAddToCart(product, event)}
                   disabled={isAdding}
-                  className="
-                      mt-1.5
-                      flex
-                      h-7
-                      w-full
-                      items-center
-                      justify-center
-                      gap-1.5
-                      rounded-[5px]
-                      bg-[#111111]
-                      text-[9px]
-                      font-semibold
-                      uppercase
-                      tracking-wide
-                      text-white
-                      transition
-                      hover:bg-[#49372B]
-                      disabled:opacity-50
-                    "
+                  className="mt-1.5 flex h-9 w-full items-center justify-center gap-1.5 rounded-[5px] bg-black text-[9px] font-semibold uppercase tracking-wide text-white transition hover:bg-[#333] disabled:opacity-50"
                 >
-                  {isAdding ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                  ) : (
-                    <ShoppingBag className="h-3 w-3" />
-                  )}
+                  {isAdding ? <Loader2 className="h-3 w-3 animate-spin" /> : <ShoppingBag className="h-3 w-3" />}
                   {isAdding ? "Adding..." : "Add"}
                 </button>
               </div>
@@ -723,194 +629,14 @@ const RecommendedSection = ({
       </div>
     </section>
   );
-};
-
-const CartWithItems = ({
-  cartItems,
-  itemCount,
-  isUpdating,
-  isRemoving,
-  isClearing,
-  updateQuantity,
-  removeItem,
-  clearCartHandler,
-  recommended,
-  isProductsLoading,
-  addingProductId,
-  handleRecommendedAddToCart,
-  scrollRecommended,
-  recommendedScrollRef,
-  subtotal,
-  totalSavings,
-  total,
-  unavailableProductIds,
-  isCheckingStock,
-  onCheckout,
-}: any) => {
-  return (
-    <div
-      className="
-        grid
-        grid-cols-1
-        items-start
-        gap-5
-        lg:grid-cols-[minmax(0,1fr)_350px]
-      "
-    >
-      <div className="min-w-0 space-y-5">
-        <section
-          className="
-            overflow-hidden
-            rounded-[22px]
-            border
-            border-[#EAEAEA]
-            bg-white
-            shadow-[0_14px_50px_-36px_rgba(62,43,19,0.28)]
-          "
-        >
-          <div className="flex items-center justify-between px-5 pb-5 pt-6 sm:px-7 sm:pt-7">
-            <div>
-              <h1 className="text-[20px] font-semibold tracking-[-0.03em] text-[#171717]">
-                Shopping Cart
-              </h1>
-              <p className="mt-0.5 text-[10px] text-[#888888]">
-                {itemCount} {itemCount === 1 ? "item" : "items"} in your cart
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={clearCartHandler}
-              disabled={isClearing}
-              className="
-                flex
-                h-8
-                items-center
-                gap-1.5
-                rounded-[5px]
-                border
-                border-[#E7E7E7]
-                bg-white
-                px-3
-                text-[9px]
-                font-semibold
-                uppercase
-                tracking-wide
-                text-[#707070]
-                transition
-                hover:bg-[#F7F7F7]
-                disabled:opacity-40
-              "
-            >
-              {isClearing && <Loader2 className="h-3 w-3 animate-spin" />}
-              Clear Cart
-            </button>
-          </div>
-
-          <div
-            className="
-              hidden
-              border-y
-              border-[#EEEEEC]
-              bg-[#FAFAF9]
-              px-[18px]
-              py-2.5
-              md:grid
-              md:grid-cols-[minmax(0,1fr)_110px_90px_30px]
-              md:gap-3
-            "
-          >
-            <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-[#999999]">
-              Product
-            </span>
-            <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-[#999999]">
-              Quantity
-            </span>
-            <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-[#999999]">
-              Price
-            </span>
-            <span />
-          </div>
-
-          <div className="px-5 sm:px-7">
-            <AnimatePresence initial={false}>
-              {cartItems.map((item: CartItemView) => (
-                <CartProductItem
-                  key={item.id}
-                  item={item}
-                  isUpdating={isUpdating === item.id}
-                  isRemoving={isRemoving}
-                  isUnavailable={unavailableProductIds.has(item.productId)}
-                  updateQuantity={updateQuantity}
-                  removeItem={removeItem}
-                />
-              ))}
-            </AnimatePresence>
-          </div>
-
-          <div className="border-t border-[#EEEEEE] px-5 py-5 sm:px-7">
-            <div className="flex items-center justify-between">
-              <Link
-                href="/products"
-                className="
-                  flex
-                  items-center
-                  gap-1.5
-                  text-[10px]
-                  font-medium
-                  text-[#555555]
-                  transition
-                  hover:text-[#111111]
-                "
-              >
-                <ArrowLeft className="h-3 w-3" />
-                Continue Shopping
-              </Link>
-              <span className="text-[9px] text-[#999999]">
-                Secure & easy checkout
-              </span>
-            </div>
-          </div>
-        </section>
-
-        {!isProductsLoading && recommended.length > 0 && (
-          <RecommendedSection
-            recommended={recommended}
-            addingProductId={addingProductId}
-            handleRecommendedAddToCart={handleRecommendedAddToCart}
-            scrollRecommended={scrollRecommended}
-            recommendedScrollRef={recommendedScrollRef}
-          />
-        )}
-      </div>
-
-      <aside className="self-start lg:sticky lg:top-7">
-        <OrderSummary
-          subtotal={subtotal}
-          totalSavings={totalSavings}
-          total={total}
-          itemCount={itemCount}
-          cartItems={cartItems}
-          isCheckingStock={isCheckingStock}
-          unavailableCount={unavailableProductIds.size}
-          onCheckout={onCheckout}
-        />
-      </aside>
-    </div>
-  );
-};
+}
 
 export default function CartPage() {
   const router = useRouter();
   const [isUpdating, setIsUpdating] = useState<number | null>(null);
-  const [addingProductId, setAddingProductId] = useState<
-    number | string | null
-  >(null);
+  const [addingProductId, setAddingProductId] = useState<number | string | null>(null);
   const recommendedScrollRef = useRef<HTMLDivElement>(null);
-
-  // Set of product IDs currently flagged unavailable by the last stock check.
-  const [unavailableProductIds, setUnavailableProductIds] = useState<
-    Set<number>
-  >(new Set());
+  const [unavailableProductIds, setUnavailableProductIds] = useState<Set<number>>(new Set());
   const [isCheckingStock, setIsCheckingStock] = useState(false);
 
   const {
@@ -918,35 +644,20 @@ export default function CartPage() {
     isLoading: isCartLoading,
     refetch: refetchCart,
   } = useGetCartQuery({});
-  const { data: productsData, isLoading: isProductsLoading } =
-    useGetProductsQuery({});
-  const [removeFromCart, { isLoading: isRemoving }] =
-    useRemoveFromCartMutation();
+  const { data: productsData, isLoading: isProductsLoading } = useGetProductsQuery({});
+  const [removeFromCart, { isLoading: isRemoving }] = useRemoveFromCartMutation();
   const [clearCart, { isLoading: isClearing }] = useClearCartMutation();
   const [updateCartItem] = useUpdateCartItemMutation();
   const [addToCart] = useAddToCartMutation();
   const [checkCartStock] = useCheckCartStockMutation();
 
-  const scrollRecommended = (direction: "left" | "right") => {
-    const element = recommendedScrollRef.current;
-    if (!element) return;
-    element.scrollBy({
-      left: direction === "left" ? -220 : 220,
-      behavior: "smooth",
-    });
-  };
-
   const cartItems = useMemo<CartItemView[]>(() => {
     const apiItems: CartItemApi[] = cartData?.data?.items || [];
-    if (!apiItems.length) {
-      return [];
-    }
     return apiItems.map((item) => {
       const currentPrice = parsePrice(item.current_unit_price);
-      const variantAttributes =
-        item.variant_attributes || item.variant?.attributes || {};
-      const variantLabel = getVariantLabel(item.variant, variantAttributes);
-      const originalPrice = getOriginalPrice(item, currentPrice);
+      const variantAttributes = item.variant_attributes || item.variant?.attributes || {};
+      const productStock = item.product?.available_stock ?? item.product?.stock_quantity;
+      const stockQuantity = item.variant?.stock_quantity ?? productStock ?? null;
       return {
         id: item.id,
         cartItemId: item.id,
@@ -956,23 +667,23 @@ export default function CartPage() {
         slug: item.product?.slug || "",
         image: getImageUrl(item.image_url),
         price: currentPrice,
-        originalPrice,
+        originalPrice: getOriginalPrice(item, currentPrice),
         productCode: item.product?.product_code || "",
         sku: item.variant?.sku || "",
-        variantLabel,
+        category: getTaxonomyName(item.product?.category),
+        subcategory: getTaxonomyName(item.product?.subcategory),
+        brand: getTaxonomyName(item.product?.brand),
+        variantLabel: getVariantLabel(item.variant, variantAttributes),
         variantAttributes,
-        quantity: Number(item.quantity || 1),
-        stockQuantity: item.variant?.stock_quantity ?? null,
-        priceType:
-          item.current_price_type || cartData?.data?.price_type || "retail",
+        quantity: Math.max(1, Number(item.quantity || 1)),
+        stockQuantity: stockQuantity === null ? null : Number(stockQuantity),
+        priceType: item.current_price_type || cartData?.data?.price_type || "retail",
       };
     });
   }, [cartData]);
 
   const recommended = useMemo(() => {
-    if (!productsData?.data) {
-      return [];
-    }
+    if (!productsData?.data) return [];
     const cartProductIds = new Set(cartItems.map((item) => item.productId));
     return (productsData.data || [])
       .filter((product: any) => !cartProductIds.has(product.id))
@@ -980,65 +691,43 @@ export default function CartPage() {
   }, [productsData, cartItems]);
 
   const { subtotal, totalSavings, total, itemCount } = useMemo(() => {
-    const subtotalValue = cartItems.reduce(
-      (sum, item) => sum + item.price * item.quantity,
-      0,
-    );
+    const subtotalValue = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
     const mrpValue = cartItems.reduce(
       (sum, item) => sum + (item.originalPrice || item.price) * item.quantity,
       0,
     );
-    const savings = Math.max(mrpValue - subtotalValue, 0);
-    const finalTotal = subtotalValue;
     const count = cartItems.reduce((sum, item) => sum + item.quantity, 0);
     return {
       subtotal: subtotalValue,
-      totalSavings: savings,
-      total: finalTotal,
+      totalSavings: Math.max(mrpValue - subtotalValue, 0),
+      total: subtotalValue,
       itemCount: count,
     };
   }, [cartItems]);
 
-  /* -------------------------------------------------------
-     Cart-level live stock check
-     Runs the /carts/{id}/check-stock endpoint on demand
-     (just before checkout). Updates `unavailableProductIds`
-     so unavailable items are visually flagged.
-     Emits a toast for every outcome (success / partial / fail).
-  ------------------------------------------------------- */
-  const runCartStockCheck = async (): Promise<{
-    allAvailable: boolean;
-    unavailableIds: Set<number>;
-  }> => {
-    const cartId = cartData?.data?.id;
+  const scrollRecommended = (direction: "left" | "right") => {
+    recommendedScrollRef.current?.scrollBy({
+      left: direction === "left" ? -220 : 220,
+      behavior: "smooth",
+    });
+  };
 
-    // Cart ID missing — cannot verify. Notify and block.
+  const runCartStockCheck = async (): Promise<{ allAvailable: boolean; unavailableIds: Set<number> }> => {
+    const cartId = cartData?.data?.id;
     if (!cartId) {
-      toast.error("Cart is not ready yet. Please refresh the page.", {
-        position: "bottom-center",
-      });
+      toast.error("Cart is not ready yet. Please refresh the page.", { position: "bottom-center" });
       return { allAvailable: false, unavailableIds: new Set() };
     }
-
     try {
       const result = await checkCartStock({ cartId }).unwrap();
       const items = result?.data?.items || [];
       const unavailableIds = new Set<number>();
-
-      items.forEach((it) => {
-        if (!it.available) {
-          unavailableIds.add(Number(it.product_id));
-        }
+      items.forEach((entry: any) => {
+        if (!entry.available) unavailableIds.add(Number(entry.product_id));
       });
-
       setUnavailableProductIds(unavailableIds);
-      // checkCartStock invalidates ["Cart"] which triggers refetch;
-      // explicit refetch keeps the view in sync in one tick.
       await refetchCart();
-
       const allAvailable = unavailableIds.size === 0;
-
-      // Toast per outcome
       if (allAvailable) {
         toast.success("All items are in stock. Proceeding to checkout…", {
           position: "bottom-center",
@@ -1049,80 +738,55 @@ export default function CartPage() {
           unavailableIds.size === 1
             ? "1 item is out of stock. Please remove it to continue."
             : `${unavailableIds.size} items are out of stock. Please remove them to continue.`,
-          {
-            position: "bottom-center",
-            duration: 4000,
-          },
+          { position: "bottom-center", duration: 4000 },
         );
       }
-
       return { allAvailable, unavailableIds };
     } catch (error: any) {
-      // If the check itself fails, do not block the user silently.
-      // Show a toast and let the backend reject at checkout time.
-      toast.error(
-        error?.data?.message ||
-        "Unable to verify stock right now. Please try again.",
-        {
-          position: "bottom-center",
-          duration: 4000,
-        },
-      );
+      toast.error(error?.data?.message || "Unable to verify stock right now. Please try again.", {
+        position: "bottom-center",
+        duration: 4000,
+      });
       return { allAvailable: false, unavailableIds: new Set() };
     }
   };
+
   const handleCheckout = async () => {
     if (!cartItems.length) {
-      toast.error("Your cart is empty", {
-        position: "bottom-center",
-      });
+      toast.error("Your cart is empty", { position: "bottom-center" });
       return;
     }
-
     setIsCheckingStock(true);
     try {
       const { allAvailable } = await runCartStockCheck();
-      // Toast is already emitted inside runCartStockCheck() for both
-      // the "all available" and "some unavailable" cases.
-      if (!allAvailable) {
-        return;
-      }
-      router.push("/checkout");
+      if (allAvailable) router.push("/checkout");
     } finally {
       setIsCheckingStock(false);
     }
   };
 
-  const updateQuantity = async (
-    cartItemId: number,
-    action: "increment" | "decrement",
-  ) => {
+  const updateQuantity = async (cartItemId: number, requestedQuantity: number) => {
     const item = cartItems.find((cartItem) => cartItem.id === cartItemId);
     if (!item?.cartItemId) {
       toast.error("Cart item not found");
       return;
     }
-    const newQuantity =
-      action === "increment"
-        ? Math.min(item.quantity + 1, 10, item.stockQuantity ?? 10)
-        : Math.max(item.quantity - 1, 1);
-    if (newQuantity === item.quantity) {
-      return;
-    }
+    const availableLimit = Math.min(MAX_CART_QUANTITY, item.stockQuantity ?? MAX_CART_QUANTITY);
+    const newQuantity = Math.max(1, Math.min(requestedQuantity, Math.max(1, availableLimit)));
+    if (newQuantity === item.quantity) return;
     setIsUpdating(cartItemId);
     try {
       await updateCartItem({
         itemId: item.cartItemId,
         data: {
           quantity: newQuantity,
-          action,
+          action: newQuantity > item.quantity ? "increment" : "decrement",
         },
       }).unwrap();
       await refetchCart();
-      // Clear stale unavailable flags for this item after a successful update.
-      setUnavailableProductIds((prev) => {
-        if (!prev.has(item.productId)) return prev;
-        const next = new Set(prev);
+      setUnavailableProductIds((previous) => {
+        if (!previous.has(item.productId)) return previous;
+        const next = new Set(previous);
         next.delete(item.productId);
         return next;
       });
@@ -1135,21 +799,17 @@ export default function CartPage() {
 
   const removeItem = async (cartItemId: number) => {
     const item = cartItems.find((cartItem) => cartItem.id === cartItemId);
-    if (!item?.cartItemId) {
-      return;
-    }
+    if (!item?.cartItemId) return;
     try {
       await removeFromCart(item.cartItemId).unwrap();
       await refetchCart();
-      setUnavailableProductIds((prev) => {
-        if (!prev.has(item.productId)) return prev;
-        const next = new Set(prev);
+      setUnavailableProductIds((previous) => {
+        if (!previous.has(item.productId)) return previous;
+        const next = new Set(previous);
         next.delete(item.productId);
         return next;
       });
-      toast.success("Item removed from cart", {
-        position: "bottom-center",
-      });
+      toast.success("Item removed from cart", { position: "bottom-center" });
     } catch (error: any) {
       toast.error(error?.data?.message || "Unable to remove item");
     }
@@ -1160,9 +820,7 @@ export default function CartPage() {
       await clearCart({}).unwrap();
       await refetchCart();
       setUnavailableProductIds(new Set());
-      toast.success("Cart cleared successfully", {
-        position: "bottom-center",
-      });
+      toast.success("Cart cleared successfully", { position: "bottom-center" });
     } catch (error: any) {
       toast.error(error?.data?.message || "Unable to clear cart");
     }
@@ -1170,27 +828,18 @@ export default function CartPage() {
 
   const handleRecommendedAddToCart = async (
     product: any,
-    e?: MouseEvent<HTMLButtonElement>,
+    event?: ReactMouseEvent<HTMLButtonElement>,
   ) => {
-    e?.preventDefault();
-    e?.stopPropagation();
-    if (addingProductId === product.id) {
-      return;
-    }
+    event?.preventDefault();
+    event?.stopPropagation();
+    if (addingProductId === product.id) return;
     try {
       setAddingProductId(product.id);
-      await addToCart({
-        product_id: product.id,
-        quantity: 1,
-      }).unwrap();
+      await addToCart({ product_id: product.id, quantity: 1 }).unwrap();
       await refetchCart();
-      toast.success("Added to cart", {
-        position: "bottom-center",
-      });
+      toast.success("Added to cart", { position: "bottom-center" });
     } catch (error: any) {
-      toast.error(error?.data?.message || "Unable to add product", {
-        position: "bottom-center",
-      });
+      toast.error(error?.data?.message || "Unable to add product", { position: "bottom-center" });
     } finally {
       setAddingProductId(null);
     }
@@ -1198,24 +847,10 @@ export default function CartPage() {
 
   if (isCartLoading) {
     return (
-      <div
-        className={`${poppins.className} min-h-screen bg-white text-[#171717]`}
-        style={{
-          background: PAGE_BG,
-        }}
-      >
-        <Header
-          cartItems={[]}
-          cartCount={0}
-          cartSubtotal={0}
-          wishlistCount={0}
-          onRemoveFromCart={() => { }}
-          onClearCart={() => { }}
-        />
+      <div className={`${poppins.className} min-h-screen bg-white text-[#171717]`} style={{ background: PAGE_BG }}>
+        <Header cartItems={[]} cartCount={0} cartSubtotal={0} wishlistCount={0} onRemoveFromCart={() => {}} onClearCart={() => {}} />
         <main className="mx-auto flex min-h-[65vh] w-full max-w-[1200px] items-center justify-center px-4">
-          <div className="text-center">
-           <Loding />
-          </div>
+          <div className="text-center"><Loding /></div>
         </main>
         <Footer />
       </div>
@@ -1223,12 +858,7 @@ export default function CartPage() {
   }
 
   return (
-    <div
-      className={`${poppins.className} min-h-screen bg-white text-[#171717]`}
-      style={{
-        background: PAGE_BG,
-      }}
-    >
+    <div className={`${poppins.className} min-h-screen bg-white text-[#171717]`} style={{ background: PAGE_BG }}>
       <Header
         cartItems={cartItems}
         cartCount={itemCount}
@@ -1237,49 +867,73 @@ export default function CartPage() {
         onRemoveFromCart={removeItem}
         onClearCart={clearCartHandler}
       />
-      <main
-        className="
-          mx-auto
-          w-full
-          max-w-[1200px]
-          px-4
-          py-5
-          sm:px-6
-          sm:py-7
-          lg:px-8
-        "
-      >
-        <div className="mb-5 sm:mb-6">
-          <h1 className="text-[28px] font-semibold tracking-[-0.045em] text-[#171717] sm:text-[36px]">
-            Shopping Bag
-          </h1>
-          <Breadcrumb currentPage="Cart" />
-        </div>
+      <main className="mx-auto w-full max-w-[1200px] px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
+        <Breadcrumb currentPage="Cart" />
         {cartItems.length === 0 ? (
           <EmptyCart />
         ) : (
-          <CartWithItems
-            cartItems={cartItems}
-            itemCount={itemCount}
-            isUpdating={isUpdating}
-            isRemoving={isRemoving}
-            isClearing={isClearing}
-            updateQuantity={updateQuantity}
-            removeItem={removeItem}
-            clearCartHandler={clearCartHandler}
-            recommended={recommended}
-            isProductsLoading={isProductsLoading}
-            addingProductId={addingProductId}
-            handleRecommendedAddToCart={handleRecommendedAddToCart}
-            scrollRecommended={scrollRecommended}
-            recommendedScrollRef={recommendedScrollRef}
-            subtotal={subtotal}
-            totalSavings={totalSavings}
-            total={total}
-            unavailableProductIds={unavailableProductIds}
-            isCheckingStock={isCheckingStock}
-            onCheckout={handleCheckout}
-          />
+          <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_340px]">
+            <div className="min-w-0 space-y-4">
+              <section className="min-w-0">
+                <div className="mb-3 flex items-center justify-between gap-3 px-0.5">
+                  <div>
+                    <h1 className="text-[19px] font-semibold tracking-[-0.03em] text-[#171717] sm:text-[21px]">Shopping Cart</h1>
+                    <p className="mt-0.5 text-[10px] text-[#888]">{itemCount} {itemCount === 1 ? "item" : "items"} in your cart</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={clearCartHandler}
+                    disabled={isClearing}
+                    className="flex h-8 shrink-0 items-center gap-1.5 rounded-[4px] border border-[#E5E5E5] bg-white px-2.5 text-[9px] font-semibold uppercase tracking-wide text-[#666] transition hover:bg-[#F7F7F7] disabled:opacity-40 sm:px-3"
+                  >
+                    {isClearing && <Loader2 className="h-3 w-3 animate-spin" />}
+                    Clear Cart
+                  </button>
+                </div>
+                <div className="space-y-2.5">
+                  <AnimatePresence initial={false}>
+                    {cartItems.map((item) => (
+                      <CartProductItem
+                        key={item.id}
+                        item={item}
+                        isUpdating={isUpdating === item.id}
+                        isRemoving={isRemoving}
+                        isUnavailable={unavailableProductIds.has(item.productId)}
+                        updateQuantity={updateQuantity}
+                        removeItem={removeItem}
+                      />
+                    ))}
+                  </AnimatePresence>
+                </div>
+                <div className="mt-3 flex items-center justify-between gap-3 border-t border-[#EEEEEE] pt-4">
+                  <Link href="/products" className="flex items-center gap-1.5 text-[10px] font-medium text-[#555] transition hover:text-black">
+                    <ArrowLeft className="h-3 w-3" /> Continue Shopping
+                  </Link>
+                  <span className="text-right text-[9px] text-[#999]">Secure &amp; easy checkout</span>
+                </div>
+              </section>
+              {!isProductsLoading && recommended.length > 0 && (
+                <RecommendedSection
+                  recommended={recommended}
+                  addingProductId={addingProductId}
+                  handleRecommendedAddToCart={handleRecommendedAddToCart}
+                  scrollRecommended={scrollRecommended}
+                  recommendedScrollRef={recommendedScrollRef}
+                />
+              )}
+            </div>
+            <aside className="self-start lg:sticky lg:top-7">
+              <OrderSummary
+                subtotal={subtotal}
+                totalSavings={totalSavings}
+                total={total}
+                itemCount={itemCount}
+                isCheckingStock={isCheckingStock}
+                unavailableCount={unavailableProductIds.size}
+                onCheckout={handleCheckout}
+              />
+            </aside>
+          </div>
         )}
       </main>
       <Footer />

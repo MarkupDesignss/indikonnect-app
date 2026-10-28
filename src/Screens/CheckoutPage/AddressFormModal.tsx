@@ -1076,7 +1076,7 @@ export default function AddressFormModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.18 }}
-            className="fixed inset-0 z-50 bg-black/35 backdrop-blur-[2px]"
+            className="fixed inset-0 z-[9999] bg-black/35 backdrop-blur-[2px]"
             onClick={() => {
               if (!isLoading) {
                 onClose();
@@ -1090,7 +1090,7 @@ export default function AddressFormModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.98, y: 12 }}
             transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-3 font-sans sm:p-5"
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-3 font-sans sm:p-5"
           >
             <div
               className="flex max-h-[92vh] w-full max-w-[640px] flex-col overflow-hidden rounded-[8px] border border-[#E6E6E4] bg-[#F7F7F6] shadow-[0_18px_60px_rgba(0,0,0,0.14)]"
