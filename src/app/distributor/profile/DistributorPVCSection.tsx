@@ -1727,13 +1727,13 @@ window.addEventListener('load', function(){
 
                     <div>
 
-                        <h2 className="text-lg font-semibold text-black">
+                        <h2 className="break-words text-[14px] font-semibold text-[#101828]">
 
                             My Indiekonnect Distributor ID
 
                         </h2>
 
-                        <p className="text-xs font-medium text-gray-500">
+                        <p className=" break-words text-[11px] leading-4 text-[#98a2b3] sm:text-[11.5px]">
 
                             Horizontal PVC card • front and back • 85.6 × 54 mm
 

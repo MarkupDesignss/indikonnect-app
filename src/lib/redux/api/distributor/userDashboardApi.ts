@@ -106,6 +106,18 @@ export interface UserDashboardResponse {
   };
 }
 
+export interface CreateCorrectionRequestPayload {
+  reason: string;
+}
+
+export interface CreateCorrectionRequestResponse {
+  success?: boolean;
+  status?: boolean;
+  message?: string;
+  data?: unknown;
+  errors?: Record<string, string | string[]>;
+}
+
 export const userDashboardApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getUserDashboard: builder.query<UserDashboardResponse, void>({
@@ -114,9 +126,22 @@ export const userDashboardApi = baseApi.injectEndpoints({
         method: "GET",
       }),
     }),
+    createCorrectionRequest: builder.mutation<
+      CreateCorrectionRequestResponse,
+      CreateCorrectionRequestPayload
+    >({
+      query: (body) => ({
+        url: "/correction-requests",
+        method: "POST",
+        body,
+      }),
+    }),
   }),
 });
 
-export const { useGetUserDashboardQuery } = userDashboardApi;
+export const {
+  useGetUserDashboardQuery,
+  useCreateCorrectionRequestMutation,
+} = userDashboardApi;
 
 export default userDashboardApi;

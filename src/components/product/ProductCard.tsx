@@ -1834,8 +1834,8 @@ function ProductCardInner({
                   aria-current={isActive ? "true" : undefined}
 
                   className={`block h-[5px] shrink-0 rounded-full transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black ${isActive
-                      ? "w-[17px] bg-[#171717]"
-                      : "w-[5px] bg-[#c7c7c7] hover:bg-[#777]"
+                    ? "w-[17px] bg-[#171717]"
+                    : "w-[5px] bg-[#c7c7c7] hover:bg-[#777]"
                     }`}
                 />
               );
@@ -1848,20 +1848,23 @@ function ProductCardInner({
         <div className="flex min-w-0 flex-1 flex-col px-[9px] pb-[10px] pt-[7px]">
           {/* RATING PILL BADGE */}
 
+
           <div className="mb-[5px] flex min-h-[15px] items-center">
-            <span className="inline-flex items-center gap-[4px] rounded-full bg-[#f4f4f4] px-[6px] py-[3px]">
-              <span className="text-[10px] font-semibold leading-none text-[#111]">
-                {rating.toFixed(1)}
+            {rating > 0 && (
+              <span className="inline-flex items-center gap-[4px] rounded-full bg-[#f4f4f4] px-[6px] py-[3px]">
+                <span className="text-[10px] font-semibold leading-none text-[#111]">
+                  {rating.toFixed(1)}
+                </span>
+
+                <Star className="h-[10px] w-[10px] fill-[#238b43] text-[#238b43]" />
+
+                <span className="text-[10px] leading-none text-[#666]">|</span>
+
+                <span className="text-[10px] leading-none text-[#666]">
+                  {reviewCount}
+                </span>
               </span>
-
-              <Star className="h-[10px] w-[10px] fill-[#238b43] text-[#238b43]" />
-
-              <span className="text-[10px] leading-none text-[#666]">|</span>
-
-              <span className="text-[10px] leading-none text-[#666]">
-                {reviewCount}
-              </span>
-            </span>
+            )}
           </div>
 
           {/* API row one: brand_name | category.name (NEVER brand alone if category exists) */}

@@ -1,49 +1,54 @@
 "use client";
 
 import {
-  Pencil,
-  UserRound,
-  Loader2,
   Eye,
   EyeOff,
+  Loader2,
+  Pencil,
+  Phone,
+  ShieldCheck,
+  UserRound,
+  X,
 } from "lucide-react";
-
 import {
-  useState,
-  useRef,
   useEffect,
+  useRef,
+  useState,
   type ChangeEvent,
   type KeyboardEvent,
+  type FormEvent,
 } from "react";
-
 import { useDispatch } from "react-redux";
 
 import DashboardHeader from "@/components/Distributor/distributor/DashboardHeader";
 import Sidebar from "../../../components/Distributor/distributor/Sidebar";
-
 import { useGetUserProfileQuery } from "@/lib/redux/api/authApi";
-
 import {
   useChangePasswordMutation,
   useUpdateUserProfileMutation,
 } from "@/lib/redux/api/Profile/userApi";
 
 import AddressComponent from "@/components/profile/AddressComponent";
-
 import { showToast } from "@/lib/slices/toastSlice";
 import DistributorPVCSection from "./DistributorPVCSection";
 import Loding from "@/components/common/Loding";
-
-// --------------------------------------------------
-// Design tokens
-// --------------------------------------------------
+import { useCreateCorrectionRequestMutation } from "@/lib/redux/api/distributor/userDashboardApi";
 
 const NAVY = "#0E1B3D";
 const EMERALD = "#1f9d6b";
 
-// --------------------------------------------------
-// Responsive styles
-// --------------------------------------------------
+/*
+|--------------------------------------------------------------------------
+| Sticky Layout
+|--------------------------------------------------------------------------
+| Both side columns use the same sticky behavior.
+| There is NO internal scrollbar on the left or right columns.
+| The browser's normal page scrollbar handles all scrolling.
+|--------------------------------------------------------------------------
+*/
+
+const stickyColumnClass =
+  "min-w-0 grid grid-cols-1 items-start gap-4 xl:sticky xl:top-[88px] xl:self-start xl:z-10";
 
 const inputClass =
   "box-border h-[42px] min-w-0 w-full rounded-[10px] border border-[#e9edf2] bg-[#f7f8fa] px-3.5 text-[13px] text-[#475066] outline-none placeholder:text-[#98a2b3] transition-all focus:border-[#0E1B3D] focus:bg-white focus:ring-2 focus:ring-[#0E1B3D]/10 sm:px-[14px]";
@@ -57,35 +62,37 @@ const labelClass =
 const sectionClass =
   "min-w-0 w-full rounded-[12px] border border-[#e9edf2] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)] sm:p-5 lg:p-[22px]";
 
-// --------------------------------------------------
-// Error helper
-// --------------------------------------------------
+type ApiError = {
+  data?: {
+    errors?: Record<string, string | string[]>;
+    message?: string;
+  };
+  message?: string;
+};
 
-function getErrorMessage(err: any, fallback: string): string {
-  const data = err?.data;
+function getErrorMessage(err: unknown, fallback: string): string {
+  const error = err as ApiError;
+  const data = error?.data;
 
   if (data?.errors && typeof data.errors === "object") {
     const firstKey = Object.keys(data.errors)[0];
-    const firstVal = data.errors[firstKey];
+    const firstValue = firstKey ? data.errors[firstKey] : undefined;
 
-    if (Array.isArray(firstVal) && firstVal.length > 0) {
-      return String(firstVal[0]);
+    if (Array.isArray(firstValue) && firstValue.length > 0) {
+      return String(firstValue[0]);
     }
 
-    if (typeof firstVal === "string") {
-      return firstVal;
+    if (typeof firstValue === "string") {
+      return firstValue;
     }
   }
 
-  if (data?.message) return data.message;
-  if (err?.message) return err.message;
-
-  return fallback;
+  return data?.message || error?.message || fallback;
 }
 
-// --------------------------------------------------
-// Section Header
-// --------------------------------------------------
+/* -------------------------------------------------------------------------- */
+/* Section Header                                                             */
+/* -------------------------------------------------------------------------- */
 
 function SectionHeader({
   title,
@@ -116,53 +123,55 @@ function SectionHeader({
   );
 }
 
-// --------------------------------------------------
-// Save Button
-// --------------------------------------------------
+/* -------------------------------------------------------------------------- */
+/* Save Button                                                                */
+/* -------------------------------------------------------------------------- */
 
 function SaveButton({
   text = "Save",
   onClick,
   disabled = false,
   loading = false,
+  type = "button",
 }: {
   text?: string;
   onClick?: () => void;
   disabled?: boolean;
   loading?: boolean;
+  type?: "button" | "submit";
 }) {
   const unavailable = disabled || loading;
 
   return (
     <button
-      type="button"
+      type={type}
       onClick={onClick}
       disabled={unavailable}
       style={
         !unavailable
           ? {
-            backgroundColor: NAVY,
-            boxShadow: `0 8px 20px -8px ${NAVY}66`,
-          }
+              backgroundColor: NAVY,
+              boxShadow: `0 8px 20px -8px ${NAVY}66`,
+            }
           : undefined
       }
-      className={`inline-flex min-h-[38px] min-w-[80px] shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-[10px] px-4 text-[12px] font-semibold text-white transition-all sm:px-5 sm:text-[12.5px] ${unavailable
-        ? "cursor-not-allowed bg-[#c1c6d0]"
-        : "hover:brightness-110"
-        }`}
+      className={`inline-flex min-h-[38px] min-w-[80px] shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-[10px] px-4 text-[12px] font-semibold text-white transition-all sm:px-5 sm:text-[12.5px] ${
+        unavailable
+          ? "cursor-not-allowed bg-[#c1c6d0]"
+          : "hover:brightness-110"
+      }`}
     >
       {loading && (
         <Loader2 size={14} className="shrink-0 animate-spin" />
       )}
-
       {text}
     </button>
   );
 }
 
-// --------------------------------------------------
-// Secondary Button
-// --------------------------------------------------
+/* -------------------------------------------------------------------------- */
+/* Ghost Button                                                               */
+/* -------------------------------------------------------------------------- */
 
 function GhostButton({
   text,
@@ -182,19 +191,19 @@ function GhostButton({
   );
 }
 
-// ============================================
-// PROFILE SUMMARY
-// ============================================
+/* -------------------------------------------------------------------------- */
+/* Profile Summary                                                            */
+/* -------------------------------------------------------------------------- */
 
 function ProfileSummary({ user }: { user: any }) {
   const initials = user?.full_name
     ? user.full_name
-      .split(" ")
-      .filter(Boolean)
-      .map((name: string) => name[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2)
+        .split(" ")
+        .filter(Boolean)
+        .map((part: string) => part[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2)
     : "U";
 
   return (
@@ -264,9 +273,7 @@ function ProfileSummary({ user }: { user: any }) {
 
           <p
             className="mt-1 flex items-center gap-2 break-words text-[12px] font-semibold sm:text-[13px]"
-            style={{
-              color: user?.is_active ? EMERALD : "#98a2b3",
-            }}
+            style={{ color: user?.is_active ? EMERALD : "#98a2b3" }}
           >
             <span
               className="h-2 w-2 shrink-0 rounded-full"
@@ -286,9 +293,9 @@ function ProfileSummary({ user }: { user: any }) {
   );
 }
 
-// ============================================
-// PROFILE IMAGE CARD
-// ============================================
+/* -------------------------------------------------------------------------- */
+/* Profile Image Card                                                         */
+/* -------------------------------------------------------------------------- */
 
 function ProfileImageCard({
   user,
@@ -313,12 +320,6 @@ function ProfileImageCard({
       setImagePreview(user?.profile_picture || null);
     }
   }, [user?.profile_picture, selectedFile]);
-
-  const handleImageClick = () => {
-    if (!loading) {
-      fileInputRef.current?.click();
-    }
-  };
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -349,14 +350,6 @@ function ProfileImageCard({
     reader.readAsDataURL(file);
   };
 
-  const handleSave = () => {
-    if (selectedFile) {
-      onSave(selectedFile);
-    } else {
-      setError("Please upload an image first");
-    }
-  };
-
   const handleCancel = () => {
     setSelectedFile(null);
     setImagePreview(user?.profile_picture || null);
@@ -377,7 +370,7 @@ function ProfileImageCard({
         <div className="relative">
           <button
             type="button"
-            onClick={handleImageClick}
+            onClick={() => !loading && fileInputRef.current?.click()}
             disabled={loading}
             aria-label="Upload profile image"
             className="flex h-[96px] w-[96px] items-center justify-center overflow-hidden rounded-full border-2 border-[#e9edf2] bg-[#f7f8fa] transition-all hover:border-[#0E1B3D] disabled:cursor-not-allowed sm:h-[110px] sm:w-[110px]"
@@ -399,7 +392,7 @@ function ProfileImageCard({
 
           <button
             type="button"
-            onClick={handleImageClick}
+            onClick={() => !loading && fileInputRef.current?.click()}
             disabled={loading}
             aria-label="Edit profile image"
             className="absolute right-0 top-0 flex h-[29px] w-[29px] items-center justify-center rounded-full border-2 bg-white shadow-md transition-colors hover:bg-[#f7f8fa] disabled:cursor-not-allowed"
@@ -433,7 +426,11 @@ function ProfileImageCard({
 
         <SaveButton
           text="Save"
-          onClick={handleSave}
+          onClick={() =>
+            selectedFile
+              ? onSave(selectedFile)
+              : setError("Please upload an image first")
+          }
           loading={loading}
           disabled={!selectedFile}
         />
@@ -442,9 +439,9 @@ function ProfileImageCard({
   );
 }
 
-// ============================================
-// PROFILE FORM
-// ============================================
+/* -------------------------------------------------------------------------- */
+/* Profile Form                                                               */
+/* -------------------------------------------------------------------------- */
 
 function ProfileForm({
   user,
@@ -452,16 +449,15 @@ function ProfileForm({
   loading,
 }: {
   user: any;
-  onSave: (data: { full_name: string; phone: string }) => void;
+  onSave: (data: { full_name: string }) => void;
   loading: boolean;
 }) {
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
     country: "",
-    phone: "",
     idNumber: "",
-    passportNumber: "",
+    panNumber: "",
     dateOfBirth: "",
   });
 
@@ -469,25 +465,25 @@ function ProfileForm({
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    if (user) {
-      setFormData({
-        fullName: user.full_name || "",
-        email: user.email || "",
-        country: user.country || "",
-        phone: (user.phone || "").replace(/^\+91/, ""),
-        idNumber: user.aadhaar_last4
-          ? `XXXX-XXXX-${user.aadhaar_last4}`
-          : "",
-        passportNumber: user.pan_last4
-          ? `XXXXX${user.pan_last4}`
-          : "",
-        dateOfBirth: user.date_of_birth || "",
-      });
-    }
+    if (!user) return;
+
+    setFormData({
+      fullName: user.full_name || "",
+      email: user.email || "",
+      country: user.country || "",
+      idNumber: user.aadhaar_last4
+        ? `XXXX-XXXX-${user.aadhaar_last4}`
+        : "",
+      panNumber: user.pan_last4 ? `XXXXX${user.pan_last4}` : "",
+      dateOfBirth: user.date_of_birth || "",
+    });
   }, [user]);
 
   const validateFullName = (name: string) => {
-    if (!name.trim()) return "Full name is required";
+    if (!name.trim()) {
+      return "Full name is required";
+    }
+
     if (name.trim().length < 2) {
       return "Name must be at least 2 characters";
     }
@@ -495,79 +491,32 @@ function ProfileForm({
     return null;
   };
 
-  const validatePhone = (phone: string) => {
-    if (!phone) return "Phone number is required";
-    if (!/^\d{10}$/.test(phone)) {
-      return "Phone must be exactly 10 digits";
-    }
-
-    return null;
-  };
-
-  const handleFieldChange = (
-    field: string,
-    value: string,
-    validationFn?: (val: string) => string | null
-  ) => {
+  const handleNameChange = (value: string) => {
     setFormData((previous) => ({
       ...previous,
-      [field]: value,
+      fullName: value,
     }));
 
     setTouched((previous) => ({
       ...previous,
-      [field]: true,
+      fullName: true,
     }));
 
-    if (validationFn) {
-      const error = validationFn(value);
-
-      setErrors((previous) => ({
-        ...previous,
-        [field]: error || "",
-      }));
-    }
-  };
-
-  const handleBlur = (
-    field: string,
-    validationFn?: (val: string) => string | null
-  ) => {
-    setTouched((previous) => ({
+    setErrors((previous) => ({
       ...previous,
-      [field]: true,
+      fullName: validateFullName(value) || "",
     }));
-
-    if (validationFn) {
-      const value = formData[field as keyof typeof formData];
-      const error = validationFn(value);
-
-      setErrors((previous) => ({
-        ...previous,
-        [field]: error || "",
-      }));
-    }
   };
 
   const handleSave = () => {
-    const newErrors: Record<string, string> = {};
+    const error = validateFullName(formData.fullName);
 
-    const nameError = validateFullName(formData.fullName);
-    const phoneError = validatePhone(formData.phone);
+    setErrors({ fullName: error || "" });
+    setTouched({ fullName: true });
 
-    if (nameError) newErrors.fullName = nameError;
-    if (phoneError) newErrors.phone = phoneError;
-
-    setErrors(newErrors);
-    setTouched({
-      fullName: true,
-      phone: true,
-    });
-
-    if (Object.keys(newErrors).length === 0) {
+    if (!error) {
       onSave({
         full_name: formData.fullName.trim(),
-        phone: `+91${formData.phone}`,
       });
     }
   };
@@ -587,7 +536,6 @@ function ProfileForm({
       />
 
       <div className="space-y-4 sm:space-y-[16px]">
-        {/* Full name */}
         <div className="min-w-0">
           <label className={labelClass}>
             Full Name<span className="ml-0.5 text-red-500">*</span>
@@ -597,19 +545,25 @@ function ProfileForm({
             type="text"
             autoComplete="name"
             value={formData.fullName}
-            onChange={(event) =>
-              handleFieldChange(
-                "fullName",
-                event.target.value,
-                validateFullName
-              )
-            }
-            onBlur={() => handleBlur("fullName", validateFullName)}
+            onChange={(event) => handleNameChange(event.target.value)}
+            onBlur={() => {
+              setTouched((previous) => ({
+                ...previous,
+                fullName: true,
+              }));
+
+              setErrors((previous) => ({
+                ...previous,
+                fullName:
+                  validateFullName(formData.fullName) || "",
+              }));
+            }}
             onKeyDown={handleKeyDown}
-            className={`${inputClass} ${touched.fullName && errors.fullName
-              ? "border-red-500 ring-2 ring-red-500/10"
-              : ""
-              }`}
+            className={`${inputClass} ${
+              touched.fullName && errors.fullName
+                ? "border-red-500 ring-2 ring-red-500/10"
+                : ""
+            }`}
           />
 
           {touched.fullName && errors.fullName && (
@@ -619,11 +573,9 @@ function ProfileForm({
           )}
         </div>
 
-        {/* Email */}
         <div className="min-w-0">
           <label className={labelClass}>
-            Email Address
-
+            Email Address{" "}
             <span className="ml-2 inline-block rounded bg-[#f2f4f7] px-1.5 py-0.5 text-[9px] font-medium text-[#98a2b3]">
               READ ONLY
             </span>
@@ -638,70 +590,17 @@ function ProfileForm({
           />
         </div>
 
-        {/* Country and phone */}
-        <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="min-w-0">
-            <label className={labelClass}>Country</label>
+        <div className="min-w-0">
+          <label className={labelClass}>Country</label>
 
-            <input
-              value={formData.country}
-              readOnly
-              disabled
-              className={readOnlyClass}
-            />
-          </div>
-
-          <div className="min-w-0">
-            <label className={labelClass}>
-              Phone Number<span className="ml-0.5 text-red-500">*</span>
-            </label>
-
-            <div className="flex min-w-0 gap-2">
-              <input
-                value="+91"
-                disabled
-                aria-label="Country calling code"
-                className="box-border h-[42px] w-[48px] shrink-0 rounded-[10px] border border-[#e9edf2] bg-[#f2f4f7] text-center text-[12px] font-semibold text-[#475066] outline-none sm:w-[52px] sm:text-[13px]"
-              />
-
-              <div className="min-w-0 flex-1">
-                <input
-                  type="tel"
-                  inputMode="numeric"
-                  autoComplete="tel-national"
-                  aria-label="Phone number"
-                  value={formData.phone}
-                  onChange={(event) => {
-                    const value = event.target.value
-                      .replace(/\D/g, "")
-                      .slice(0, 10);
-
-                    handleFieldChange(
-                      "phone",
-                      value,
-                      validatePhone
-                    );
-                  }}
-                  onBlur={() => handleBlur("phone", validatePhone)}
-                  onKeyDown={handleKeyDown}
-                  maxLength={10}
-                  className={`${inputClass} ${touched.phone && errors.phone
-                    ? "border-red-500 ring-2 ring-red-500/10"
-                    : ""
-                    }`}
-                />
-
-                {touched.phone && errors.phone && (
-                  <p className="mt-1 break-words text-[10.5px] text-red-500">
-                    {errors.phone}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
+          <input
+            value={formData.country}
+            readOnly
+            disabled
+            className={readOnlyClass}
+          />
         </div>
 
-        {/* Aadhaar and PAN */}
         <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="min-w-0">
             <label className={labelClass}>Aadhaar (Last 4)</label>
@@ -718,7 +617,7 @@ function ProfileForm({
             <label className={labelClass}>PAN (Masked)</label>
 
             <input
-              value={formData.passportNumber}
+              value={formData.panNumber}
               readOnly
               disabled
               className={readOnlyClass}
@@ -726,7 +625,6 @@ function ProfileForm({
           </div>
         </div>
 
-        {/* Date of birth */}
         <div className="min-w-0">
           <label className={labelClass}>Date of Birth</label>
 
@@ -746,9 +644,202 @@ function ProfileForm({
   );
 }
 
-// ============================================
-// BANK / WALLET DETAILS
-// ============================================
+/* -------------------------------------------------------------------------- */
+/* Phone Change Request Card                                                  */
+/* -------------------------------------------------------------------------- */
+
+function PhoneChangeRequestCard({
+  user,
+  onClick,
+}: {
+  user: any;
+  onClick: () => void;
+}) {
+  const phoneRequests = (user?.correction_requests ?? [])
+    .filter((request: any) => request.type === "phone_request")
+    .sort(
+      (a: any, b: any) =>
+        new Date(b.created_at).getTime() -
+        new Date(a.created_at).getTime()
+    );
+
+  const latestRequest = phoneRequests[0] ?? null;
+  const rawStatus = latestRequest?.status?.toLowerCase() ?? null;
+
+  type UIState = "none" | "pending" | "approved" | "completed";
+
+  const uiState: UIState =
+    rawStatus === "pending"
+      ? "pending"
+      : rawStatus === "approved"
+      ? "approved"
+      : rawStatus === "completed"
+      ? "completed"
+      : "none";
+
+  const requestedNumberMatch =
+    latestRequest?.reason?.match(/\+91(\d{10})/);
+
+  const requestedNumber = requestedNumberMatch
+    ? `+91${requestedNumberMatch[1]}`
+    : null;
+
+  const statusMeta: Record<
+    Exclude<UIState, "none">,
+    {
+      label: string;
+      color: string;
+      bg: string;
+      dot: string;
+      description: string;
+    }
+  > = {
+    pending: {
+      label: "Pending",
+      color: "#B8935A",
+      bg: "#f8f1e4",
+      dot: "#B8935A",
+      description:
+        "Your phone number change request has been submitted and is awaiting admin review.",
+    },
+    approved: {
+      label: "Approved",
+      color: "#1f9d6b",
+      bg: "#eaf7f0",
+      dot: "#1f9d6b",
+      description:
+        "Your request was approved. A verification link has been sent to your registered email. Please use it to complete the change.",
+    },
+    completed: {
+      label: "Completed",
+      color: "#0E1B3D",
+      bg: "#eef2fb",
+      dot: "#0E1B3D",
+      description:
+        "Your phone number was changed successfully. You can request another change if needed.",
+    },
+  };
+
+  const meta = uiState !== "none" ? statusMeta[uiState] : null;
+
+  const showChangeButton =
+    uiState === "none" || uiState === "completed";
+
+  return (
+    <section className={`${sectionClass} mt-4 sm:mt-[14px]`}>
+      <SectionHeader
+        title="Phone Number"
+        subtitle="Phone number changes are reviewed by the admin."
+      />
+
+      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-[#98a2b3]">
+            Registered phone number
+          </p>
+
+          <p className="mt-1 break-all text-[13px] font-semibold text-[#475066]">
+            {user?.phone || "Not available"}
+          </p>
+        </div>
+
+        {showChangeButton && (
+          <button
+            type="button"
+            onClick={onClick}
+            className="inline-flex min-h-[40px] shrink-0 items-center justify-center gap-2 rounded-[10px] px-4 text-[12px] font-semibold text-white transition hover:brightness-110"
+            style={{
+              backgroundColor: NAVY,
+              boxShadow: `0 8px 20px -8px ${NAVY}66`,
+            }}
+          >
+            <Phone size={15} />
+
+            {uiState === "completed"
+              ? "Change Phone Number Again"
+              : "Change Your Phone Number"}
+          </button>
+        )}
+      </div>
+
+      {meta && (
+        <div
+          className="mt-4 rounded-[10px] border px-3 py-3 sm:px-4"
+          style={{
+            backgroundColor: meta.bg,
+            borderColor: `${meta.color}33`,
+          }}
+        >
+          <div className="flex min-w-0 items-center gap-2">
+            <span
+              className="h-2.5 w-2.5 shrink-0 rounded-full"
+              style={{ backgroundColor: meta.dot }}
+            />
+
+            <p
+              className="text-[11px] font-bold uppercase tracking-wide sm:text-[11.5px]"
+              style={{ color: meta.color }}
+            >
+              {meta.label}
+            </p>
+
+            {requestedNumber && (
+              <span className="ml-auto break-all text-[10.5px] font-semibold text-[#667085]">
+                Requested: {requestedNumber}
+              </span>
+            )}
+          </div>
+
+          <p className="mt-2 text-[11px] leading-5 text-[#667085]">
+            {meta.description}
+          </p>
+
+          {uiState === "approved" && (
+            <div
+              className="mt-2.5 flex items-start gap-2 rounded-[8px] border border-[#1f9d6b33] bg-white/70 px-2.5 py-2"
+              role="note"
+            >
+              <ShieldCheck
+                size={15}
+                className="mt-0.5 shrink-0"
+                style={{ color: "#1f9d6b" }}
+              />
+
+              <p className="text-[10.5px] leading-4 text-[#475066]">
+                A secure link has been sent to you. Please open it to
+                change your phone number. If you didn&apos;t receive it,
+                contact admin.
+              </p>
+            </div>
+          )}
+
+          {uiState === "pending" && latestRequest?.created_at && (
+            <p className="mt-2 text-[10.5px] text-[#98a2b3]">
+              Submitted on{" "}
+              {new Date(latestRequest.created_at).toLocaleString(
+                "en-IN",
+                {
+                  dateStyle: "medium",
+                  timeStyle: "short",
+                }
+              )}
+            </p>
+          )}
+
+          {uiState === "completed" && (
+            <p className="mt-2 text-[10.5px] text-[#98a2b3]">
+              You may request another change using the button above.
+            </p>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Bank / Wallet Details                                                      */
+/* -------------------------------------------------------------------------- */
 
 function BankWalletDetails({ user }: { user: any }) {
   const bankProfile =
@@ -763,33 +854,33 @@ function BankWalletDetails({ user }: { user: any }) {
     value: string;
     capitalize?: boolean;
   }[] = [
-      {
-        label: "Bank Name",
-        value: bankProfile?.bank_name || "—",
-      },
-      {
-        label: "Account Holder Name",
-        value: bankProfile?.bank_holder_name || "—",
-        capitalize: true,
-      },
-      {
-        label: "Account Number",
-        value: maskedAccount,
-      },
-      {
-        label: "Account Type",
-        value: bankProfile?.account_type || "—",
-        capitalize: true,
-      },
-      {
-        label: "IFSC Code",
-        value: bankProfile?.bank_ifsc || "—",
-      },
-      {
-        label: "Branch Name",
-        value: bankProfile?.branch_name || "—",
-      },
-    ];
+    {
+      label: "Bank Name",
+      value: bankProfile?.bank_name || "—",
+    },
+    {
+      label: "Account Holder Name",
+      value: bankProfile?.bank_holder_name || "—",
+      capitalize: true,
+    },
+    {
+      label: "Account Number",
+      value: maskedAccount,
+    },
+    {
+      label: "Account Type",
+      value: bankProfile?.account_type || "—",
+      capitalize: true,
+    },
+    {
+      label: "IFSC Code",
+      value: bankProfile?.bank_ifsc || "—",
+    },
+    {
+      label: "Branch Name",
+      value: bankProfile?.branch_name || "—",
+    },
+  ];
 
   const bankVerified = !!bankProfile?.bank_verified;
 
@@ -797,7 +888,6 @@ function BankWalletDetails({ user }: { user: any }) {
     <section className={sectionClass}>
       <SectionHeader title="Bank / Wallet Details" />
 
-      {/* Verification status */}
       <div
         className="mb-4 flex min-w-0 items-start gap-2 rounded-[8px] px-3 py-2.5"
         style={{
@@ -832,8 +922,9 @@ function BankWalletDetails({ user }: { user: any }) {
               value={row.value}
               readOnly
               disabled
-              className={`${readOnlyClass} ${row.capitalize ? "capitalize" : ""
-                }`}
+              className={`${readOnlyClass} ${
+                row.capitalize ? "capitalize" : ""
+              }`}
             />
           </div>
         ))}
@@ -842,9 +933,9 @@ function BankWalletDetails({ user }: { user: any }) {
   );
 }
 
-// ============================================
-// ADDRESS SECTION
-// ============================================
+/* -------------------------------------------------------------------------- */
+/* Address Section                                                            */
+/* -------------------------------------------------------------------------- */
 
 function AddressSection() {
   return (
@@ -857,166 +948,166 @@ function AddressSection() {
       <div className="address-card-wrapper -mt-1 min-w-0">
         <AddressComponent buttonPosition="bottom" />
       </div>
+
       <style jsx global>{`
-  .address-card-wrapper {
-    min-width: 0;
-    max-width: 100%;
-  }
+        .address-card-wrapper {
+          min-width: 0;
+          max-width: 100%;
+        }
 
-  /* Force all borders inside the wrapper to be #e9edf2 */
-  .address-card-wrapper *,
-  .address-card-wrapper input,
-  .address-card-wrapper textarea,
-  .address-card-wrapper select,
-  .address-card-wrapper button,
-  .address-card-wrapper div {
-    border-color: #e9edf2 !important;
-  }
+        .address-card-wrapper *,
+        .address-card-wrapper input,
+        .address-card-wrapper textarea,
+        .address-card-wrapper select,
+        .address-card-wrapper button,
+        .address-card-wrapper div {
+          border-color: #e9edf2 !important;
+        }
 
-  .address-card-wrapper input,
-  .address-card-wrapper textarea,
-  .address-card-wrapper select {
-    box-sizing: border-box;
-    min-width: 0;
-    max-width: 100%;
-  }
+        .address-card-wrapper input,
+        .address-card-wrapper textarea,
+        .address-card-wrapper select {
+          box-sizing: border-box;
+          min-width: 0;
+          max-width: 100%;
+        }
 
-  .address-card-wrapper > div {
-    margin-top: 0 !important;
-    min-width: 0;
-    max-width: 100%;
-  }
+        .address-card-wrapper > div {
+          margin-top: 0 !important;
+          min-width: 0;
+          max-width: 100%;
+        }
 
-  .address-card-wrapper h2 {
-    font-size: 14px !important;
-    font-weight: 600 !important;
-    color: #101828 !important;
-    margin-bottom: 0 !important;
-  }
+        .address-card-wrapper h2 {
+          font-size: 14px !important;
+          font-weight: 600 !important;
+          color: #101828 !important;
+          margin-bottom: 0 !important;
+        }
 
-  .address-card-wrapper > div > div:first-child > button {
-    display: none !important;
-  }
+        .address-card-wrapper > div > div:first-child > button {
+          display: none !important;
+        }
 
-  .address-card-wrapper .add-address-bottom-btn {
-    background-color: #0e1b3d !important;
-    border-radius: 10px !important;
-    border: 1px solid #e9edf2 !important;
-    min-height: 38px !important;
-    max-width: 100%;
-    padding: 0 20px !important;
-    font-size: 12.5px !important;
-    font-weight: 600 !important;
-    color: #ffffff !important;
-    box-shadow: 0 8px 20px -8px rgba(14, 27, 61, 0.4) !important;
-    transition: filter 0.15s ease !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    flex-wrap: wrap;
-    gap: 8px !important;
-    margin-top: 16px !important;
-  }
+        .address-card-wrapper .add-address-bottom-btn {
+          background-color: #0e1b3d !important;
+          border-radius: 10px !important;
+          border: 1px solid #e9edf2 !important;
+          min-height: 38px !important;
+          max-width: 100%;
+          padding: 0 20px !important;
+          font-size: 12.5px !important;
+          font-weight: 600 !important;
+          color: #fff !important;
+          box-shadow: 0 8px 20px -8px rgba(14, 27, 61, 0.4) !important;
+          transition: filter 0.15s ease !important;
+          display: inline-flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          flex-wrap: wrap;
+          gap: 8px !important;
+          margin-top: 16px !important;
+        }
 
-  .address-card-wrapper .add-address-bottom-btn:hover {
-    filter: brightness(1.1) !important;
-  }
+        .address-card-wrapper .add-address-bottom-btn:hover {
+          filter: brightness(1.1) !important;
+        }
 
-  .address-card-wrapper .border-dashed button {
-    background-color: #0e1b3d !important;
-    border-radius: 10px !important;
-    border: 1px solid #e9edf2 !important;
-    min-height: 38px !important;
-    max-width: 100%;
-    font-size: 12.5px !important;
-    font-weight: 600 !important;
-    box-shadow: 0 8px 20px -8px rgba(14, 27, 61, 0.4) !important;
-  }
+        .address-card-wrapper .border-dashed button {
+          background-color: #0e1b3d !important;
+          border-radius: 10px !important;
+          border: 1px solid #e9edf2 !important;
+          min-height: 38px !important;
+          max-width: 100%;
+          font-size: 12.5px !important;
+          font-weight: 600 !important;
+          box-shadow: 0 8px 20px -8px rgba(14, 27, 61, 0.4) !important;
+        }
 
-  .address-card-wrapper .rounded-\\[8px\\] {
-    border-radius: 12px !important;
-    border-color: #e9edf2 !important;
-    border-style: solid !important;
-    border-width: 1px !important;
-    min-width: 0;
-    max-width: 100%;
-  }
+        .address-card-wrapper .rounded-\\[8px\\] {
+          border-radius: 12px !important;
+          border-color: #e9edf2 !important;
+          border-style: solid !important;
+          border-width: 1px !important;
+          min-width: 0;
+          max-width: 100%;
+        }
 
-  .address-card-wrapper .rounded-\\[8px\\]:hover {
-    border-color: #e9edf2 !important;
-  }
+        .address-card-wrapper .rounded-\\[8px\\]:hover {
+          border-color: #e9edf2 !important;
+        }
 
-  .address-card-wrapper .bg-\\[\\#111111\\] {
-    background-color: #0e1b3d !important;
-  }
+        .address-card-wrapper .bg-\\[\\#111111\\] {
+          background-color: #0e1b3d !important;
+        }
 
-  .address-card-wrapper .rounded-\\[6px\\].text-\\[\\#888888\\] {
-    background-color: transparent !important;
-    color: #98a2b3 !important;
-    border: none !important;
-    box-shadow: none !important;
-  }
+        .address-card-wrapper .rounded-\\[6px\\].text-\\[\\#888888\\] {
+          background-color: transparent !important;
+          color: #98a2b3 !important;
+          border: none !important;
+          box-shadow: none !important;
+        }
 
-  .address-card-wrapper .rounded-\\[6px\\].text-\\[\\#888888\\]:hover {
-    background-color: #f7f8fa !important;
-    color: #0e1b3d !important;
-  }
+        .address-card-wrapper .rounded-\\[6px\\].text-\\[\\#888888\\]:hover {
+          background-color: #f7f8fa !important;
+          color: #0e1b3d !important;
+        }
 
-  .address-card-wrapper .rounded-\\[6px\\] svg {
-    color: currentColor !important;
-    stroke: currentColor !important;
-    flex-shrink: 0;
-  }
+        .address-card-wrapper .rounded-\\[6px\\] svg {
+          color: currentColor !important;
+          stroke: currentColor !important;
+          flex-shrink: 0;
+        }
 
-  .address-card-wrapper button.underline {
-    color: #475066 !important;
-    background-color: transparent !important;
-    box-shadow: none !important;
-    border: none !important;
-  }
+        .address-card-wrapper button.underline {
+          color: #475066 !important;
+          background-color: transparent !important;
+          box-shadow: none !important;
+          border: none !important;
+        }
 
-  .address-card-wrapper button.underline:hover {
-    color: #0e1b3d !important;
-  }
+        .address-card-wrapper button.underline:hover {
+          color: #0e1b3d !important;
+        }
 
-  .address-card-wrapper .bg-white.rounded-full {
-    background-color: #ffffff !important;
-    border: 1px solid #e9edf2 !important;
-  }
+        .address-card-wrapper .bg-white.rounded-full {
+          background-color: #fff !important;
+          border: 1px solid #e9edf2 !important;
+        }
 
-  @media (max-width: 639px) {
-    .address-card-wrapper {
-      width: 100%;
-      overflow-wrap: anywhere;
-    }
+        @media (max-width: 639px) {
+          .address-card-wrapper {
+            width: 100%;
+            overflow-wrap: anywhere;
+          }
 
-    .address-card-wrapper p,
-    .address-card-wrapper span {
-      overflow-wrap: anywhere;
-    }
+          .address-card-wrapper p,
+          .address-card-wrapper span {
+            overflow-wrap: anywhere;
+          }
 
-    .address-card-wrapper button {
-      max-width: 100%;
-    }
+          .address-card-wrapper button {
+            max-width: 100%;
+          }
 
-    .address-card-wrapper img {
-      max-width: 100%;
-      height: auto;
-      object-fit: cover;
-    }
+          .address-card-wrapper img {
+            max-width: 100%;
+            height: auto;
+            object-fit: cover;
+          }
 
-    .address-card-wrapper .add-address-bottom-btn {
-      width: 100%;
-    }
-  }
-`}</style>
+          .address-card-wrapper .add-address-bottom-btn {
+            width: 100%;
+          }
+        }
+      `}</style>
     </section>
   );
 }
 
-// ============================================
-// SECURITY SECTION
-// ============================================
+/* -------------------------------------------------------------------------- */
+/* Security Section                                                           */
+/* -------------------------------------------------------------------------- */
 
 function SecuritySection() {
   const dispatch = useDispatch();
@@ -1031,55 +1122,42 @@ function SecuritySection() {
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-
   const [showOldPassword, setShowOldPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const [showConfirmPassword, setShowConfirmPassword] =
-    useState(false);
+  const validateOldPassword = (value: string) =>
+    !value ? "Old password is required" : null;
 
-  const validateOldPassword = (value: string) => {
-    if (!value) return "Old password is required";
-    return null;
-  };
-
-  const validatePassword = (value: string) => {
-    if (!value) return "Password is required";
-
-    if (value.length < 6) {
-      return "Password must be at least 6 characters";
-    }
-
-    return null;
-  };
+  const validatePassword = (value: string) =>
+    !value
+      ? "Password is required"
+      : value.length < 6
+      ? "Password must be at least 6 characters"
+      : null;
 
   const validateConfirmPassword = (
     value: string,
     newPassword = security.password
-  ) => {
-    if (!value) return "Please confirm your password";
-
-    if (value !== newPassword) {
-      return "Passwords do not match";
-    }
-
-    return null;
-  };
+  ) =>
+    !value
+      ? "Please confirm your password"
+      : value !== newPassword
+      ? "Passwords do not match"
+      : null;
 
   const handleChange = (
     field: "oldPassword" | "password" | "confirmPassword",
     value: string
   ) => {
-    const nextSecurity = {
+    const next = {
       ...security,
       [field]: value,
     };
 
-    setSecurity(nextSecurity);
+    setSecurity(next);
 
-    const nextErrors = {
-      ...errors,
-    };
+    const nextErrors = { ...errors };
 
     if (field === "oldPassword") {
       nextErrors.oldPassword =
@@ -1087,12 +1165,13 @@ function SecuritySection() {
     }
 
     if (field === "password") {
-      nextErrors.password = validatePassword(value) || "";
+      nextErrors.password =
+        validatePassword(value) || "";
 
-      if (nextSecurity.confirmPassword) {
+      if (next.confirmPassword) {
         nextErrors.confirmPassword =
           validateConfirmPassword(
-            nextSecurity.confirmPassword,
+            next.confirmPassword,
             value
           ) || "";
       }
@@ -1109,20 +1188,33 @@ function SecuritySection() {
   const handleSave = async () => {
     const nextErrors: Record<string, string> = {};
 
-    const oldError = validateOldPassword(security.oldPassword);
-    const passwordError = validatePassword(security.password);
+    const oldError = validateOldPassword(
+      security.oldPassword
+    );
+
+    const passwordError = validatePassword(
+      security.password
+    );
 
     const confirmError = validateConfirmPassword(
       security.confirmPassword
     );
 
-    if (oldError) nextErrors.oldPassword = oldError;
-    if (passwordError) nextErrors.password = passwordError;
-    if (confirmError) nextErrors.confirmPassword = confirmError;
+    if (oldError) {
+      nextErrors.oldPassword = oldError;
+    }
+
+    if (passwordError) {
+      nextErrors.password = passwordError;
+    }
+
+    if (confirmError) {
+      nextErrors.confirmPassword = confirmError;
+    }
 
     setErrors(nextErrors);
 
-    if (Object.keys(nextErrors).length > 0) return;
+    if (Object.keys(nextErrors).length) return;
 
     try {
       const response = await changePassword({
@@ -1155,12 +1247,13 @@ function SecuritySection() {
         dispatch(
           showToast({
             message:
-              response?.message || "Failed to change password",
+              response?.message ||
+              "Failed to change password",
             type: "error",
           })
         );
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       dispatch(
         showToast({
           message: getErrorMessage(
@@ -1173,6 +1266,62 @@ function SecuritySection() {
     }
   };
 
+  const passwordField = (
+    field: "oldPassword" | "password" | "confirmPassword",
+    label: string,
+    placeholder: string,
+    visible: boolean,
+    toggle: () => void,
+    autoComplete: string
+  ) => (
+    <div className="min-w-0" key={field}>
+      <label className={labelClass}>
+        {label}
+        <span className="ml-0.5 text-red-500">*</span>
+      </label>
+
+      <div className="relative min-w-0">
+        <input
+          type={visible ? "text" : "password"}
+          autoComplete={autoComplete}
+          value={security[field]}
+          onChange={(event) =>
+            handleChange(field, event.target.value)
+          }
+          placeholder={placeholder}
+          className={`${inputClass} pr-11 ${
+            errors[field]
+              ? "border-red-500 ring-2 ring-red-500/10"
+              : ""
+          }`}
+        />
+
+        <button
+          type="button"
+          onClick={toggle}
+          aria-label={
+            visible
+              ? `Hide ${label.toLowerCase()}`
+              : `Show ${label.toLowerCase()}`
+          }
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-[#98a2b3] transition-colors hover:text-[#475066]"
+        >
+          {visible ? (
+            <EyeOff size={16} />
+          ) : (
+            <Eye size={16} />
+          )}
+        </button>
+      </div>
+
+      {errors[field] && (
+        <p className="mt-1 break-words text-[10.5px] text-red-500">
+          {errors[field]}
+        </p>
+      )}
+    </div>
+  );
+
   return (
     <section className={sectionClass}>
       <SectionHeader
@@ -1181,151 +1330,32 @@ function SecuritySection() {
       />
 
       <div className="space-y-4 sm:space-y-[16px]">
-        {/* Old password */}
-        <div className="min-w-0">
-          <label className={labelClass}>
-            Old Password
-            <span className="ml-0.5 text-red-500">*</span>
-          </label>
+        {passwordField(
+          "oldPassword",
+          "Old Password",
+          "Enter current password",
+          showOldPassword,
+          () => setShowOldPassword((value) => !value),
+          "current-password"
+        )}
 
-          <div className="relative min-w-0">
-            <input
-              type={showOldPassword ? "text" : "password"}
-              autoComplete="current-password"
-              value={security.oldPassword}
-              onChange={(event) =>
-                handleChange("oldPassword", event.target.value)
-              }
-              placeholder="Enter current password"
-              className={`${inputClass} pr-11 ${errors.oldPassword
-                ? "border-red-500 ring-2 ring-red-500/10"
-                : ""
-                }`}
-            />
+        {passwordField(
+          "password",
+          "New Password",
+          "Enter new password",
+          showNewPassword,
+          () => setShowNewPassword((value) => !value),
+          "new-password"
+        )}
 
-            <button
-              type="button"
-              onClick={() => setShowOldPassword((value) => !value)}
-              aria-label={
-                showOldPassword
-                  ? "Hide old password"
-                  : "Show old password"
-              }
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#98a2b3] transition-colors hover:text-[#475066]"
-            >
-              {showOldPassword ? (
-                <EyeOff size={16} />
-              ) : (
-                <Eye size={16} />
-              )}
-            </button>
-          </div>
-
-          {errors.oldPassword && (
-            <p className="mt-1 break-words text-[10.5px] text-red-500">
-              {errors.oldPassword}
-            </p>
-          )}
-        </div>
-
-        {/* New password */}
-        <div className="min-w-0">
-          <label className={labelClass}>
-            New Password
-            <span className="ml-0.5 text-red-500">*</span>
-          </label>
-
-          <div className="relative min-w-0">
-            <input
-              type={showNewPassword ? "text" : "password"}
-              autoComplete="new-password"
-              value={security.password}
-              onChange={(event) =>
-                handleChange("password", event.target.value)
-              }
-              placeholder="Enter new password"
-              className={`${inputClass} pr-11 ${errors.password
-                ? "border-red-500 ring-2 ring-red-500/10"
-                : ""
-                }`}
-            />
-
-            <button
-              type="button"
-              onClick={() => setShowNewPassword((value) => !value)}
-              aria-label={
-                showNewPassword
-                  ? "Hide new password"
-                  : "Show new password"
-              }
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#98a2b3] transition-colors hover:text-[#475066]"
-            >
-              {showNewPassword ? (
-                <EyeOff size={16} />
-              ) : (
-                <Eye size={16} />
-              )}
-            </button>
-          </div>
-
-          {errors.password && (
-            <p className="mt-1 break-words text-[10.5px] text-red-500">
-              {errors.password}
-            </p>
-          )}
-        </div>
-
-        {/* Confirm password */}
-        <div className="min-w-0">
-          <label className={labelClass}>
-            Confirm New Password
-            <span className="ml-0.5 text-red-500">*</span>
-          </label>
-
-          <div className="relative min-w-0">
-            <input
-              type={showConfirmPassword ? "text" : "password"}
-              autoComplete="new-password"
-              value={security.confirmPassword}
-              onChange={(event) =>
-                handleChange(
-                  "confirmPassword",
-                  event.target.value
-                )
-              }
-              placeholder="Confirm new password"
-              className={`${inputClass} pr-11 ${errors.confirmPassword
-                ? "border-red-500 ring-2 ring-red-500/10"
-                : ""
-                }`}
-            />
-
-            <button
-              type="button"
-              onClick={() =>
-                setShowConfirmPassword((value) => !value)
-              }
-              aria-label={
-                showConfirmPassword
-                  ? "Hide confirmation password"
-                  : "Show confirmation password"
-              }
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#98a2b3] transition-colors hover:text-[#475066]"
-            >
-              {showConfirmPassword ? (
-                <EyeOff size={16} />
-              ) : (
-                <Eye size={16} />
-              )}
-            </button>
-          </div>
-
-          {errors.confirmPassword && (
-            <p className="mt-1 break-words text-[10.5px] text-red-500">
-              {errors.confirmPassword}
-            </p>
-          )}
-        </div>
+        {passwordField(
+          "confirmPassword",
+          "Confirm New Password",
+          "Confirm new password",
+          showConfirmPassword,
+          () => setShowConfirmPassword((value) => !value),
+          "new-password"
+        )}
 
         <div className="flex justify-end border-t border-[#f0f2f5] pt-4">
           <SaveButton
@@ -1339,9 +1369,175 @@ function SecuritySection() {
   );
 }
 
-// ============================================
-// PAGE
-// ============================================
+/* -------------------------------------------------------------------------- */
+/* Change Phone Number Modal                                                  */
+/* -------------------------------------------------------------------------- */
+
+function ChangePhoneNumberModal({
+  phone,
+  setPhone,
+  error,
+  setError,
+  loading,
+  onClose,
+  onSubmit,
+}: {
+  phone: string;
+  setPhone: (value: string) => void;
+  error: string;
+  setError: (value: string) => void;
+  loading: boolean;
+  onClose: () => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto bg-[#0e1b3d]/55 p-3 sm:p-5"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="change-phone-title"
+    >
+      <div className="relative my-auto w-full max-w-[460px] overflow-hidden rounded-[18px] border border-[#e9edf2] bg-white shadow-2xl">
+        <div className="flex items-start justify-between gap-4 border-b border-[#e9edf2] px-5 py-4 sm:px-6">
+          <div className="flex min-w-0 items-start gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#eef2fb] text-[#0E1B3D]">
+              <Phone size={19} />
+            </span>
+
+            <div className="min-w-0">
+              <h2
+                id="change-phone-title"
+                className="text-[16px] font-bold text-[#101828]"
+              >
+                Change Phone Number
+              </h2>
+
+              <p className="text-[11.5px] text-[#98a2b3]">
+                Send your new number to the admin for approval.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={loading}
+            aria-label="Close popup"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#667085] transition hover:bg-[#f2f4f7] disabled:opacity-50"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <form
+          onSubmit={onSubmit}
+          className="space-y-4 px-5 py-5 sm:px-6"
+        >
+          <div className="rounded-[10px] border border-[#e9edf2] bg-[#f8faff] p-3">
+            <div className="flex items-start gap-2.5">
+              <ShieldCheck
+                size={17}
+                className="mt-0.5 shrink-0 text-[#0E1B3D]"
+              />
+
+              <p className="text-[11px] leading-5 text-[#667085]">
+                Your request will be sent to the admin. Your registered
+                phone number will not change until the request is reviewed.
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <label
+              htmlFor="requested-phone"
+              className={labelClass}
+            >
+              New Phone Number
+              <span className="ml-0.5 text-red-500">*</span>
+            </label>
+
+            <div className="flex min-w-0 gap-2">
+              <span className="flex h-[44px] w-[58px] shrink-0 items-center justify-center rounded-[10px] border border-[#e9edf2] bg-[#f2f4f7] text-[13px] font-semibold text-[#475066]">
+                +91
+              </span>
+
+              <input
+                id="requested-phone"
+                type="tel"
+                inputMode="numeric"
+                autoComplete="tel-national"
+                value={phone}
+                onChange={(event) => {
+                  const digitsOnly = event.target.value
+                    .replace(/\D/g, "")
+                    .slice(0, 10);
+
+                  setPhone(digitsOnly);
+                  setError("");
+                }}
+                placeholder="Enter 10-digit mobile number"
+                maxLength={10}
+                pattern="[0-9]{10}"
+                aria-invalid={Boolean(error)}
+                aria-describedby={
+                  error ? "requested-phone-error" : undefined
+                }
+                className={`${inputClass} h-[44px] flex-1 ${
+                  error
+                    ? "border-red-500 ring-2 ring-red-500/10"
+                    : ""
+                }`}
+              />
+            </div>
+
+            <div className="mt-1.5 flex items-center justify-between gap-3">
+              {error ? (
+                <p
+                  id="requested-phone-error"
+                  className="text-[10.5px] text-red-500"
+                >
+                  {error}
+                </p>
+              ) : (
+                <p className="text-[10.5px] text-[#98a2b3]">
+                  Enter digits only, without +91.
+                </p>
+              )}
+
+              <span
+                className={`shrink-0 text-[10.5px] ${
+                  phone.length === 10
+                    ? "text-[#1f9d6b]"
+                    : "text-[#98a2b3]"
+                }`}
+              >
+                {phone.length}/10
+              </span>
+            </div>
+          </div>
+
+          <div className="flex flex-col-reverse gap-2 border-t border-[#f0f2f5] pt-4 sm:flex-row sm:justify-end">
+            <GhostButton
+              text="Cancel"
+              onClick={onClose}
+            />
+
+            <SaveButton
+              text="Send Request"
+              type="submit"
+              loading={loading}
+              disabled={phone.length !== 10}
+            />
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Main Distributor Profile Page                                              */
+/* -------------------------------------------------------------------------- */
 
 export default function DistributorProfilePage() {
   const dispatch = useDispatch();
@@ -1356,15 +1552,23 @@ export default function DistributorProfilePage() {
   const [updateUserProfile, { isLoading: isUpdating }] =
     useUpdateUserProfileMutation();
 
+  const [
+    createCorrectionRequest,
+    { isLoading: isSendingPhoneRequest },
+  ] = useCreateCorrectionRequestMutation();
+
   const user = data?.user;
 
-  // --------------------------------------------------
-  // Update profile
-  // --------------------------------------------------
+  const [showPhoneModal, setShowPhoneModal] = useState(false);
+  const [requestedPhone, setRequestedPhone] = useState("");
+  const [phoneRequestError, setPhoneRequestError] = useState("");
+
+  /* ------------------------------------------------------------------------ */
+  /* Update Profile                                                           */
+  /* ------------------------------------------------------------------------ */
 
   const handleUpdateProfile = async (payload: {
     full_name?: string;
-    phone?: string;
     profile_image?: File;
   }) => {
     try {
@@ -1372,10 +1576,6 @@ export default function DistributorProfilePage() {
 
       if (payload.full_name !== undefined) {
         formData.append("full_name", payload.full_name);
-      }
-
-      if (payload.phone !== undefined) {
-        formData.append("phone", payload.phone);
       }
 
       if (payload.profile_image) {
@@ -1394,17 +1594,18 @@ export default function DistributorProfilePage() {
           })
         );
 
-        refetch();
+        await refetch();
       } else {
         dispatch(
           showToast({
             message:
-              response.message || "Failed to update profile",
+              response.message ||
+              "Failed to update profile",
             type: "error",
           })
         );
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       dispatch(
         showToast({
           message: getErrorMessage(
@@ -1417,62 +1618,180 @@ export default function DistributorProfilePage() {
     }
   };
 
-  // --------------------------------------------------
-  // Loading
-  // --------------------------------------------------
+  /* ------------------------------------------------------------------------ */
+  /* Submit Phone Change Request                                              */
+  /* ------------------------------------------------------------------------ */
+
+  const handlePhoneRequestSubmit = async (
+    event: FormEvent<HTMLFormElement>
+  ) => {
+    event.preventDefault();
+
+    if (!/^\d{10}$/.test(requestedPhone)) {
+      setPhoneRequestError(
+        "Enter a valid 10-digit phone number."
+      );
+      return;
+    }
+
+    try {
+      const response = await createCorrectionRequest({
+        reason: `I wanna change my phone. Requested new phone number: +91${requestedPhone}`,
+      }).unwrap();
+
+      if (
+        response?.success === false ||
+        response?.status === false
+      ) {
+        dispatch(
+          showToast({
+            message:
+              response.message ||
+              "Unable to send phone number change request.",
+            type: "error",
+          })
+        );
+
+        return;
+      }
+
+      dispatch(
+        showToast({
+          message:
+            response?.message ||
+            "Phone number change request sent to admin successfully.",
+          type: "success",
+        })
+      );
+
+      setShowPhoneModal(false);
+      setRequestedPhone("");
+      setPhoneRequestError("");
+
+      await refetch();
+    } catch (error: unknown) {
+      const message = getErrorMessage(
+        error,
+        "Something went wrong while sending the request."
+      );
+
+      setPhoneRequestError(message);
+
+      dispatch(
+        showToast({
+          message,
+          type: "error",
+        })
+      );
+    }
+  };
+
+  /* ------------------------------------------------------------------------ */
+  /* Open Phone Modal                                                         */
+  /* ------------------------------------------------------------------------ */
+
+  const openPhoneModal = () => {
+    const phoneRequests = (user?.correction_requests ?? [])
+      .filter((request: any) => request.type === "phone_request")
+      .sort(
+        (a: any, b: any) =>
+          new Date(b.created_at).getTime() -
+          new Date(a.created_at).getTime()
+      );
+
+    const latest = phoneRequests[0];
+    const status = latest?.status?.toLowerCase();
+
+    if (status === "pending" || status === "approved") {
+      dispatch(
+        showToast({
+          message:
+            status === "pending"
+              ? "Your phone change request is already pending admin review."
+              : "Your request is approved. Please use the link sent to you to change your number.",
+          type: "info",
+        })
+      );
+
+      return;
+    }
+
+    setRequestedPhone("");
+    setPhoneRequestError("");
+    setShowPhoneModal(true);
+  };
+
+  /* ------------------------------------------------------------------------ */
+  /* Close Phone Modal                                                        */
+  /* ------------------------------------------------------------------------ */
+
+  const closePhoneModal = () => {
+    if (isSendingPhoneRequest) return;
+
+    setShowPhoneModal(false);
+    setRequestedPhone("");
+    setPhoneRequestError("");
+  };
+
+  /* ------------------------------------------------------------------------ */
+  /* Loading State                                                            */
+  /* ------------------------------------------------------------------------ */
 
   if (isLoading) {
     return (
       <div
-        className="flex min-h-dvh w-full items-center justify-center overflow-x-hidden bg-white px-4"
+        className="flex min-h-dvh w-full items-center justify-center overflow-x-clip bg-white px-4"
         style={{ fontFamily: "'Lato', sans-serif" }}
       >
         <style>{`
-          @import url('https\://fonts.googleapis.com/css2?family=Lato:ital,wght@0,300;0,400;0,700;0,900;1,400&display=swap');
+          @import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,300;0,400;0,700;0,900;1,400&display=swap');
         `}</style>
 
         <div className="flex flex-col items-center gap-3">
-        <Loding />
+          <Loding />
         </div>
       </div>
     );
   }
 
-  // --------------------------------------------------
-  // Error
-  // --------------------------------------------------
+  /* ------------------------------------------------------------------------ */
+  /* Error State                                                              */
+  /* ------------------------------------------------------------------------ */
 
   if (isError || !user) {
     return (
       <div
-        className="flex min-h-dvh w-full flex-col items-center justify-center gap-3 overflow-x-hidden bg-white px-4"
+        className="flex min-h-dvh w-full flex-col items-center justify-center gap-3 overflow-x-clip bg-white px-4"
         style={{ fontFamily: "'Lato', sans-serif" }}
       >
         <p className="text-center text-[14px] font-semibold text-[#101828]">
           Failed to load profile
         </p>
 
-        <GhostButton text="Retry" onClick={() => refetch()} />
+        <GhostButton
+          text="Retry"
+          onClick={() => refetch()}
+        />
       </div>
     );
   }
 
-  // --------------------------------------------------
-  // Main page
-  // --------------------------------------------------
+  /* ------------------------------------------------------------------------ */
+  /* Main UI                                                                   */
+  /* ------------------------------------------------------------------------ */
 
   return (
     <div
-      className="min-h-dvh w-full overflow-x-hidden bg-white"
+      className="min-h-dvh w-full overflow-x-clip bg-white"
       style={{ fontFamily: "'Lato', sans-serif" }}
     >
       <style>{`
-        @import url('https\://fonts.googleapis.com/css2?family=Lato:ital,wght@0,300;0,400;0,700;0,900;1,400&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,300;0,400;0,700;0,900;1,400&display=swap');
 
         html,
         body {
           max-width: 100%;
-          overflow-x: hidden;
+          overflow-x: clip;
         }
 
         *,
@@ -1482,18 +1801,17 @@ export default function DistributorProfilePage() {
         }
       `}</style>
 
-      {/* Dashboard header */}
       <DashboardHeader
         distributorId={user?.distributor_id || ""}
       />
 
-      {/* Main layout */}
       <div className="relative flex min-h-[calc(100dvh-72px)] min-w-0">
         <Sidebar />
 
-        <main className="min-h-0 min-w-0 flex-1 overflow-x-hidden bg-[#fafcff] px-3 pb-6 pt-4 sm:px-5 sm:pb-8 sm:pt-5 lg:px-8 lg:pt-6">
+        <main className="min-h-0 min-w-0 flex-1 overflow-x-clip bg-[#fafcff] px-3 pb-6 pt-4 sm:px-5 sm:pb-8 sm:pt-5 lg:px-8 lg:pt-6">
           <div className="mx-auto w-full min-w-0 max-w-[1600px]">
-            {/* Page header */}
+            {/* Page Heading */}
+
             <div className="mb-5 flex min-w-0 items-start gap-3 sm:mb-[22px]">
               <span
                 className="mt-1 h-6 w-1 shrink-0 rounded-full sm:w-1.5"
@@ -1511,15 +1829,15 @@ export default function DistributorProfilePage() {
               </div>
             </div>
 
-            {/*
-              Responsive profile layout:
-              Mobile: 1 column
-              Tablet: cards adapt independently
-              Desktop: 3 columns
-            */}
+            {/* Three Column Profile Layout */}
+
             <div className="grid min-w-0 grid-cols-1 items-start gap-4 sm:gap-5 xl:grid-cols-[220px_minmax(0,1fr)_300px] xl:gap-[14px]">
-              {/* LEFT COLUMN */}
-              <div className="grid min-w-0 grid-cols-1 items-start gap-4 sm:grid-cols-2 xl:grid-cols-1 xl:gap-[14px]">
+              {/* LEFT COLUMN - STICKY PROFILE */}
+
+              <aside
+                className={`${stickyColumnClass} sm:grid-cols-2 xl:grid-cols-1 xl:gap-[14px]`}
+                aria-label="Profile summary"
+              >
                 <ProfileSummary user={user} />
 
                 <ProfileImageCard
@@ -1531,9 +1849,10 @@ export default function DistributorProfilePage() {
                     })
                   }
                 />
-              </div>
+              </aside>
 
-              {/* CENTER COLUMN */}
+              {/* MIDDLE COLUMN - NORMAL PAGE SCROLL */}
+
               <div className="min-w-0">
                 <ProfileForm
                   user={user}
@@ -1543,20 +1862,47 @@ export default function DistributorProfilePage() {
                   }
                 />
 
+                <PhoneChangeRequestCard
+                  user={user}
+                  onClick={openPhoneModal}
+                />
+
                 <AddressSection />
-                <div className="mt-4"><DistributorPVCSection user={user} /></div>
+
+                <div className="mt-4">
+                  <DistributorPVCSection user={user} />
+                </div>
               </div>
 
-              {/* RIGHT COLUMN */}
-              <div className="grid min-w-0 grid-cols-1 items-start gap-4 sm:grid-cols-2 xl:grid-cols-1 xl:gap-[14px]">
+              {/* RIGHT COLUMN - STICKY BANK AND SECURITY */}
+              {/* No max-height and no overflow-y-auto */}
+
+              <aside
+                className={`${stickyColumnClass} sm:grid-cols-2 xl:grid-cols-1 xl:gap-[14px]`}
+                aria-label="Bank details and security"
+              >
                 <BankWalletDetails user={user} />
 
                 <SecuritySection />
-              </div>
+              </aside>
             </div>
           </div>
         </main>
       </div>
+
+      {/* Phone Change Modal */}
+
+      {showPhoneModal && (
+        <ChangePhoneNumberModal
+          phone={requestedPhone}
+          setPhone={setRequestedPhone}
+          error={phoneRequestError}
+          setError={setPhoneRequestError}
+          loading={isSendingPhoneRequest}
+          onClose={closePhoneModal}
+          onSubmit={handlePhoneRequestSubmit}
+        />
+      )}
     </div>
   );
 }
