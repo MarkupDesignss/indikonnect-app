@@ -47,6 +47,7 @@ import { generateInvoicePDF } from "./invoiceGenerator";
 import { showToast } from "@/lib/slices/toastSlice";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { LuReceiptIndianRupee } from "react-icons/lu";
+import Loding from "@/components/common/Loding";
 
 /* ============================================================
    STATUS HELPERS
@@ -1820,13 +1821,9 @@ export default function OrdersPage() {
 
   if (ordersLoading || statusesLoading) {
     return (
-      <div className="flex min-h-[500px] items-center justify-center font-sans">
+      <div className="flex min-h-[500px] items-center justify-center font-sans bg-white">
         <div className="text-center">
-          <div className="h-9 w-9 animate-spin rounded-full border-2 border-[#E4E4E2] border-t-[#111111]" />
-
-          <p className="mt-4 text-[12px] text-[#888888]">
-            Loading your orders...
-          </p>
+          <Loding />
         </div>
       </div>
     );
@@ -2502,7 +2499,7 @@ export default function OrdersPage() {
                                   >
                                     {isInvoiceLoading ? (
                                       <>
-                                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                        <Loding className="h-3.5 w-3.5 animate-spin" />
                                         Loading...
                                       </>
                                     ) : (

@@ -29,6 +29,7 @@ import {
 } from "@/lib/redux/api/addressApi";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { showToast } from "../../lib/slices/toastSlice";
+import Loding from "../common/Loding";
 
 export interface Address {
   id: number;
@@ -1358,13 +1359,8 @@ export default function AddressComponent({
 
   if (isAddressesLoading) {
     return (
-      <div className="flex items-center justify-center py-16 font-sans">
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="h-7 w-7 animate-spin text-[#111111]" />
-          <span className="text-[12px] text-[#888888]">
-            Loading your addresses...
-          </span>
-        </div>
+      <div className="flex items-center justify-center py-16 font-sans bg-white">
+       <Loding />
       </div>
     );
   }

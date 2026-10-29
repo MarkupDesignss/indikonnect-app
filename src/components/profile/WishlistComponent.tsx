@@ -411,7 +411,7 @@ export default function WishlistComponent({
         isInitialLoad
     ) {
         return (
-            <div className="flex items-center justify-center py-16 font-sans">
+            <div className="flex items-center justify-center py-16 font-sans bg-white">
                 <div className="flex flex-col items-center gap-3">
                    <Loding />
                 </div>
