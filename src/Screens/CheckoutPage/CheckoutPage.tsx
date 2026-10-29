@@ -2151,6 +2151,40 @@ export default function CheckoutPage() {
     router.replace(`/order-confirmation?${params.toString()}`);
   };
 
+  /**
+   * Keep the already-created order and switch checkout into its existing
+   * payment-retry mode. This is intentionally client-side navigation: the
+   * retry button uses the existing retryOrder API and does not place another
+   * order.
+   */
+  const enablePaymentRetry = (
+    orderReference: string,
+    paymentStatus: "pending" | "failed" | "cancelled" = "pending"
+  ) => {
+    const normalizedReference = String(orderReference || "").trim();
+
+    if (!normalizedReference) {
+      dispatch(
+        showToast({
+          message:
+            "Payment was not completed. Please check your orders before trying again.",
+          type: "error",
+        })
+      );
+      return;
+    }
+
+    // Preserve Buy Now context and other checkout query values, if present.
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("order_reference", normalizedReference);
+    params.set("gateway", selectedGatewayId);
+    params.set("payment_status", paymentStatus);
+    params.set("cancelled", "true");
+    params.set("show_repay", "true");
+
+    router.replace(`/checkout?${params.toString()}`, { scroll: false });
+  };
+
   // Razorpay helpers
   const openRazorpay = (nextOrderData: RazorpayOrderData) =>
     new Promise<any>((resolve, reject) => {
@@ -2212,10 +2246,26 @@ export default function CheckoutPage() {
       modal: {
         ondismiss: function () {
           setIsSubmitting(false);
+
+          // Razorpay only dismisses its modal; it does not send the customer
+          // through the HDFC-style return URL. Put this existing order into
+          // the same Retry Payment state used by the HDFC checkout flow.
+          enablePaymentRetry(nextOrderData.orderReference, "pending");
+
           dispatch(
-            showToast({ message: "Payment cancelled", type: "error" })
+            showToast({
+              message: "Payment cancelled. You can retry payment for this order.",
+              type: "info",
+            })
           );
-          reject(new Error("Payment cancelled"));
+
+          // Cancellation is a normal user action, not a checkout exception.
+          // Resolving avoids the generic "Checkout error: Payment cancelled"
+          // log/toast while allowing the caller's finally block to unlock UI.
+          resolve({
+            cancelled: true,
+            orderReference: nextOrderData.orderReference,
+          });
         },
       },
     };
