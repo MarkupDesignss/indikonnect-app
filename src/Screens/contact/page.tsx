@@ -300,26 +300,7 @@ export default function ContactPage() {
 
       <main className="relative bg-white">
         <div className="mx-auto w-full max-w-[1220px] px-4 pb-16 sm:px-6 lg:px-10 lg:pb-24">
-          {/* Navigation */}
-          <div className="flex flex-wrap items-center justify-between gap-4 py-7 sm:py-9">
-            <button
-              type="button"
-              onClick={() => router.back()}
-              className="inline-flex min-h-10 items-center gap-2 rounded-full px-2 text-[13px] font-medium text-[#5E6770] transition-colors hover:text-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black"
-            >
-              <ArrowLeft size={16} /> Back
-            </button>
-            <nav
-              aria-label="Breadcrumb"
-              className="flex min-w-0 flex-wrap items-center gap-2 text-[12px]"
-            >
-              <Link href="/" className="text-[#879098] hover:text-black">
-                Home
-              </Link>
-              <ChevronRight size={13} className="text-[#A2A8AE]" />
-              <span className="font-semibold text-[#202429]">Contact us</span>
-            </nav>
-          </div>
+        
 
           {/* Hero */}
           <motion.section
@@ -327,17 +308,17 @@ export default function ContactPage() {
             animate="show"
             variants={visible}
             transition={{ duration: 0.45 }}
-            className="mx-auto max-w-[760px] pb-11 pt-5 text-center sm:pb-14 sm:pt-7"
+            className="mx-auto max-w-[760px] pb-6 pt-5 text-center sm:pb-6 sm:pt-7"
           >
             <span className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.22em] text-[#168998]">
               <span className="size-1.5 rounded-full bg-[#16A9BA]" /> LET'S
               CONNECT
             </span>
-            <h1 className="mt-5 break-words font-serif text-[clamp(2.4rem,5vw,4.25rem)] leading-[1.12] tracking-[-0.045em] text-[#111820]">
+            <h1 className="mt-5 break-words font-serif text-5xl leading-[1.12] tracking-[-0.045em] text-[#111820]">
               Let’s make things{" "}
               <span className="italic font-normal">simple.</span>
             </h1>
-            <p className="mx-auto mt-5 max-w-[590px] text-[15px] leading-7 text-[#69717A] sm:text-[16px]">
+            <p className="mx-auto mt-4 max-w-[590px] text-[10px] leading-6 text-[#69717A] sm:text-[16px]">
               Whether you need order assistance, distributor support, or a
               business conversation, our team is ready to listen.
             </p>
@@ -375,7 +356,7 @@ export default function ContactPage() {
           </motion.section>
 
           {/* Form + map */}
-          <section className="mt-10 grid min-w-0 grid-cols-1 items-stretch gap-5 lg:mt-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-6">
+          <section className="mt-6 grid min-w-0 grid-cols-1 items-stretch gap-5 lg:mt-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-6">
             <div className="contact-form-panel min-w-0 rounded-[28px] border border-[#E7E9EB] bg-white p-6 shadow-[0_18px_55px_rgba(0,0,0,0.045)] sm:p-9 lg:p-10">
               <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#168998]">
                 SEND A MESSAGE
