@@ -41,9 +41,9 @@ const BRASS = "#B8935A";
 const EMERALD = "#1f9d6b";
 const INDIGO = "#3955A6";
 
-// Shared surface classes - NO SHADOW, JUST BORDER
 const CARD =
   "min-w-0 rounded-[18px] border border-[#e7e9ee] bg-white";
+
 const CARD_HOVER =
   "transition-colors duration-200 hover:border-[#d1d5df] motion-reduce:transition-none";
 
@@ -113,6 +113,17 @@ function formatStatus(value?: string | null): string {
     .replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
+function formatCurrency(
+  value: number | string | null | undefined,
+  currency: "USD" | "INR"
+): string {
+  const formattedValue = formatNumber(value);
+
+  return currency === "USD"
+    ? `$${formattedValue}`
+    : `₹${formattedValue}`;
+}
+
 // --------------------------------------------------
 // Section title
 // --------------------------------------------------
@@ -132,10 +143,11 @@ function SectionTitle({
       />
 
       <h2
-        className={`font-black tracking-[-0.01em] text-[#101828] ${large
+        className={`font-black tracking-[-0.01em] text-[#101828] ${
+          large
             ? "text-[18px] sm:text-[20px]"
             : "text-[16px] sm:text-[18px]"
-          }`}
+        }`}
       >
         {children}
       </h2>
@@ -152,7 +164,7 @@ function DashboardLoader() {
     <div
       suppressHydrationWarning
       style={{ fontFamily: "'Lato', sans-serif" }}
-      className="flex min-h-dvh w-full items-center bg-white justify-center overflow-hidden px-4"
+      className="flex min-h-dvh w-full items-center justify-center overflow-hidden bg-white px-4"
     >
       <FontImport />
 
@@ -164,7 +176,7 @@ function DashboardLoader() {
 }
 
 // --------------------------------------------------
-// Welcome hero — soft light version, flat & clean
+// Welcome hero
 // --------------------------------------------------
 
 function WelcomeHero({
@@ -181,7 +193,6 @@ function WelcomeHero({
       transition={{ duration: 0.4, ease: "easeOut" }}
       className="relative overflow-hidden rounded-[20px] border border-[#e7e9ee] bg-white p-5 sm:p-6"
     >
-      {/* Soft decorative glows */}
       <div
         aria-hidden="true"
         className="pointer-events-none absolute -right-20 -top-24 h-56 w-56 rounded-full opacity-[0.06] blur-2xl"
@@ -195,30 +206,34 @@ function WelcomeHero({
       />
 
       <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-        {/* Left side: Welcome details */}
         <div className="min-w-0 flex-1">
           <div className="inline-flex max-w-full flex-wrap items-center gap-1.5 rounded-full border border-[#e7e9ee] bg-[#fafbfc] px-3 py-1 text-[11px] font-bold leading-4 text-[#3955A6] sm:text-[12px]">
             <span
               className="h-1.5 w-1.5 rounded-full"
               style={{ backgroundColor: INDIGO }}
             />
-            <span>{formatStatus(user?.account_type || "distributor")}</span>
+
+            <span>
+              {formatStatus(user?.account_type || "distributor")}
+            </span>
           </div>
 
           <h1 className="mt-3 break-words text-[20px] font-black leading-tight tracking-[-0.02em] text-[#101828] sm:text-[24px]">
-            {user?.name ? `Welcome back, ${user.name}` : "Welcome back"}
+            {user?.name
+              ? `Welcome back, ${user.name}`
+              : "Welcome back"}
           </h1>
 
           <p className="mt-1.5 break-all text-[12px] leading-5 text-[#667085] sm:text-[13px]">
-            {user?.email ? user.email : "Your distributor dashboard"}
+            {user?.email || "Your distributor dashboard"}
           </p>
         </div>
 
-        {/* Right side: Distributor ID */}
         <div className="flex shrink-0 flex-col items-start sm:items-end">
           <span className="text-[11px] font-bold uppercase tracking-wider text-[#8a92a6]">
             Distributor ID
           </span>
+
           <span className="mt-0.5 break-all text-[16px] font-black text-[#101828] sm:text-[18px]">
             {distributorId}
           </span>
@@ -229,7 +244,7 @@ function WelcomeHero({
 }
 
 // --------------------------------------------------
-// Responsive top statistics cards
+// Cash wallet, floating retail profit and direct referral
 // --------------------------------------------------
 
 function QuickStatsCards({
@@ -306,7 +321,7 @@ function QuickStatsCards({
 }
 
 // --------------------------------------------------
-// Dashboard overview (Side accent lines, flat cards)
+// Dashboard overview
 // --------------------------------------------------
 
 function DashboardOverview({
@@ -365,7 +380,6 @@ function DashboardOverview({
             key={item.label}
             className={`${CARD} ${CARD_HOVER} relative overflow-hidden p-3.5 pl-4 sm:p-4 sm:pl-5`}
           >
-            {/* Side accent bar */}
             <span
               aria-hidden="true"
               className="absolute inset-y-3 left-0 w-[3px] rounded-r-md"
@@ -378,7 +392,10 @@ function DashboardOverview({
 
             <p
               className="mt-3 inline-block max-w-full break-words rounded-[10px] px-2.5 py-1 text-[18px] font-black leading-tight sm:mt-4 sm:text-[22px]"
-              style={{ color: item.color, backgroundColor: item.tint }}
+              style={{
+                color: item.color,
+                backgroundColor: item.tint,
+              }}
             >
               {item.value}
             </p>
@@ -390,33 +407,54 @@ function DashboardOverview({
 }
 
 // --------------------------------------------------
-// Coin card
+// Coin value API fields
 // --------------------------------------------------
+
+type IgniteCoinValues = {
+  yellow_value_usd?: number | string | null;
+  yellow_value_inr?: number | string | null;
+
+  green_value_usd?: number | string | null;
+  green_value_inr?: number | string | null;
+
+  blue_value_usd?: number | string | null;
+  blue_value_inr?: number | string | null;
+};
 
 function CoinCard({
   color,
   value,
+  valueUsd,
+  valueInr,
   label,
 }: {
   color: "yellow" | "green" | "blue";
   value: string | number;
+  valueUsd?: number | string | null;
+  valueInr?: number | string | null;
   label: string;
 }) {
   const styles = {
     yellow: {
-      circle: "bg-[#f8f1e4]",
-      bg: "from-[#fffaf0]",
-      coin: BRASS,
+      circle: "bg-[#FEF9C3]",
+      background: "from-[#fffef0]",
+      coin: "#EAB308",
+      text: "#A16207",
+      border: "border-[#FDE68A]",
     },
     green: {
-      circle: "bg-[#eaf7f0]",
-      bg: "from-[#f4fbf7]",
-      coin: EMERALD,
+      circle: "bg-[#DCFCE7]",
+      background: "from-[#f1fcf5]",
+      coin: "#16A34A",
+      text: "#15803D",
+      border: "border-[#BBF7D0]",
     },
     blue: {
-      circle: "bg-[#eceffb]",
-      bg: "from-[#f5f7fd]",
-      coin: INDIGO,
+      circle: "bg-[#DBEAFE]",
+      background: "from-[#f1f7ff]",
+      coin: "#2563EB",
+      text: "#1D4ED8",
+      border: "border-[#BFDBFE]",
     },
   };
 
@@ -424,64 +462,103 @@ function CoinCard({
 
   return (
     <div
-      className={`flex min-h-[104px] min-w-0 flex-1 flex-col items-center justify-center rounded-[14px] border border-[#e7e9ee] bg-gradient-to-b ${style.bg} to-white px-1.5 py-3 sm:min-h-[116px] sm:px-3 ${CARD_HOVER}`}
+      className={`flex min-h-[130px] min-w-0 flex-1 flex-col items-center justify-center rounded-[12px] border ${style.border} bg-gradient-to-b ${style.background} to-white px-1.5 py-2 transition-colors duration-200 hover:border-[#d1d5df] sm:min-h-[140px] sm:px-2`}
     >
+      {/* Coin Icon */}
       <div
-        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${style.circle} sm:h-10 sm:w-10`}
+        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${style.circle} sm:h-9 sm:w-9`}
       >
         <div
-          className="h-4 w-5 rounded-full ring-2 ring-white sm:h-[18px] sm:w-[22px]"
+          className="h-[14px] w-[18px] rounded-full ring-2 ring-white sm:h-4 sm:w-5"
           style={{ backgroundColor: style.coin }}
         />
       </div>
 
-      <p className="mt-2 text-center text-[18px] font-black leading-tight text-[#101828] sm:text-[22px]">
+      {/* Balance */}
+      <p className="mt-1 text-center text-[17px] font-black leading-tight text-[#101828] sm:text-[19px]">
         {formatNumber(value)}
       </p>
 
-      <p className="mt-1 break-words text-center text-[10px] font-semibold leading-4 text-[#667085] sm:text-[12px]">
+      {/* Label */}
+      <p
+        className="mt-0.5 break-words text-center text-[10px] font-bold leading-3 sm:text-[11px]"
+        style={{ color: style.text }}
+      >
         {label}
       </p>
+
+      {/* Values */}
+      <div className="mt-2 w-full space-y-1 border-t border-[#e9edf2] pt-1.5">
+        <div className="flex items-center justify-between gap-1">
+          <span className="text-[9px] font-semibold text-[#8a92a6] sm:text-[10px]">
+            USD
+          </span>
+          <span className="break-all text-right text-[10px] font-extrabold text-[#344054] sm:text-[11px]">
+            {formatCurrency(valueUsd, "USD")}
+          </span>
+        </div>
+
+        <div className="flex items-center justify-between gap-1">
+          <span className="text-[9px] font-semibold text-[#8a92a6] sm:text-[10px]">
+            INR
+          </span>
+          <span className="break-all text-right text-[10px] font-extrabold text-[#344054] sm:text-[11px]">
+            {formatCurrency(valueInr, "INR")}
+          </span>
+        </div>
+      </div>
     </div>
   );
 }
-
-// --------------------------------------------------
-// Coins section
-// --------------------------------------------------
 
 function CoinsSection({
   ignite,
 }: {
   ignite?: IgniteDashboard | null;
 }) {
-  return (
-    <section className={`${CARD} p-4 sm:p-5`}>
-      <SectionTitle>My coins</SectionTitle>
+  const coinValues = ignite as
+    | (IgniteDashboard & IgniteCoinValues)
+    | null
+    | undefined;
 
-      <div className="mt-4 grid grid-cols-3 gap-2.5 sm:gap-3">
+  return (
+    <section className={`${CARD} p-3 sm:p-4`}>
+      <div className="flex items-center justify-between gap-2">
+        <SectionTitle>My coins</SectionTitle>
+
+        <span className="rounded-full border border-[#e7e9ee] bg-[#fafbfc] px-2 py-0.5 text-[9px] font-bold text-[#667085] sm:text-[10px]">
+          Coin balance
+        </span>
+      </div>
+
+      <div className="mt-3 grid grid-cols-3 gap-2 sm:gap-2.5">
         <CoinCard
           color="yellow"
-          value={ignite?.yellow_bal ?? "0"}
+          value={coinValues?.yellow_bal ?? 0}
+          valueUsd={coinValues?.yellow_value_usd ?? 0}
+          valueInr={coinValues?.yellow_value_inr ?? 0}
           label="Yellow coin"
         />
 
         <CoinCard
           color="green"
-          value={ignite?.green_bal ?? "0"}
+          value={coinValues?.green_bal ?? 0}
+          valueUsd={coinValues?.green_value_usd ?? 0}
+          valueInr={coinValues?.green_value_inr ?? 0}
           label="Green coin"
         />
 
         <CoinCard
           color="blue"
-          value={ignite?.blue_bal ?? "0"}
+          value={coinValues?.blue_bal ?? 0}
+          valueUsd={coinValues?.blue_value_usd ?? 0}
+          valueInr={coinValues?.blue_value_inr ?? 0}
           label="Blue coin"
         />
       </div>
     </section>
   );
 }
-
 // --------------------------------------------------
 // Account summary
 // --------------------------------------------------
@@ -545,14 +622,19 @@ function AccountSummary({
         ))}
       </div>
 
-      {/* CV balance bar */}
       <div className="mt-5">
         <div className="flex items-center justify-between gap-2 text-[11px] font-semibold sm:text-[12px]">
-          <span className="min-w-0 break-words" style={{ color: EMERALD }}>
+          <span
+            className="min-w-0 break-words"
+            style={{ color: EMERALD }}
+          >
             Left CV · {formatNumber(left)}
           </span>
 
-          <span className="min-w-0 break-words text-right" style={{ color: BRASS }}>
+          <span
+            className="min-w-0 break-words text-right"
+            style={{ color: BRASS }}
+          >
             Right CV · {formatNumber(right)}
           </span>
         </div>
@@ -560,7 +642,10 @@ function AccountSummary({
         <div className="mt-2 flex h-2 w-full overflow-hidden rounded-full bg-[#f0f2f5]">
           <div
             className="h-full transition-all duration-700 motion-reduce:transition-none"
-            style={{ width: `${leftPct}%`, backgroundColor: EMERALD }}
+            style={{
+              width: `${leftPct}%`,
+              backgroundColor: EMERALD,
+            }}
           />
 
           <div
@@ -576,14 +661,16 @@ function AccountSummary({
         </span>
 
         <span
-          className={`inline-flex max-w-full items-center gap-1.5 break-words rounded-full px-3 py-1 text-[11px] font-bold ${isActive
+          className={`inline-flex max-w-full items-center gap-1.5 break-words rounded-full px-3 py-1 text-[11px] font-bold ${
+            isActive
               ? "bg-[#eaf7f0] text-[#1f9d6b]"
               : "bg-[#f2f4f7] text-[#667085]"
-            }`}
+          }`}
         >
           <span
-            className={`h-1.5 w-1.5 rounded-full ${isActive ? "bg-[#1f9d6b]" : "bg-[#98a2b3]"
-              }`}
+            className={`h-1.5 w-1.5 rounded-full ${
+              isActive ? "bg-[#1f9d6b]" : "bg-[#98a2b3]"
+            }`}
           />
 
           {formatStatus(ignite?.membership_status)}
@@ -714,12 +801,14 @@ function AccountTable({
               </span>
 
               <span
-                className={`flex min-w-0 items-center gap-1 text-[10px] font-semibold sm:gap-2 sm:text-[12px] ${isActive ? "text-[#1f9d6b]" : "text-[#667085]"
-                  }`}
+                className={`flex min-w-0 items-center gap-1 text-[10px] font-semibold sm:gap-2 sm:text-[12px] ${
+                  isActive ? "text-[#1f9d6b]" : "text-[#667085]"
+                }`}
               >
                 <span
-                  className={`h-1.5 w-1.5 shrink-0 rounded-full ${isActive ? "bg-[#1f9d6b]" : "bg-[#98a2b3]"
-                    }`}
+                  className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                    isActive ? "bg-[#1f9d6b]" : "bg-[#98a2b3]"
+                  }`}
                 />
 
                 <span className="min-w-0 break-words">
@@ -730,10 +819,11 @@ function AccountTable({
               <span className="flex w-6 items-center justify-center text-[#8a92a6]">
                 <ChevronDown
                   size={16}
-                  className={`transition-transform duration-300 motion-reduce:transition-none ${expanded
+                  className={`transition-transform duration-300 motion-reduce:transition-none ${
+                    expanded
                       ? "rotate-180 text-[#0E1B3D]"
                       : "group-hover:text-[#0E1B3D]"
-                    }`}
+                  }`}
                 />
               </span>
             </button>
@@ -822,24 +912,27 @@ function RecentActivity({
 
       {activity.length > 0 ? (
         <div
-          className={`thin-scroll mt-3 ${hasOverflow ? "overflow-y-auto pr-1" : ""
-            }`}
+          className={`thin-scroll mt-3 ${
+            hasOverflow ? "overflow-y-auto pr-1" : ""
+          }`}
           style={
             hasOverflow
               ? {
-                maxHeight: `${MAX_VISIBLE_ACTIVITY * ACTIVITY_ITEM_HEIGHT
+                  maxHeight: `${
+                    MAX_VISIBLE_ACTIVITY * ACTIVITY_ITEM_HEIGHT
                   }px`,
-              }
+                }
               : undefined
           }
         >
           {activity.map((item, index) => (
             <div
               key={`${item.type}-${item.created_timestamp}-${index}`}
-              className={`flex min-w-0 gap-3 py-3 ${index !== activity.length - 1
+              className={`flex min-w-0 gap-3 py-3 ${
+                index !== activity.length - 1
                   ? "border-b border-[#f0f2f5]"
                   : ""
-                }`}
+              }`}
             >
               <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] bg-[#EAF3FF] text-[#3955A6]">
                 <Activity size={15} />
@@ -921,32 +1014,47 @@ function LatestOrderSection({
             </p>
           </div>
 
-          <div className="flex min-w-0 flex-wrap items-end justify-between gap-3">
-            {order.total_amount !== undefined && (
-              <div className="min-w-0">
-                <p className="text-[11px] font-semibold text-[#8a92a6]">
-                  Order amount
-                </p>
+          {(() => {
+            const orderData = order as DashboardLatestOrder & {
+              total_payable?: number | string;
+              order_date?: string;
+            };
 
-                <p className="mt-1 break-words text-[22px] font-black leading-none text-[#101828]">
-                  ₹{formatNumber(order.total_amount)}
-                </p>
-              </div>
-            )}
+            const amount =
+              order.total_amount ?? orderData.total_payable;
 
-            {order.status && (
-              <span className="inline-flex max-w-full items-center gap-1.5 break-words rounded-full bg-[#eaf7f0] px-3 py-1 text-[11px] font-bold text-[#1f9d6b]">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#1f9d6b]" />
-                {formatStatus(order.status)}
-              </span>
-            )}
-          </div>
+            return (
+              <>
+                <div className="flex min-w-0 flex-wrap items-end justify-between gap-3">
+                  {amount !== undefined && (
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-semibold text-[#8a92a6]">
+                        Order amount
+                      </p>
 
-          {order.created_at && (
-            <p className="break-words border-t border-[#f0f2f5] pt-3 text-[11px] text-[#8a92a6]">
-              {order.created_at}
-            </p>
-          )}
+                      <p className="mt-1 break-words text-[22px] font-black leading-none text-[#101828]">
+                        ₹{formatNumber(amount)}
+                      </p>
+                    </div>
+                  )}
+
+                  {order.status && (
+                    <span className="inline-flex max-w-full items-center gap-1.5 break-words rounded-full bg-[#eaf7f0] px-3 py-1 text-[11px] font-bold text-[#1f9d6b]">
+                      <span className="h-1.5 w-1.5 rounded-full bg-[#1f9d6b]" />
+
+                      {formatStatus(order.status)}
+                    </span>
+                  )}
+                </div>
+
+                {(order.created_at || orderData.order_date) && (
+                  <p className="break-words border-t border-[#f0f2f5] pt-3 text-[11px] text-[#8a92a6]">
+                    {order.created_at || orderData.order_date}
+                  </p>
+                )}
+              </>
+            );
+          })()}
         </div>
       ) : (
         <div className="mt-4 rounded-[14px] bg-[#f7f8fa] px-3 py-7 text-center sm:px-4">
@@ -1014,7 +1122,7 @@ function parseCalendarDate(value?: string | null): Date | null {
   const date = new Date(
     Number(match[1]),
     Number(match[2]) - 1,
-    Number(match[3]),
+    Number(match[3])
   );
 
   return Number.isNaN(date.getTime()) ? null : date;
@@ -1039,7 +1147,7 @@ function formatDateObject(date: Date): string {
 
 function getCalendarYear(calendar?: SalesCalendar): number {
   const calendarYear = Number(
-    calendar?.current_week?.year ?? calendar?.year,
+    calendar?.current_week?.year ?? calendar?.year
   );
 
   return Number.isFinite(calendarYear) && calendarYear > 0
@@ -1049,41 +1157,58 @@ function getCalendarYear(calendar?: SalesCalendar): number {
 
 function getCurrentCalendarWeek(calendar?: SalesCalendar): number {
   const weekNo = Number(calendar?.current_week?.week_no);
+
   return Number.isFinite(weekNo) && weekNo > 0 ? weekNo : 1;
 }
 
 /**
- * The sales calendar uses Saturday-to-Friday settlement weeks. For the
- * selected API calendar year, use its current week as the anchor. For older
- * years, derive the Saturday-to-Friday weeks from the first Saturday of that
- * year so that the Week selector remains usable.
+ * The sales calendar uses Saturday-to-Friday settlement weeks.
  */
 function buildCvWeekOptions(
   year: number,
-  calendar?: SalesCalendar,
-): Array<{ value: number; label: string; description: string }> {
+  calendar?: SalesCalendar
+): Array<{
+  value: number;
+  label: string;
+  description: string;
+}> {
   const calendarYear = getCalendarYear(calendar);
   const apiWeekNo = getCurrentCalendarWeek(calendar);
-  const apiWeekStart = parseCalendarDate(calendar?.current_week?.start);
+  const apiWeekStart = parseCalendarDate(
+    calendar?.current_week?.start
+  );
 
   let firstWeekStart: Date;
 
   if (year === calendarYear && apiWeekStart) {
     firstWeekStart = new Date(apiWeekStart);
+
     firstWeekStart.setDate(
-      firstWeekStart.getDate() - (apiWeekNo - 1) * 7,
+      firstWeekStart.getDate() - (apiWeekNo - 1) * 7
     );
   } else {
     firstWeekStart = new Date(year, 0, 1);
-    const daysUntilSaturday = (6 - firstWeekStart.getDay() + 7) % 7;
-    firstWeekStart.setDate(firstWeekStart.getDate() + daysUntilSaturday);
+
+    const daysUntilSaturday =
+      (6 - firstWeekStart.getDay() + 7) % 7;
+
+    firstWeekStart.setDate(
+      firstWeekStart.getDate() + daysUntilSaturday
+    );
   }
 
-  const options: Array<{ value: number; label: string; description: string }> = [];
+  const options: Array<{
+    value: number;
+    label: string;
+    description: string;
+  }> = [];
 
   for (let weekNo = 1; weekNo <= 53; weekNo += 1) {
     const startDate = new Date(firstWeekStart);
-    startDate.setDate(startDate.getDate() + (weekNo - 1) * 7);
+
+    startDate.setDate(
+      startDate.getDate() + (weekNo - 1) * 7
+    );
 
     if (startDate.getFullYear() !== year) break;
 
@@ -1091,16 +1216,22 @@ function buildCvWeekOptions(
     endDate.setDate(endDate.getDate() + 6);
 
     const isApiCurrentWeek =
-      year === calendarYear && weekNo === apiWeekNo && apiWeekStart;
+      year === calendarYear &&
+      weekNo === apiWeekNo &&
+      Boolean(apiWeekStart);
+
     const apiEndDate = isApiCurrentWeek
       ? parseCalendarDate(calendar?.current_week?.end)
       : null;
+
     const finalEndDate = apiEndDate || endDate;
 
     options.push({
       value: weekNo,
       label: `Week ${weekNo}`,
-      description: `${formatDateObject(startDate)} – ${formatDateObject(finalEndDate)} ${year}`,
+      description: `${formatDateObject(startDate)} – ${formatDateObject(
+        finalEndDate
+      )} ${year}`,
     });
   }
 
@@ -1109,13 +1240,20 @@ function buildCvWeekOptions(
 
 function getCvYearOptions(calendar?: SalesCalendar): number[] {
   const currentYear = getCalendarYear(calendar);
-  return Array.from({ length: 6 }, (_, index) => currentYear - index);
+
+  return Array.from(
+    { length: 6 },
+    (_, index) => currentYear - index
+  );
 }
 
-function getPairingsMetrics(response: any): Record<string, any> | null {
+function getPairingsMetrics(
+  response: any
+): Record<string, any> | null {
   if (!response) return null;
 
   const root = response?.data ?? response;
+
   const candidates = [
     root?.ignite,
     root?.cv_counter,
@@ -1146,23 +1284,36 @@ function getPairingsMetrics(response: any): Record<string, any> | null {
     ) {
       const normalized = { ...candidate };
 
-      if (normalized.cv_left === undefined && normalized.left_cv !== undefined) {
+      if (
+        normalized.cv_left === undefined &&
+        normalized.left_cv !== undefined
+      ) {
         normalized.cv_left = normalized.left_cv;
       }
-      if (normalized.cv_right === undefined && normalized.right_cv !== undefined) {
+
+      if (
+        normalized.cv_right === undefined &&
+        normalized.right_cv !== undefined
+      ) {
         normalized.cv_right = normalized.right_cv;
       }
+
       if (
         normalized.total_cv_left === undefined &&
-        (normalized.left_total_cv !== undefined || normalized.left_cv !== undefined)
+        (normalized.left_total_cv !== undefined ||
+          normalized.left_cv !== undefined)
       ) {
-        normalized.total_cv_left = normalized.left_total_cv ?? normalized.left_cv;
+        normalized.total_cv_left =
+          normalized.left_total_cv ?? normalized.left_cv;
       }
+
       if (
         normalized.total_cv_right === undefined &&
-        (normalized.right_total_cv !== undefined || normalized.right_cv !== undefined)
+        (normalized.right_total_cv !== undefined ||
+          normalized.right_cv !== undefined)
       ) {
-        normalized.total_cv_right = normalized.right_total_cv ?? normalized.right_cv;
+        normalized.total_cv_right =
+          normalized.right_total_cv ?? normalized.right_cv;
       }
 
       return normalized;
@@ -1191,11 +1342,11 @@ type SearchableDropdownProps<T extends string | number> = {
   featuredLabel?: string;
 };
 
-/**
- * Compact custom dropdown with a built-in search field. The menu closes when
- * the user clicks outside it or presses Escape, and works on touch screens.
- */
-function SearchableDropdown<T extends string | number,>({
+// --------------------------------------------------
+// Searchable dropdown
+// --------------------------------------------------
+
+function SearchableDropdown<T extends string | number>({
   id,
   label,
   options,
@@ -1209,6 +1360,7 @@ function SearchableDropdown<T extends string | number,>({
 }: SearchableDropdownProps<T>) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+
   const rootRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -1232,25 +1384,37 @@ function SearchableDropdown<T extends string | number,>({
     document.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      document.removeEventListener("pointerdown", handlePointerDown);
-      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener(
+        "pointerdown",
+        handlePointerDown
+      );
+
+      document.removeEventListener(
+        "keydown",
+        handleKeyDown
+      );
     };
   }, [open]);
 
-  const selectedOption = options.find((option) => option.value === value);
+  const selectedOption = options.find(
+    (option) => option.value === value
+  );
+
   const normalizedQuery = query.trim().toLowerCase();
+
   const matchesQuery = (option: DropdownOption<T>) =>
     `${option.label} ${option.description ?? ""}`
       .toLowerCase()
       .includes(normalizedQuery);
 
   const showFeaturedOption = Boolean(
-    featuredOption && matchesQuery(featuredOption),
+    featuredOption && matchesQuery(featuredOption)
   );
+
   const filteredOptions = options.filter(
     (option) =>
       matchesQuery(option) &&
-      !(featuredOption && option.value === featuredOption.value),
+      !(featuredOption && option.value === featuredOption.value)
   );
 
   const chooseOption = (option: DropdownOption<T>) => {
@@ -1272,7 +1436,9 @@ function SearchableDropdown<T extends string | number,>({
       <button
         id={`${id}-trigger`}
         type="button"
-        aria-label={`${label}: ${selectedOption?.label ?? "Select an option"}`}
+        aria-label={`${label}: ${
+          selectedOption?.label ?? "Select an option"
+        }`}
         aria-labelledby={`${id}-label ${id}-value`}
         aria-haspopup="listbox"
         aria-expanded={open}
@@ -1288,6 +1454,7 @@ function SearchableDropdown<T extends string | number,>({
           >
             {selectedOption?.label ?? "Select an option"}
           </span>
+
           {selectedOption?.description && (
             <span className="truncate text-[10px] leading-4 text-[#8a92a6] sm:text-[11px]">
               {selectedOption.description}
@@ -1314,7 +1481,11 @@ function SearchableDropdown<T extends string | number,>({
           >
             <div className="border-b border-[#eef1f5] p-3">
               <div className="flex h-10 items-center gap-2.5 rounded-[11px] border border-[#e6eaf0] bg-[#f8fafc] px-3 transition-colors focus-within:border-[#3955A6] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#3955A6]/10">
-                <Search size={15} className="shrink-0 text-[#8a92a6]" />
+                <Search
+                  size={15}
+                  className="shrink-0 text-[#8a92a6]"
+                />
+
                 <input
                   type="search"
                   value={query}
@@ -1324,6 +1495,7 @@ function SearchableDropdown<T extends string | number,>({
                   autoComplete="off"
                   className="h-full min-w-0 flex-1 bg-transparent text-[12px] font-medium text-[#101828] outline-none placeholder:text-[#98a2b3]"
                 />
+
                 {query && (
                   <button
                     type="button"
@@ -1335,8 +1507,11 @@ function SearchableDropdown<T extends string | number,>({
                   </button>
                 )}
               </div>
+
               <p className="mt-2 px-1 text-[10px] font-semibold uppercase tracking-[0.09em] text-[#98a2b3]">
-                {filteredOptions.length + (showFeaturedOption ? 1 : 0)} options
+                {filteredOptions.length +
+                  (showFeaturedOption ? 1 : 0)}{" "}
+                options
               </p>
             </div>
 
@@ -1351,6 +1526,7 @@ function SearchableDropdown<T extends string | number,>({
                   <p className="px-2 pb-1.5 pt-1 text-[9px] font-black tracking-[0.12em] text-[#1f9d6b]">
                     {featuredLabel}
                   </p>
+
                   <button
                     type="button"
                     role="option"
@@ -1365,18 +1541,24 @@ function SearchableDropdown<T extends string | number,>({
                     <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] bg-white text-[#1f9d6b] ring-1 ring-[#d9eee2]">
                       <CalendarDays size={15} />
                     </span>
+
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-[12px] font-extrabold text-[#101828]">
                         {featuredOption.label}
                       </span>
+
                       {featuredOption.description && (
                         <span className="mt-0.5 block truncate text-[10px] text-[#667085]">
                           {featuredOption.description}
                         </span>
                       )}
                     </span>
+
                     {featuredOption.value === value && (
-                      <Check size={15} className="shrink-0 text-[#1f9d6b]" />
+                      <Check
+                        size={15}
+                        className="shrink-0 text-[#1f9d6b]"
+                      />
                     )}
                   </button>
                 </div>
@@ -1404,14 +1586,19 @@ function SearchableDropdown<T extends string | number,>({
                           <span className="block truncate text-[12px] font-bold">
                             {option.label}
                           </span>
+
                           {option.description && (
                             <span className="mt-0.5 block truncate text-[10px] text-[#8a92a6]">
                               {option.description}
                             </span>
                           )}
                         </span>
+
                         {isSelected && (
-                          <Check size={15} className="shrink-0 text-[#3955A6]" />
+                          <Check
+                            size={15}
+                            className="shrink-0 text-[#3955A6]"
+                          />
                         )}
                       </button>
                     );
@@ -1422,9 +1609,11 @@ function SearchableDropdown<T extends string | number,>({
                   <span className="mx-auto flex h-9 w-9 items-center justify-center rounded-full bg-[#f2f4f7] text-[#8a92a6]">
                     <Search size={15} />
                   </span>
+
                   <p className="mt-2 text-[11px] font-bold text-[#475467]">
                     No results found
                   </p>
+
                   <p className="mt-1 text-[10px] text-[#98a2b3]">
                     {emptyMessage}
                   </p>
@@ -1437,6 +1626,10 @@ function SearchableDropdown<T extends string | number,>({
     </div>
   );
 }
+
+// --------------------------------------------------
+// CV filters
+// --------------------------------------------------
 
 function CvFilters({
   calendar,
@@ -1467,24 +1660,46 @@ function CvFilters({
     value: year,
     label: String(year),
   }));
-  const weekOptions = buildCvWeekOptions(selectedYear, calendar);
-  const selectedWeekOption = weekOptions.find(
-    (option) => option.value === selectedWeek,
+
+  const weekOptions = buildCvWeekOptions(
+    selectedYear,
+    calendar
   );
+
+  const selectedWeekOption = weekOptions.find(
+    (option) => option.value === selectedWeek
+  );
+
   const calendarYear = getCalendarYear(calendar);
   const currentWeekNo = getCurrentCalendarWeek(calendar);
+
   const featuredWeekOption =
     selectedYear === calendarYear
-      ? weekOptions.find((option) => option.value === currentWeekNo)
+      ? weekOptions.find(
+          (option) => option.value === currentWeekNo
+        )
       : undefined;
+
   const currentWeek = calendar?.current_week;
   const currentMonth = calendar?.current_month;
-  const currentWeekLabel = currentWeek?.start && currentWeek?.end
-    ? `Week ${currentWeek.week_no ?? "—"}: ${formatCalendarDate(currentWeek.start)} – ${formatCalendarDate(currentWeek.end)} ${currentWeek.year ?? calendar?.year ?? ""}`.trim()
-    : "Sales calendar from dashboard";
-  const currentMonthLabel = currentMonth?.start && currentMonth?.end
-    ? `${formatCalendarDate(currentMonth.start)} – ${formatCalendarDate(currentMonth.end)} ${currentMonth.year ?? calendar?.year ?? ""}`.trim()
-    : currentMonth?.label || "—";
+
+  const currentWeekLabel =
+    currentWeek?.start && currentWeek?.end
+      ? `Week ${currentWeek.week_no ?? "—"}: ${formatCalendarDate(
+          currentWeek.start
+        )} – ${formatCalendarDate(currentWeek.end)} ${
+          currentWeek.year ?? calendar?.year ?? ""
+        }`.trim()
+      : "Sales calendar from dashboard";
+
+  const currentMonthLabel =
+    currentMonth?.start && currentMonth?.end
+      ? `${formatCalendarDate(
+          currentMonth.start
+        )} – ${formatCalendarDate(currentMonth.end)} ${
+          currentMonth.year ?? calendar?.year ?? ""
+        }`.trim()
+      : currentMonth?.label || "—";
 
   return (
     <div className={`${CARD} mt-4 p-4 sm:p-5`}>
@@ -1493,16 +1708,21 @@ function CvFilters({
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#EAF3FF] text-[#3955A6]">
             <CalendarDays size={18} />
           </span>
+
           <div className="min-w-0">
             <h3 className="text-[13px] font-black text-[#101828] sm:text-[14px]">
               Sales calendar
             </h3>
+
             <p className="mt-1 break-words text-[11px] leading-4 text-[#667085] sm:text-[12px]">
               Current week: {currentWeekLabel}
             </p>
+
             <p className="mt-0.5 break-words text-[10px] leading-4 text-[#98a2b3] sm:text-[11px]">
               Current month: {currentMonthLabel}
-              {currentMonth?.label ? ` · ${currentMonth.label}` : ""}
+              {currentMonth?.label
+                ? ` · ${currentMonth.label}`
+                : ""}
             </p>
           </div>
         </div>
@@ -1517,10 +1737,15 @@ function CvFilters({
           >
             <span
               className={`h-1.5 w-1.5 rounded-full ${
-                currentWeek.is_settled ? "bg-[#1f9d6b]" : "bg-[#f79009]"
+                currentWeek.is_settled
+                  ? "bg-[#1f9d6b]"
+                  : "bg-[#f79009]"
               }`}
             />
-            {currentWeek.is_settled ? "Settled" : "Pending settlement"}
+
+            {currentWeek.is_settled
+              ? "Settled"
+              : "Pending settlement"}
           </span>
         )}
       </div>
@@ -1561,6 +1786,7 @@ function CvFilters({
           ) : (
             <Search size={15} />
           )}
+
           {isFetching ? "Searching..." : "Search"}
         </button>
       </div>
@@ -1571,33 +1797,43 @@ function CvFilters({
             <CalendarDays size={12} />
             Selected period
           </span>
+
           <span className="font-semibold text-[#667085]">
-            {selectedWeekOption.label} · {selectedWeekOption.description}
+            {selectedWeekOption.label} ·{" "}
+            {selectedWeekOption.description}
           </span>
         </div>
       )}
 
-      {hasSearched && searchedYear !== undefined && searchedWeek !== undefined && (
-        <div
-          role={isError ? "alert" : "status"}
-          className={`mt-4 flex min-w-0 items-start gap-2 rounded-[11px] px-3 py-2.5 text-[11px] leading-5 sm:text-[12px] ${
-            isError
-              ? "border border-[#f2c6c3] bg-[#fff4f3] text-[#b42318]"
-              : isFetching
-                ? "border border-[#dbe6fb] bg-[#f4f8ff] text-[#3955A6]"
-                : "border border-[#ccebdc] bg-[#f1fbf5] text-[#18794e]"
-          }`}
-        >
-          {isFetching && <Loader2 size={14} className="mt-0.5 shrink-0 animate-spin" />}
-          <span className="min-w-0 break-words">
-            {isError
-              ? `Unable to load CV data for Year ${searchedYear}, Week ${searchedWeek}. Click Search to try again.`
-              : isFetching
-                ? `Loading CV data for Year ${searchedYear}, Week ${searchedWeek}...`
-                : `CV search completed for Year ${searchedYear}, Week ${searchedWeek}.`}
-          </span>
-        </div>
-      )}
+      {hasSearched &&
+        searchedYear !== undefined &&
+        searchedWeek !== undefined && (
+          <div
+            role={isError ? "alert" : "status"}
+            className={`mt-4 flex min-w-0 items-start gap-2 rounded-[11px] px-3 py-2.5 text-[11px] leading-5 sm:text-[12px] ${
+              isError
+                ? "border border-[#f2c6c3] bg-[#fff4f3] text-[#b42318]"
+                : isFetching
+                  ? "border border-[#dbe6fb] bg-[#f4f8ff] text-[#3955A6]"
+                  : "border border-[#ccebdc] bg-[#f1fbf5] text-[#18794e]"
+            }`}
+          >
+            {isFetching && (
+              <Loader2
+                size={14}
+                className="mt-0.5 shrink-0 animate-spin"
+              />
+            )}
+
+            <span className="min-w-0 break-words">
+              {isError
+                ? `Unable to load CV data for Year ${searchedYear}, Week ${searchedWeek}. Click Search to try again.`
+                : isFetching
+                  ? `Loading CV data for Year ${searchedYear}, Week ${searchedWeek}...`
+                  : `CV search completed for Year ${searchedYear}, Week ${searchedWeek}.`}
+            </span>
+          </div>
+        )}
     </div>
   );
 }
@@ -1615,10 +1851,13 @@ export default function DistributorDashboardPage() {
   >("checking");
 
   const [mounted, setMounted] = useState(false);
+
   const [selectedCvYear, setSelectedCvYear] = useState<number>(
-    new Date().getFullYear(),
+    new Date().getFullYear()
   );
+
   const [selectedCvWeek, setSelectedCvWeek] = useState<number>(1);
+
   const [submittedCvFilters, setSubmittedCvFilters] =
     useState<CvSearchFilters | null>(null);
 
@@ -1642,9 +1881,11 @@ export default function DistributorDashboardPage() {
 
     const authToken = localStorage.getItem("auth_token");
 
-    const rawUserType = localStorage.getItem("user_type") || "";
+    const rawUserType =
+      localStorage.getItem("user_type") || "";
 
-    const isLoggedIn = localStorage.getItem("is_logged_in");
+    const isLoggedIn =
+      localStorage.getItem("is_logged_in");
 
     const userType = rawUserType.trim().toLowerCase();
 
@@ -1690,37 +1931,45 @@ export default function DistributorDashboardPage() {
   const activity: DashboardActivity[] =
     dashboard?.recent_activity ?? [];
 
-  // sales_calendar is returned by the dashboard endpoint. Keep this local type
-  // so the component also works if the generated API interface has not yet
-  // been updated with the sales_calendar property.
   const salesCalendar = (dashboard as any)?.sales_calendar as
     | SalesCalendar
     | undefined;
+
   const calendarYear = getCalendarYear(salesCalendar);
   const calendarWeek = getCurrentCalendarWeek(salesCalendar);
-  const calendarWeekStart = salesCalendar?.current_week?.start ?? "";
+
+  const calendarWeekStart =
+    salesCalendar?.current_week?.start ?? "";
+
   const hasSalesCalendar = Boolean(salesCalendar);
 
   useEffect(() => {
     if (!hasSalesCalendar) return;
+
     setSelectedCvYear(calendarYear);
     setSelectedCvWeek(calendarWeek);
-  }, [calendarYear, calendarWeek, calendarWeekStart, hasSalesCalendar]);
+  }, [
+    calendarYear,
+    calendarWeek,
+    calendarWeekStart,
+    hasSalesCalendar,
+  ]);
 
-  // The query is deliberately skipped until Search is clicked. The API hook
-  // is cast here because the pairings endpoint's generated argument interface
-  // may differ between app versions; the request carries year + week_no.
+  // --------------------------------------------------
+  // Pairings API
+  // --------------------------------------------------
+
   const pairingsQuery = useGetPairingsQuery(
     (submittedCvFilters
       ? {
-        year: submittedCvFilters.year,
-        week_no: submittedCvFilters.week_no,
-      }
+          year: submittedCvFilters.year,
+          week_no: submittedCvFilters.week_no,
+        }
       : undefined) as any,
     {
       skip: !submittedCvFilters,
       refetchOnMountOrArgChange: true,
-    },
+    }
   ) as unknown as PairingsQueryResult;
 
   const handleCvSearch = () => {
@@ -1740,14 +1989,28 @@ export default function DistributorDashboardPage() {
     setSubmittedCvFilters(nextFilters);
   };
 
-  const periodIgniteMetrics = getPairingsMetrics(pairingsQuery.data);
+  const periodIgniteMetrics = getPairingsMetrics(
+    pairingsQuery.data
+  );
+
   const cvCounterIgnite = periodIgniteMetrics
-    ? ({ ...(ignite ?? {}), ...periodIgniteMetrics } as IgniteDashboard)
+    ? ({
+        ...(ignite ?? {}),
+        ...periodIgniteMetrics,
+      } as IgniteDashboard)
     : ignite;
+
+  // --------------------------------------------------
+  // Loading
+  // --------------------------------------------------
 
   if (!mounted || authStatus !== "authorized" || isLoading) {
     return <DashboardLoader />;
   }
+
+  // --------------------------------------------------
+  // Dashboard UI
+  // --------------------------------------------------
 
   return (
     <div
@@ -1765,19 +2028,22 @@ export default function DistributorDashboardPage() {
         <main className="thin-scroll min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain bg-[#f5f6fa] px-3 pb-8 pt-4 sm:px-3 sm:pb-10 sm:pt-4 lg:px-4">
           <div className="mx-auto w-full min-w-0 max-w-[1600px]">
             {/* Welcome hero */}
+
             <WelcomeHero
               user={user}
               distributorId={ignite?.ba_id || "N/A"}
             />
 
             {/* API error */}
+
             {isError && (
               <div
                 role="alert"
                 className="mt-5 flex min-w-0 flex-col items-start gap-3 rounded-[14px] border border-[#f2c6c3] bg-[#fff4f3] px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4"
               >
                 <p className="break-words text-[12px] font-semibold leading-5 text-[#b42318] sm:text-[13px]">
-                  Unable to load the dashboard data. Please try again.
+                  Unable to load the dashboard data. Please try
+                  again.
                 </p>
 
                 <button
@@ -1790,17 +2056,26 @@ export default function DistributorDashboardPage() {
               </div>
             )}
 
-            {/* Responsive top statistics */}
+            {/* Cash wallet, floating retail profit and direct referral */}
+
             <QuickStatsCards
               cashWallet={toNumber(ignite?.cash_bal)}
               floatingRetailProfit={0}
               directReferral={0}
             />
 
+            {/* My coins */}
+
+            <section className="mt-4 sm:mt-5">
+              <CoinsSection ignite={ignite} />
+            </section>
+
             {/* User overview statistics */}
+
             <DashboardOverview stats={stats} />
 
             {/* Latest order and recent activity */}
+
             <section className="mt-6 grid min-w-0 grid-cols-1 gap-4 sm:mt-7 sm:gap-5 xl:grid-cols-2">
               <LatestOrderSection
                 order={dashboard?.latest_order ?? null}
@@ -1810,8 +2085,11 @@ export default function DistributorDashboardPage() {
             </section>
 
             {/* CV counter */}
+
             <section className="mt-5 min-w-0 sm:mt-5">
-              <SectionTitle large>Sales calendar</SectionTitle>
+              <SectionTitle large>
+                Sales calendar
+              </SectionTitle>
 
               <CvFilters
                 calendar={salesCalendar}
@@ -1819,13 +2097,17 @@ export default function DistributorDashboardPage() {
                 selectedWeek={selectedCvWeek}
                 onYearChange={(year) => {
                   setSelectedCvYear(year);
+
                   setSelectedCvWeek(
-                    year === calendarYear ? calendarWeek : 1,
+                    year === calendarYear ? calendarWeek : 1
                   );
                 }}
                 onWeekChange={setSelectedCvWeek}
                 onSearch={handleCvSearch}
-                isFetching={Boolean(pairingsQuery.isFetching || pairingsQuery.isLoading)}
+                isFetching={Boolean(
+                  pairingsQuery.isFetching ||
+                    pairingsQuery.isLoading
+                )}
                 isError={Boolean(pairingsQuery.isError)}
                 hasSearched={Boolean(submittedCvFilters)}
                 searchedYear={submittedCvFilters?.year}
@@ -1833,17 +2115,14 @@ export default function DistributorDashboardPage() {
               />
 
               <div className="mt-4 grid min-w-0 grid-cols-1 gap-4 sm:mt-5 sm:gap-5 xl:grid-cols-2">
-                <div className="flex min-w-0 flex-col gap-4 sm:gap-5">
-                  <CoinsSection ignite={ignite} />
-
-                  <AccountSummary ignite={cvCounterIgnite} />
-                </div>
+                <AccountSummary ignite={cvCounterIgnite} />
 
                 <AccountTable ignite={cvCounterIgnite} />
               </div>
             </section>
 
             {/* Refresh indicator */}
+
             {isFetching && !isLoading && (
               <div className="mt-4 flex items-center justify-end gap-2 text-[11px] font-semibold text-[#667085]">
                 <Loader2 size={13} className="animate-spin" />

@@ -49,8 +49,8 @@ const staggerContainer: Variants = {
   hidden: {},
   visible: {
     transition: {
-      staggerChildren: 0.22, // was 0.09
-      delayChildren: 0.15, // extra breathing room before first card
+      staggerChildren: 0.18,
+      delayChildren: 0.12,
     },
   },
 };
@@ -64,20 +64,20 @@ const fadeInUp: Variants = {
     opacity: 1,
     y: 0,
     transition: {
-      duration: 1.05, // was 0.55
+      duration: 0.9,
       ease: "easeOut" as const,
     },
   },
 };
 
-// Cards right side se aakar settle honge (softer + slower spring)
+// Cards side se halka sa aakar settle hongi (subtle, no big zoom)
 const dealIn: Variants = {
   hidden: {
     opacity: 0,
-    x: 90,
-    y: 40,
-    rotateZ: 9,
-    scale: 0.92,
+    x: 60,
+    y: 25,
+    rotateZ: 4,
+    scale: 0.97,
   },
   visible: {
     opacity: 1,
@@ -87,15 +87,15 @@ const dealIn: Variants = {
     scale: 1,
     transition: {
       type: "spring",
-      stiffness: 55, // was 90 -> softer
-      damping: 18, // was 16 -> less bounce
-      mass: 1.15, // was 0.9 -> heavier/slower settle
+      stiffness: 70,
+      damping: 20,
+      mass: 1,
     },
   },
 };
 
 // ========================================
-// HELPERS
+// HELPERS  (subtle dock wave, no big zoom)
 // ========================================
 
 const getLift = (index: number, hovered: number | null) => {
@@ -103,9 +103,9 @@ const getLift = (index: number, hovered: number | null) => {
 
   const d = Math.abs(index - hovered);
 
-  if (d === 0) return { y: -26, scale: 1.04, z: 90 };
-  if (d === 1) return { y: -12, scale: 1.015, z: 40 };
-  if (d === 2) return { y: -4, scale: 1, z: 12 };
+  if (d === 0) return { y: -12, scale: 1.015, z: 40 };
+  if (d === 1) return { y: -6, scale: 1.005, z: 20 };
+  if (d === 2) return { y: -2, scale: 1, z: 6 };
 
   return { y: 0, scale: 1, z: 0 };
 };
@@ -143,31 +143,30 @@ function BrandCard({
     ? { y: 0, scale: 1, z: 0 }
     : getLift(index, hoveredIndex);
 
-  // ---------- 3D TILT ----------
+  // ---------- 3D TILT (very subtle) ----------
   const mx = useMotionValue(0.5);
   const my = useMotionValue(0.5);
 
-  // Softer + slower tilt spring
   const springCfg = {
-    stiffness: 90, // was 180
-    damping: 20, // was 18
-    mass: 0.9, // was 0.6
+    stiffness: 140,
+    damping: 22,
+    mass: 0.8,
   };
 
   const rotateY = useSpring(
-    useTransform(mx, [0, 1], [-13, 13]),
+    useTransform(mx, [0, 1], [-5, 5]),
     springCfg
   );
 
   const rotateX = useSpring(
-    useTransform(my, [0, 1], [11, -11]),
+    useTransform(my, [0, 1], [4, -4]),
     springCfg
   );
 
   const glareX = useTransform(mx, [0, 1], [0, 100]);
   const glareY = useTransform(my, [0, 1], [0, 100]);
 
-  const glare = useMotionTemplate`radial-gradient(circle at ${glareX}% ${glareY}%, rgba(255,255,255,0.42), rgba(255,255,255,0.08) 38%, transparent 62%)`;
+  const glare = useMotionTemplate`radial-gradient(circle at ${glareX}% ${glareY}%, rgba(255,255,255,0.28), rgba(255,255,255,0.05) 38%, transparent 62%)`;
 
   const handleMove = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (reduceMotion || !isInView) return;
@@ -211,14 +210,14 @@ function BrandCard({
           isInView
             ? {
                 opacity: isActive ? 0.16 : 0.26,
-                scaleX: isActive ? 0.8 : 1,
+                scaleX: isActive ? 0.88 : 1,
               }
             : {
                 opacity: 0.26,
                 scaleX: 1,
               }
         }
-        transition={{ duration: 0.8 }} // was 0.4
+        transition={{ duration: 0.6 }}
       />
 
       {/* LIFT / DOCK WAVE */}
@@ -230,9 +229,9 @@ function BrandCard({
         }
         transition={{
           type: "spring",
-          stiffness: 130, // was 230
-          damping: 22, // was 20
-          mass: 0.9, // added -> slower, smoother wave
+          stiffness: 150,
+          damping: 22,
+          mass: 0.85,
         }}
         style={{ transformStyle: "preserve-3d" }}
       >
@@ -240,14 +239,14 @@ function BrandCard({
         <motion.div
           animate={
             isInView && !reduceMotion
-              ? { y: [0, -7, 0] }
+              ? { y: [0, -5, 0] }
               : { y: 0 }
           }
           transition={
             isInView && !reduceMotion
               ? {
-                  duration: 6.5, // was 4.2 -> calmer idle float
-                  delay: (index % 6) * 0.6, // was 0.45
+                  duration: 5.5,
+                  delay: (index % 6) * 0.5,
                   repeat: Infinity,
                   ease: "easeInOut",
                 }
@@ -277,8 +276,9 @@ function BrandCard({
                 shadow-[0_10px_30px_rgba(60,40,10,0.14)]
                 ring-1 ring-[#b28b56]/20
                 transition-all duration-700
-                hover:shadow-[0_32px_60px_rgba(60,40,10,0.28)]
-                hover:ring-[#b28b56]/60
+                hover:-translate-y-1
+                hover:shadow-[0_26px_52px_rgba(60,40,10,0.24)]
+                hover:ring-[#b28b56]/50
               "
             >
               {/* IMAGE CONTAINER */}
@@ -302,8 +302,8 @@ function BrandCard({
                       absolute inset-0
                       h-full w-full
                       object-cover object-center
-                      transition-transform duration-[1600ms] ease-out
-                      group-hover:scale-[1.08]
+                      transition-transform duration-[1400ms] ease-out
+                      group-hover:scale-[1.03]
                     "
                   />
                 ) : (
@@ -334,7 +334,7 @@ function BrandCard({
                     className="
                       pointer-events-none absolute inset-0
                       opacity-0 mix-blend-soft-light
-                      transition-opacity duration-700
+                      transition-opacity duration-500
                       group-hover:opacity-100
                     "
                     style={{ background: glare }}
@@ -347,9 +347,9 @@ function BrandCard({
                   className="
                     pointer-events-none absolute inset-y-0 -left-1/2
                     w-1/3 -skew-x-12
-                    bg-gradient-to-r from-transparent via-white/30 to-transparent
+                    bg-gradient-to-r from-transparent via-white/25 to-transparent
                     opacity-0
-                    transition-all duration-[1600ms] ease-out
+                    transition-all duration-[1400ms] ease-out
                     group-hover:left-[130%] group-hover:opacity-100
                   "
                 />
@@ -376,11 +376,14 @@ export default function NewArrivalsSection({
   const scrollRef = useRef<HTMLDivElement>(null);
   const sectionRef = useRef<HTMLElement | null>(null);
 
-  // Section viewport mein aane par hi animation start hogi.
-  // Once true hone ke baad dobara initial animation nahi chalegi.
+  // Section viewport mein aate hi animation start hogi.
+  // Scroll direction (upar se neeche ya neeche se upar) kuch bhi ho,
+  // jab bhi section viewport mein aayega tab animation play hogi.
+  // Ek baar visible hone ke baad entrance animation repeat nahi hogi.
   const isInView = useInView(sectionRef, {
     once: true,
-    amount: 0.08,
+    amount: 0.05,
+    margin: "0px 0px -10% 0px",
   });
 
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -480,7 +483,7 @@ export default function NewArrivalsSection({
       animate={isInView ? "visible" : "hidden"}
       viewport={{
         once: true,
-        amount: 0.08,
+        amount: 0.05,
       }}
       variants={staggerContainer}
     >

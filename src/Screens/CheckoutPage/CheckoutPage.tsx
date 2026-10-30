@@ -7,10 +7,10 @@ import { Poppins } from "next/font/google";
 import {
   AlertTriangle,
   BadgePercent,
-  Coins,
   Check,
   ChevronDown,
   ChevronRight,
+  Coins,
   CreditCard,
   Info,
   Loader2,
@@ -26,18 +26,22 @@ import {
 import { SiAxisbank, SiHdfcbank, SiRazorpay } from "react-icons/si";
 import { useDispatch } from "react-redux";
 import { showToast } from "@/lib/slices/toastSlice";
+
 import {
   useGetAddressesQuery,
   useCreateAddressMutation,
   useUpdateAddressMutation,
   useSetDefaultAddressMutation,
 } from "@/lib/redux/api/addressApi";
+
 import {
   useGetCheckoutSummaryQuery,
   usePlaceOrderMutation,
   useInitiateHdfcPaymentMutation,
+  useApplyCoinsMutation,
   type HdfcApiResult,
 } from "@/lib/redux/api/checkoutApi";
+
 import {
   useGetCouponsQuery,
   useLazyGetCartQuery,
@@ -45,12 +49,16 @@ import {
   useRemoveFromCartMutation,
   useUpdateCartItemMutation,
 } from "@/lib/redux/api/cartApi";
+
 import { useCheckProductStockMutation } from "@/lib/redux/api/productApi";
 import { useGetPaymentGatewaySettingsQuery } from "@/lib/redux/api/paymentGatewaySettingsApi";
+
 import Header from "@/components/common/Header";
 import Footer from "@/components/Footer/Footer";
 import AddressFormModal from "./AddressFormModal";
+
 import { useRetryOrderMutation } from "@/lib/redux/api/order/orderApi";
+import { useGetUserDashboardQuery } from "@/lib/redux/api/distributor/userDashboardApi";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -198,6 +206,12 @@ type PaymentGatewayId =
   | "razorpay-axis";
 
 type PaymentGatewayKind = "razorpay" | "hdfc";
+type CoinKind = "yellow" | "blue";
+
+interface CoinBalances {
+  yellow: number;
+  blue: number;
+}
 
 interface PaymentGatewayOption {
   id: PaymentGatewayId;
@@ -272,7 +286,10 @@ const poppins = Poppins({
 
 const formatPrice = (value: any): string => {
   const amount = Number(value || 0);
-  return `₹${amount.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
+
+  return `₹${amount.toLocaleString("en-IN", {
+    maximumFractionDigits: 0,
+  })}`;
 };
 
 const getErrorMessage = (error: any, fallback: string): string =>
@@ -304,7 +321,6 @@ const normalizeSummaryItems = (
     stock_quantity: product.stock_quantity ?? null,
     available_stock: product.available_stock ?? null,
     variant_stock_quantity: product.variant_stock_quantity ?? null,
-    // Important: preserve API max_stock (e.g. 50, 40, 11) for quantity options.
     max_stock: product.max_stock ?? null,
     product_name: product.product_name,
     product_code: product.product_code,
@@ -343,8 +359,15 @@ const getSummaryItemKey = (
 const getCouponValueLabel = (coupon: CouponListItem): string => {
   const type = String(coupon.type || "").toLowerCase();
   const value = coupon.value ?? 0;
-  if (type.includes("percent") || type === "%") return `${value}% OFF`;
-  if (Number(value) > 0) return `${formatPrice(value)} OFF`;
+
+  if (type.includes("percent") || type === "%") {
+    return `${value}% OFF`;
+  }
+
+  if (Number(value) > 0) {
+    return `${formatPrice(value)} OFF`;
+  }
+
   return "Discount";
 };
 
@@ -353,11 +376,13 @@ const getInitialGatewayId = (value: unknown): PaymentGatewayId => {
     .trim()
     .toUpperCase()
     .replace(/[\s-]+/g, "_");
+
   if (code === "HDFC_IE") return "hdfc-ie";
   if (code === "HDFC_SG" || code === "HDFC") return "hdfc-sg";
   if (code.includes("FREECHARGE")) return "freecharge-axis";
   if (code.includes("RAZORPAY")) return "razorpay-axis";
   if (code.includes("AXIS")) return "razorpay-axis";
+
   return "freecharge-axis";
 };
 
@@ -366,8 +391,11 @@ const getCartLineStock = (cartItem: any): number | null => {
     cartItem?.variant?.stock_quantity ??
     cartItem?.product?.available_stock ??
     cartItem?.product?.stock_quantity;
+
   if (value === null || value === undefined || value === "") return null;
+
   const stock = Number(value);
+
   return Number.isFinite(stock) ? Math.max(0, stock) : null;
 };
 
@@ -384,15 +412,18 @@ const getSummaryStock = (
     item.product?.available_stock ??
     item.product?.stock_quantity ??
     getCartLineStock(cartItem);
+
   if (value === null || value === undefined || value === "") return null;
+
   const stock = Number(value);
+
   return Number.isFinite(stock) ? Math.max(0, stock) : null;
 };
 
-// FIX: use the stock value sent by the API instead of capping all products at 10.
 const getCheckoutMaxQuantity = (stock: number | null): number => {
   if (stock === null) return MAX_CHECKOUT_QUANTITY;
   if (stock <= 0) return 1;
+
   return Math.floor(stock);
 };
 
@@ -401,11 +432,12 @@ const findMatchingCartLine = (
   cartItems: any[]
 ): any | undefined => {
   const productId = Number(summaryItem.product_id);
+
   const explicitCartItemId = Number(
     summaryItem.cart_item_id ??
-    summaryItem.cartItemId ??
-    summaryItem.cart_item?.id ??
-    0
+      summaryItem.cartItemId ??
+      summaryItem.cart_item?.id ??
+      0
   );
 
   if (explicitCartItemId > 0) {
@@ -414,6 +446,7 @@ const findMatchingCartLine = (
         Number(item?.id) === explicitCartItemId &&
         Number(item?.product_id) === productId
     );
+
     if (exactMatch) return exactMatch;
   }
 
@@ -438,16 +471,20 @@ const findMatchingCartLine = (
     const targetName = String(summaryItem.product_name || "")
       .trim()
       .toLowerCase();
+
     const targetQuantity = Number(summaryItem.quantity || 1);
+
     const matchingCandidates = candidates.filter((item) => {
       const name = String(item?.product?.name ?? item?.product_name ?? "")
         .trim()
         .toLowerCase();
+
       return (
         (!targetName || name === targetName) &&
         Number(item?.quantity || 1) === targetQuantity
       );
     });
+
     if (matchingCandidates.length === 1) return matchingCandidates[0];
   }
 
@@ -468,9 +505,11 @@ function GatewayBrandIcon({
   if (icon === "hdfc") {
     return <SiHdfcbank aria-hidden="true" className={className} />;
   }
+
   if (icon === "razorpay") {
     return <SiRazorpay aria-hidden="true" className={className} />;
   }
+
   return <SiAxisbank aria-hidden="true" className={className} />;
 }
 
@@ -505,8 +544,9 @@ function PlaceOrderButton({
       onClick={onClick}
       disabled={disabled}
       aria-busy={isSubmitting}
-      className={`group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-[#173E2B] via-[#1B5538] to-[#16845B] px-4 text-[13px] font-semibold text-white ring-1 ring-inset ring-white/10 transition-all duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#16845B]/30 active:translate-y-0 active:scale-[0.99] disabled:cursor-not-allowed disabled:from-[#9DB2A5] disabled:via-[#9DB2A5] disabled:to-[#9DB2A5] disabled:hover:translate-y-0 ${compact ? "min-h-[44px] py-2" : "min-h-[46px] py-2.5"
-        }`}
+      className={`group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-[#173E2B] via-[#1B5538] to-[#16845B] px-4 text-[13px] font-semibold text-white ring-1 ring-inset ring-white/10 transition-all duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#16845B]/30 active:translate-y-0 active:scale-[0.99] disabled:cursor-not-allowed disabled:from-[#9DB2A5] disabled:via-[#9DB2A5] disabled:to-[#9DB2A5] disabled:hover:translate-y-0 ${
+        compact ? "min-h-[44px] py-2" : "min-h-[46px] py-2.5"
+      }`}
     >
       {!disabled && (
         <span
@@ -588,10 +628,12 @@ function CouponListPanel({
                 <p className="truncate text-[11px] font-semibold uppercase text-[#171717]">
                   {coupon.code}
                 </p>
+
                 <span className="shrink-0 text-[10px] font-semibold text-[#16845B]">
                   {getCouponValueLabel(coupon)}
                 </span>
               </div>
+
               {(coupon.title || coupon.description) && (
                 <p className="mt-0.5 truncate text-[10px] text-[#888888]">
                   {coupon.title || coupon.description}
@@ -659,6 +701,7 @@ function QuantitySelect({
 
   const handleSelect = (qty: number) => {
     if (disabled || isLoading) return;
+
     setOpen(false);
     onChange(qty);
   };
@@ -675,12 +718,14 @@ function QuantitySelect({
         className="inline-flex h-7 min-w-[56px] items-center justify-between gap-1.5 rounded-md border border-[#DDE7DF] bg-[#F8FBF8] px-2 text-[11px] font-semibold text-[#173E2B] transition hover:border-[#B9CFC1] disabled:cursor-not-allowed disabled:opacity-50"
       >
         <span className="tabular-nums">{value}</span>
+
         {isLoading ? (
           <Loader2 className="h-3 w-3 animate-spin text-[#16845B]" />
         ) : (
           <ChevronDown
-            className={`h-3 w-3 text-[#748078] transition-transform ${open ? "rotate-180" : ""
-              }`}
+            className={`h-3 w-3 text-[#748078] transition-transform ${
+              open ? "rotate-180" : ""
+            }`}
           />
         )}
       </button>
@@ -693,6 +738,7 @@ function QuantitySelect({
         >
           {options.map((qty) => {
             const isSelected = qty === value;
+
             return (
               <button
                 key={qty}
@@ -700,10 +746,11 @@ function QuantitySelect({
                 role="option"
                 aria-selected={isSelected}
                 onClick={() => handleSelect(qty)}
-                className={`flex w-full items-center justify-between px-2.5 py-1.5 text-left text-[11px] font-semibold transition ${isSelected
+                className={`flex w-full items-center justify-between px-2.5 py-1.5 text-left text-[11px] font-semibold transition ${
+                  isSelected
                     ? "bg-[#EAF6EF] text-[#16845B]"
                     : "text-[#37473C] hover:bg-[#F4F8F5]"
-                  }`}
+                }`}
               >
                 <span className="tabular-nums">{qty}</span>
                 {isSelected && <Check className="h-3 w-3" />}
@@ -751,7 +798,7 @@ function TaxBreakdownPopup({
 
   const categories =
     Array.isArray(summaryData.tax_by_category) &&
-      summaryData.tax_by_category.length > 0
+    summaryData.tax_by_category.length > 0
       ? summaryData.tax_by_category
       : [];
 
@@ -773,6 +820,7 @@ function TaxBreakdownPopup({
             <p className="text-[11px] font-semibold text-[#1B2C20]">
               Tax breakdown
             </p>
+
             <button
               type="button"
               onClick={() => setOpen(false)}
@@ -794,6 +842,7 @@ function TaxBreakdownPopup({
                     <span className="text-[10.5px] font-semibold text-[#26332A]">
                       {tax.category} @ {Number(tax.rate || 0).toFixed(2)}%
                     </span>
+
                     <span className="text-[10.5px] font-semibold text-[#173E2B]">
                       {formatPrice(tax.tax_amount)}
                     </span>
@@ -804,18 +853,21 @@ function TaxBreakdownPopup({
                       <span>Taxable value</span>
                       <span>{formatPrice(tax.taxable_amount)}</span>
                     </div>
+
                     {Number(tax.igst || 0) > 0 && (
                       <div className="flex items-center justify-between">
                         <span>IGST</span>
                         <span>{formatPrice(tax.igst)}</span>
                       </div>
                     )}
+
                     {Number(tax.cgst || 0) > 0 && (
                       <div className="flex items-center justify-between">
                         <span>CGST</span>
                         <span>{formatPrice(tax.cgst)}</span>
                       </div>
                     )}
+
                     {Number(tax.sgst || 0) > 0 && (
                       <div className="flex items-center justify-between">
                         <span>SGST</span>
@@ -842,53 +894,347 @@ function TaxBreakdownPopup({
   );
 }
 
-// Redemption UI: balances and discounts must be confirmed by the checkout API.
-// Coin type parameters must be supported and validated by the backend.
-type CoinKind = "yellow" | "blue" | "sma";
-function CoinRedemption({ summary, role, selected, onSelect, busy }: {
-  summary: CheckoutSummaryData;
+// ─────────────────────────────────────────────────────────────────────────────
+// Coin redemption UI
+// ─────────────────────────────────────────────────────────────────────────────
+
+function CoinRedemption({
+  role,
+  balances,
+  maxRedeemable,
+  selected,
+  amount,
+  onSelect,
+  onAmountChange,
+  onApply,
+  onRemove,
+  isApplying,
+  redemptionId,
+  appliedAmount,
+  busy,
+  retryMode,
+}: {
   role: string;
+  balances: CoinBalances;
+  maxRedeemable: number;
   selected: CoinKind | null;
+  amount: string;
   onSelect: (kind: CoinKind | null) => void;
+  onAmountChange: (value: string) => void;
+  onApply: () => void;
+  onRemove: () => void;
+  isApplying: boolean;
+  redemptionId: number | string | null;
+  appliedAmount: number;
   busy: boolean;
+  retryMode: boolean;
 }) {
+  const [open, setOpen] = useState(false);
+
+  const isApplied = redemptionId !== null && redemptionId !== "";
   const isDistributor = role === "distributor";
-  const isSma = role === "sma" || role === "sma_user";
-  if (!isDistributor && !isSma) return null;
-  const available = [
-    { id: "yellow" as const, title: "Yellow Coins", balance: summary.coin_balances?.yellow ?? summary.yellow_bal, bg: "bg-amber-50", fg: "text-amber-600" },
-    { id: "blue" as const, title: "Blue Coins", balance: summary.coin_balances?.blue ?? summary.blue_bal, bg: "bg-blue-50", fg: "text-blue-600" },
-    { id: "sma" as const, title: "SMA Tokens", balance: summary.coin_balances?.sma ?? summary.sma_balance, bg: "bg-emerald-50", fg: "text-emerald-600" },
-  ].filter(c => isDistributor ? c.id !== "sma" : c.id === "sma");
+
+  if (retryMode || !isDistributor) return null;
+
+  const maximum = Math.max(0, Math.floor(Number(maxRedeemable || 0)));
+
+  const coins = [
+    {
+      id: "yellow" as const,
+      title: "Yellow Coins",
+      balance: balances.yellow,
+      pointType: "yellow_bal",
+      iconBg: "bg-amber-50",
+      iconColor: "text-amber-600",
+      selectedBg: "border-amber-300 bg-amber-50/70",
+    },
+    {
+      id: "blue" as const,
+      title: "Blue Coins",
+      balance: balances.blue,
+      pointType: "blue_bal",
+      iconBg: "bg-blue-50",
+      iconColor: "text-blue-600",
+      selectedBg: "border-blue-300 bg-blue-50/70",
+    },
+  ];
+
+  const getMaximumForCoin = (kind: CoinKind) =>
+    Math.min(
+      Math.max(0, Math.floor(Number(balances[kind] || 0))),
+      maximum
+    );
+
+  const selectedMaximum = selected ? getMaximumForCoin(selected) : 0;
+  const parsedAmount = Number(amount);
+
+  const canApply =
+    !!selected &&
+    Number.isInteger(parsedAmount) &&
+    parsedAmount >= 1 &&
+    parsedAmount <= selectedMaximum &&
+    !isApplied &&
+    !isApplying &&
+    !busy;
+
   return (
-    <div className="mx-4 my-3 rounded-xl border border-[#E2E8E4] bg-white p-3 sm:mx-5">
-      <div className="mb-3 flex items-center gap-2 text-[12px] font-semibold text-[#173E2B]">
-        <Coins className="h-4 w-4" /> Redeem your coins
-      </div>
-      <div className="space-y-2">
-        {available.map(c => {
-          const known = c.balance !== undefined && c.balance !== null;
-          const balance = Math.max(0, Number(c.balance || 0));
-          const enabled = known && balance > 0 && Number(summary.max_coins_redeemable || 0) > 0;
-          return (
-            <label key={c.id} className={`flex items-center gap-3 rounded-lg border border-[#E9EEEA] p-2.5 ${enabled ? "cursor-pointer" : "opacity-60"}`}>
-              <span className={`flex h-9 w-9 items-center justify-center rounded-full ${c.bg} ${c.fg}`}><Coins className="h-4 w-4" /></span>
-              <span className="min-w-0 flex-1"><span className="block text-[12px] font-semibold">{c.title}</span><span className="text-[10px] text-[#77837B]">{known ? `${balance.toLocaleString("en-IN")} available` : "Balance unavailable"}</span></span>
-              <input type="checkbox" aria-label={`Apply ${c.title}`} disabled={!enabled || busy} checked={selected === c.id} onChange={e => onSelect(e.target.checked ? c.id : null)} className="h-4 w-4 accent-[#16845B]" />
-            </label>
-          );
-        })}
-      </div>
-      {selected && <p className="mt-2 text-[10px] text-[#16845B]">Applied redemption is reflected only after server recalculation.</p>}
+    <div className="mx-4 my-3 overflow-hidden rounded-xl border border-[#E2E8E4] bg-white sm:mx-5">
+      <button
+        type="button"
+        onClick={() => setOpen((previous) => !previous)}
+        disabled={busy || isApplied}
+        className="flex w-full items-center justify-between gap-3 px-3.5 py-3 text-left transition hover:bg-[#F8FBF8] disabled:cursor-not-allowed"
+      >
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#FFF7E6] text-[#D69A19]">
+            <Coins className="h-4.5 w-4.5" />
+          </span>
+
+          <span className="min-w-0">
+            <span className="flex items-center gap-2">
+              <span className="text-[12px] font-semibold text-[#173E2B]">
+                Apply Coins
+              </span>
+
+              {isApplied && (
+                <span className="rounded-full bg-[#EAF6EF] px-2 py-0.5 text-[9px] font-semibold text-[#16845B]">
+                  Applied
+                </span>
+              )}
+            </span>
+
+            <span className="mt-0.5 block text-[10px] text-[#849087]">
+              Yellow: {balances.yellow.toLocaleString("en-IN")} · Blue:{" "}
+              {balances.blue.toLocaleString("en-IN")}
+            </span>
+          </span>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-2">
+          {isApplied ? (
+            <Check className="h-4 w-4 text-[#16845B]" />
+          ) : (
+            <ChevronDown
+              className={`h-4 w-4 text-[#748078] transition-transform ${
+                open ? "rotate-180" : ""
+              }`}
+            />
+          )}
+        </div>
+      </button>
+
+      {open && !isApplied && (
+        <div className="border-t border-[#EDF1EE] bg-[#FAFCFA] p-3">
+          <div className="mb-3">
+            <p className="text-[11px] font-semibold text-[#25362A]">
+              Select coin type
+            </p>
+            <p className="mt-0.5 text-[10px] text-[#89928B]">
+              Choose which coins you want to redeem.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            {coins.map((coin) => {
+              const isSelected = selected === coin.id;
+              const balance = Math.max(0, Number(coin.balance || 0));
+              const coinMaximum = getMaximumForCoin(coin.id);
+
+              const disabled =
+                balance <= 0 || coinMaximum <= 0 || busy || isApplying;
+
+              return (
+                <button
+                  key={coin.id}
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => {
+                    if (isSelected) {
+                      onSelect(null);
+                      onAmountChange("");
+                    } else {
+                      onSelect(coin.id);
+                      onAmountChange(String(coinMaximum));
+                    }
+                  }}
+                  className={`relative flex min-w-0 items-center gap-2 rounded-xl border p-2.5 text-left transition-all ${
+                    isSelected
+                      ? coin.selectedBg
+                      : "border-[#E5EBE6] bg-white hover:border-[#BCCFC1]"
+                  } ${
+                    disabled
+                      ? "cursor-not-allowed opacity-50"
+                      : "cursor-pointer"
+                  }`}
+                >
+                  <span
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${coin.iconBg} ${coin.iconColor}`}
+                  >
+                    <Coins className="h-4 w-4" />
+                  </span>
+
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[10.5px] font-semibold text-[#263329]">
+                      {coin.title}
+                    </span>
+                    <span className="mt-0.5 block text-[10px] text-[#89928B]">
+                      {balance.toLocaleString("en-IN")} available
+                    </span>
+                  </span>
+
+                  <span
+                    className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${
+                      isSelected
+                        ? "border-[#16845B] bg-[#16845B]"
+                        : "border-[#CFD9D1] bg-white"
+                    }`}
+                  >
+                    {isSelected && (
+                      <Check className="h-2.5 w-2.5 text-white" />
+                    )}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {selected && (
+            <div className="mt-3 rounded-xl border border-[#E2EAE4] bg-white p-3">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <div>
+                  <p className="text-[11px] font-semibold text-[#263329]">
+                    Coins to redeem
+                  </p>
+                  <p className="mt-0.5 text-[10px] text-[#89928B]">
+                    Maximum allowed: {selectedMaximum}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  disabled={selectedMaximum <= 0 || busy || isApplying}
+                  onClick={() =>
+                    onAmountChange(String(selectedMaximum))
+                  }
+                  className="rounded-lg border border-[#CDE4D5] bg-[#F1FAF4] px-2.5 py-1.5 text-[10px] font-semibold text-[#16845B] transition hover:bg-[#E4F5E9] disabled:opacity-50"
+                >
+                  Use Max
+                </button>
+              </div>
+
+              <div className="flex h-10 items-center rounded-lg border border-[#DDE7DF] bg-[#FAFCFA] px-3 transition focus-within:border-[#16845B] focus-within:ring-2 focus-within:ring-[#16845B]/10">
+                <Coins className="mr-2 h-4 w-4 shrink-0 text-[#A78A42]" />
+
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  autoComplete="off"
+                  value={amount}
+                  disabled={busy || isApplying}
+                  onChange={(event) =>
+                    onAmountChange(event.target.value.replace(/\D/g, ""))
+                  }
+                  placeholder="Enter coins"
+                  aria-label="Number of coins to redeem"
+                  className="w-full min-w-0 bg-transparent text-[13px] font-semibold text-[#25362A] outline-none placeholder:font-normal placeholder:text-[#A0AAA3] disabled:opacity-60"
+                />
+
+                <span className="ml-2 shrink-0 text-[10px] font-medium text-[#89928B]">
+                  Coins
+                </span>
+              </div>
+
+              <p className="mt-1.5 text-[9.5px] text-[#89928B]">
+                You can redeem up to {selectedMaximum} coins for this order.
+              </p>
+
+              <button
+                type="button"
+                onClick={onApply}
+                disabled={!canApply}
+                className="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#173E2B] to-[#16845B] px-4 text-[11px] font-semibold text-white transition hover:brightness-105 disabled:cursor-not-allowed disabled:from-[#AAB9AE] disabled:to-[#AAB9AE]"
+              >
+                {isApplying ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    Applying Coins...
+                  </>
+                ) : (
+                  <>
+                    <Coins className="h-3.5 w-3.5" />
+                    Apply {amount || 0} Coins
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+
+          {!selected && (
+            <p className="mt-3 rounded-lg bg-[#F1F5F2] px-3 py-2 text-[10px] text-[#748078]">
+              Select Yellow Coins or Blue Coins to continue.
+            </p>
+          )}
+
+          {maximum <= 0 && (
+            <p className="mt-2 text-[10px] font-medium text-[#B7791F]">
+              No coins are currently redeemable for this order.
+            </p>
+          )}
+        </div>
+      )}
+
+      {isApplied && (
+        <div className="flex items-center justify-between gap-3 border-t border-[#E2EAE4] bg-[#F1FAF4] px-3.5 py-2.5">
+          <div className="flex items-center gap-2">
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#D9F0E1] text-[#16845B]">
+              <Check className="h-4 w-4" />
+            </span>
+
+            <div>
+              <p className="text-[11px] font-semibold text-[#20543A]">
+                Coins applied successfully
+              </p>
+              <p className="text-[10px] text-[#64816D]">
+                {appliedAmount} {selected === "yellow" ? "Yellow" : "Blue"}{" "}
+                Coins
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={onRemove}
+            disabled={busy || isApplying}
+            aria-label="Remove applied coins"
+            title="Remove applied coins"
+            className="ml-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[#748078] transition hover:bg-white hover:text-[#B64339] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Cart summary
+// ─────────────────────────────────────────────────────────────────────────────
+
 function CartSummary({
   summaryData,
   coinRole,
+  coinBalances,
   selectedCoin,
   onSelectCoin,
+  coinAmount,
+  onCoinAmountChange,
+  onApplyCoins,
+  onRemoveCoins,
+  isApplyingCoins,
+  redemptionId,
+  appliedCoinAmount,
   loading,
   onPlaceOrder,
   isSubmitting,
@@ -918,8 +1264,16 @@ function CartSummary({
 }: {
   summaryData?: CheckoutSummaryData;
   coinRole: string;
+  coinBalances: CoinBalances;
   selectedCoin: CoinKind | null;
   onSelectCoin: (kind: CoinKind | null) => void;
+  coinAmount: string;
+  onCoinAmountChange: (value: string) => void;
+  onApplyCoins: () => void;
+  onRemoveCoins: () => void;
+  isApplyingCoins: boolean;
+  redemptionId: number | string | null;
+  appliedCoinAmount: number;
   loading: boolean;
   onPlaceOrder: () => void;
   isSubmitting: boolean;
@@ -978,8 +1332,10 @@ function CartSummary({
   }
 
   const items = normalizeSummaryItems(summaryData);
+
   const hasCoupon =
     !!summaryData.coupon || Number(summaryData.coupon_discount || 0) > 0;
+
   const hasUnavailable = !retryMode && unavailableProductIds.size > 0;
 
   const buttonDisabled = retryMode
@@ -988,13 +1344,13 @@ function CartSummary({
 
   return (
     <div className="rounded-2xl border border-[#E4EBE6] bg-white shadow-[0_16px_45px_-32px_rgba(15,45,30,0.28)]">
-      {/* Retry mode banner */}
       {retryMode && (
         <div className="rounded-t-2xl border-b border-[#F2D9B8] bg-gradient-to-r from-[#FFF8ED] to-white px-4 py-3.5 sm:px-5">
           <div className="flex items-start gap-3">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#FFF0D9] text-[#A65A11]">
               <AlertTriangle className="h-4.5 w-4.5" />
             </span>
+
             <div className="min-w-0">
               <h2 className="text-[16px] font-semibold tracking-[-0.03em] text-[#392B1C]">
                 Payment pending
@@ -1008,10 +1364,10 @@ function CartSummary({
         </div>
       )}
 
-      {/* Header */}
       <div
-        className={`${retryMode ? "" : "rounded-t-2xl"
-          } border-b border-[#EDF1EE] bg-gradient-to-r from-[#F6FBF7] to-white px-4 py-2.5 sm:px-5`}
+        className={`${
+          retryMode ? "" : "rounded-t-2xl"
+        } border-b border-[#EDF1EE] bg-gradient-to-r from-[#F6FBF7] to-white px-4 py-2.5 sm:px-5`}
       >
         <div className="flex items-center justify-between gap-2">
           <div>
@@ -1024,37 +1380,45 @@ function CartSummary({
                 : "Review your items before placing the order"}
             </p>
           </div>
+
           <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white text-[#16845B] shadow-sm ring-1 ring-[#E4EBE6]">
             <Package className="h-4 w-4" />
           </div>
         </div>
       </div>
 
-      {/* Items list */}
       <div
-        className={`space-y-3 px-4 py-2.5 sm:px-5 ${items.length > 5
+        className={`space-y-3 px-4 py-2.5 sm:px-5 ${
+          items.length > 5
             ? "max-h-[320px] overflow-y-auto overscroll-contain pr-2"
             : ""
-          }`}
+        }`}
       >
         {items.length > 0 ? (
           items.map((item, index) => {
             const imageUrl = getItemImage(item);
+
             const isUnavailable =
               !retryMode && unavailableProductIds.has(item.product_id);
+
             const itemKey = getSummaryItemKey(item, index);
+
             const matchingCartItem =
               checkoutType === "cart"
                 ? findMatchingCartLine(item, cartLines)
                 : undefined;
+
             const stock = getSummaryStock(item, matchingCartItem);
             const maxQuantity = getCheckoutMaxQuantity(stock);
-            // FIX: options run from 1 through the API stock (max_stock), without a hard cap of 10.
+
             const quantityOptions = Array.from(
               { length: Math.max(1, maxQuantity) },
               (_, optionIndex) => optionIndex + 1
             );
-            const isUpdatingThisQuantity = quantityUpdatingKey === itemKey;
+
+            const isUpdatingThisQuantity =
+              quantityUpdatingKey === itemKey;
+
             const quantityDisabled =
               retryMode ||
               isSubmitting ||
@@ -1066,11 +1430,11 @@ function CartSummary({
             return (
               <div
                 key={`${item.product_id}-${item.variant_id ?? "none"}-${index}`}
-                className={`flex items-start gap-3 ${isUnavailable ? "opacity-70" : ""
-                  }`}
+                className={`flex items-start gap-3 ${
+                  isUnavailable ? "opacity-70" : ""
+                }`}
               >
-                {/* Product image + qty badge */}
-                <div className="relative h-[42px] w-[42px] shrink-0 mt-0.5">
+                <div className="relative mt-0.5 h-[42px] w-[42px] shrink-0">
                   <div className="relative h-full w-full overflow-hidden rounded-lg border border-[#E9EEEA] bg-[#F8FAF8]">
                     {imageUrl ? (
                       <Image
@@ -1085,6 +1449,7 @@ function CartSummary({
                         <Package className="h-4 w-4 text-[#999999]" />
                       </div>
                     )}
+
                     {isUnavailable && (
                       <div className="absolute inset-0 flex items-center justify-center bg-black/40">
                         <span className="rounded bg-white px-1 py-0.5 text-[9px] font-bold uppercase tracking-wide text-[#B64339]">
@@ -1093,38 +1458,44 @@ function CartSummary({
                       </div>
                     )}
                   </div>
+
                   <span className="absolute -right-[5px] -top-[6px] flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-[#173E2B] px-1 text-[10px] font-semibold text-white ring-2 ring-white">
                     {item.quantity}
                   </span>
                 </div>
 
-                {/* Product info + qty selector */}
                 <div className="min-w-0 flex-1">
                   <p className="line-clamp-2 text-[12px] font-medium leading-[16px] text-[#222922]">
                     {item.product_name}
                   </p>
+
                   <div className="mt-1 flex flex-wrap items-center gap-2">
                     {!isUnavailable && (
                       <p className="text-[10px] text-[#89928B]">
                         {item.tax_category || "Product"}
                       </p>
                     )}
+
                     {!retryMode && (
                       <label className="inline-flex items-center gap-1.5">
                         <span className="text-[10px] font-medium text-[#748078]">
                           Qty:
                         </span>
+
                         <QuantitySelect
                           value={item.quantity}
                           options={quantityOptions}
                           disabled={quantityDisabled}
                           isLoading={isUpdatingThisQuantity}
                           ariaLabel={`Quantity for ${item.product_name}`}
-                          onChange={(qty) => onUpdateQuantity(item, index, qty)}
+                          onChange={(qty) =>
+                            onUpdateQuantity(item, index, qty)
+                          }
                         />
                       </label>
                     )}
                   </div>
+
                   {isUnavailable && (
                     <p className="mt-1 text-[10px] font-semibold text-[#B64339]">
                       {checkoutType === "buy_now"
@@ -1132,6 +1503,7 @@ function CartSummary({
                         : "Out of stock — update your cart"}
                     </p>
                   )}
+
                   {checkoutType === "cart" &&
                     !matchingCartItem &&
                     !retryMode && (
@@ -1141,13 +1513,13 @@ function CartSummary({
                     )}
                 </div>
 
-                {/* Price + remove */}
                 <div className="flex shrink-0 flex-col items-end justify-between self-stretch">
                   {!retryMode && checkoutType === "cart" && (
                     <button
                       type="button"
-                      aria-label={`Remove ${item.product_name || "product"
-                        } from cart`}
+                      aria-label={`Remove ${
+                        item.product_name || "product"
+                      } from cart`}
                       title="Remove from cart"
                       onClick={() => onRemoveCartItem(item, index)}
                       disabled={
@@ -1165,6 +1537,7 @@ function CartSummary({
                       )}
                     </button>
                   )}
+
                   <p className="shrink-0 text-[13px] font-semibold text-[#1D2921]">
                     {formatPrice(item.line_total)}
                   </p>
@@ -1185,6 +1558,7 @@ function CartSummary({
           <p className="text-[12px] font-semibold text-[#303B33]">
             Discount code
           </p>
+
           <button
             type="button"
             onClick={() => setShowCouponList(!showCouponList)}
@@ -1192,8 +1566,9 @@ function CartSummary({
           >
             {showCouponList ? "Hide coupons" : "View coupons"}
             <ChevronDown
-              className={`h-3 w-3 transition-transform ${showCouponList ? "rotate-180" : ""
-                }`}
+              className={`h-3 w-3 transition-transform ${
+                showCouponList ? "rotate-180" : ""
+              }`}
             />
           </button>
         </div>
@@ -1215,18 +1590,21 @@ function CartSummary({
         {!hasCoupon ? (
           <div className="flex h-[38px] w-full items-center rounded-xl border border-[#DFE7E1] bg-white px-3 transition focus-within:border-[#16845B] focus-within:ring-2 focus-within:ring-[#16845B]/10">
             <Tag className="mr-2 h-[14px] w-[14px] shrink-0 text-[#839087]" />
+
             <input
               type="text"
               value={couponInput}
               onChange={(event) => setCouponInput(event.target.value)}
               onKeyDown={(event) => {
-                if (event.key === "Enter" && !isApplyingCoupon)
+                if (event.key === "Enter" && !isApplyingCoupon) {
                   onApplyCoupon();
+                }
               }}
               placeholder="Enter discount code"
               disabled={isApplyingCoupon}
               className="min-w-0 flex-1 bg-transparent text-[12px] uppercase text-[#333333] outline-none placeholder:normal-case placeholder:text-[#999999]"
             />
+
             <button
               type="button"
               onClick={() => onApplyCoupon()}
@@ -1246,6 +1624,7 @@ function CartSummary({
               <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#D9F0E1]">
                 <Check className="h-3.5 w-3.5 text-[#16845B]" />
               </div>
+
               <div className="min-w-0">
                 <p className="truncate text-[11px] font-semibold uppercase text-[#263C2D]">
                   {summaryData.coupon?.code || appliedCoupon}
@@ -1255,6 +1634,7 @@ function CartSummary({
                 </p>
               </div>
             </div>
+
             <button
               type="button"
               onClick={onRemoveCoupon}
@@ -1266,6 +1646,24 @@ function CartSummary({
           </div>
         )}
       </div>
+
+      {/* Apply coins directly below coupon section */}
+      <CoinRedemption
+        role={coinRole}
+        balances={coinBalances}
+        maxRedeemable={summaryData.max_coins_redeemable}
+        selected={selectedCoin}
+        amount={coinAmount}
+        onSelect={onSelectCoin}
+        onAmountChange={onCoinAmountChange}
+        onApply={onApplyCoins}
+        onRemove={onRemoveCoins}
+        isApplying={isApplyingCoins}
+        redemptionId={redemptionId}
+        appliedAmount={appliedCoinAmount}
+        busy={isSubmitting || loading || gatewayLoading}
+        retryMode={retryMode}
+      />
 
       {/* Price breakdown */}
       <div className="space-y-1 border-t border-[#E8EEE9] px-4 py-2.5 sm:px-5">
@@ -1304,6 +1702,7 @@ function CartSummary({
             Estimated taxes
             <TaxBreakdownPopup summaryData={summaryData} />
           </span>
+
           <span className="text-[12px] font-medium text-[#263329]">
             {formatPrice(summaryData.total_tax)}
           </span>
@@ -1319,8 +1718,6 @@ function CartSummary({
         )}
       </div>
 
-      <CoinRedemption summary={summaryData} role={coinRole} selected={selectedCoin} onSelect={onSelectCoin} busy={isSubmitting || loading} />
-
       {/* Total + CTA */}
       <div className="rounded-b-2xl border-t border-[#DEE7E0] bg-gradient-to-b from-white to-[#F8FBF8] px-4 pb-3 pt-2.5 sm:px-5">
         <div className="mb-2.5 flex items-center justify-between gap-3">
@@ -1332,6 +1729,7 @@ function CartSummary({
               Including taxes and shipping
             </span>
           </div>
+
           <span className="text-[18px] font-semibold tracking-[-0.04em] text-[#17251B]">
             {formatPrice(summaryData.grand_total)}
           </span>
@@ -1340,12 +1738,14 @@ function CartSummary({
         {hasUnavailable && (
           <div className="mb-3 flex items-start gap-2 rounded-xl border border-[#F1C8C4] bg-[#FFF2F1] p-2.5">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[#B64339]" />
+
             <div>
               <p className="text-[12px] font-semibold text-[#B64339]">
                 {checkoutType === "buy_now"
                   ? "This product is unavailable"
                   : "Some items are out of stock"}
               </p>
+
               <p className="mt-0.5 text-[11px] leading-4 text-[#8A4A44]">
                 {checkoutType === "buy_now"
                   ? "This product is out of stock or the requested quantity is unavailable. Return to the product and select an available quantity."
@@ -1380,7 +1780,8 @@ function CartSummary({
 
         {disabled && !retryMode && !isSubmitting && (
           <p className="mt-2 text-center text-[10px] leading-4 text-[#888888]">
-            Select a delivery address and finish coupon updates to continue.
+            Select a delivery address and finish coupon or coin updates to
+            continue.
           </p>
         )}
 
@@ -1388,13 +1789,15 @@ function CartSummary({
           <div className="flex items-center justify-center gap-2">
             <GatewayBrandIcon
               icon={selectedGateway.icon}
-              className={`h-3.5 w-3.5 shrink-0 ${selectedGateway.icon === "hdfc"
+              className={`h-3.5 w-3.5 shrink-0 ${
+                selectedGateway.icon === "hdfc"
                   ? "text-[#B51F2B]"
                   : selectedGateway.icon === "razorpay"
                     ? "text-[#2457A7]"
                     : "text-[#2F65B8]"
-                }`}
+              }`}
             />
+
             <p className="text-center text-[11px] text-[#748078]">
               Selected:{" "}
               <span className="font-semibold text-[#34443A]">
@@ -1403,6 +1806,7 @@ function CartSummary({
               {selectedGateway.tag ? ` · ${selectedGateway.tag}` : ""}
             </p>
           </div>
+
           <p className="mt-0.5 flex items-center justify-center gap-1.5 text-[10px] text-[#748078]">
             <ShieldCheck className="h-3 w-3 text-[#16845B]" />
             Secure checkout · Encrypted payment
@@ -1412,6 +1816,10 @@ function CartSummary({
     </div>
   );
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Address selector modal
+// ─────────────────────────────────────────────────────────────────────────────
 
 function AddressSelectorModal({
   isOpen,
@@ -1435,7 +1843,6 @@ function AddressSelectorModal({
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
       <div className="flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
-        {/* Header */}
         <div className="flex items-center justify-between border-b border-gray-100 p-5">
           <div>
             <h2 className="text-lg font-semibold text-gray-900">
@@ -1445,6 +1852,7 @@ function AddressSelectorModal({
               Choose where you want your order delivered
             </p>
           </div>
+
           <button
             type="button"
             onClick={onClose}
@@ -1454,44 +1862,50 @@ function AddressSelectorModal({
           </button>
         </div>
 
-        {/* Address list */}
         <div className="flex-1 space-y-3 overflow-y-auto p-5">
           {addresses.map((address) => {
             const isSelected = selectedId === address.id;
+
             return (
               <div
                 key={address.id}
                 onClick={() => onSelect(address)}
-                className={`relative cursor-pointer rounded-xl border p-4 transition-all duration-200 ${isSelected
+                className={`relative cursor-pointer rounded-xl border p-4 transition-all duration-200 ${
+                  isSelected
                     ? "border-[#16845B] bg-[#F5FBF6] shadow-sm ring-1 ring-[#16845B]"
                     : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
-                  }`}
+                }`}
               >
                 <div className="flex items-start gap-3">
                   <div
-                    className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${isSelected
+                    className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
+                      isSelected
                         ? "border-[#16845B] bg-[#16845B]"
                         : "border-gray-300"
-                      }`}
+                    }`}
                   >
                     {isSelected && (
                       <Check className="h-3.5 w-3.5 text-white" />
                     )}
                   </div>
+
                   <div className="flex-1">
                     <div className="mb-1 flex items-center gap-2">
                       <span className="text-sm font-semibold text-gray-900">
                         {address.recipient_name}
                       </span>
+
                       <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium uppercase text-gray-600">
                         {address.type || "Home"}
                       </span>
+
                       {address.is_default && (
                         <span className="rounded bg-green-100 px-1.5 py-0.5 text-[10px] font-medium text-green-700">
                           Default
                         </span>
                       )}
                     </div>
+
                     <p className="text-sm leading-relaxed text-gray-600">
                       {address.address_line_1}
                       {address.address_line_2
@@ -1499,10 +1913,12 @@ function AddressSelectorModal({
                         : ""}
                       , {address.city}, {address.state} - {address.postcode}
                     </p>
+
                     <p className="mt-1 text-sm text-gray-500">
                       Phone: {address.contact_number}
                     </p>
                   </div>
+
                   <button
                     type="button"
                     onClick={(event) => {
@@ -1520,7 +1936,6 @@ function AddressSelectorModal({
           })}
         </div>
 
-        {/* Footer */}
         <div className="flex items-center justify-between border-t border-gray-100 bg-gray-50 p-4">
           <button
             type="button"
@@ -1530,6 +1945,7 @@ function AddressSelectorModal({
             <Plus className="h-4 w-4" />
             Add New Address
           </button>
+
           <button
             type="button"
             onClick={onClose}
@@ -1555,99 +1971,153 @@ export default function CheckoutPage() {
   const productId = Number(searchParams.get("product_id") || 0);
   const quantity = Number(searchParams.get("quantity") || 0);
   const variantId = Number(searchParams.get("variant_id") || 0);
+
   const requestedCheckoutType = searchParams.get("checkout_type");
+
   const isDirectCheckout =
     requestedCheckoutType === "buy_now" ||
     (requestedCheckoutType !== "cart" && productId > 0 && quantity > 0);
+
   const checkoutType: "cart" | "buy_now" = isDirectCheckout
     ? "buy_now"
     : "cart";
+
   const urlCouponCode = searchParams.get("coupon_code") || "";
 
   const retryOrderReference = String(
     searchParams.get("order_reference") || ""
   ).trim();
-  const retryGatewayParam = String(searchParams.get("gateway") || "")
+
+  const retryGatewayParam = String(
+    searchParams.get("gateway") || ""
+  )
     .trim()
     .toLowerCase();
+
   const retryPaymentStatus = String(
     searchParams.get("payment_status") || ""
   )
     .trim()
     .toLowerCase();
+
   const isRetryPaymentFlow =
     searchParams.get("cancelled") === "true" &&
     searchParams.get("show_repay") === "true" &&
     Boolean(retryOrderReference) &&
-    ["pending", "failed", "cancelled", "unpaid"].includes(retryPaymentStatus);
+    ["pending", "failed", "cancelled", "unpaid"].includes(
+      retryPaymentStatus
+    );
 
-  // ── State ──────────────────────────────────────────────────────────────────
+  // ───────────────────────────────────────────────────────────────────────────
+  // State
+  // ───────────────────────────────────────────────────────────────────────────
 
   const [selectedCoin, setSelectedCoin] = useState<CoinKind | null>(null);
-  const [coinRole, setCoinRole] = useState("");
-  useEffect(() => {
-    // Replace this with your authenticated user role from Redux/auth context.
-    // Never grant redemption eligibility based on localStorage alone.
-    const role = (window as any).__INDIEKONNECT_CHECKOUT_ROLE__;
-    setCoinRole(typeof role === "string" ? role.toLowerCase() : "");
-  }, []);
+  const [coinAmount, setCoinAmount] = useState("");
+  const [redemptionId, setRedemptionId] = useState<number | string | null>(
+    null
+  );
+  const [appliedCoinAmount, setAppliedCoinAmount] = useState(0);
+
   const [selectedDeliveryAddress, setSelectedDeliveryAddress] =
     useState<Address | null>(null);
+
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [isSelectorModalOpen, setIsSelectorModalOpen] = useState(false);
+
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [removingSummaryItemKey, setRemovingSummaryItemKey] = useState<
     string | null
   >(null);
-  const [quantityUpdatingKey, setQuantityUpdatingKey] = useState<string | null>(
-    null
-  );
+
+  const [quantityUpdatingKey, setQuantityUpdatingKey] = useState<
+    string | null
+  >(null);
+
   const [cartLines, setCartLines] = useState<any[]>([]);
+
   const [unavailableProductIds, setUnavailableProductIds] = useState<
     Set<number>
   >(new Set());
+
   const [couponInput, setCouponInput] = useState(urlCouponCode);
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(
     urlCouponCode || null
   );
+
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
   const [showCouponList, setShowCouponList] = useState(false);
   const [pendingCoupon, setPendingCoupon] = useState<string | null>(null);
+
   const [selectedGatewayId, setSelectedGatewayId] =
     useState<PaymentGatewayId>("freecharge-axis");
+
   const [hasManuallySelectedGateway, setHasManuallySelectedGateway] =
     useState(false);
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // IMPORTANT: Double order prevention
+  // ───────────────────────────────────────────────────────────────────────────
+
+  // Synchronous lock: prevents rapid double clicks before React re-renders.
   const paymentActionInProgress = useRef(false);
 
-  // ── API hooks ──────────────────────────────────────────────────────────────
+  // Permanent lock: prevents another order after successful order creation.
+  const orderCreatedRef = useRef(false);
+
+  const [orderCreatedForCheckout, setOrderCreatedForCheckout] =
+    useState(false);
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // API hooks
+  // ───────────────────────────────────────────────────────────────────────────
 
   const {
     data: addressesData,
     isLoading: isLoadingAddresses,
     refetch: refetchAddresses,
   } = useGetAddressesQuery();
+
   const [createAddress, { isLoading: isCreating }] =
     useCreateAddressMutation();
+
   const [updateAddress, { isLoading: isUpdating }] =
     useUpdateAddressMutation();
+
   const [setDefaultAddress] = useSetDefaultAddressMutation();
+
   const [placeOrder] = usePlaceOrderMutation();
+
+  const [applyCoins, { isLoading: isApplyingCoins }] =
+    useApplyCoinsMutation();
+
   const [removeFromCart] = useRemoveFromCartMutation();
   const [updateCartItem] = useUpdateCartItemMutation();
+
   const [initiateHdfcPayment] = useInitiateHdfcPaymentMutation();
   const [retryOrder] = useRetryOrderMutation();
+
   const { data: couponsData, isLoading: isLoadingCoupons } =
     useGetCouponsQuery();
+
   const {
     data: paymentGatewaySettings,
     isLoading: isLoadingGatewaySettings,
   } = useGetPaymentGatewaySettingsQuery();
+
+  const { data: dashboardResponse } = useGetUserDashboardQuery();
+
   const [triggerGetCart] = useLazyGetCartQuery();
+
   const [checkCartStock] = useCheckCartStockMutation();
   const [checkProductStock] = useCheckProductStockMutation();
 
-  // ── Derived values ─────────────────────────────────────────────────────────
+  // ───────────────────────────────────────────────────────────────────────────
+  // Derived values
+  // ───────────────────────────────────────────────────────────────────────────
 
   const selectedGateway = useMemo(
     () =>
@@ -1657,11 +2127,56 @@ export default function CheckoutPage() {
     [selectedGatewayId]
   );
 
-  // Gateway auto-selection
-  useEffect(() => {
-    if (isLoadingGatewaySettings || hasManuallySelectedGateway) return;
+  // Dashboard API can return either { data: { ignite } }
+  // or { data: { data: { ignite } } }.
+  const dashboardInfo = useMemo(() => {
+    const response = dashboardResponse as any;
 
-    const configuredGateway = (paymentGatewaySettings as any)?.active_gateway;
+    if (response?.data?.ignite) return response.data;
+    if (response?.data?.data?.ignite) return response.data.data;
+    if (response?.ignite) return response;
+
+    return {};
+  }, [dashboardResponse]);
+
+  const coinRole = String(
+    dashboardInfo?.user?.account_type || ""
+  ).toLowerCase();
+
+  const coinBalances: CoinBalances = {
+    yellow: Math.max(
+      0,
+      Number(dashboardInfo?.ignite?.yellow_bal ?? 0)
+    ),
+    blue: Math.max(0, Number(dashboardInfo?.ignite?.blue_bal ?? 0)),
+  };
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Restore order lock for payment retry flow
+  // ───────────────────────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (isRetryPaymentFlow) {
+      orderCreatedRef.current = true;
+      setOrderCreatedForCheckout(true);
+    }
+  }, [isRetryPaymentFlow]);
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Gateway auto-selection
+  // ───────────────────────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (
+      isLoadingGatewaySettings ||
+      hasManuallySelectedGateway
+    ) {
+      return;
+    }
+
+    const configuredGateway = (paymentGatewaySettings as any)
+      ?.active_gateway;
+
     const configuredGatewayId = getInitialGatewayId(configuredGateway);
 
     if (isRetryPaymentFlow && retryGatewayParam) {
@@ -1672,13 +2187,18 @@ export default function CheckoutPage() {
             ? configuredGatewayId
             : getInitialGatewayId(retryGatewayParam)
         );
+
         return;
       }
+
       if (
         retryGatewayParam.includes("razorpay") ||
         retryGatewayParam.includes("axis")
       ) {
-        setSelectedGatewayId(getInitialGatewayId(retryGatewayParam));
+        setSelectedGatewayId(
+          getInitialGatewayId(retryGatewayParam)
+        );
+
         return;
       }
     }
@@ -1694,9 +2214,12 @@ export default function CheckoutPage() {
 
   const coupons: CouponListItem[] = useMemo(() => {
     const list = (couponsData as any)?.data?.data;
+
     if (!Array.isArray(list)) return [];
+
     return list.filter((coupon: CouponListItem) => {
       if (coupon?.is_active === undefined) return true;
+
       return (
         coupon.is_active === true ||
         coupon.is_active === 1 ||
@@ -1705,17 +2228,23 @@ export default function CheckoutPage() {
     });
   }, [couponsData]);
 
-  const addresses: Address[] = Array.isArray((addressesData as any)?.data)
+  const addresses: Address[] = Array.isArray(
+    (addressesData as any)?.data
+  )
     ? (addressesData as any).data
     : [];
 
   const deliveryAddresses = addresses.filter(
     (address) => address?.is_delivery === true
   );
+
   const availableDeliveryAddresses =
     deliveryAddresses.length > 0 ? deliveryAddresses : addresses;
 
+  // ───────────────────────────────────────────────────────────────────────────
   // Auto-select default delivery address
+  // ───────────────────────────────────────────────────────────────────────────
+
   useEffect(() => {
     if (!availableDeliveryAddresses.length) {
       setSelectedDeliveryAddress(null);
@@ -1727,42 +2256,56 @@ export default function CheckoutPage() {
         const stillExists = availableDeliveryAddresses.find(
           (address) => address?.id === current.id
         );
+
         if (stillExists) return stillExists;
       }
 
       const defaultAddress = availableDeliveryAddresses.find(
         (address) => address?.is_default === true
       );
+
       if (defaultAddress) return defaultAddress;
 
       const deliveryAddress = availableDeliveryAddresses.find(
         (address) => address?.is_delivery === true
       );
+
       if (deliveryAddress) return deliveryAddress;
 
       return availableDeliveryAddresses[0] || null;
     });
   }, [availableDeliveryAddresses]);
 
+  // ───────────────────────────────────────────────────────────────────────────
+  // Checkout summary
+  // ───────────────────────────────────────────────────────────────────────────
+
   const checkoutSummaryParams = useMemo(
     () => ({
       ...(selectedDeliveryAddress?.id
         ? { address_id: selectedDeliveryAddress.id }
         : {}),
-      ...(appliedCoupon ? { coupon_code: appliedCoupon.trim() } : {}),
-      ...(selectedCoin ? { coin_type: selectedCoin, coins_used: 1 } : {}),
+
+      ...(appliedCoupon
+        ? { coupon_code: appliedCoupon.trim() }
+        : {}),
+
+      ...(appliedCoinAmount > 0
+        ? { coins: appliedCoinAmount }
+        : {}),
+
       ...(isDirectCheckout
         ? {
-          product_id: productId,
-          quantity,
-          ...(variantId > 0 ? { variant_id: variantId } : {}),
-        }
+            product_id: productId,
+            quantity,
+            ...(variantId > 0 ? { variant_id: variantId } : {}),
+          }
         : {}),
     }),
     [
       selectedDeliveryAddress?.id,
       appliedCoupon,
-      selectedCoin,
+      appliedCoinAmount,
       isDirectCheckout,
       productId,
       quantity,
@@ -1784,60 +2327,91 @@ export default function CheckoutPage() {
 
   const displayCheckoutType: "cart" | "buy_now" =
     summaryData?.checkout_type === "buy_now" ||
-      summaryData?.checkout_type === "cart"
+    summaryData?.checkout_type === "cart"
       ? summaryData.checkout_type
       : checkoutType;
 
-  const getCheckoutTypeFromSummary = (response: any): "cart" | "buy_now" => {
-    const apiType = response?.data?.checkout_type ?? response?.checkout_type;
-    return apiType === "buy_now" || apiType === "cart" ? apiType : checkoutType;
+  const getCheckoutTypeFromSummary = (
+    response: any
+  ): "cart" | "buy_now" => {
+    const apiType =
+      response?.data?.checkout_type ?? response?.checkout_type;
+
+    return apiType === "buy_now" || apiType === "cart"
+      ? apiType
+      : checkoutType;
   };
 
+  // ───────────────────────────────────────────────────────────────────────────
   // Refresh checkout summary on window focus
+  // ───────────────────────────────────────────────────────────────────────────
+
   useEffect(() => {
     if (typeof document === "undefined") return;
+
     const onFocus = () => {
       void refetchCheckoutSummary();
     };
+
     document.addEventListener("visibilitychange", onFocus);
     window.addEventListener("focus", onFocus);
+
     return () => {
       document.removeEventListener("visibilitychange", onFocus);
       window.removeEventListener("focus", onFocus);
     };
   }, [refetchCheckoutSummary]);
 
+  // ───────────────────────────────────────────────────────────────────────────
   // Fetch cart lines + check stock
+  // ───────────────────────────────────────────────────────────────────────────
+
   useEffect(() => {
     const fetchAndCheckCartStock = async () => {
       if (checkoutType !== "cart") {
         setCartLines([]);
         return;
       }
+
       try {
         const cartResp = await triggerGetCart().unwrap();
-        const items: any[] = Array.isArray((cartResp as any)?.data?.items)
+
+        const items: any[] = Array.isArray(
+          (cartResp as any)?.data?.items
+        )
           ? (cartResp as any).data.items
           : [];
+
         setCartLines(items);
 
         const cartId = Number((cartResp as any)?.data?.id);
+
         if (cartId) {
-          const stockRes = await checkCartStock({ cartId }).unwrap();
+          const stockRes = await checkCartStock({
+            cartId,
+          }).unwrap();
+
           const unavailable = new Set<number>();
+
           (stockRes?.data?.items || []).forEach((item: any) => {
-            if (!item.available) unavailable.add(Number(item.product_id));
+            if (!item.available) {
+              unavailable.add(Number(item.product_id));
+            }
           });
+
           setUnavailableProductIds(unavailable);
         }
       } catch (error) {
         console.error("Failed to check cart stock", error);
       }
     };
+
     void fetchAndCheckCartStock();
   }, [checkoutType, triggerGetCart, checkCartStock]);
 
-  // ── Handlers ───────────────────────────────────────────────────────────────
+  // ───────────────────────────────────────────────────────────────────────────
+  // Update summary quantity
+  // ───────────────────────────────────────────────────────────────────────────
 
   const handleUpdateSummaryQuantity = async (
     summaryItem: CheckoutSummaryItem,
@@ -1845,7 +2419,15 @@ export default function CheckoutPage() {
     requestedQuantity: number
   ) => {
     const key = getSummaryItemKey(summaryItem, index);
-    if (quantityUpdatingKey || removingSummaryItemKey || isSubmitting) return;
+
+    if (
+      quantityUpdatingKey ||
+      removingSummaryItemKey ||
+      isSubmitting ||
+      orderCreatedRef.current
+    ) {
+      return;
+    }
 
     if (isRetryPaymentFlow) {
       dispatch(
@@ -1855,10 +2437,12 @@ export default function CheckoutPage() {
           type: "info",
         })
       );
+
       return;
     }
 
     const requested = Number(requestedQuantity);
+
     if (!Number.isInteger(requested) || requested < 1) return;
 
     if (displayCheckoutType === "buy_now") {
@@ -1874,86 +2458,119 @@ export default function CheckoutPage() {
             type: "error",
           })
         );
+
         return;
       }
 
       const stock = getSummaryStock(summaryItem);
       const maxQuantity = getCheckoutMaxQuantity(stock);
+
       const newQuantity = Math.max(
         1,
         Math.min(requested, Math.max(1, maxQuantity))
       );
+
       if (newQuantity === quantity) return;
 
       setQuantityUpdatingKey(key);
+
       try {
         const params = new URLSearchParams(searchParams.toString());
+
         params.set("quantity", String(newQuantity));
+
         router.replace(`/checkout?${params.toString()}`);
       } finally {
         setQuantityUpdatingKey(null);
       }
+
       return;
     }
 
     setQuantityUpdatingKey(key);
+
     try {
       const cartResponse = await triggerGetCart().unwrap();
+
       const currentCartItems: any[] = Array.isArray(
         (cartResponse as any)?.data?.items
       )
         ? (cartResponse as any).data.items
         : [];
+
       setCartLines(currentCartItems);
 
-      const cartItem = findMatchingCartLine(summaryItem, currentCartItems);
-      if (!cartItem?.id)
+      const cartItem = findMatchingCartLine(
+        summaryItem,
+        currentCartItems
+      );
+
+      if (!cartItem?.id) {
         throw new Error(
           "Could not identify this cart item. Please refresh checkout and try again."
         );
+      }
 
       const currentQuantity = Math.max(
         1,
         Number(cartItem.quantity || summaryItem.quantity || 1)
       );
+
       if (requested === currentQuantity) return;
 
       const stock = getSummaryStock(summaryItem, cartItem);
       const maxQuantity = getCheckoutMaxQuantity(stock);
+
       const newQuantity = Math.max(
         1,
         Math.min(requested, Math.max(1, maxQuantity))
       );
+
       if (newQuantity === currentQuantity) return;
 
       await updateCartItem({
         itemId: Number(cartItem.id),
-        data: { quantity: newQuantity, action: "set" },
+        data: {
+          quantity: newQuantity,
+          action: "set",
+        },
       }).unwrap();
 
       const refreshedCart = await triggerGetCart().unwrap();
+
       const refreshedItems: any[] = Array.isArray(
         (refreshedCart as any)?.data?.items
       )
         ? (refreshedCart as any).data.items
         : [];
+
       setCartLines(refreshedItems);
+
       window.dispatchEvent(new CustomEvent("cart:refresh"));
 
       const refreshedSummary = await refetchCheckoutSummary();
-      if (refreshedSummary.error)
+
+      if (refreshedSummary.error) {
         throw new Error(
           "Quantity updated, but checkout totals could not be refreshed. Please refresh checkout."
         );
+      }
 
       dispatch(
-        showToast({ message: "Quantity updated successfully", type: "success" })
+        showToast({
+          message: "Quantity updated successfully",
+          type: "success",
+        })
       );
     } catch (error: any) {
       console.error("Checkout quantity update error:", error);
+
       dispatch(
         showToast({
-          message: getErrorMessage(error, "Unable to update quantity"),
+          message: getErrorMessage(
+            error,
+            "Unable to update quantity"
+          ),
           type: "error",
         })
       );
@@ -1962,14 +2579,29 @@ export default function CheckoutPage() {
     }
   };
 
+  // ───────────────────────────────────────────────────────────────────────────
+  // Remove cart item
+  // ───────────────────────────────────────────────────────────────────────────
+
   const handleRemoveSummaryItem = async (
     summaryItem: CheckoutSummaryItem,
     index: number
   ) => {
     const key = getSummaryItemKey(summaryItem, index);
-    if (removingSummaryItemKey || quantityUpdatingKey || isSubmitting) return;
 
-    if (isRetryPaymentFlow || displayCheckoutType !== "cart") {
+    if (
+      removingSummaryItemKey ||
+      quantityUpdatingKey ||
+      isSubmitting ||
+      orderCreatedRef.current
+    ) {
+      return;
+    }
+
+    if (
+      isRetryPaymentFlow ||
+      displayCheckoutType !== "cart"
+    ) {
       dispatch(
         showToast({
           message:
@@ -1977,49 +2609,69 @@ export default function CheckoutPage() {
           type: "info",
         })
       );
+
       return;
     }
 
     setRemovingSummaryItemKey(key);
+
     try {
       const cartResponse = await triggerGetCart().unwrap();
+
       const cartItems: any[] = Array.isArray(
         (cartResponse as any)?.data?.items
       )
         ? (cartResponse as any).data.items
         : [];
-      const cartItem = findMatchingCartLine(summaryItem, cartItems);
+
+      const cartItem = findMatchingCartLine(
+        summaryItem,
+        cartItems
+      );
 
       if (
         !cartItem?.id ||
         Number(cartItem?.product_id) !== Number(summaryItem.product_id)
-      )
+      ) {
         throw new Error(
           "Could not identify this exact cart item. Please open your cart and remove it there."
         );
+      }
 
       await removeFromCart(Number(cartItem.id)).unwrap();
 
       setUnavailableProductIds((previous) => {
-        if (!previous.has(Number(summaryItem.product_id))) return previous;
+        if (!previous.has(Number(summaryItem.product_id))) {
+          return previous;
+        }
+
         const next = new Set(previous);
+
         next.delete(Number(summaryItem.product_id));
+
         return next;
       });
 
       window.dispatchEvent(new CustomEvent("cart:refresh"));
+
       dispatch(
-        showToast({ message: "Item removed from cart", type: "success" })
+        showToast({
+          message: "Item removed from cart",
+          type: "success",
+        })
       );
 
       try {
         const refreshedCart = await triggerGetCart().unwrap();
+
         const refreshedItems: any[] = Array.isArray(
           (refreshedCart as any)?.data?.items
         )
           ? (refreshedCart as any).data.items
           : [];
+
         setCartLines(refreshedItems);
+
         if (refreshedItems.length === 0) {
           router.replace("/cart");
           return;
@@ -2034,9 +2686,13 @@ export default function CheckoutPage() {
       await refetchCheckoutSummary();
     } catch (error: any) {
       console.error("Remove checkout item error:", error);
+
       dispatch(
         showToast({
-          message: getErrorMessage(error, "Unable to remove item from cart"),
+          message: getErrorMessage(
+            error,
+            "Unable to remove item from cart"
+          ),
           type: "error",
         })
       );
@@ -2045,9 +2701,15 @@ export default function CheckoutPage() {
     }
   };
 
+  // ───────────────────────────────────────────────────────────────────────────
+  // Apply coupon
+  // ───────────────────────────────────────────────────────────────────────────
+
   const handleApplyCoupon = (codeOverride?: string) => {
     const code = (codeOverride ?? couponInput).trim().toUpperCase();
+
     if (!code || isApplyingCoupon) return;
+
     setIsApplyingCoupon(true);
     setCouponInput(code);
     setPendingCoupon(code);
@@ -2060,27 +2722,48 @@ export default function CheckoutPage() {
 
     const responseData = checkoutSummaryResponse as any;
     const responseError = checkoutSummaryError as any;
+
     const currentResponse = responseError?.data ?? responseData;
+
     if (!currentResponse) return;
 
     if (currentResponse?.success === false) {
       const backendMessage = currentResponse?.message;
+
       setAppliedCoupon(null);
       setCouponInput("");
       setPendingCoupon(null);
       setIsApplyingCoupon(false);
-      if (backendMessage)
-        dispatch(showToast({ message: backendMessage, type: "error" }));
+
+      if (backendMessage) {
+        dispatch(
+          showToast({
+            message: backendMessage,
+            type: "error",
+          })
+        );
+      }
+
       return;
     }
 
     if (currentResponse?.success === true) {
-      const responseCouponCode = String(responseData?.data?.coupon?.code || "")
+      const responseCouponCode = String(
+        responseData?.data?.coupon?.code || ""
+      )
         .trim()
         .toUpperCase();
-      if (responseCouponCode && responseCouponCode !== pendingCoupon) return;
+
+      if (
+        responseCouponCode &&
+        responseCouponCode !== pendingCoupon
+      ) {
+        return;
+      }
+
       setPendingCoupon(null);
       setIsApplyingCoupon(false);
+
       return;
     }
 
@@ -2089,12 +2772,20 @@ export default function CheckoutPage() {
         responseError?.data?.message ||
         responseError?.error?.data?.message ||
         "";
+
       setAppliedCoupon(null);
       setCouponInput("");
       setPendingCoupon(null);
       setIsApplyingCoupon(false);
-      if (backendMessage)
-        dispatch(showToast({ message: backendMessage, type: "error" }));
+
+      if (backendMessage) {
+        dispatch(
+          showToast({
+            message: backendMessage,
+            type: "error",
+          })
+        );
+      }
     }
   }, [
     pendingCoupon,
@@ -2109,8 +2800,238 @@ export default function CheckoutPage() {
     setCouponInput("");
     setPendingCoupon(null);
     setIsApplyingCoupon(false);
-    dispatch(showToast({ message: "Coupon removed", type: "success" }));
+
+    dispatch(
+      showToast({
+        message: "Coupon removed",
+        type: "success",
+      })
+    );
   };
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Coin selection
+  // ───────────────────────────────────────────────────────────────────────────
+
+  const handleSelectCoin = (kind: CoinKind | null) => {
+    if (redemptionId !== null) return;
+
+    if (!kind) {
+      setSelectedCoin(null);
+      setCoinAmount("");
+      return;
+    }
+
+    const balance = Math.floor(Number(coinBalances[kind] || 0));
+    const maximum = Math.floor(
+      Number(summaryData?.max_coins_redeemable || 0)
+    );
+
+    const allowedMaximum = Math.min(balance, maximum);
+
+    setSelectedCoin(kind);
+    setCoinAmount(allowedMaximum > 0 ? String(allowedMaximum) : "");
+  };
+
+  const handleCoinAmountChange = (value: string) => {
+    if (redemptionId !== null || !selectedCoin) return;
+
+    const digitsOnly = value.replace(/\D/g, "");
+
+    if (digitsOnly === "") {
+      setCoinAmount("");
+      return;
+    }
+
+    const numericValue = Number(digitsOnly);
+
+    if (!Number.isInteger(numericValue) || numericValue < 0) {
+      return;
+    }
+
+    const balance = Math.floor(
+      Number(coinBalances[selectedCoin] || 0)
+    );
+
+    const maximum = Math.floor(
+      Number(summaryData?.max_coins_redeemable || 0)
+    );
+
+    const allowedMaximum = Math.min(balance, maximum);
+
+    if (numericValue > allowedMaximum) {
+      setCoinAmount(String(allowedMaximum));
+      return;
+    }
+
+    setCoinAmount(digitsOnly);
+  };
+
+  // Remove applied coins
+  const handleRemoveCoins = () => {
+    if (isSubmitting || isApplyingCoins) return;
+
+    setRedemptionId(null);
+    setAppliedCoinAmount(0);
+    setSelectedCoin(null);
+    setCoinAmount("");
+
+    dispatch(
+      showToast({
+        message: "Coins removed from checkout",
+        type: "success",
+      })
+    );
+  };
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Apply coins API
+  // POST /checkout/apply-coins
+  // ───────────────────────────────────────────────────────────────────────────
+
+  const handleApplyCoins = async () => {
+    if (isRetryPaymentFlow) return;
+
+    if (redemptionId !== null) {
+      dispatch(
+        showToast({
+          message: "Coins have already been applied.",
+          type: "info",
+        })
+      );
+
+      return;
+    }
+
+    if (!selectedCoin) {
+      dispatch(
+        showToast({
+          message: "Please select Yellow Coins or Blue Coins.",
+          type: "error",
+        })
+      );
+
+      return;
+    }
+
+    if (!summaryData) {
+      dispatch(
+        showToast({
+          message: "Checkout summary is not ready.",
+          type: "error",
+        })
+      );
+
+      return;
+    }
+
+    const balance = Math.floor(
+      Number(coinBalances[selectedCoin] || 0)
+    );
+
+    const maximum = Math.floor(
+      Number(summaryData.max_coins_redeemable || 0)
+    );
+
+    const allowedMaximum = Math.min(balance, maximum);
+
+    const coins = Number(coinAmount);
+
+    if (!Number.isInteger(coins) || coins <= 0) {
+      dispatch(
+        showToast({
+          message: "Please enter a valid number of coins.",
+          type: "error",
+        })
+      );
+
+      return;
+    }
+
+    if (coins > allowedMaximum) {
+      dispatch(
+        showToast({
+          message: `You can apply a maximum of ${allowedMaximum} coins.`,
+          type: "error",
+        })
+      );
+
+      return;
+    }
+
+    try {
+      const response = await applyCoins({
+        coins,
+        point_type:
+          selectedCoin === "yellow" ? "yellow_bal" : "blue_bal",
+      }).unwrap();
+
+      console.log("APPLY COINS RESPONSE:", response);
+
+      const rawResponse = response as any;
+
+      const responseData =
+        rawResponse?.data?.data ??
+        rawResponse?.data ??
+        rawResponse;
+
+      if (
+        rawResponse?.success === false ||
+        responseData?.success === false
+      ) {
+        throw new Error(
+          responseData?.message ||
+            rawResponse?.message ||
+            "Unable to apply coins."
+        );
+      }
+
+      const returnedRedemptionId =
+        responseData?.redemption_id ??
+        responseData?.redemption?.id ??
+        rawResponse?.redemption_id;
+
+      if (
+        returnedRedemptionId === undefined ||
+        returnedRedemptionId === null ||
+        returnedRedemptionId === ""
+      ) {
+        throw new Error(
+          responseData?.message ||
+            "Redemption ID was not returned by the server."
+        );
+      }
+
+      setRedemptionId(returnedRedemptionId);
+      setAppliedCoinAmount(coins);
+      setCoinAmount(String(coins));
+
+      dispatch(
+        showToast({
+          message: `${coins} ${
+            selectedCoin === "yellow" ? "Yellow" : "Blue"
+          } Coins applied successfully!`,
+          type: "success",
+        })
+      );
+    } catch (error: any) {
+      console.error("Apply coins error:", error);
+
+      dispatch(
+        showToast({
+          message: getErrorMessage(
+            error,
+            "Unable to apply coins. Please try again."
+          ),
+          type: "error",
+        })
+      );
+    }
+  };
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Address handlers
+  // ───────────────────────────────────────────────────────────────────────────
 
   const handleCreateAddress = async (data: AddressFormData) => {
     try {
@@ -2120,14 +3041,22 @@ export default function CheckoutPage() {
         is_delivery: 1,
         is_billing: 1,
       };
+
       const result = await createAddress(payload).unwrap();
+
       if ((result as any)?.status) {
         dispatch(
-          showToast({ message: "Address added successfully!", type: "success" })
+          showToast({
+            message: "Address added successfully!",
+            type: "success",
+          })
         );
+
         await refetchAddresses();
+
         setIsAddressModalOpen(false);
         setEditingAddress(null);
+
         setTimeout(() => void refetchCheckoutSummary(), 100);
       }
     } catch (error: any) {
@@ -2142,11 +3071,16 @@ export default function CheckoutPage() {
 
   const handleUpdateAddress = async (data: AddressFormData) => {
     if (!editingAddress?.id) return;
+
     try {
       const result = await updateAddress({
         id: editingAddress.id,
-        data: { ...data, type: data.type || "Home" },
+        data: {
+          ...data,
+          type: data.type || "Home",
+        },
       }).unwrap();
+
       if ((result as any)?.status) {
         dispatch(
           showToast({
@@ -2154,9 +3088,12 @@ export default function CheckoutPage() {
             type: "success",
           })
         );
+
         await refetchAddresses();
+
         setIsAddressModalOpen(false);
         setEditingAddress(null);
+
         setTimeout(() => void refetchCheckoutSummary(), 100);
       }
     } catch (error: any) {
@@ -2171,8 +3108,10 @@ export default function CheckoutPage() {
 
   const handleSetDefaultAddress = async (id: number) => {
     if (!id) return;
+
     try {
       const result = await setDefaultAddress(id).unwrap();
+
       if ((result as any)?.status) {
         dispatch(
           showToast({
@@ -2180,13 +3119,18 @@ export default function CheckoutPage() {
             type: "success",
           })
         );
+
         await refetchAddresses();
+
         setTimeout(() => void refetchCheckoutSummary(), 100);
       }
     } catch (error: any) {
       dispatch(
         showToast({
-          message: getErrorMessage(error, "Failed to set default address"),
+          message: getErrorMessage(
+            error,
+            "Failed to set default address"
+          ),
           type: "error",
         })
       );
@@ -2198,19 +3142,27 @@ export default function CheckoutPage() {
     setIsAddressModalOpen(true);
   };
 
-  const goToOrderConfirmation = (orderId: number, orderReference: string) => {
+  // ───────────────────────────────────────────────────────────────────────────
+  // Order confirmation and retry helpers
+  // ───────────────────────────────────────────────────────────────────────────
+
+  const goToOrderConfirmation = (
+    orderId: number,
+    orderReference: string
+  ) => {
     const params = new URLSearchParams();
-    if (orderReference) params.set("order_reference", orderReference);
-    if (orderId) params.set("order_id", String(orderId));
+
+    if (orderReference) {
+      params.set("order_reference", orderReference);
+    }
+
+    if (orderId) {
+      params.set("order_id", String(orderId));
+    }
+
     router.replace(`/order-confirmation?${params.toString()}`);
   };
 
-  /**
-   * Keep the already-created order and switch checkout into its existing
-   * payment-retry mode. This is intentionally client-side navigation: the
-   * retry button uses the existing retryOrder API and does not place another
-   * order.
-   */
   const enablePaymentRetry = (
     orderReference: string,
     paymentStatus: "pending" | "failed" | "cancelled" = "pending"
@@ -2225,38 +3177,54 @@ export default function CheckoutPage() {
           type: "error",
         })
       );
+
       return;
     }
 
-    // Preserve Buy Now context and other checkout query values, if present.
+    // Keep the permanent order lock active.
+    orderCreatedRef.current = true;
+    setOrderCreatedForCheckout(true);
+
     const params = new URLSearchParams(searchParams.toString());
+
     params.set("order_reference", normalizedReference);
     params.set("gateway", selectedGatewayId);
     params.set("payment_status", paymentStatus);
     params.set("cancelled", "true");
     params.set("show_repay", "true");
 
-    router.replace(`/checkout?${params.toString()}`, { scroll: false });
+    router.replace(`/checkout?${params.toString()}`, {
+      scroll: false,
+    });
   };
 
+  // ───────────────────────────────────────────────────────────────────────────
   // Razorpay helpers
+  // ───────────────────────────────────────────────────────────────────────────
+
   const openRazorpay = (nextOrderData: RazorpayOrderData) =>
     new Promise<any>((resolve, reject) => {
-      const launch = () => initRazorpay(nextOrderData, resolve, reject);
+      const launch = () =>
+        initRazorpay(nextOrderData, resolve, reject);
+
       if (typeof window === "undefined") {
         reject(new Error("Razorpay not available"));
         return;
       }
+
       if (window.Razorpay) {
         launch();
         return;
       }
+
       const script = document.createElement("script");
+
       script.src = "https://checkout.razorpay.com/v1/checkout.js";
       script.async = true;
       script.onload = launch;
       script.onerror = () =>
         reject(new Error("Failed to load Razorpay SDK"));
+
       document.body.appendChild(script);
     });
 
@@ -2277,45 +3245,56 @@ export default function CheckoutPage() {
       name: process.env.NEXT_PUBLIC_STORE_NAME || "Indiekonnect",
       description: `Order #${nextOrderData.orderReference}`,
       order_id: nextOrderData.razorpayOrderId,
+
       prefill: {
         name: selectedDeliveryAddress?.recipient_name || "",
         contact: selectedDeliveryAddress?.contact_number || "",
       },
+
       notes: {
         order_id: String(nextOrderData.orderId),
         order_reference: nextOrderData.orderReference,
       },
-      theme: { color: INK },
+
+      theme: {
+        color: INK,
+      },
+
       handler: function (response: any) {
         console.log("Razorpay success:", response);
+
         dispatch(
-          showToast({ message: "Payment successful!", type: "success" })
+          showToast({
+            message: "Payment successful!",
+            type: "success",
+          })
         );
+
         goToOrderConfirmation(
           nextOrderData.orderId,
           nextOrderData.orderReference
         );
+
         resolve(response);
       },
+
       modal: {
         ondismiss: function () {
           setIsSubmitting(false);
 
-          // Razorpay only dismisses its modal; it does not send the customer
-          // through the HDFC-style return URL. Put this existing order into
-          // the same Retry Payment state used by the HDFC checkout flow.
-          enablePaymentRetry(nextOrderData.orderReference, "pending");
+          enablePaymentRetry(
+            nextOrderData.orderReference,
+            "pending"
+          );
 
           dispatch(
             showToast({
-              message: "Payment cancelled. You can retry payment for this order.",
+              message:
+                "Payment cancelled. You can retry payment for this order.",
               type: "info",
             })
           );
 
-          // Cancellation is a normal user action, not a checkout exception.
-          // Resolving avoids the generic "Checkout error: Payment cancelled"
-          // log/toast while allowing the caller's finally block to unlock UI.
           resolve({
             cancelled: true,
             orderReference: nextOrderData.orderReference,
@@ -2326,15 +3305,26 @@ export default function CheckoutPage() {
 
     try {
       const razorpay = new window.Razorpay(options);
+
       razorpay.on("payment.failed", function (response: any) {
         console.error("Razorpay payment failed:", response);
+
         setIsSubmitting(false);
+
         const errorMessage =
           response?.error?.description ||
           "Payment failed. Please try again.";
-        dispatch(showToast({ message: errorMessage, type: "error" }));
+
+        dispatch(
+          showToast({
+            message: errorMessage,
+            type: "error",
+          })
+        );
+
         reject(new Error(errorMessage));
       });
+
       razorpay.open();
     } catch (error) {
       setIsSubmitting(false);
@@ -2342,80 +3332,137 @@ export default function CheckoutPage() {
     }
   };
 
-  const validateCheckoutStock = async (activeType: "cart" | "buy_now") => {
+  // ───────────────────────────────────────────────────────────────────────────
+  // Stock validation
+  // ───────────────────────────────────────────────────────────────────────────
+
+  const validateCheckoutStock = async (
+    activeType: "cart" | "buy_now"
+  ) => {
     if (activeType === "buy_now") {
       if (
         !Number.isInteger(productId) ||
         productId <= 0 ||
         !Number.isInteger(quantity) ||
         quantity <= 0
-      )
+      ) {
         throw new Error("Invalid Buy Now product or quantity.");
+      }
 
       const result = await checkProductStock({
         product_id: productId,
         quantity,
       }).unwrap();
+
       if (
         !result?.data ||
         !result.data.available ||
         Number(result.data.stock_quantity ?? 0) < quantity
       ) {
         setUnavailableProductIds(new Set([productId]));
-        throw new Error("Product is out of stock or insufficient quantity.");
+
+        throw new Error(
+          "Product is out of stock or insufficient quantity."
+        );
       }
+
       setUnavailableProductIds(new Set());
+
       return;
     }
 
     const cartResponse = await triggerGetCart().unwrap();
-    const cartItems: any[] = Array.isArray((cartResponse as any)?.data?.items)
+
+    const cartItems: any[] = Array.isArray(
+      (cartResponse as any)?.data?.items
+    )
       ? (cartResponse as any).data.items
       : [];
+
     setCartLines(cartItems);
 
     const cartId = Number((cartResponse as any)?.data?.id);
-    if (!Number.isInteger(cartId) || cartId <= 0)
-      throw new Error("Unable to verify your cart. Please reload the page.");
 
-    const stockResponse = await checkCartStock({ cartId }).unwrap();
+    if (!Number.isInteger(cartId) || cartId <= 0) {
+      throw new Error(
+        "Unable to verify your cart. Please reload the page."
+      );
+    }
+
+    const stockResponse = await checkCartStock({
+      cartId,
+    }).unwrap();
+
     if (
       !stockResponse?.data ||
       !Array.isArray(stockResponse.data.items)
-    )
-      throw new Error("Unable to verify cart stock. Please try again.");
+    ) {
+      throw new Error(
+        "Unable to verify cart stock. Please try again."
+      );
+    }
 
     const unavailable = new Set<number>();
+
     stockResponse.data.items.forEach((item: any) => {
-      if (!item.available) unavailable.add(Number(item.product_id));
+      if (!item.available) {
+        unavailable.add(Number(item.product_id));
+      }
     });
+
     setUnavailableProductIds(unavailable);
 
-    if (!stockResponse.data.all_available || unavailable.size > 0)
+    if (
+      !stockResponse.data.all_available ||
+      unavailable.size > 0
+    ) {
       throw new Error(
         "Some items in your cart are out of stock. Please update your cart."
       );
+    }
   };
 
-  const refreshAndValidateTotal = async (previousTotal: number) => {
+  // ───────────────────────────────────────────────────────────────────────────
+  // Refresh and validate checkout total
+  // ───────────────────────────────────────────────────────────────────────────
+
+  const refreshAndValidateTotal = async (
+    previousTotal: number
+  ) => {
     const latestResponse = await refetchCheckoutSummary();
-    if (latestResponse.error || !latestResponse.data?.data)
+
+    if (
+      latestResponse.error ||
+      !latestResponse.data?.data
+    ) {
       throw new Error(
         "Could not refresh checkout pricing. Please try again."
       );
+    }
 
     const latest = latestResponse.data.data as CheckoutSummaryData;
-    const latestTotal = Number(latest.grand_total);
-    if (!Number.isFinite(latestTotal) || latestTotal <= 0)
-      throw new Error("Invalid updated checkout total.");
 
-    if (Math.round(latestTotal * 100) !== Math.round(previousTotal * 100))
+    const latestTotal = Number(latest.grand_total);
+
+    if (!Number.isFinite(latestTotal) || latestTotal <= 0) {
+      throw new Error("Invalid updated checkout total.");
+    }
+
+    if (
+      Math.round(latestTotal * 100) !==
+      Math.round(previousTotal * 100)
+    ) {
       throw new Error(
         "Your order total has changed. Please review the updated total and click Place Order again."
       );
+    }
 
     return latest;
   };
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Retry payment for existing order
+  // ───────────────────────────────────────────────────────────────────────────
 
   const handleRetryPayment = async () => {
     if (paymentActionInProgress.current) return;
@@ -2428,6 +3475,7 @@ export default function CheckoutPage() {
           type: "error",
         })
       );
+
       return;
     }
 
@@ -2438,16 +3486,22 @@ export default function CheckoutPage() {
           type: "info",
         })
       );
+
       return;
     }
 
     if (!selectedGateway) {
       dispatch(
-        showToast({ message: "Please choose a payment method", type: "error" })
+        showToast({
+          message: "Please choose a payment method",
+          type: "error",
+        })
       );
+
       return;
     }
 
+    // Separate synchronous lock for retry payment.
     paymentActionInProgress.current = true;
     setIsSubmitting(true);
 
@@ -2455,48 +3509,65 @@ export default function CheckoutPage() {
       const response = await retryOrder({
         orderReference: retryOrderReference,
         payment_gateway: selectedGateway.paymentGateway,
-        ...(selectedCoin ? { coin_type: selectedCoin, coins_used: Number(latestSummary.coins_used || 0) } : {}),
       }).unwrap();
 
-      if (!response?.success || !response?.data)
+      if (!response?.success || !response?.data) {
         throw new Error(
-          response?.message || "Unable to retry payment. Please try again."
+          response?.message ||
+            "Unable to retry payment. Please try again."
         );
+      }
 
       const data = response.data;
-      const returnedGateway = data.gateway || selectedGateway.paymentGateway;
 
-      if (returnedGateway !== selectedGateway.paymentGateway)
+      const returnedGateway =
+        data.gateway || selectedGateway.paymentGateway;
+
+      if (
+        returnedGateway !== selectedGateway.paymentGateway
+      ) {
         throw new Error(
           `The server returned ${returnedGateway} instead of the selected ${selectedGateway.paymentGateway} gateway. Please select the correct payment method and retry.`
         );
+      }
 
       const returnedOrderReference = String(
         data.order_reference || retryOrderReference
       ).trim();
+
       const databaseOrderId = Number(data.order_id || 0);
+
       const amount = Number(data.total_amount || 0);
 
       if (selectedGateway.paymentGateway === "razorpay") {
-        if (!Number.isSafeInteger(databaseOrderId) || databaseOrderId <= 0)
+        if (
+          !Number.isSafeInteger(databaseOrderId) ||
+          databaseOrderId <= 0
+        ) {
           throw new Error(
             "A valid order ID was not returned by the retry API."
           );
+        }
 
         const razorpayOrderId = String(
           data.razorpay_order_id || ""
         ).trim();
-        const razorpayKey = String(data.razorpay_key || "").trim();
 
-        if (!razorpayOrderId || !razorpayKey)
+        const razorpayKey = String(
+          data.razorpay_key || ""
+        ).trim();
+
+        if (!razorpayOrderId || !razorpayKey) {
           throw new Error(
             "Razorpay retry details were not returned by the server."
           );
+        }
 
-        if (!Number.isFinite(amount) || amount <= 0)
+        if (!Number.isFinite(amount) || amount <= 0) {
           throw new Error(
             "Invalid payment amount returned by the server."
           );
+        }
 
         dispatch(
           showToast({
@@ -2512,6 +3583,7 @@ export default function CheckoutPage() {
           razorpayOrderId,
           razorpayKey,
         });
+
         return;
       }
 
@@ -2519,7 +3591,9 @@ export default function CheckoutPage() {
         selectedGateway.paymentGateway === "hdfc_sg" ||
         selectedGateway.paymentGateway === "hdfc_ie"
       ) {
-        const paymentLink = String(data.hdfc_payment_link || "").trim();
+        const paymentLink = String(
+          data.hdfc_payment_link || ""
+        ).trim();
 
         if (paymentLink) {
           dispatch(
@@ -2528,14 +3602,19 @@ export default function CheckoutPage() {
               type: "info",
             })
           );
-          window.location.assign(getSafeHdfcUrl(paymentLink));
+
+          window.location.assign(
+            getSafeHdfcUrl(paymentLink)
+          );
+
           return;
         }
 
-        if (data.hdfc_sdk_payload)
+        if (data.hdfc_sdk_payload) {
           throw new Error(
             "HDFC retry details were returned without a payment link. Please check the HDFC retry SDK response handling."
           );
+        }
 
         throw new Error(
           "HDFC payment link was not returned by the retry API. Please try again or contact support."
@@ -2547,9 +3626,13 @@ export default function CheckoutPage() {
       );
     } catch (error: any) {
       console.error("Retry payment error:", error);
+
       dispatch(
         showToast({
-          message: getErrorMessage(error, "Failed to retry payment"),
+          message: getErrorMessage(
+            error,
+            "Failed to retry payment"
+          ),
           type: "error",
         })
       );
@@ -2559,9 +3642,33 @@ export default function CheckoutPage() {
     }
   };
 
-  const handlePlaceOrder = async () => {
-    if (paymentActionInProgress.current) return;
+  // ───────────────────────────────────────────────────────────────────────────
+  // PLACE ORDER — DOUBLE CLICK PROTECTED
+  // ───────────────────────────────────────────────────────────────────────────
 
+  const handlePlaceOrder = async () => {
+    // 1. Prevent rapid double clicks synchronously.
+    if (paymentActionInProgress.current) {
+      return;
+    }
+
+    // 2. Prevent creating another order after successful order creation.
+    if (
+      orderCreatedRef.current ||
+      orderCreatedForCheckout
+    ) {
+      dispatch(
+        showToast({
+          message:
+            "An order has already been created. Please retry payment for the existing order.",
+          type: "info",
+        })
+      );
+
+      return;
+    }
+
+    // 3. Address validation.
     if (!selectedDeliveryAddress?.id) {
       dispatch(
         showToast({
@@ -2569,19 +3676,39 @@ export default function CheckoutPage() {
           type: "error",
         })
       );
+
       return;
     }
 
-    if (!summaryData || Number(summaryData.grand_total) <= 0) {
+    // 4. Summary validation.
+    if (
+      !summaryData ||
+      Number(summaryData.grand_total) <= 0
+    ) {
       dispatch(
         showToast({
           message: "Checkout summary is not ready yet",
           type: "error",
         })
       );
+
       return;
     }
 
+    // 5. Coin validation.
+    if (selectedCoin && !redemptionId) {
+      dispatch(
+        showToast({
+          message:
+            "Please apply your selected coins before placing the order.",
+          type: "error",
+        })
+      );
+
+      return;
+    }
+
+    // 6. Payment gateway validation.
     if (isLoadingGatewaySettings) {
       dispatch(
         showToast({
@@ -2589,6 +3716,7 @@ export default function CheckoutPage() {
           type: "info",
         })
       );
+
       return;
     }
 
@@ -2599,143 +3727,301 @@ export default function CheckoutPage() {
           type: "error",
         })
       );
+
       return;
     }
 
+    // IMPORTANT:
+    // Lock immediately before executing any asynchronous code.
     paymentActionInProgress.current = true;
+
     setIsSubmitting(true);
 
+    let orderWasCreated = false;
+    let createdOrderReference = "";
+    let createdOrderId = 0;
+
     try {
+      // Refresh and verify latest checkout total.
       const latestSummary = await refreshAndValidateTotal(
         Number(summaryData.grand_total)
       );
-      if (selectedCoin && Number(latestSummary.coins_used || 0) <= 0) {
-        throw new Error("Coin redemption was not confirmed by the checkout API. Please remove coins or contact support.");
+
+      if (selectedCoin && !redemptionId) {
+        throw new Error(
+          "Please apply your selected coins before placing the order."
+        );
       }
+
       const verifiedType = getCheckoutTypeFromSummary({
         data: latestSummary,
       });
+
+      // Verify stock before creating an order.
       await validateCheckoutStock(verifiedType);
 
-      if (getCheckoutTypeFromSummary({ data: latestSummary }) !== verifiedType)
-        throw new Error("Checkout mode changed. Please review your order again.");
+      if (
+        getCheckoutTypeFromSummary({
+          data: latestSummary,
+        }) !== verifiedType
+      ) {
+        throw new Error(
+          "Checkout mode changed. Please review your order again."
+        );
+      }
 
       const grandTotal = Number(latestSummary.grand_total);
+
       const buyNowItems =
         verifiedType === "buy_now"
           ? normalizeSummaryItems(latestSummary)
           : [];
 
+      // Prepare order payload.
       const orderPayload: any = {
         checkout_type: verifiedType,
         address_id: selectedDeliveryAddress.id,
         grand_total: grandTotal,
         payment_gateway: selectedGateway.paymentGateway,
+
+        ...(redemptionId !== null
+          ? { redemption_id: redemptionId }
+          : {}),
+
         summary_data: {
           subtotal: latestSummary.subtotal,
           coupon_discount: latestSummary.coupon_discount || 0,
           coupon_code: appliedCoupon || null,
-          coins_used: Number(latestSummary.coins_used || 0),
-          amount_redeemed: Number(latestSummary.amount_redeemed || 0),
+
+          coins_used: Number(
+            latestSummary.coins_used ||
+              appliedCoinAmount ||
+              0
+          ),
+
+          amount_redeemed: Number(
+            latestSummary.amount_redeemed || 0
+          ),
+
           shipping_charge: latestSummary.shipping_cost || 0,
           total_tax: latestSummary.total_tax,
           net_subtotal: latestSummary.subtotal_after_discount,
+
           tax_breakdown: latestSummary.tax_breakdown || [],
-          ...(verifiedType === "buy_now" ? { items: buyNowItems } : {}),
+
+          ...(verifiedType === "buy_now"
+            ? { items: buyNowItems }
+            : {}),
         },
       };
 
       if (verifiedType === "buy_now") {
         orderPayload.product_id = productId;
         orderPayload.quantity = quantity;
-        if (variantId > 0) orderPayload.variant_id = variantId;
+
+        if (variantId > 0) {
+          orderPayload.variant_id = variantId;
+        }
       }
 
+      console.log(
+        "FINAL PLACE ORDER PAYLOAD:",
+        orderPayload
+      );
+
+      // ───────────────────────────────────────────────────────────────────────
+      // Create the order only once.
+      // ───────────────────────────────────────────────────────────────────────
+
       const response = await placeOrder(orderPayload).unwrap();
-      void triggerGetCart();
-      window.dispatchEvent(new CustomEvent("cart:refresh"));
 
       const rawResponse = response as any;
+
       const responseData =
         "data" in rawResponse && rawResponse.data
           ? rawResponse.data
           : rawResponse;
-      const responseSuccess =
-        "success" in rawResponse ? rawResponse.success : true;
 
-      if (responseSuccess === false)
-        throw new Error(rawResponse.message || "Unable to place order");
+      const responseSuccess =
+        "success" in rawResponse
+          ? rawResponse.success
+          : true;
+
+      if (responseSuccess === false) {
+        throw new Error(
+          rawResponse.message || "Unable to place order"
+        );
+      }
+
+      /*
+       * IMPORTANT:
+       * Place Order API has succeeded.
+       *
+       * Permanently lock order creation immediately.
+       * Do not allow another order if payment initialization fails.
+       */
+
+      orderWasCreated = true;
+
+      orderCreatedRef.current = true;
+
+      setOrderCreatedForCheckout(true);
+
+      // Refresh cart after order creation.
+      void triggerGetCart();
+
+      window.dispatchEvent(
+        new CustomEvent("cart:refresh")
+      );
+
+      // ───────────────────────────────────────────────────────────────────────
+      // Read order details from API response.
+      // ───────────────────────────────────────────────────────────────────────
 
       const anyData = responseData as any;
-      const orderReferences = Array.isArray(anyData?.order_references)
+
+      const orderReferences = Array.isArray(
+        anyData?.order_references
+      )
         ? anyData.order_references
         : [];
+
       const orderIds = Array.isArray(anyData?.order_ids)
         ? anyData.order_ids
         : [];
-      const orders = Array.isArray(anyData?.orders) ? anyData.orders : [];
+
+      const orders = Array.isArray(anyData?.orders)
+        ? anyData.orders
+        : [];
+
       const firstOrder = orders[0];
 
       const orderId = Number(
-        firstOrder?.order_id ?? anyData?.order_id ?? orderIds[0] ?? 0
+        firstOrder?.order_id ??
+          anyData?.order_id ??
+          orderIds[0] ??
+          0
       );
+
       const orderReference = String(
         firstOrder?.order_reference ??
-        anyData?.order_reference ??
-        orderReferences[0] ??
-        ""
+          anyData?.order_reference ??
+          orderReferences[0] ??
+          ""
       ).trim();
+
       const razorpayOrderId = String(
         anyData?.razorpay_order_id || ""
       ).trim();
-      const razorpayKey = String(anyData?.razorpay_key || "").trim();
+
+      const razorpayKey = String(
+        anyData?.razorpay_key || ""
+      ).trim();
+
       const amount = Number(
-        anyData?.total_amount ?? firstOrder?.total_payable ?? grandTotal
+        anyData?.total_amount ??
+          firstOrder?.total_payable ??
+          grandTotal
       );
+
+      // Save order details immediately for recovery.
+      createdOrderId = orderId;
+      createdOrderReference = orderReference;
+
+      // ───────────────────────────────────────────────────────────────────────
+      // HDFC payment flow.
+      // ───────────────────────────────────────────────────────────────────────
 
       if (selectedGateway.kind === "hdfc") {
         const uniqueIds = [
           ...new Set(
             [
               ...orderIds.map(Number),
-              ...orders.map((order: any) => Number(order.order_id)),
-            ].filter((id) => Number.isSafeInteger(id) && id > 0)
+
+              ...orders.map((order: any) =>
+                Number(order.order_id)
+              ),
+            ].filter(
+              (id) =>
+                Number.isSafeInteger(id) && id > 0
+            )
           ),
         ];
 
-        if (uniqueIds.length > 1)
-          throw new Error(
-            "This checkout created multiple seller orders. The HDFC API accepts only one order ID, so combined payment needs a backend group-payment endpoint. No payment was initiated. Check your orders before retrying."
+        if (uniqueIds.length > 1) {
+          dispatch(
+            showToast({
+              message:
+                "Your order has been created, but combined HDFC payment is not supported for multiple seller orders. Please check your orders.",
+              type: "error",
+            })
           );
 
-        if (!Number.isSafeInteger(orderId) || orderId <= 0)
+          if (orderId > 0) {
+            goToOrderConfirmation(
+              orderId,
+              orderReference
+            );
+          }
+
+          return;
+        }
+
+        if (
+          !Number.isSafeInteger(orderId) ||
+          orderId <= 0
+        ) {
           throw new Error(
             "Place Order did not return a valid database order_id."
           );
+        }
 
         const initiation = unwrapHdfc(
           await initiateHdfcPayment(orderId).unwrap()
         );
 
-        if (!initiation.success)
+        if (!initiation.success) {
           throw new Error(
             initiation.message || "HDFC initiation failed"
           );
+        }
 
-        window.location.assign(getSafeHdfcUrl(initiation.payment_url));
+        // Redirect to secure HDFC payment.
+        window.location.assign(
+          getSafeHdfcUrl(initiation.payment_url)
+        );
+
         return;
       }
 
-      if (!orderReference)
-        throw new Error("Order reference was not returned by the server.");
+      // ───────────────────────────────────────────────────────────────────────
+      // Razorpay payment flow.
+      // ───────────────────────────────────────────────────────────────────────
 
-      if (!razorpayOrderId || !razorpayKey)
+      if (!orderReference) {
+        throw new Error(
+          "Order was created, but order reference was not returned."
+        );
+      }
+
+      if (!razorpayOrderId || !razorpayKey) {
         throw new Error(
           "Razorpay order details were not returned by the server."
         );
+      }
 
-      if (!amount || amount <= 0)
-        throw new Error("Invalid payment amount returned by the server.");
+      if (!Number.isFinite(amount) || amount <= 0) {
+        throw new Error(
+          "Invalid payment amount returned by the server."
+        );
+      }
+
+      dispatch(
+        showToast({
+          message: "Opening secure payment checkout...",
+          type: "info",
+        })
+      );
 
       await openRazorpay({
         orderId,
@@ -2746,45 +4032,115 @@ export default function CheckoutPage() {
       });
     } catch (error: any) {
       console.error("Checkout error:", error);
+
+      // ───────────────────────────────────────────────────────────────────────
+      // Order was created, but payment failed.
+      // Retry the existing order instead of creating a new order.
+      // ───────────────────────────────────────────────────────────────────────
+
+      if (orderWasCreated) {
+        if (createdOrderReference) {
+          enablePaymentRetry(
+            createdOrderReference,
+            "pending"
+          );
+
+          dispatch(
+            showToast({
+              message:
+                "Your order has been created, but payment was not completed. Please retry payment for the same order.",
+              type: "info",
+            })
+          );
+        } else if (createdOrderId > 0) {
+          goToOrderConfirmation(
+            createdOrderId,
+            ""
+          );
+
+          dispatch(
+            showToast({
+              message:
+                "Your order has already been created. Please check its payment status in your orders.",
+              type: "error",
+            })
+          );
+        } else {
+          dispatch(
+            showToast({
+              message:
+                "Your order may already have been created. Please check your orders before trying again.",
+              type: "error",
+            })
+          );
+        }
+
+        return;
+      }
+
+      // Normal validation/API error before order creation.
       dispatch(
         showToast({
-          message: getErrorMessage(error, "Failed to place order"),
+          message: getErrorMessage(
+            error,
+            "Failed to place order"
+          ),
           type: "error",
         })
       );
     } finally {
+      /*
+       * Release temporary request lock.
+       *
+       * Permanent orderCreatedRef remains true after
+       * successful order creation.
+       */
       paymentActionInProgress.current = false;
+
       setIsSubmitting(false);
     }
   };
 
+  // ───────────────────────────────────────────────────────────────────────────
+  // Button disabled states
+  // ───────────────────────────────────────────────────────────────────────────
+
   const hasUnavailable = unavailableProductIds.size > 0;
 
   const placeOrderDisabled = isRetryPaymentFlow
-    ? isSubmitting || isLoadingGatewaySettings || !retryOrderReference
+    ? isSubmitting ||
+      isLoadingGatewaySettings ||
+      !retryOrderReference
     : isSubmitting ||
-    !selectedDeliveryAddress?.id ||
-    isApplyingCoupon ||
-    Boolean(pendingCoupon) ||
-    Boolean(quantityUpdatingKey) ||
-    Boolean(removingSummaryItemKey) ||
-    hasUnavailable ||
-    isLoadingGatewaySettings;
+      orderCreatedForCheckout ||
+      !selectedDeliveryAddress?.id ||
+      isApplyingCoupon ||
+      Boolean(pendingCoupon) ||
+      Boolean(quantityUpdatingKey) ||
+      Boolean(removingSummaryItemKey) ||
+      hasUnavailable ||
+      isLoadingGatewaySettings ||
+      isApplyingCoins ||
+      isFetchingCheckoutSummary ||
+      (selectedCoin !== null && redemptionId === null);
 
+  // Exit payment retry.
   const handleExitPayment = () => {
     router.replace("/checkout");
   };
 
-  // ── Render ─────────────────────────────────────────────────────────────────
+  // ───────────────────────────────────────────────────────────────────────────
+  // Render
+  // ───────────────────────────────────────────────────────────────────────────
 
   return (
     <>
       <Header />
+
       <main
         className={`${poppins.className} min-h-screen bg-[#F7FAF8] px-4 pb-4 pt-2 text-[#17231A] sm:px-6 sm:pt-3 lg:pb-12`}
       >
         <div className="mx-auto w-full max-w-[1160px]">
-          {/* Breadcrumb */}
           <nav className="mb-1.5 flex items-center gap-2 text-[10px] font-medium text-[#87918A]">
             <button
               type="button"
@@ -2793,7 +4149,9 @@ export default function CheckoutPage() {
             >
               Home
             </button>
+
             <ChevronRight className="h-3 w-3" />
+
             <button
               type="button"
               onClick={() =>
@@ -2805,13 +4163,16 @@ export default function CheckoutPage() {
             >
               Products
             </button>
+
             <ChevronRight className="h-3 w-3" />
-            <span className="font-semibold text-[#173E2B]">Checkout</span>
+
+            <span className="font-semibold text-[#173E2B]">
+              Checkout
+            </span>
           </nav>
 
           <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-6">
             <div className="space-y-4">
-              {/* Address section */}
               {!isRetryPaymentFlow &&
                 (isLoadingAddresses ? (
                   <div className="rounded-xl border border-[#E4EAE6] bg-[#F5FBF6] px-4 py-3">
@@ -2828,6 +4189,7 @@ export default function CheckoutPage() {
                             {selectedDeliveryAddress?.postcode}
                           </span>
                         </p>
+
                         <p className="mt-1 line-clamp-2 text-[12px] text-[#718077] sm:truncate">
                           {selectedDeliveryAddress?.address_line_1}
                           {selectedDeliveryAddress?.address_line_2
@@ -2837,6 +4199,7 @@ export default function CheckoutPage() {
                           {selectedDeliveryAddress?.state}
                         </p>
                       </div>
+
                       <button
                         type="button"
                         onClick={() => setIsSelectorModalOpen(true)}
@@ -2855,6 +4218,7 @@ export default function CheckoutPage() {
                         <Plus className="h-3.5 w-3.5" />
                         Add new address
                       </button>
+
                       {selectedDeliveryAddress &&
                         !selectedDeliveryAddress.is_default && (
                           <button
@@ -2877,6 +4241,7 @@ export default function CheckoutPage() {
                       <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-[#16845B] ring-1 ring-[#E4EBE6]">
                         <MapPin className="h-4 w-4" />
                       </span>
+
                       <div>
                         <p className="text-[12px] font-semibold text-[#24352A]">
                           No delivery address yet
@@ -2886,6 +4251,7 @@ export default function CheckoutPage() {
                         </p>
                       </div>
                     </div>
+
                     <button
                       type="button"
                       onClick={openAddAddress}
@@ -2897,12 +4263,13 @@ export default function CheckoutPage() {
                   </div>
                 ))}
 
-              {/* Payment method section */}
+              {/* Payment methods */}
               <section className="overflow-hidden rounded-2xl border border-[#E4EBE6] bg-white shadow-[0_14px_40px_-32px_rgba(15,45,30,0.25)]">
                 <div className="flex items-center gap-3 border-b border-[#ECF1ED] px-5 py-3 sm:px-6">
                   <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EAF2FF] text-[#1557AD]">
                     <CreditCard className="h-[18px] w-[18px]" />
                   </span>
+
                   <div>
                     <h2 className="text-[16px] font-semibold tracking-[-0.02em] text-[#1B2C20]">
                       Choose Payment Method
@@ -2915,7 +4282,9 @@ export default function CheckoutPage() {
 
                 <div className="space-y-2.5 p-3.5 sm:p-4">
                   {PAYMENT_GATEWAY_OPTIONS.map((option) => {
-                    const isSelected = selectedGatewayId === option.id;
+                    const isSelected =
+                      selectedGatewayId === option.id;
+
                     const iconColor =
                       option.icon === "hdfc"
                         ? "text-[#B51F2B]"
@@ -2933,10 +4302,11 @@ export default function CheckoutPage() {
                           setSelectedGatewayId(option.id);
                           setHasManuallySelectedGateway(true);
                         }}
-                        className={`group flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left transition-all duration-200 sm:gap-4 sm:px-4 ${isSelected
+                        className={`group flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left transition-all duration-200 sm:gap-4 sm:px-4 ${
+                          isSelected
                             ? "border-[#7CA2E8] bg-[#F8FBFF] shadow-[0_0_0_2px_rgba(59,112,207,0.10),0_6px_18px_-15px_rgba(20,76,160,0.45)]"
                             : "border-[#E5ECF6] bg-white hover:border-[#B9CDED] hover:bg-[#FBFDFF]"
-                          }`}
+                        }`}
                       >
                         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#E8EEF8] bg-[#F0F5FD] sm:h-10 sm:w-10">
                           <GatewayBrandIcon
@@ -2944,19 +4314,23 @@ export default function CheckoutPage() {
                             className={`h-4 w-4 sm:h-5 sm:w-5 ${iconColor}`}
                           />
                         </span>
+
                         <span className="min-w-0 flex-1">
                           <span className="block text-[13px] font-bold leading-tight tracking-[-0.02em] text-[#182A40] sm:text-[14px]">
                             {option.title}
                           </span>
+
                           <span className="mt-0.5 block text-[11px] leading-[16px] text-[#64758B] sm:text-[11.5px]">
                             {option.description}
                           </span>
                         </span>
+
                         <span
-                          className={`flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full border transition-colors sm:h-[24px] sm:w-[24px] ${isSelected
+                          className={`flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full border transition-colors sm:h-[24px] sm:w-[24px] ${
+                            isSelected
                               ? "border-[#1557AD] bg-[#1557AD] text-white"
                               : "border-[#D6E0EF] bg-white text-transparent group-hover:border-[#9CB7E1]"
-                            }`}
+                          }`}
                         >
                           {isSelected ? (
                             <Check className="h-3 w-3 stroke-[3] sm:h-3.5 sm:w-3.5" />
@@ -2971,24 +4345,38 @@ export default function CheckoutPage() {
               </section>
             </div>
 
-            {/* Cart summary sidebar */}
+            {/* Order summary */}
             <aside className="lg:sticky lg:top-4">
               <CartSummary
                 summaryData={summaryData}
                 coinRole={coinRole}
+                coinBalances={coinBalances}
                 selectedCoin={selectedCoin}
-                onSelectCoin={setSelectedCoin}
+                onSelectCoin={handleSelectCoin}
+                coinAmount={coinAmount}
+                onCoinAmountChange={handleCoinAmountChange}
+                onApplyCoins={handleApplyCoins}
+                onRemoveCoins={handleRemoveCoins}
+                isApplyingCoins={isApplyingCoins}
+                redemptionId={redemptionId}
+                appliedCoinAmount={appliedCoinAmount}
                 loading={isLoadingCheckoutSummary && !summaryData}
                 onPlaceOrder={
-                  isRetryPaymentFlow ? handleRetryPayment : handlePlaceOrder
+                  isRetryPaymentFlow
+                    ? handleRetryPayment
+                    : handlePlaceOrder
                 }
                 isSubmitting={isSubmitting}
                 disabled={
                   !selectedDeliveryAddress?.id ||
+                  orderCreatedForCheckout ||
                   isApplyingCoupon ||
                   Boolean(pendingCoupon) ||
                   Boolean(quantityUpdatingKey) ||
-                  Boolean(removingSummaryItemKey)
+                  Boolean(removingSummaryItemKey) ||
+                  isApplyingCoins ||
+                  isFetchingCheckoutSummary ||
+                  (selectedCoin !== null && redemptionId === null)
                 }
                 couponInput={couponInput}
                 setCouponInput={setCouponInput}
@@ -3016,22 +4404,27 @@ export default function CheckoutPage() {
             </aside>
           </div>
 
-          {/* Bottom info banner */}
+          {/* Checkout footer section */}
           <div className="mt-5 mb-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#E4EBE6] bg-gradient-to-r from-white via-white to-[#F0F8F2] px-4 py-3 shadow-[0_10px_35px_-30px_rgba(15,45,30,0.22)] sm:px-6">
             <div className="min-w-0">
               <div className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-[#EAF6EF] px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-[#16845B]">
                 <ShieldCheck className="h-3 w-3" />
                 Safe &amp; secure checkout
               </div>
+
               <h1 className="text-[18px] font-semibold tracking-[-0.04em] text-[#17251B] sm:text-[22px]">
-                {isRetryPaymentFlow ? "Complete Your Payment" : "Checkout"}
+                {isRetryPaymentFlow
+                  ? "Complete Your Payment"
+                  : "Checkout"}
               </h1>
+
               <p className="mt-0.5 hidden text-[11px] leading-5 text-[#78847C] sm:block">
                 {isRetryPaymentFlow
                   ? "Retry your previous payment without creating a new order."
                   : "Confirm your delivery address and review your order before placing it."}
               </p>
             </div>
+
             <div className="flex items-center gap-2 rounded-xl border border-[#E1EAE3] bg-white/80 px-3 py-2 text-[10px] font-medium text-[#526258]">
               <LockKeyhole className="h-4 w-4 text-[#16845B]" />
               Encrypted payment
@@ -3047,16 +4440,20 @@ export default function CheckoutPage() {
                 <span className="block text-[9px] uppercase tracking-wide text-[#89928B]">
                   {isRetryPaymentFlow ? "Payment" : "Total"}
                 </span>
+
                 <span className="block text-[15px] font-bold leading-tight tracking-[-0.03em] text-[#17251B]">
                   {summaryData
                     ? formatPrice(summaryData.grand_total)
                     : "Pending"}
                 </span>
               </div>
+
               <div className="min-w-0 flex-1">
                 <PlaceOrderButton
                   onClick={
-                    isRetryPaymentFlow ? handleRetryPayment : handlePlaceOrder
+                    isRetryPaymentFlow
+                      ? handleRetryPayment
+                      : handlePlaceOrder
                   }
                   isSubmitting={isSubmitting}
                   gatewayLoading={isLoadingGatewaySettings}
@@ -3067,6 +4464,7 @@ export default function CheckoutPage() {
                 />
               </div>
             </div>
+
             {isRetryPaymentFlow && (
               <button
                 type="button"
@@ -3081,7 +4479,7 @@ export default function CheckoutPage() {
           </div>
         )}
 
-        {/* Modals */}
+        {/* Address form modal */}
         <AddressFormModal
           isOpen={isAddressModalOpen}
           inline={false}
@@ -3091,11 +4489,16 @@ export default function CheckoutPage() {
               setEditingAddress(null);
             }
           }}
-          onSubmit={editingAddress ? handleUpdateAddress : handleCreateAddress}
+          onSubmit={
+            editingAddress
+              ? handleUpdateAddress
+              : handleCreateAddress
+          }
           initialData={editingAddress}
           isLoading={isCreating || isUpdating}
         />
 
+        {/* Address selector modal */}
         <AddressSelectorModal
           isOpen={isSelectorModalOpen}
           addresses={availableDeliveryAddresses}
@@ -3117,26 +4520,32 @@ export default function CheckoutPage() {
           onClose={() => setIsSelectorModalOpen(false)}
         />
       </main>
+
       <Footer />
     </>
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Helpers (used in main component)
+// Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
 function getSafeHdfcUrl(value: unknown): string {
-  if (typeof value !== "string" || !value.trim())
+  if (typeof value !== "string" || !value.trim()) {
     throw new Error(
       "HDFC payment URL is unavailable. Please try again."
     );
+  }
+
   const url = new URL(value);
+
   if (
     url.protocol !== "https:" ||
     url.hostname !== "smartgateway.hdfc.bank.in"
-  )
+  ) {
     throw new Error("Unexpected HDFC payment destination.");
+  }
+
   return url.href;
 }
 

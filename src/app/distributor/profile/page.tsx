@@ -10,6 +10,7 @@ import {
   UserRound,
   X,
 } from "lucide-react";
+
 import {
   useEffect,
   useRef,
@@ -18,11 +19,14 @@ import {
   type KeyboardEvent,
   type FormEvent,
 } from "react";
+
 import { useDispatch } from "react-redux";
 
 import DashboardHeader from "@/components/Distributor/distributor/DashboardHeader";
 import Sidebar from "../../../components/Distributor/distributor/Sidebar";
+
 import { useGetUserProfileQuery } from "@/lib/redux/api/authApi";
+
 import {
   useChangePasswordMutation,
   useUpdateUserProfileMutation,
@@ -32,20 +36,14 @@ import AddressComponent from "@/components/profile/AddressComponent";
 import { showToast } from "@/lib/slices/toastSlice";
 import DistributorPVCSection from "./DistributorPVCSection";
 import Loding from "@/components/common/Loding";
-import { useCreateCorrectionRequestMutation } from "@/lib/redux/api/distributor/userDashboardApi";
+
+import {
+  useCreateCorrectionRequestMutation,
+} from "@/lib/redux/api/distributor/userDashboardApi";
 
 const NAVY = "#0E1B3D";
 const EMERALD = "#1f9d6b";
-
-/*
-|--------------------------------------------------------------------------
-| Sticky Layout
-|--------------------------------------------------------------------------
-| Both side columns use the same sticky behavior.
-| There is NO internal scrollbar on the left or right columns.
-| The browser's normal page scrollbar handles all scrolling.
-|--------------------------------------------------------------------------
-*/
+const RED = "#d92d20";
 
 const stickyColumnClass =
   "min-w-0 grid grid-cols-1 items-start gap-4 xl:sticky xl:top-[88px] xl:self-start xl:z-10";
@@ -62,11 +60,11 @@ const labelClass =
 const sectionClass =
   "min-w-0 w-full rounded-[12px] border border-[#e9edf2] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)] sm:p-5 lg:p-[22px]";
 
-const getWordCount = (value: string) =>
-  value.trim() ? value.trim().split(/\s+/).length : 0;
-
 const MAX_PHONE_CHANGE_REASON_WORDS = 150;
 const MIN_PHONE_CHANGE_REASON_CHARACTERS = 10;
+
+const getWordCount = (value: string) =>
+  value.trim() ? value.trim().split(/\s+/).length : 0;
 
 type ApiError = {
   data?: {
@@ -74,6 +72,26 @@ type ApiError = {
     message?: string;
   };
   message?: string;
+};
+
+type CorrectionRequest = {
+  id?: number;
+  type?: string;
+  status?: string;
+  created_at?: string | null;
+  updated_at?: string | null;
+  rejected_at?: string | null;
+  rejected_reason?: string | null;
+  reason?: string | null;
+};
+
+type ProfileApiResponse = {
+  status?: boolean;
+  message?: string;
+  user?: any;
+  next_allowed_at?: string | null;
+  can_resubmit_correction?: boolean;
+  correction_rejection_days?: number;
 };
 
 function getErrorMessage(err: unknown, fallback: string): string {
@@ -94,6 +112,39 @@ function getErrorMessage(err: unknown, fallback: string): string {
   }
 
   return data?.message || error?.message || fallback;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Date Helpers                                                               */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * API example:
+ * 2026-11-09 18:29:06
+ *
+ * The API timestamp has no timezone suffix.
+ * This implementation interprets it in the browser's local timezone.
+ * If your backend returns UTC timestamps without a suffix, change this
+ * parser to explicitly interpret those timestamps as UTC.
+ */
+function parseApiDate(value?: string | null): number | null {
+  if (!value) return null;
+
+  const normalized = value.trim().replace(" ", "T");
+  const timestamp = new Date(normalized).getTime();
+
+  return Number.isFinite(timestamp) ? timestamp : null;
+}
+
+function formatApiDate(value?: string | null): string | null {
+  const timestamp = parseApiDate(value);
+
+  if (timestamp === null) return null;
+
+  return new Date(timestamp).toLocaleString("en-IN", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
 }
 
 /* -------------------------------------------------------------------------- */
@@ -484,9 +535,7 @@ function ProfileForm({
   }, [user]);
 
   const validateFullName = (name: string) => {
-    if (!name.trim()) {
-      return "Full name is required";
-    }
+    if (!name.trim()) return "Full name is required";
 
     if (name.trim().length < 2) {
       return "Name must be at least 2 characters";
@@ -647,29 +696,54 @@ function ProfileForm({
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/* Phone Change Request Card                                                  */
-/* -------------------------------------------------------------------------- */
-
 function PhoneChangeRequestCard({
   user,
   onClick,
+  nextAllowedAt,
+  canResubmit,
 }: {
   user: any;
   onClick: () => void;
+  nextAllowedAt?: string | null;
+  canResubmit?: boolean;
 }) {
-  const phoneRequests = (user?.correction_requests ?? [])
-    .filter((request: any) => request.type === "phone_request")
+  const [currentTime, setCurrentTime] = useState<number | null>(null);
+
+  useEffect(() => {
+    setCurrentTime(Date.now());
+
+    const interval = window.setInterval(() => {
+      setCurrentTime(Date.now());
+    }, 1000);
+
+    return () => window.clearInterval(interval);
+  }, []);
+
+  const phoneRequests: CorrectionRequest[] = [
+    ...(Array.isArray(user?.correction_requests)
+      ? user.correction_requests
+      : []),
+    ...(user?.latest_correction_request
+      ? [user.latest_correction_request]
+      : []),
+  ]
+    .filter((request) => request?.type === "phone_request")
     .sort(
-      (a: any, b: any) =>
-        new Date(b.created_at).getTime() -
-        new Date(a.created_at).getTime()
+      (a, b) =>
+        (parseApiDate(b.created_at) ?? 0) -
+        (parseApiDate(a.created_at) ?? 0)
     );
 
   const latestRequest = phoneRequests[0] ?? null;
+
   const rawStatus = latestRequest?.status?.toLowerCase() ?? null;
 
-  type UIState = "none" | "pending" | "approved" | "completed";
+  type UIState =
+    | "none"
+    | "pending"
+    | "approved"
+    | "completed"
+    | "rejected";
 
   const uiState: UIState =
     rawStatus === "pending"
@@ -678,7 +752,37 @@ function PhoneChangeRequestCard({
       ? "approved"
       : rawStatus === "completed"
       ? "completed"
+      : rawStatus === "rejected"
+      ? "rejected"
       : "none";
+
+  const allowedTimestamp = parseApiDate(nextAllowedAt);
+
+  const cooldownActive =
+    currentTime !== null &&
+    allowedTimestamp !== null &&
+    currentTime < allowedTimestamp;
+
+  const remainingMilliseconds =
+    cooldownActive && currentTime !== null && allowedTimestamp !== null
+      ? Math.max(0, allowedTimestamp - currentTime)
+      : 0;
+
+  const days = Math.floor(
+    remainingMilliseconds / (1000 * 60 * 60 * 24)
+  );
+
+  const hours = Math.floor(
+    (remainingMilliseconds / (1000 * 60 * 60)) % 24
+  );
+
+  const minutes = Math.floor(
+    (remainingMilliseconds / (1000 * 60)) % 60
+  );
+
+  const seconds = Math.floor(
+    (remainingMilliseconds / 1000) % 60
+  );
 
   const statusMeta: Record<
     Exclude<UIState, "none">,
@@ -712,13 +816,45 @@ function PhoneChangeRequestCard({
       bg: "#eef2fb",
       dot: "#0E1B3D",
       description:
-        "Your phone number was changed successfully. You can request another change if needed.",
+        "Your phone number was changed successfully.",
+    },
+    rejected: {
+      label: "Rejected",
+      color: RED,
+      bg: "#fef3f2",
+      dot: RED,
+      description:
+        "Your phone number change request was rejected by the admin.",
     },
   };
 
   const meta = uiState !== "none" ? statusMeta[uiState] : null;
 
-  const showChangeButton = uiState === "none" || uiState === "completed";
+  /*
+   * Pending and approved requests always block another request.
+   * A rejected request remains blocked until the cooldown ends.
+   * The API permission must also allow resubmission.
+   */
+  const showChangeButton =
+    currentTime !== null &&
+    uiState !== "pending" &&
+    uiState !== "approved" &&
+    !cooldownActive &&
+    canResubmit === true;
+
+  const changeButtonLabel =
+    uiState === "rejected"
+      ? "Request Phone Change Again"
+      : uiState === "completed"
+      ? "Change Phone Number Again"
+      : "Change Your Phone Number";
+
+  const showCooldownSection =
+    cooldownActive &&
+    uiState !== "pending" &&
+    uiState !== "approved";
+
+  const showCombinedCard = meta !== null || showCooldownSection;
 
   return (
     <section className={`${sectionClass} mt-4 sm:mt-[14px]`}>
@@ -749,72 +885,119 @@ function PhoneChangeRequestCard({
             }}
           >
             <Phone size={15} />
-
-            {uiState === "completed"
-              ? "Change Phone Number Again"
-              : "Change Your Phone Number"}
+            {changeButtonLabel}
           </button>
         )}
       </div>
 
-      {meta && (
+      {showCombinedCard && (
         <div
           className="mt-4 rounded-[10px] border px-3 py-3 sm:px-4"
           style={{
-            backgroundColor: meta.bg,
-            borderColor: `${meta.color}33`,
+            backgroundColor: meta?.bg ?? "#f8faff",
+            borderColor: meta ? `${meta.color}33` : "#e9edf2",
           }}
         >
-          <div className="flex min-w-0 items-center gap-2">
-            <span
-              className="h-2.5 w-2.5 shrink-0 rounded-full"
-              style={{ backgroundColor: meta.dot }}
-            />
+          {meta && (
+            <>
+              <div className="flex min-w-0 items-center gap-2">
+                <span
+                  className="h-2.5 w-2.5 shrink-0 rounded-full"
+                  style={{ backgroundColor: meta.dot }}
+                />
+                <p
+                  className="text-[11px] font-bold uppercase tracking-wide sm:text-[11.5px]"
+                  style={{ color: meta.color }}
+                >
+                  {meta.label}
+                </p>
+              </div>
 
-            <p
-              className="text-[11px] font-bold uppercase tracking-wide sm:text-[11.5px]"
-              style={{ color: meta.color }}
-            >
-              {meta.label}
-            </p>
-          </div>
+              <p className="mt-2 text-[11px] leading-5 text-[#667085]">
+                {meta.description}
+              </p>
+            </>
+          )}
 
-          <p className="mt-2 text-[11px] leading-5 text-[#667085]">
-            {meta.description}
-          </p>
+          {uiState === "rejected" && (
+            <>
+              {(latestRequest.rejected_at ||
+                latestRequest.updated_at) && (
+                <p className="mt-2 text-[10.5px] text-[#98a2b3]">
+                  Rejected on{" "}
+                  {formatApiDate(
+                    latestRequest.rejected_at ||
+                      latestRequest.updated_at
+                  )}
+                </p>
+              )}
+
+              {(latestRequest.rejected_reason ||
+                latestRequest.reason) && (
+                <div className="mt-2.5 rounded-[8px] border border-[#d92d2033] bg-white/70 px-2.5 py-2">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-[#98a2b3]">
+                    Admin remark
+                  </p>
+
+                  <p className="mt-1 break-words text-[10.5px] leading-4 text-[#475066]">
+                    {latestRequest.rejected_reason ||
+                      latestRequest.reason}
+                  </p>
+                </div>
+              )}
+            </>
+          )}
+
+          {(uiState === "pending" || uiState === "approved") &&
+            latestRequest?.created_at && (
+              <p className="mt-2 text-[10.5px] text-[#98a2b3]">
+                Submitted on {formatApiDate(latestRequest.created_at)}
+              </p>
+            )}
+
+          {showCooldownSection && (
+            <>
+              <div className="mt-3 flex items-start gap-2">
+                <ShieldCheck
+                  size={16}
+                  className="mt-0.5 shrink-0 text-[#0E1B3D]"
+                />
+
+                <p className="text-[11px] leading-5 text-[#667085]">
+                  You can submit another phone number change request
+                  after the cooldown period ends.
+                </p>
+              </div>
+
+              {nextAllowedAt && (
+                <p className="mt-2.5 break-words text-[10.5px] text-[#667085]">
+                  Next request available:{" "}
+                  <span className="font-semibold text-[#0E1B3D]">
+                    {formatApiDate(nextAllowedAt) || nextAllowedAt}
+                  </span>
+                </p>
+              )}
+            </>
+          )}
 
           {uiState === "approved" && (
-            <div
-              className="mt-2.5 flex items-start gap-2 rounded-[8px] border border-[#1f9d6b33] bg-white/70 px-2.5 py-2"
-              role="note"
-            >
+            <div className="mt-2.5 flex items-start gap-2 rounded-[8px] border border-[#1f9d6b33] bg-white/70 px-2.5 py-2">
               <ShieldCheck
                 size={15}
-                className="mt-0.5 shrink-0"
-                style={{ color: "#1f9d6b" }}
+                className="mt-0.5 shrink-0 text-[#1f9d6b]"
               />
 
               <p className="text-[10.5px] leading-4 text-[#475066]">
                 A secure link has been sent to you. Please open it to
-                change your phone number. If you didn&apos;t receive it,
-                contact admin.
+                change your phone number. If you didn&apos;t receive
+                it, contact admin.
               </p>
             </div>
           )}
 
-          {uiState === "pending" && latestRequest?.created_at && (
-            <p className="mt-2 text-[10.5px] text-[#98a2b3]">
-              Submitted on{" "}
-              {new Date(latestRequest.created_at).toLocaleString("en-IN", {
-                dateStyle: "medium",
-                timeStyle: "short",
-              })}
-            </p>
-          )}
-
           {uiState === "completed" && (
             <p className="mt-2 text-[10.5px] text-[#98a2b3]">
-              You may request another change using the button above.
+              You may request another change when permitted.
             </p>
           )}
         </div>
@@ -822,7 +1005,6 @@ function PhoneChangeRequestCard({
     </section>
   );
 }
-
 /* -------------------------------------------------------------------------- */
 /* Bank / Wallet Details                                                      */
 /* -------------------------------------------------------------------------- */
@@ -1171,17 +1353,9 @@ function SecuritySection() {
     const passwordError = validatePassword(security.password);
     const confirmError = validateConfirmPassword(security.confirmPassword);
 
-    if (oldError) {
-      nextErrors.oldPassword = oldError;
-    }
-
-    if (passwordError) {
-      nextErrors.password = passwordError;
-    }
-
-    if (confirmError) {
-      nextErrors.confirmPassword = confirmError;
-    }
+    if (oldError) nextErrors.oldPassword = oldError;
+    if (passwordError) nextErrors.password = passwordError;
+    if (confirmError) nextErrors.confirmPassword = confirmError;
 
     setErrors(nextErrors);
 
@@ -1417,14 +1591,18 @@ function ChangePhoneNumberModal({
               value={reason}
               onChange={(event) => {
                 const nextValue = event.target.value;
+
                 const words = nextValue.trim()
                   ? nextValue.trim().split(/\s+/)
                   : [];
 
                 if (words.length > MAX_PHONE_CHANGE_REASON_WORDS) {
-                  setReason(words
-                    .slice(0, MAX_PHONE_CHANGE_REASON_WORDS)
-                    .join(" "));
+                  setReason(
+                    words
+                      .slice(0, MAX_PHONE_CHANGE_REASON_WORDS)
+                      .join(" ")
+                  );
+
                   setError("Maximum 150 words are allowed.");
                   return;
                 }
@@ -1462,7 +1640,6 @@ function ChangePhoneNumberModal({
                 }`}
               >
                 {getWordCount(reason)}/{MAX_PHONE_CHANGE_REASON_WORDS} words
-             
               </span>
             </div>
           </div>
@@ -1493,8 +1670,12 @@ function ChangePhoneNumberModal({
 export default function DistributorProfilePage() {
   const dispatch = useDispatch();
 
-  const { data, isLoading, isError, refetch } =
-    useGetUserProfileQuery(undefined);
+  const {
+    data,
+    isLoading,
+    isError,
+    refetch,
+  } = useGetUserProfileQuery(undefined);
 
   const [updateUserProfile, { isLoading: isUpdating }] =
     useUpdateUserProfileMutation();
@@ -1504,7 +1685,18 @@ export default function DistributorProfilePage() {
     { isLoading: isSendingPhoneRequest },
   ] = useCreateCorrectionRequestMutation();
 
-  const user = data?.user;
+  const profileResponse = data as ProfileApiResponse | undefined;
+
+  const user = profileResponse?.user;
+
+  /*
+   * These values come from the top-level API response,
+   * not from the user object.
+   */
+  const nextAllowedAt = profileResponse?.next_allowed_at ?? null;
+
+  const canResubmitCorrection =
+    profileResponse?.can_resubmit_correction;
 
   const [showPhoneModal, setShowPhoneModal] = useState(false);
   const [phoneChangeReason, setPhoneChangeReason] = useState("");
@@ -1562,6 +1754,75 @@ export default function DistributorProfilePage() {
   };
 
   /* ------------------------------------------------------------------------ */
+  /* Open Phone Modal                                                         */
+  /* ------------------------------------------------------------------------ */
+
+  const openPhoneModal = () => {
+    const requests: CorrectionRequest[] = [
+      ...(Array.isArray(user?.correction_requests)
+        ? user.correction_requests
+        : []),
+      ...(user?.latest_correction_request
+        ? [user.latest_correction_request]
+        : []),
+    ]
+      .filter((request) => request?.type === "phone_request")
+      .sort(
+        (a, b) =>
+          (parseApiDate(b.created_at) ?? 0) -
+          (parseApiDate(a.created_at) ?? 0)
+      );
+
+    const latest = requests[0];
+    const status = latest?.status?.toLowerCase();
+
+    if (status === "pending" || status === "approved") {
+      dispatch(
+        showToast({
+          message:
+            status === "pending"
+              ? "Your phone change request is already pending admin review."
+              : "Your request is approved. Please use the link sent to you to change your number.",
+          type: "info",
+        })
+      );
+
+      return;
+    }
+
+    const allowedAt = parseApiDate(nextAllowedAt);
+
+    if (allowedAt !== null && Date.now() < allowedAt) {
+      dispatch(
+        showToast({
+          message: `You can submit another request after ${
+            formatApiDate(nextAllowedAt) || nextAllowedAt
+          }.`,
+          type: "info",
+        })
+      );
+
+      return;
+    }
+
+    if (canResubmitCorrection !== true) {
+      dispatch(
+        showToast({
+          message:
+            "A new correction request is not currently permitted. Please refresh your profile and try again.",
+          type: "info",
+        })
+      );
+
+      return;
+    }
+
+    setPhoneChangeReason("");
+    setPhoneRequestError("");
+    setShowPhoneModal(true);
+  };
+
+  /* ------------------------------------------------------------------------ */
   /* Submit Phone Change Request                                              */
   /* ------------------------------------------------------------------------ */
 
@@ -1582,17 +1843,44 @@ export default function DistributorProfilePage() {
       return;
     }
 
+    /*
+     * Recheck the cooldown and API permission at submission time.
+     */
+    const allowedAt = parseApiDate(nextAllowedAt);
+
+    if (allowedAt !== null && Date.now() < allowedAt) {
+      setPhoneRequestError(
+        `You can submit another request after ${
+          formatApiDate(nextAllowedAt) || nextAllowedAt
+        }.`
+      );
+
+      return;
+    }
+
+    if (canResubmitCorrection !== true) {
+      setPhoneRequestError(
+        "The API has not permitted another correction request yet. Please refresh your profile."
+      );
+
+      return;
+    }
+
     try {
       const response = await createCorrectionRequest({
-        reason: `I wanna change my phone. Reason: ${trimmedReason}`,
+        reason: trimmedReason,
       }).unwrap();
 
       if (response?.success === false || response?.status === false) {
+        const message =
+          response.message ||
+          "Unable to send phone number change request.";
+
+        setPhoneRequestError(message);
+
         dispatch(
           showToast({
-            message:
-              response.message ||
-              "Unable to send phone number change request.",
+            message,
             type: "error",
           })
         );
@@ -1613,6 +1901,10 @@ export default function DistributorProfilePage() {
       setPhoneChangeReason("");
       setPhoneRequestError("");
 
+      /*
+       * Refresh the profile so the latest request, cooldown,
+       * and permission returned by the server are displayed.
+       */
       await refetch();
     } catch (error: unknown) {
       const message = getErrorMessage(
@@ -1628,42 +1920,13 @@ export default function DistributorProfilePage() {
           type: "error",
         })
       );
+
+      /*
+       * Refresh in case the server rejected the request because
+       * the cooldown or permission changed.
+       */
+      await refetch();
     }
-  };
-
-  /* ------------------------------------------------------------------------ */
-  /* Open Phone Modal                                                         */
-  /* ------------------------------------------------------------------------ */
-
-  const openPhoneModal = () => {
-    const phoneRequests = (user?.correction_requests ?? [])
-      .filter((request: any) => request.type === "phone_request")
-      .sort(
-        (a: any, b: any) =>
-          new Date(b.created_at).getTime() -
-          new Date(a.created_at).getTime()
-      );
-
-    const latest = phoneRequests[0];
-    const status = latest?.status?.toLowerCase();
-
-    if (status === "pending" || status === "approved") {
-      dispatch(
-        showToast({
-          message:
-            status === "pending"
-              ? "Your phone change request is already pending admin review."
-              : "Your request is approved. Please use the link sent to you to change your number.",
-          type: "info",
-        })
-      );
-
-      return;
-    }
-
-    setPhoneChangeReason("");
-    setPhoneRequestError("");
-    setShowPhoneModal(true);
   };
 
   /* ------------------------------------------------------------------------ */
@@ -1772,7 +2035,7 @@ export default function DistributorProfilePage() {
             {/* Three Column Profile Layout */}
 
             <div className="grid min-w-0 grid-cols-1 items-start gap-4 sm:gap-5 xl:grid-cols-[220px_minmax(0,1fr)_300px] xl:gap-[14px]">
-              {/* LEFT COLUMN - STICKY PROFILE */}
+              {/* LEFT COLUMN */}
 
               <aside
                 className={`${stickyColumnClass} sm:grid-cols-2 xl:grid-cols-1 xl:gap-[14px]`}
@@ -1791,16 +2054,23 @@ export default function DistributorProfilePage() {
                 />
               </aside>
 
-              {/* MIDDLE COLUMN - NORMAL PAGE SCROLL */}
+              {/* MIDDLE COLUMN */}
 
               <div className="min-w-0">
                 <ProfileForm
                   user={user}
                   loading={isUpdating}
-                  onSave={(profileData) => handleUpdateProfile(profileData)}
+                  onSave={(profileData) =>
+                    handleUpdateProfile(profileData)
+                  }
                 />
 
-                <PhoneChangeRequestCard user={user} onClick={openPhoneModal} />
+                <PhoneChangeRequestCard
+                  user={user}
+                  onClick={openPhoneModal}
+                  nextAllowedAt={nextAllowedAt}
+                  canResubmit={canResubmitCorrection}
+                />
 
                 <AddressSection />
 
@@ -1809,8 +2079,7 @@ export default function DistributorProfilePage() {
                 </div>
               </div>
 
-              {/* RIGHT COLUMN - STICKY BANK AND SECURITY */}
-              {/* No max-height and no overflow-y-auto */}
+              {/* RIGHT COLUMN */}
 
               <aside
                 className={`${stickyColumnClass} sm:grid-cols-2 xl:grid-cols-1 xl:gap-[14px]`}

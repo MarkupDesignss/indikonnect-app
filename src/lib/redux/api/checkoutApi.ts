@@ -1,4 +1,6 @@
+
 import { baseApi } from "./baseApi";
+
 // =========================================================
 // CHECKOUT SUMMARY ITEM
 // =========================================================
@@ -17,6 +19,7 @@ export interface CheckoutSummaryItem {
   total_tax: number;
   line_total: number;
 }
+
 // =========================================================
 // CHECKOUT SUMMARY RESPONSE
 // =========================================================
@@ -117,6 +120,7 @@ export interface CheckoutSummaryResponse {
   };
   message?: string;
 }
+
 // =========================================================
 // CHECKOUT SUMMARY PARAMS
 // =========================================================
@@ -125,10 +129,37 @@ export interface CheckoutSummaryParams {
   address_id?: number;
   coupon_code?: string;
   coins?: number;
-  // Buy Now*
+
+  // Buy Now
   product_id?: number;
   quantity?: number;
 }
+
+// =========================================================
+// APPLY COINS REQUEST
+// =========================================================
+export interface ApplyCoinsRequest {
+  coins: number;
+  point_type: string;
+}
+
+// =========================================================
+// APPLY COINS RESPONSE
+// =========================================================
+export interface ApplyCoinsResponse {
+  success?: boolean;
+  message?: string;
+  redemption_id?: number | string;
+  coins?: number;
+  amount_redeemed?: number;
+  data?: {
+    redemption_id?: number | string;
+    coins?: number;
+    amount_redeemed?: number;
+    [key: string]: unknown;
+  };
+}
+
 // =========================================================
 // PLACE ORDER REQUEST
 // =========================================================
@@ -137,9 +168,14 @@ export interface PlaceOrderRequest {
   grand_total: number;
   payment_gateway: "razorpay" | string;
   checkout_type: "cart" | "buy_now";
-  // Buy Now*
+
+  // Coins redemption
+  redemption_id?: number | string;
+
+  // Buy Now
   product_id?: number;
   quantity?: number;
+
   summary_data?: {
     subtotal: number;
     coupon_discount: number;
@@ -152,6 +188,7 @@ export interface PlaceOrderRequest {
     tax_breakdown?: unknown[];
   };
 }
+
 // =========================================================
 // PLACE ORDER RESPONSE
 // =========================================================
@@ -163,6 +200,7 @@ export interface PlaceOrderOrder {
   total_tax: string | number;
   total_payable: string | number;
 }
+
 export interface PlaceOrderResponse {
   success?: boolean;
   message?: string;
@@ -206,6 +244,7 @@ export interface PlaceOrderResponse {
     amount?: string | number;
   };
 }
+
 // =========================================================
 // CONFIRMED ORDER IMAGE
 // =========================================================
@@ -216,6 +255,7 @@ export interface ConfirmedOrderImage {
   is_primary?: boolean;
   sort_order?: number;
 }
+
 // =========================================================
 // CONFIRMED ORDER ITEM
 // =========================================================
@@ -245,6 +285,7 @@ export interface ConfirmedOrderItem {
   images?: ConfirmedOrderImage[];
   primary_image?: string | null;
 }
+
 // =========================================================
 // CONFIRMED ORDER ADDRESS
 // =========================================================
@@ -262,6 +303,7 @@ export interface ConfirmedOrderAddress {
   country?: string | null;
   full_address?: string | null;
 }
+
 // =========================================================
 // CONFIRMED ORDER USER
 // =========================================================
@@ -272,6 +314,7 @@ export interface ConfirmedOrderUser {
   phone: string | null;
   is_distributor?: boolean;
 }
+
 // =========================================================
 // CONFIRMED ORDER INVOICE
 // =========================================================
@@ -280,6 +323,7 @@ export interface ConfirmedOrderInvoice {
   invoice_url: string;
   generated_at: string;
 }
+
 // =========================================================
 // CONFIRMED ORDER TIMELINE
 // =========================================================
@@ -289,6 +333,7 @@ export interface ConfirmedOrderTimeline {
   shipped_at?: string | null;
   delivered_at?: string | null;
 }
+
 // =========================================================
 // CONFIRMED ORDER
 // =========================================================
@@ -327,6 +372,7 @@ export interface ConfirmedOrder {
   invoice?: ConfirmedOrderInvoice | null;
   timeline?: ConfirmedOrderTimeline;
 }
+
 // =========================================================
 // AGGREGATED SUMMARY
 // =========================================================
@@ -349,6 +395,7 @@ export interface ConfirmedOrderAggregatedSummary {
   amount_paid?: number | string;
   total_items: number;
 }
+
 // =========================================================
 // CONFIRMED ORDER DATA
 // =========================================================
@@ -358,6 +405,7 @@ export interface ConfirmedOrderData {
   aggregated_summary: ConfirmedOrderAggregatedSummary;
   orders: ConfirmedOrder[];
 }
+
 // =========================================================
 // CONFIRMED ORDER RESPONSE
 // =========================================================
@@ -366,9 +414,6 @@ export interface ConfirmedOrderResponse {
   data: ConfirmedOrderData;
   message?: string;
 }
-// =========================================================
-// CHECKOUT API
-// =========================================================
 
 // =========================================================
 // HDFC PAYMENT API TYPES
@@ -400,15 +445,23 @@ export interface HdfcApiResult {
   data?: HdfcApiResult;
 }
 
+// =========================================================
+// HDFC ORDER ROUTE
+// =========================================================
 const hdfcOrderRoute = (orderId: number): string => {
   if (!Number.isSafeInteger(orderId) || orderId <= 0) {
     throw new Error("Valid numeric database order ID is required");
   }
+
   return `/payments/hdfc/orders/${orderId}`;
 };
 
+// =========================================================
+// CHECKOUT API
+// =========================================================
 export const checkoutApi = baseApi.injectEndpoints({
   overrideExisting: true,
+
   endpoints: (builder) => ({
     // =====================================================
     // CHECKOUT SUMMARY
@@ -419,24 +472,31 @@ export const checkoutApi = baseApi.injectEndpoints({
     >({
       query: (params) => {
         const queryParams: Record<string, string | number> = {};
+
         if (params?.checkout_type) {
           queryParams.checkout_type = params.checkout_type;
         }
+
         if (params?.address_id !== undefined) {
           queryParams.address_id = params.address_id;
         }
+
         if (params?.coupon_code) {
           queryParams.coupon_code = params.coupon_code;
         }
+
         if (params?.coins !== undefined) {
           queryParams.coins = params.coins;
         }
+
         if (params?.product_id !== undefined) {
           queryParams.product_id = params.product_id;
         }
+
         if (params?.quantity !== undefined) {
           queryParams.quantity = params.quantity;
         }
+
         return {
           url: "/checkout/summary",
           method: "GET",
@@ -445,32 +505,64 @@ export const checkoutApi = baseApi.injectEndpoints({
       },
       providesTags: ["Cart"],
     }),
+
+    // =====================================================
+    // APPLY COINS
+    // POST: /checkout/apply-coins
+    // =====================================================
+    applyCoins: builder.mutation<
+      ApplyCoinsResponse,
+      ApplyCoinsRequest
+    >({
+      query: (data) => ({
+        url: "/checkout/apply-coins",
+        method: "POST",
+        body: {
+          coins: data.coins,
+          point_type: data.point_type,
+        },
+      }),
+      invalidatesTags: ["Cart"],
+    }),
+
     // =====================================================
     // PLACE ORDER
     // =====================================================
     placeOrder: builder.mutation<PlaceOrderResponse, PlaceOrderRequest>({
       query: (data) => {
         const checkoutType = data.checkout_type;
+
         if (checkoutType !== "cart" && checkoutType !== "buy_now") {
           throw new Error("Invalid checkout type");
         }
+
         const body: Record<string, unknown> = {
           checkout_type: checkoutType,
           address_id: data.address_id,
           grand_total: data.grand_total,
           payment_gateway: data.payment_gateway,
         };
+
+        // Coins redemption ID
+        if (data.redemption_id !== undefined) {
+          body.redemption_id = data.redemption_id;
+        }
+
         if (data.summary_data) {
           body.summary_data = data.summary_data;
         }
+
         if (checkoutType === "buy_now") {
           if (!data.product_id || !data.quantity) {
             throw new Error("Buy Now product details missing");
           }
+
           body.product_id = data.product_id;
           body.quantity = data.quantity;
         }
+
         console.log("ACTUAL ORDER API BODY:", body);
+
         return {
           url: "/checkout/place-order",
           method: "POST",
@@ -479,6 +571,7 @@ export const checkoutApi = baseApi.injectEndpoints({
       },
       invalidatesTags: ["Cart"],
     }),
+
     // =====================================================
     // CONFIRMED ORDER
     // =====================================================
@@ -492,18 +585,24 @@ export const checkoutApi = baseApi.injectEndpoints({
     // =====================================================
     // HDFC SMARTGATEWAY — AUTHENTICATED ORDER APIs
     // =====================================================
+
+    // INITIATE HDFC PAYMENT
     initiateHdfcPayment: builder.mutation<HdfcApiResult, number>({
       query: (orderId) => ({
         url: `${hdfcOrderRoute(orderId)}/initiate`,
         method: "POST",
       }),
     }),
+
+    // CANCEL HDFC PAYMENT
     cancelHdfcPayment: builder.mutation<HdfcApiResult, number>({
       query: (orderId) => ({
         url: `${hdfcOrderRoute(orderId)}/cancel`,
         method: "POST",
       }),
     }),
+
+    // GET HDFC PAYMENT STATUS
     getHdfcPaymentStatus: builder.query<HdfcApiResult, number>({
       query: (orderId) => ({
         url: `${hdfcOrderRoute(orderId)}/status`,
@@ -512,11 +611,13 @@ export const checkoutApi = baseApi.injectEndpoints({
     }),
   }),
 });
+
 // =========================================================
 // EXPORT HOOKS
 // =========================================================
 export const {
   useGetCheckoutSummaryQuery,
+  useApplyCoinsMutation,
   usePlaceOrderMutation,
   useGetConfirmedOrderQuery,
   useInitiateHdfcPaymentMutation,

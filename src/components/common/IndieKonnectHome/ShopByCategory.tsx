@@ -63,7 +63,7 @@ const staggerContainer: Variants = {
 
   visible: {
     transition: {
-      staggerChildren: 0.14,
+      staggerChildren: 0.12,
     },
   },
 };
@@ -84,14 +84,14 @@ const fadeInUp: Variants = {
   },
 };
 
-// Cards slowly right side se aakar settle hongi
+// Cards side se halka sa aakar settle hongi (subtle, no big zoom)
 const dealIn: Variants = {
   hidden: {
     opacity: 0,
-    x: 100,
-    y: 45,
-    rotateZ: 8,
-    scale: 0.93,
+    x: 60,
+    y: 25,
+    rotateZ: 4,
+    scale: 0.97,
   },
 
   visible: {
@@ -103,9 +103,9 @@ const dealIn: Variants = {
 
     transition: {
       type: "spring",
-      stiffness: 65,
-      damping: 19,
-      mass: 1.15,
+      stiffness: 70,
+      damping: 20,
+      mass: 1,
     },
   },
 };
@@ -121,7 +121,7 @@ const imageSize =
   "h-[280px] sm:h-[335px] md:h-[365px] lg:h-[405px] xl:h-[430px]";
 
 // ========================================
-// DOCK WAVE
+// DOCK WAVE (subtle lift only, no big zoom)
 // ========================================
 
 const getLift = (
@@ -135,15 +135,15 @@ const getLift = (
   const distance = Math.abs(index - hovered);
 
   if (distance === 0) {
-    return { y: -26, scale: 1.04, z: 90 };
-  }
-
-  if (distance === 1) {
     return { y: -12, scale: 1.015, z: 40 };
   }
 
+  if (distance === 1) {
+    return { y: -6, scale: 1.005, z: 20 };
+  }
+
   if (distance === 2) {
-    return { y: -4, scale: 1, z: 12 };
+    return { y: -2, scale: 1, z: 6 };
   }
 
   return { y: 0, scale: 1, z: 0 };
@@ -208,7 +208,7 @@ function CategoryCard({
     : getLift(index, hoveredIndex);
 
   // ========================================
-  // 3D TILT
+  // 3D TILT (very subtle)
   // ========================================
 
   const mx = useMotionValue(0.5);
@@ -221,12 +221,12 @@ function CategoryCard({
   };
 
   const rotateY = useSpring(
-    useTransform(mx, [0, 1], [-13, 13]),
+    useTransform(mx, [0, 1], [-5, 5]),
     springConfig
   );
 
   const rotateX = useSpring(
-    useTransform(my, [0, 1], [11, -11]),
+    useTransform(my, [0, 1], [4, -4]),
     springConfig
   );
 
@@ -240,8 +240,8 @@ function CategoryCard({
   const glare = useMotionTemplate`
     radial-gradient(
       circle at ${glareX}% ${glareY}%,
-      rgba(255,255,255,0.42),
-      rgba(255,255,255,0.08) 38%,
+      rgba(255,255,255,0.28),
+      rgba(255,255,255,0.05) 38%,
       transparent 62%
     )
   `;
@@ -293,7 +293,7 @@ function CategoryCard({
         "
         animate={{
           opacity: isActive ? 0.16 : 0.26,
-          scaleX: isActive ? 0.8 : 1,
+          scaleX: isActive ? 0.88 : 1,
         }}
         transition={{
           duration: 0.55,
@@ -323,7 +323,7 @@ function CategoryCard({
         <motion.div
           animate={
             isInView && !reduceMotion
-              ? { y: [0, -7, 0] }
+              ? { y: [0, -5, 0] }
               : { y: 0 }
           }
           transition={
@@ -369,8 +369,8 @@ function CategoryCard({
                 text-center
                 ring-1 ring-black/5
                 transition-all duration-500 ease-out
-                hover:-translate-y-1.5
-                hover:shadow-[0_24px_50px_-18px_rgba(30,40,25,0.45)]
+                hover:-translate-y-1
+                hover:shadow-[0_20px_42px_-18px_rgba(30,40,25,0.4)]
                 focus-visible:outline
                 focus-visible:outline-2
                 focus-visible:outline-offset-4
@@ -394,7 +394,7 @@ function CategoryCard({
                     object-cover object-center
                     transition-transform
                     duration-[900ms] ease-out
-                    group-hover:scale-[1.06]
+                    group-hover:scale-[1.03]
                     motion-reduce:transition-none
                     motion-reduce:group-hover:scale-100
                   "
@@ -466,7 +466,7 @@ function CategoryCard({
                   w-1/3 -skew-x-12
                   bg-gradient-to-r
                   from-transparent
-                  via-white/30
+                  via-white/25
                   to-transparent
                   opacity-0
                   transition-all duration-[900ms]
@@ -570,12 +570,16 @@ export default function ShopByCategory({
   // VIEWPORT DETECTION
   // ========================================
 
-  // Section screen par aane ke baad hi animation start hogi.
+  // Section screen par aate hi animation start hogi.
+  // Scroll direction (upar se neeche ya neeche se upar) kuch bhi ho,
+  // jab bhi section viewport mein aayega tab animation play hogi.
   // Ek baar visible hone ke baad entrance animation repeat nahi hogi.
+  // margin use kiya hai taaki upar ya neeche se aate hi trigger ho.
 
   const isInView = useInView(sectionRef, {
     once: true,
-    amount: 0.08,
+    amount: 0.05,
+    margin: "0px 0px -10% 0px",
   });
 
   // ========================================
