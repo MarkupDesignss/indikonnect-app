@@ -6,7 +6,16 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { motion } from "framer-motion";
+import {
+  motion,
+  useInView,
+  useMotionTemplate,
+  useMotionValue,
+  useReducedMotion,
+  useSpring,
+  useTransform,
+  type Variants,
+} from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -33,31 +42,72 @@ interface NewArrivalsProps {
 }
 
 // ========================================
-// ANIMATIONS
+// ANIMATIONS  (SLOWED DOWN)
 // ========================================
 
-const staggerContainer = {
+const staggerContainer: Variants = {
   hidden: {},
   visible: {
     transition: {
-      staggerChildren: 0.08,
+      staggerChildren: 0.22, // was 0.09
+      delayChildren: 0.15, // extra breathing room before first card
     },
   },
 };
 
-const fadeInUp = {
+const fadeInUp: Variants = {
   hidden: {
     opacity: 0,
-    y: 20,
+    y: 24,
   },
   visible: {
     opacity: 1,
     y: 0,
     transition: {
-      duration: 0.55,
+      duration: 1.05, // was 0.55
       ease: "easeOut" as const,
     },
   },
+};
+
+// Cards right side se aakar settle honge (softer + slower spring)
+const dealIn: Variants = {
+  hidden: {
+    opacity: 0,
+    x: 90,
+    y: 40,
+    rotateZ: 9,
+    scale: 0.92,
+  },
+  visible: {
+    opacity: 1,
+    x: 0,
+    y: 0,
+    rotateZ: 0,
+    scale: 1,
+    transition: {
+      type: "spring",
+      stiffness: 55, // was 90 -> softer
+      damping: 18, // was 16 -> less bounce
+      mass: 1.15, // was 0.9 -> heavier/slower settle
+    },
+  },
+};
+
+// ========================================
+// HELPERS
+// ========================================
+
+const getLift = (index: number, hovered: number | null) => {
+  if (hovered === null) return { y: 0, scale: 1, z: 0 };
+
+  const d = Math.abs(index - hovered);
+
+  if (d === 0) return { y: -26, scale: 1.04, z: 90 };
+  if (d === 1) return { y: -12, scale: 1.015, z: 40 };
+  if (d === 2) return { y: -4, scale: 1, z: 12 };
+
+  return { y: 0, scale: 1, z: 0 };
 };
 
 // ========================================
@@ -66,102 +116,248 @@ const fadeInUp = {
 
 function BrandCard({
   brand,
+  index,
+  hoveredIndex,
+  reduceMotion,
+  isInView,
   onClick,
 }: {
   brand: Brand;
+  index: number;
+  hoveredIndex: number | null;
+  reduceMotion: boolean;
+  isInView: boolean;
   onClick: () => void;
 }) {
   const [imageError, setImageError] = useState(false);
 
   const logoUrl = brand.logo?.trim() || "";
 
-  useEffect(() => setImageError(false), [logoUrl]);
+  useEffect(() => {
+    setImageError(false);
+  }, [logoUrl]);
+
+  const isActive = hoveredIndex === index;
+
+  const lift = reduceMotion
+    ? { y: 0, scale: 1, z: 0 }
+    : getLift(index, hoveredIndex);
+
+  // ---------- 3D TILT ----------
+  const mx = useMotionValue(0.5);
+  const my = useMotionValue(0.5);
+
+  // Softer + slower tilt spring
+  const springCfg = {
+    stiffness: 90, // was 180
+    damping: 20, // was 18
+    mass: 0.9, // was 0.6
+  };
+
+  const rotateY = useSpring(
+    useTransform(mx, [0, 1], [-13, 13]),
+    springCfg
+  );
+
+  const rotateX = useSpring(
+    useTransform(my, [0, 1], [11, -11]),
+    springCfg
+  );
+
+  const glareX = useTransform(mx, [0, 1], [0, 100]);
+  const glareY = useTransform(my, [0, 1], [0, 100]);
+
+  const glare = useMotionTemplate`radial-gradient(circle at ${glareX}% ${glareY}%, rgba(255,255,255,0.42), rgba(255,255,255,0.08) 38%, transparent 62%)`;
+
+  const handleMove = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (reduceMotion || !isInView) return;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+
+    mx.set((e.clientX - rect.left) / rect.width);
+    my.set((e.clientY - rect.top) / rect.height);
+  };
+
+  const handleLeave = () => {
+    mx.set(0.5);
+    my.set(0.5);
+  };
 
   return (
     <motion.div
-      variants={fadeInUp}
+      variants={dealIn}
       className="
-        group relative flex shrink-0 snap-start
-        flex-col items-center justify-center
-        text-center
+        relative shrink-0
         w-[185px]
         sm:w-[225px]
         md:w-[245px]
         lg:w-[265px]
         xl:w-[285px]
       "
+      style={{
+        zIndex: isActive ? 50 : 10,
+        transformStyle: "preserve-3d",
+      }}
     >
-      <button
-        type="button"
-        onClick={onClick}
-        aria-label={`Explore ${brand.title}`}
+      {/* FLOOR SHADOW */}
+      <motion.div
+        aria-hidden
         className="
-          relative block w-full overflow-hidden
-          rounded-[12px] bg-[#f2ede6]
-          text-left
-          shadow-[0_4px_18px_rgba(0,0,0,0.05)]
-          transition-all duration-500
-          hover:-translate-y-1
-          hover:shadow-[0_18px_40px_rgba(0,0,0,0.13)]
+          pointer-events-none absolute -bottom-6 left-1/2
+          h-5 w-[78%] -translate-x-1/2
+          rounded-[100%] bg-black blur-xl
         "
+        animate={
+          isInView
+            ? {
+                opacity: isActive ? 0.16 : 0.26,
+                scaleX: isActive ? 0.8 : 1,
+              }
+            : {
+                opacity: 0.26,
+                scaleX: 1,
+              }
+        }
+        transition={{ duration: 0.8 }} // was 0.4
+      />
+
+      {/* LIFT / DOCK WAVE */}
+      <motion.div
+        animate={
+          isInView
+            ? lift
+            : { y: 0, scale: 1, z: 0 }
+        }
+        transition={{
+          type: "spring",
+          stiffness: 130, // was 230
+          damping: 22, // was 20
+          mass: 0.9, // added -> slower, smoother wave
+        }}
+        style={{ transformStyle: "preserve-3d" }}
       >
-        {/* IMAGE CONTAINER */}
-        <div
-          className="
-            relative h-[280px] w-full
-            sm:h-[335px]
-            md:h-[365px]
-            lg:h-[405px]
-            xl:h-[430px]
-          "
+        {/* IDLE FLOAT */}
+        <motion.div
+          animate={
+            isInView && !reduceMotion
+              ? { y: [0, -7, 0] }
+              : { y: 0 }
+          }
+          transition={
+            isInView && !reduceMotion
+              ? {
+                  duration: 6.5, // was 4.2 -> calmer idle float
+                  delay: (index % 6) * 0.6, // was 0.45
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }
+              : undefined
+          }
+          style={{ transformStyle: "preserve-3d" }}
         >
-          {logoUrl && !imageError ? (
-            <img
-              src={logoUrl}
-              alt={brand.title}
-              loading="lazy"
-              decoding="async"
-              onError={() => setImageError(true)}
+          {/* 3D TILT */}
+          <motion.div
+            style={{
+              rotateX: reduceMotion ? 0 : rotateX,
+              rotateY: reduceMotion ? 0 : rotateY,
+              transformStyle: "preserve-3d",
+              willChange: isInView ? "transform" : "auto",
+            }}
+          >
+            <button
+              type="button"
+              onClick={onClick}
+              onMouseMove={handleMove}
+              onMouseLeave={handleLeave}
+              aria-label={`Explore ${brand.title}`}
               className="
-                absolute inset-0
-                h-full w-full
-                object-cover object-center
-                transition-transform duration-700
-                group-hover:scale-[1.05]
-              "
-            />
-          ) : (
-            <div
-              className="
-                absolute inset-0 flex
-                items-center justify-center
-                bg-[#f2ede6] p-5 text-center
+                group relative block w-full overflow-hidden
+                rounded-[14px] bg-[#f2ede6]
+                text-left
+                shadow-[0_10px_30px_rgba(60,40,10,0.14)]
+                ring-1 ring-[#b28b56]/20
+                transition-all duration-700
+                hover:shadow-[0_32px_60px_rgba(60,40,10,0.28)]
+                hover:ring-[#b28b56]/60
               "
             >
-              <span
+              {/* IMAGE CONTAINER */}
+              <div
                 className="
-                  font-serif text-[18px]
-                  font-medium text-[#876942]
-                  sm:text-[22px]
+                  relative h-[305px] w-full
+                  sm:h-[360px]
+                  md:h-[390px]
+                  lg:h-[430px]
+                  xl:h-[455px]
                 "
               >
-                {brand.title}
-              </span>
-            </div>
-          )}
+                {logoUrl && !imageError ? (
+                  <img
+                    src={logoUrl}
+                    alt={brand.title}
+                    loading="lazy"
+                    decoding="async"
+                    onError={() => setImageError(true)}
+                    className="
+                      absolute inset-0
+                      h-full w-full
+                      object-cover object-center
+                      transition-transform duration-[1600ms] ease-out
+                      group-hover:scale-[1.08]
+                    "
+                  />
+                ) : (
+                  <div
+                    className="
+                      absolute inset-0 flex
+                      items-center justify-center
+                      bg-gradient-to-br from-[#f7f2ea] to-[#eadfce]
+                      p-5 text-center
+                    "
+                  >
+                    <span
+                      className="
+                        font-serif text-[18px]
+                        font-medium text-[#876942]
+                        sm:text-[22px]
+                      "
+                    >
+                      {brand.title}
+                    </span>
+                  </div>
+                )}
 
-          {/* PREMIUM HOVER OVERLAY */}
-          <div
-            className="
-              pointer-events-none
-              absolute inset-0
-              bg-black/0
-              transition-colors duration-500
-              group-hover:bg-black/[0.025]
-            "
-          />
-        </div>
-      </button>
+                {/* MOUSE FOLLOW GLARE */}
+                {!reduceMotion && (
+                  <motion.div
+                    aria-hidden
+                    className="
+                      pointer-events-none absolute inset-0
+                      opacity-0 mix-blend-soft-light
+                      transition-opacity duration-700
+                      group-hover:opacity-100
+                    "
+                    style={{ background: glare }}
+                  />
+                )}
+
+                {/* SHINE SWEEP */}
+                <div
+                  aria-hidden
+                  className="
+                    pointer-events-none absolute inset-y-0 -left-1/2
+                    w-1/3 -skew-x-12
+                    bg-gradient-to-r from-transparent via-white/30 to-transparent
+                    opacity-0
+                    transition-all duration-[1600ms] ease-out
+                    group-hover:left-[130%] group-hover:opacity-100
+                  "
+                />
+              </div>
+            </button>
+          </motion.div>
+        </motion.div>
+      </motion.div>
     </motion.div>
   );
 }
@@ -175,22 +371,35 @@ export default function NewArrivalsSection({
   isBrandsLoading,
 }: NewArrivalsProps) {
   const router = useRouter();
+  const reduceMotion = !!useReducedMotion();
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const sectionRef = useRef<HTMLElement | null>(null);
+
+  // Section viewport mein aane par hi animation start hogi.
+  // Once true hone ke baad dobara initial animation nahi chalegi.
+  const isInView = useInView(sectionRef, {
+    once: true,
+    amount: 0.08,
+  });
+
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   const brands = brandsData?.data || [];
 
   // ========================================
-  // SCROLL STATE (arrows show/hide)
+  // SCROLL STATE
   // ========================================
 
   const updateScrollState = useCallback(() => {
     const element = scrollRef.current;
+
     if (!element) return;
 
     setCanScrollLeft(element.scrollLeft > 2);
+
     setCanScrollRight(
       element.scrollLeft + element.clientWidth <
         element.scrollWidth - 2
@@ -199,12 +408,15 @@ export default function NewArrivalsSection({
 
   useEffect(() => {
     const element = scrollRef.current;
+
     if (!element) return;
 
     updateScrollState();
 
     const resizeObserver = new ResizeObserver(updateScrollState);
+
     resizeObserver.observe(element);
+
     if (element.firstElementChild) {
       resizeObserver.observe(element.firstElementChild);
     }
@@ -242,11 +454,10 @@ export default function NewArrivalsSection({
   };
 
   // ========================================
-  // BRAND NAVIGATION (FIXED)
+  // BRAND NAVIGATION
   // ========================================
 
   const handleBrandClick = (brand: Brand) => {
-    // Distributor path ke liye brand_ids use kiya
     router.push(
       `/products/?brand_ids=${encodeURIComponent(brand.id)}`
     );
@@ -258,6 +469,7 @@ export default function NewArrivalsSection({
 
   return (
     <motion.section
+      ref={sectionRef}
       className="
         relative isolate w-full
         overflow-hidden
@@ -265,27 +477,34 @@ export default function NewArrivalsSection({
         py-8 sm:py-10 lg:py-12
       "
       initial="hidden"
-      whileInView="visible"
+      animate={isInView ? "visible" : "hidden"}
       viewport={{
         once: true,
         amount: 0.08,
       }}
       variants={staggerContainer}
     >
-      <div className="mx-auto w-full max-w-[1900px]">
-        {/* =====================================
-            PREMIUM SECTION HEADER
-        ===================================== */}
+      {/* SOFT BACKGROUND GLOW */}
+      <div
+        aria-hidden
+        className="
+          pointer-events-none absolute left-1/2 top-1/2 -z-10
+          h-[420px] w-[80%] -translate-x-1/2 -translate-y-1/2
+          rounded-full bg-[#e9d3ac]/25 blur-[120px]
+        "
+      />
 
+      <div className="mx-auto w-full max-w-[1900px]">
+
+        {/* SECTION HEADER */}
         <motion.div
           variants={fadeInUp}
           className="
-            relative mb-6 flex flex-col
+            relative mb-2 flex flex-col
             items-center px-4 text-center
-            sm:mb-8
+            sm:mb-2
           "
         >
-          {/* TOP SUBTITLE */}
           <div className="mb-2 flex items-center gap-3">
             <span className="h-px w-7 bg-[#b28b56] sm:w-10" />
 
@@ -303,7 +522,6 @@ export default function NewArrivalsSection({
             <span className="h-px w-7 bg-[#b28b56] sm:w-10" />
           </div>
 
-          {/* MAIN TITLE */}
           <h2
             className="
               font-serif text-[28px]
@@ -315,10 +533,11 @@ export default function NewArrivalsSection({
             "
           >
             New{" "}
-            <span className="text-[#94672f]">Arrivals</span>
+            <span className="text-[#94672f]">
+              Arrivals
+            </span>
           </h2>
 
-          {/* BOTTOM SUBTITLE */}
           <p
             className="
               mt-2 text-[8px]
@@ -333,10 +552,7 @@ export default function NewArrivalsSection({
           </p>
         </motion.div>
 
-        {/* =====================================
-            LOADING SKELETON
-        ===================================== */}
-
+        {/* LOADING SKELETON */}
         {isBrandsLoading ? (
           <div className="w-full overflow-hidden pb-5 pt-2">
             <div
@@ -351,17 +567,17 @@ export default function NewArrivalsSection({
                 <div
                   key={item}
                   className="
-                    h-[280px] w-[185px]
+                    h-[305px] w-[185px]
                     shrink-0 animate-pulse
                     rounded-[12px]
                     bg-[#eae5dd]
-                    sm:h-[335px]
+                    sm:h-[360px]
                     sm:w-[225px]
-                    md:h-[365px]
+                    md:h-[390px]
                     md:w-[245px]
-                    lg:h-[405px]
+                    lg:h-[430px]
                     lg:w-[265px]
-                    xl:h-[430px]
+                    xl:h-[455px]
                     xl:w-[285px]
                   "
                 />
@@ -369,10 +585,7 @@ export default function NewArrivalsSection({
             </div>
           </div>
         ) : brands.length === 0 ? (
-          /* =====================================
-             EMPTY STATE
-          ===================================== */
-
+          /* EMPTY STATE */
           <div
             className="
               flex min-h-[180px]
@@ -385,11 +598,9 @@ export default function NewArrivalsSection({
             </p>
           </div>
         ) : (
-          /* =====================================
-             BRAND CAROUSEL
-          ===================================== */
-
+          /* BRAND CAROUSEL */
           <div className="relative w-full">
+
             {/* PREVIOUS BUTTON */}
             <button
               type="button"
@@ -397,14 +608,14 @@ export default function NewArrivalsSection({
               onClick={() => scrollCards(-1)}
               disabled={!canScrollLeft}
               className="
-                absolute left-2 top-1/2 z-20
+                absolute left-2 top-1/2 z-[60]
                 hidden h-11 w-11
                 -translate-y-1/2
                 items-center justify-center
                 rounded-full bg-white
                 text-[#111]
                 shadow-[0_5px_20px_rgba(0,0,0,0.12)]
-                transition-all duration-300
+                transition-all duration-500
                 hover:scale-105
                 hover:bg-[#111]
                 hover:text-white
@@ -424,14 +635,14 @@ export default function NewArrivalsSection({
               onClick={() => scrollCards(1)}
               disabled={!canScrollRight}
               className="
-                absolute right-2 top-1/2 z-20
+                absolute right-2 top-1/2 z-[60]
                 hidden h-11 w-11
                 -translate-y-1/2
                 items-center justify-center
                 rounded-full bg-white
                 text-[#111]
                 shadow-[0_5px_20px_rgba(0,0,0,0.12)]
-                transition-all duration-300
+                transition-all duration-500
                 hover:scale-105
                 hover:bg-[#111]
                 hover:text-white
@@ -444,34 +655,27 @@ export default function NewArrivalsSection({
               <ChevronRight size={21} strokeWidth={1.7} />
             </button>
 
-            {/* =====================================
-                SCROLL CONTAINER (no horizontal padding here,
-                padding is inside the row)
-            ===================================== */}
-
+            {/* SCROLL CONTAINER */}
             <div
               ref={scrollRef}
               id="brands-scroll"
               onScroll={updateScrollState}
+              onMouseLeave={() => setHoveredIndex(null)}
               className="
                 w-full overflow-x-auto
                 scroll-smooth
                 snap-x snap-mandatory
-                pb-5 pt-2
+                pb-14 pt-12
               "
               style={{
                 scrollbarWidth: "none",
                 msOverflowStyle: "none",
                 WebkitOverflowScrolling: "touch",
-                scrollPaddingInline:
-                  "clamp(12px, 4vw, 40px)",
+                scrollPaddingInline: "clamp(12px, 4vw, 40px)",
+                perspective: "1400px",
+                perspectiveOrigin: "50% 45%",
               }}
             >
-              {/*
-                mx-auto + w-max:
-                - cards kam hon  -> beech me center
-                - cards zyada hon -> left se start, start/end dono taraf same padding
-              */}
               <div
                 className="
                   mx-auto flex w-max
@@ -480,18 +684,23 @@ export default function NewArrivalsSection({
                   sm:gap-4 sm:px-6
                   lg:gap-5 lg:px-10
                 "
+                style={{ transformStyle: "preserve-3d" }}
               >
                 {brands.map((brand, index) => (
                   <div
                     key={brand.id ?? index}
                     data-brand-item
                     className="shrink-0 snap-start"
+                    style={{ transformStyle: "preserve-3d" }}
+                    onMouseEnter={() => setHoveredIndex(index)}
                   >
                     <BrandCard
                       brand={brand}
-                      onClick={() =>
-                        handleBrandClick(brand)
-                      }
+                      index={index}
+                      hoveredIndex={hoveredIndex}
+                      reduceMotion={reduceMotion}
+                      isInView={isInView}
+                      onClick={() => handleBrandClick(brand)}
                     />
                   </div>
                 ))}
