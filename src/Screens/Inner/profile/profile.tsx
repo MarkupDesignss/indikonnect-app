@@ -281,6 +281,7 @@ function DashboardSidebar({
 
   const handleTabClick = (tab: TabType) => {
     onTabChange(tab);
+
     if (onMobileToggle) {
       onMobileToggle();
     }
@@ -328,7 +329,7 @@ function DashboardSidebar({
         `}
       >
         <div className="flex h-screen min-h-0 flex-col px-4 py-5">
-          {/* MOBILE CLOSE (Positioned neatly inside the flow) */}
+          {/* MOBILE CLOSE */}
           <div className="mb-4 flex shrink-0 items-center justify-end lg:hidden">
             <button
               type="button"
@@ -1254,10 +1255,32 @@ function RecommendedProducts({
               );
 
               const oldPrice = Number(
-                product?.distributor_price ??
+                product?.retail_mrp ??
+                product?.distributor_mrp ??
                 product?.mrp ??
                 0,
               );
+
+              // API rating comes from reviews_summary.average_rating.
+              // Fallbacks support older product response formats.
+              const rating = Number(
+                product?.reviews_summary?.average_rating ??
+                product?.rating ??
+                0,
+              );
+
+              const reviewCount = Number(
+                product?.reviews_summary?.total_reviews ??
+                product?.reviews ??
+                0,
+              );
+
+              // Show rating only when it is greater than zero.
+              const hasRating = Number.isFinite(rating) && rating > 0;
+
+              const safeRating = Math.min(5, Math.max(0, rating));
+              const filledStars = Math.floor(safeRating);
+              const emptyStars = 5 - filledStars;
 
               return (
                 <motion.div
@@ -1331,15 +1354,45 @@ function RecommendedProducts({
                       )}
                     </div>
 
-                    <div className="mt-1 flex items-center gap-1.5">
-                      <span className="text-[11px] tracking-[1px] text-[#232423]">
-                        {renderRatingStars(product?.rating || 0)}
-                      </span>
+                    {/* RATING: GREEN STARS, HIDDEN WHEN RATING IS 0 */}
+                    {hasRating && (
+                      <div className="mt-2 flex items-center gap-1.5">
+                        <span
+                          className="inline-flex items-center text-[13px] leading-none tracking-[1px]"
+                          aria-label={`Rated ${safeRating} out of 5`}
+                        >
+                          {Array.from(
+                            { length: filledStars },
+                            (_, starIndex) => (
+                              <span
+                                key={`filled-${starIndex}`}
+                                className="text-[#16A34A]"
+                              >
+                                ★
+                              </span>
+                            ),
+                          )}
 
-                      <span className="text-[9px] text-[#9B9C95]">
-                        ({product?.reviews || 0})
-                      </span>
-                    </div>
+                          {Array.from(
+                            { length: emptyStars },
+                            (_, starIndex) => (
+                              <span
+                                key={`empty-${starIndex}`}
+                                className="text-[#D1D5DB]"
+                              >
+                                ☆
+                              </span>
+                            ),
+                          )}
+                        </span>
+
+                        {reviewCount > 0 && (
+                          <span className="text-[9px] font-medium text-[#9B9C95]">
+                            ({reviewCount})
+                          </span>
+                        )}
+                      </div>
+                    )}
 
                     <button
                       type="button"
@@ -1666,8 +1719,6 @@ export default function Profile() {
 
   /* ========================================================================= */
   /* SHELL                                                                     */
-  /* Sidebar = full height from the very top.                                  */
-  /* Header + content = right column, starting beside the sidebar.             */
   /* ========================================================================= */
 
   const Shell = ({
@@ -1676,7 +1727,7 @@ export default function Profile() {
     children: React.ReactNode;
   }) => (
     <div className="flex h-screen overflow-hidden bg-[#F4F5F1] font-sans text-[#171717]">
-      {/* SIDEBAR (starts from top of the screen) */}
+      {/* SIDEBAR */}
       <DashboardSidebar
         userData={userData}
         stats={stats}
@@ -1693,26 +1744,21 @@ export default function Profile() {
 
       {/* RIGHT SIDE: HEADER + MAIN */}
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        {/* HEADER (now begins from the sidebar's right edge) */}
+        {/* HEADER */}
         <div
           className="
             relative z-[100] shrink-0
             bg-white
             shadow-[0_2px_12px_-10px_rgba(0,0,0,0.3)]
-
             [&_header]:!static
             [&_header]:!inset-auto
             [&_header]:!w-full
             [&_header]:!max-w-full
-            
-            /* Hides the spacer */
             [&_.premium-header-spacer]:!hidden
-
-            /* HIDES THE DEFAULT HEADER MOBILE MENU ICON */
             [&_.premium-mobile-menu]:!hidden
           "
         >
-          {/* MOBILE MENU BUTTON (Fixed layout so it aligns perfectly) */}
+          {/* MOBILE MENU BUTTON */}
           <button
             type="button"
             aria-label="Open account menu"

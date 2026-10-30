@@ -1,9 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
-
 import { motion, AnimatePresence } from "framer-motion";
-
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
@@ -20,7 +18,6 @@ import {
   X,
   ChevronLeft,
   ArrowRight,
-  MessageCircle,
   Send,
   Loader2,
   Bell,
@@ -49,7 +46,6 @@ import {
 import { useAddToCartMutation } from "@/lib/redux/api/cartApi";
 
 import { useAppDispatch } from "@/lib/redux/hooks";
-
 import { showToast } from "../../lib/slices/toastSlice";
 
 import {
@@ -58,11 +54,8 @@ import {
 } from "@/lib/redux/api/order/orderApi";
 
 import { Poppins } from "next/font/google";
-
 import { useGetUserProfileQuery } from "@/lib/redux/api/authApi";
-
 import { getAppType } from "@/lib/appConfig";
-
 import { useTokenCheck } from "@/hooks/useTokenCheck";
 import Loding from "../common/Loding";
 
@@ -93,15 +86,13 @@ interface CartItem {
   quantity: number;
 }
 
-interface LocationInfo {
-  [key: string]: any;
-}
-
 /* =========================================================
-   PLACEHOLDER
+   CONSTANTS
 ========================================================= */
 
 const PLACEHOLDER = "/indiekonnect-web/images/placeholder.jpg";
+
+const RATING_GREEN = "#188447";
 
 /* =========================================================
    REDUCED MOTION
@@ -116,20 +107,14 @@ const prefersReduced = () =>
 ========================================================= */
 
 function fireRipple(e: React.MouseEvent<HTMLElement>) {
-  if (prefersReduced()) {
-    return;
-  }
+  if (prefersReduced()) return;
 
   const btn = e.currentTarget;
-
   const rect = btn.getBoundingClientRect();
 
   const span = document.createElement("span");
-
   span.className = "ik-ripple";
-
   span.style.left = `${e.clientX - rect.left - 7}px`;
-
   span.style.top = `${e.clientY - rect.top - 7}px`;
 
   btn.appendChild(span);
@@ -144,9 +129,7 @@ function fireRipple(e: React.MouseEvent<HTMLElement>) {
 ========================================================= */
 
 function flyImageToCart(sourceEl: HTMLElement | null, imgSrc: string) {
-  if (prefersReduced() || !sourceEl) {
-    return;
-  }
+  if (prefersReduced() || !sourceEl) return;
 
   const target = document.querySelector("#cart-icon") as HTMLElement | null;
 
@@ -164,21 +147,15 @@ function flyImageToCart(sourceEl: HTMLElement | null, imgSrc: string) {
   const ghost = document.createElement("div");
 
   ghost.className = "ik-fly-ghost";
-
   ghost.style.left = `${a.left}px`;
-
   ghost.style.top = `${a.top}px`;
-
   ghost.style.width = `${a.width}px`;
-
   ghost.style.height = `${a.height}px`;
-
   ghost.style.backgroundImage = `url(${imgSrc})`;
 
   document.body.appendChild(ghost);
 
   const dx = b.left - a.left + b.width / 2 - a.width / 2;
-
   const dy = b.top - a.top + b.height / 2 - a.height / 2;
 
   const anim = ghost.animate(
@@ -208,9 +185,7 @@ function flyImageToCart(sourceEl: HTMLElement | null, imgSrc: string) {
 
     if (target) {
       target.classList.remove("ik-bump");
-
       void target.offsetWidth;
-
       target.classList.add("ik-bump");
     }
   };
@@ -224,9 +199,7 @@ function popHeart(e: React.MouseEvent<HTMLElement>) {
   const el = e.currentTarget;
 
   el.classList.remove("ik-heart-pop");
-
   void el.offsetWidth;
-
   el.classList.add("ik-heart-pop");
 }
 
@@ -234,10 +207,10 @@ function popHeart(e: React.MouseEvent<HTMLElement>) {
    ACCOUNT TYPE
 ========================================================= */
 
-const getUserAccountType = (profileData: any): "retail" | "distributor" => {
-  if (!profileData) {
-    return "retail";
-  }
+const getUserAccountType = (
+  profileData: any,
+): "retail" | "distributor" => {
+  if (!profileData) return "retail";
 
   const accountType =
     profileData?.user?.account_type ||
@@ -261,9 +234,7 @@ const getUserAccountType = (profileData: any): "retail" | "distributor" => {
 ========================================================= */
 
 const getUserId = (profileData: any): string | null => {
-  if (!profileData) {
-    return null;
-  }
+  if (!profileData) return null;
 
   const id =
     profileData?.user?.id ??
@@ -280,9 +251,7 @@ const getUserId = (profileData: any): string | null => {
 ========================================================= */
 
 const parseJsonObject = (value: any): Record<string, any> => {
-  if (!value) {
-    return {};
-  }
+  if (!value) return {};
 
   if (typeof value === "object" && !Array.isArray(value)) {
     return value;
@@ -304,21 +273,44 @@ const parseJsonObject = (value: any): Record<string, any> => {
 };
 
 /* =========================================================
+   RATING HELPERS
+========================================================= */
+
+const getAverageRating = (summary: any): number => {
+  const rating = Number(summary?.average_rating ?? 0);
+
+  if (!Number.isFinite(rating)) return 0;
+
+  return Math.min(5, Math.max(0, rating));
+};
+
+const getTotalReviews = (summary: any): number => {
+  const total = Number(summary?.total_reviews ?? 0);
+
+  if (!Number.isFinite(total)) return 0;
+
+  return Math.max(0, total);
+};
+
+/* =========================================================
    VARIANT IMAGE
 ========================================================= */
 
 const getVariantImageUrl = (variant: any): string | null => {
-  if (!variant) {
-    return null;
-  }
+  if (!variant) return null;
 
   if (variant.primary_image_url || variant.image_url || variant.image) {
-    return variant.primary_image_url || variant.image_url || variant.image;
+    return (
+      variant.primary_image_url ||
+      variant.image_url ||
+      variant.image
+    );
   }
 
   if (Array.isArray(variant.images) && variant.images.length > 0) {
     const primary =
-      variant.images.find((img: any) => img?.is_primary) || variant.images[0];
+      variant.images.find((img: any) => img?.is_primary) ||
+      variant.images[0];
 
     return primary?.image_url || primary?.image || null;
   }
@@ -331,9 +323,7 @@ const getVariantImageUrl = (variant: any): string | null => {
 ========================================================= */
 
 const getVariantGalleryImages = (variant: any): string[] => {
-  if (!variant) {
-    return [];
-  }
+  if (!variant) return [];
 
   const images = Array.isArray(variant.images)
     ? variant.images
@@ -356,9 +346,7 @@ const getVariantGalleryImages = (variant: any): string[] => {
 ========================================================= */
 
 const generateSlugFromName = (name: string): string => {
-  if (!name) {
-    return "";
-  }
+  if (!name) return "";
 
   return name
     .toLowerCase()
@@ -370,17 +358,17 @@ const generateSlugFromName = (name: string): string => {
    COMPONENT
 ========================================================= */
 
-export default function ProductDetail({ productSlug }: ProductDetailProps) {
+export default function ProductDetail({
+  productSlug,
+}: ProductDetailProps) {
   const router = useRouter();
-
   const pathname = usePathname();
 
-  // Variant changes update this query in place; no page navigation.
-  const [activeProductSlug, setActiveProductSlug] = useState(productSlug);
+  const [activeProductSlug, setActiveProductSlug] =
+    useState(productSlug);
+
   const lastLoadedProductRef = useRef<any>(null);
 
-  // Only genuine route changes (not color selection) update the query slug.
-  // Color selection changes activeProductSlug without modifying the browser URL.
   useEffect(() => {
     setActiveProductSlug(productSlug);
   }, [productSlug]);
@@ -393,19 +381,10 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
 
   const { hasToken, appType } = useTokenCheck();
 
-  /*
-   * Runtime hostname is the final source of truth.
-   *
-   * customer.indiekonnect.test
-   *      -> customer
-   *
-   * distributor.indiekonnect.test
-   *      -> distributor
-   */
-  const currentAppType = typeof window !== "undefined" ? getAppType() : appType;
+  const currentAppType =
+    typeof window !== "undefined" ? getAppType() : appType;
 
   const isDistributorApp = currentAppType === "distributor";
-
   const isCustomerApp = currentAppType === "customer";
 
   /* =========================================================
@@ -434,9 +413,13 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
   const [isWishlisted, setIsWishlisted] = useState(false);
 
   const [isAddedToCart, setIsAddedToCart] = useState(false);
+
   const [isBuyingNow, setIsBuyingNow] = useState(false);
+
   const [showAllThumbnails, setShowAllThumbnails] = useState(false);
+
   const MAX_VISIBLE_THUMBS = 5;
+
   const [notifyProduct, { isLoading: isNotifyLoading }] =
     useNotifyProductMutation();
 
@@ -450,9 +433,9 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
 
   const [isWishlistLoading, setIsWishlistLoading] = useState(false);
 
-  const [wishlistState, setWishlistState] = useState<Record<number, boolean>>(
-    {},
-  );
+  const [wishlistState, setWishlistState] = useState<
+    Record<number, boolean>
+  >({});
 
   const mainImageBoxRef = useRef<HTMLDivElement>(null);
 
@@ -464,9 +447,8 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
 
   const [fullscreenImageIndex, setFullscreenImageIndex] = useState(0);
 
-  const [selectedVariantAttributes, setSelectedVariantAttributes] = useState<
-    Record<string, string>
-  >({});
+  const [selectedVariantAttributes, setSelectedVariantAttributes] =
+    useState<Record<string, string>>({});
 
   const [reviewName, setReviewName] = useState("");
 
@@ -533,23 +515,15 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
 
   /* =========================================================
      BUILD PRODUCT PATH
-     Preserves the app base path (e.g. /indiekonnect-distributor)
-     by stripping the trailing `/<slug>` from the current pathname.
-     Works whether or not Next `basePath` is configured.
   ========================================================= */
 
   const buildProductPath = (slug: string): string => {
     const safeSlug = String(slug || "").trim();
-    if (!safeSlug) {
-      return "/products";
-    }
 
-    // If basePath is configured in next.config, pathname already
-    // contains it (e.g. /indiekonnect-distributor/product/xyz).
-    // We replace the last segment (the old slug) with the new one.
+    if (!safeSlug) return "/products";
+
     const current = pathname || "";
 
-    // Match `.../product/<oldSlug>` or fall back to a safe default.
     const match = current.match(/^(.*\/product)\/[^/]+\/?$/);
 
     const base = match ? match[1] : "/product";
@@ -603,12 +577,12 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
      PROTECTED QUERIES
   ========================================================= */
 
-  const { data: wishlistData, refetch: refetchWishlist } = useGetWishlistQuery(
-    undefined,
-    {
-      skip: hasToken !== true,
-    },
-  );
+  const {
+    data: wishlistData,
+    refetch: refetchWishlist,
+  } = useGetWishlistQuery(undefined, {
+    skip: hasToken !== true,
+  });
 
   const { data: userProfileData } = useGetUserProfileQuery(undefined, {
     skip: hasToken !== true,
@@ -619,19 +593,13 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
   ========================================================= */
 
   const userAccountType = useMemo(() => {
-    /*
-     * Authenticated:
-     * Profile API wins.
-     */
     if (userProfileData) {
       return getUserAccountType(userProfileData);
     }
 
-    /*
-     * Guest:
-     * hostname decides pricing.
-     */
-    return currentAppType === "distributor" ? "distributor" : "retail";
+    return currentAppType === "distributor"
+      ? "distributor"
+      : "retail";
   }, [userProfileData, currentAppType]);
 
   const currentUserId = getUserId(userProfileData);
@@ -653,14 +621,14 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
   ========================================================= */
 
   const categoryId =
-    productData?.data?.category_id ?? productData?.category_id ?? null;
+    productData?.data?.category_id ??
+    productData?.category_id ??
+    null;
 
-  const { data: categoryProductsData } = useGetProductsByCategoryQuery(
-    categoryId,
-    {
+  const { data: categoryProductsData } =
+    useGetProductsByCategoryQuery(categoryId, {
       skip: !categoryId,
-    },
-  );
+    });
 
   /* =========================================================
      MUTATIONS
@@ -674,23 +642,18 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
 
   const [addRatingReview] = useAddRatingReviewMutation();
 
-  // Live stock validation (same endpoint as ProductCard).
-  // `checkProductStock` invalidates the "Products" tag, so the currently
-  // subscribed slug-detail query (useGetProductBySlugQuery) and the category
-  // query (useGetProductsByCategoryQuery) automatically refetch after each
-  // call — no manual `refetchProduct()` needed.
   const [checkProductStock] = useCheckProductStockMutation();
 
   /* =========================================================
      API PRODUCT
   ========================================================= */
 
-  // Retain the previous product while the selected color is being fetched.
-  // This keeps the existing gallery/details mounted rather than showing a fullscreen loader.
   const incomingProduct = productData?.data ?? productData;
+
   if (incomingProduct?.id) {
     lastLoadedProductRef.current = incomingProduct;
   }
+
   const apiProduct = incomingProduct?.id
     ? incomingProduct
     : lastLoadedProductRef.current;
@@ -704,29 +667,43 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
 
     return {
       country: String(
-        spec["Country of Origin:"] ?? spec["Country of Origin"] ?? "India",
+        spec["Country of Origin:"] ??
+          spec["Country of Origin"] ??
+          spec["Country of Manufacture"] ??
+          "India",
       ),
 
       manufacturedBy: String(
-        spec["Manufactured By:"] ?? spec["Manufactured By"] ?? "Not available",
+        spec["Manufactured By:"] ??
+          spec["Manufactured By"] ??
+          "Not available",
       ),
 
       marketedBy: String(
-        spec["Marketed By:"] ?? spec["Marketed By"] ?? "Not available",
+        spec["Marketed By:"] ??
+          spec["Marketed By"] ??
+          "Not available",
       ),
     };
   }, [apiProduct?.specification]);
 
   /* =========================================================
      REVIEWS SUMMARY
+     Supports:
+     reviews_summary.average_rating
+     reviews.summary.average_rating
   ========================================================= */
 
   const reviewsSummary =
-    apiProduct?.reviews?.summary ?? apiProduct?.reviews_summary ?? null;
+    apiProduct?.reviews_summary ??
+    apiProduct?.reviews?.summary ??
+    null;
 
   const reviewsList: any[] = Array.isArray(apiProduct?.reviews?.data)
     ? apiProduct.reviews.data
-    : [];
+    : Array.isArray(apiProduct?.reviews)
+      ? apiProduct.reviews
+      : [];
 
   /* =========================================================
      PRODUCT
@@ -738,7 +715,9 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
 
         name: apiProduct.name,
 
-        slug: apiProduct.slug || generateSlugFromName(apiProduct.name),
+        slug:
+          apiProduct.slug ||
+          generateSlugFromName(apiProduct.name),
 
         description: apiProduct.description,
 
@@ -746,7 +725,8 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
 
         category: apiProduct.category?.name || "Uncategorized",
 
-        categoryId: apiProduct.category_id || apiProduct.category?.id,
+        categoryId:
+          apiProduct.category_id || apiProduct.category?.id,
 
         productCode: apiProduct.product_code,
 
@@ -758,44 +738,46 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
 
         distributorPrice: Number(apiProduct.distributor_price || 0),
 
-        /*
-         * FINAL PRICE
-         */
         price:
           userAccountType === "distributor"
             ? Number(
-                apiProduct.distributor_price || apiProduct.retail_price || 0,
+                apiProduct.distributor_price ||
+                  apiProduct.retail_price ||
+                  0,
               )
             : Number(apiProduct.retail_price || 0),
 
-        /*
-         * FINAL MRP
-         */
         mrp:
           userAccountType === "distributor"
-            ? Number(apiProduct.distributor_mrp || apiProduct.retail_mrp || 0)
+            ? Number(
+                apiProduct.distributor_mrp ||
+                  apiProduct.retail_mrp ||
+                  0,
+              )
             : Number(apiProduct.retail_mrp || 0),
 
-        /*
-         * ORIGINAL PRICE
-         */
         originalPrice:
           userAccountType === "distributor"
-            ? Number(apiProduct.distributor_mrp || apiProduct.retail_mrp || 0)
+            ? Number(
+                apiProduct.distributor_mrp ||
+                  apiProduct.retail_mrp ||
+                  0,
+              )
             : Number(apiProduct.retail_mrp || 0),
 
-        /*
-         * DISCOUNT
-         */
         discount:
           userAccountType === "distributor"
             ? (() => {
                 const mrp = Number(
-                  apiProduct.distributor_mrp || apiProduct.retail_mrp || 0,
+                  apiProduct.distributor_mrp ||
+                    apiProduct.retail_mrp ||
+                    0,
                 );
 
                 const price = Number(
-                  apiProduct.distributor_price || apiProduct.retail_price || 0,
+                  apiProduct.distributor_price ||
+                    apiProduct.retail_price ||
+                    0,
                 );
 
                 return mrp > price && price > 0
@@ -819,12 +801,12 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
 
         images: apiProduct.images || [],
 
-        rating: Number(reviewsSummary?.average_rating || 0),
+        // Correct rating source from API.
+        rating: getAverageRating(reviewsSummary),
 
-        reviews: Number(reviewsSummary?.total_reviews || 0),
+        // Correct review count from API.
+        reviews: getTotalReviews(reviewsSummary),
 
-        // "low_stock" still means the product is available for purchase.
-        // The API's stock_quantity is the source of truth for availability.
         inStock: Number(apiProduct.stock_quantity ?? 0) > 0,
 
         stockQuantity: Number(apiProduct.stock_quantity ?? 0),
@@ -834,7 +816,9 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
           Number(apiProduct.stock_quantity ?? 0) <=
             Number(apiProduct.low_stock_threshold ?? 10),
 
-        lowStockThreshold: Number(apiProduct.low_stock_threshold || 10),
+        lowStockThreshold: Number(
+          apiProduct.low_stock_threshold || 10,
+        ),
       }
     : null;
 
@@ -843,9 +827,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
   ========================================================= */
 
   const productGallery = useMemo(() => {
-    if (!product) {
-      return [];
-    }
+    if (!product) return [];
 
     const images = Array.isArray(product.images)
       ? product.images
@@ -861,9 +843,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
   ========================================================= */
 
   const variantEntries = useMemo(() => {
-    if (!Array.isArray(apiProduct?.variants)) {
-      return [];
-    }
+    if (!Array.isArray(apiProduct?.variants)) return [];
 
     return apiProduct.variants
       .filter((variant: any) => variant?.is_active !== false)
@@ -884,7 +864,9 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
 
     Object.entries(apiAvailableAttributes).forEach(([key, values]) => {
       if (Array.isArray(values)) {
-        result[key] = values.map((value) => String(value)).filter(Boolean);
+        result[key] = values
+          .map((value) => String(value))
+          .filter(Boolean);
       }
     });
 
@@ -899,7 +881,10 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
 
           const stringValue = String(value);
 
-          if (stringValue && !result[key].includes(stringValue)) {
+          if (
+            stringValue &&
+            !result[key].includes(stringValue)
+          ) {
             result[key].push(stringValue);
           }
         });
@@ -914,9 +899,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
   ========================================================= */
 
   const displayVariants = useMemo(() => {
-    if (!product) {
-      return [];
-    }
+    if (!product) return [];
 
     const mainProduct = {
       id: "main-product",
@@ -958,13 +941,12 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
   const isMainProductSelected = selectedVariantId === null;
 
   const selectedVariant = useMemo(() => {
-    if (isMainProductSelected) {
-      return null;
-    }
+    if (isMainProductSelected) return null;
 
     return (
       variantEntries.find(
-        (variant: any) => String(variant.id) === String(selectedVariantId),
+        (variant: any) =>
+          String(variant.id) === String(selectedVariantId),
       ) || null
     );
   }, [isMainProductSelected, selectedVariantId, variantEntries]);
@@ -974,9 +956,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
     : null;
 
   const selectedVariantGallery = useMemo(() => {
-    if (!selectedVariant) {
-      return [];
-    }
+    if (!selectedVariant) return [];
 
     return getVariantGalleryImages(selectedVariant);
   }, [selectedVariant]);
@@ -986,11 +966,12 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
   ========================================================= */
 
   const gallery = useMemo(() => {
-    if (!product) {
-      return [];
-    }
+    if (!product) return [];
 
-    if (!isMainProductSelected && selectedVariantGallery.length > 0) {
+    if (
+      !isMainProductSelected &&
+      selectedVariantGallery.length > 0
+    ) {
       return selectedVariantGallery;
     }
 
@@ -1016,14 +997,10 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
   }, [selectedVariantId]);
 
   useEffect(() => {
-    if (!product) {
-      return;
-    }
+    if (!product) return;
 
     setSelectedVariantId(null);
-
     setSelectedVariantAttributes({});
-
     setActiveImage(0);
   }, [product?.id]);
 
@@ -1032,17 +1009,14 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
   ========================================================= */
 
   const handleSelectMainProduct = () => {
-    // Navigate back to the main product slug so the URL reflects
-    // the currently displayed product. The `productSlug` prop effect
-    // below will sync `activeProductSlug` and trigger a refetch.
     if (product?.slug && product.slug !== activeProductSlug) {
-      router.replace(buildProductPath(product.slug), { scroll: false });
+      router.replace(buildProductPath(product.slug), {
+        scroll: false,
+      });
     }
 
     setSelectedVariantId(null);
-
     setSelectedVariantAttributes({});
-
     setActiveImage(0);
   };
 
@@ -1051,37 +1025,43 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
   ========================================================= */
 
   const handleSelectVariant = (variant: any) => {
-    if (variant?.isMainProduct || variant?.id === "main-product") {
+    if (
+      variant?.isMainProduct ||
+      variant?.id === "main-product"
+    ) {
       handleSelectMainProduct();
       return;
     }
 
-    // A variant whose product_id differs from the current product is a
-    // standalone sibling product. Navigate to its slug so the URL updates
-    // (like a real product page) while the component stays mounted — the
-    // `productSlug` prop effect syncs `activeProductSlug` and refetches
-    // name/price/gallery/stock/specs without a full reload.
     if (
       variant?.slug &&
-      String(variant?.product_id ?? variant?.id) !== String(product?.id)
+      String(variant?.product_id ?? variant?.id) !==
+        String(product?.id)
     ) {
       setSelectedVariantId(variant.id);
+
       setSelectedVariantAttributes(
-        variant?.parsedAttributes || parseJsonObject(variant?.attributes),
+        variant?.parsedAttributes ||
+          parseJsonObject(variant?.attributes),
       );
+
       setActiveImage(0);
       setQuantity(1);
 
       if (variant.slug !== activeProductSlug) {
-        router.replace(buildProductPath(variant.slug), { scroll: false });
+        router.replace(buildProductPath(variant.slug), {
+          scroll: false,
+        });
       }
+
       return;
     }
 
     setSelectedVariantId(variant.id);
 
     const attrs =
-      variant?.parsedAttributes || parseJsonObject(variant?.attributes);
+      variant?.parsedAttributes ||
+      parseJsonObject(variant?.attributes);
 
     setSelectedVariantAttributes({
       ...attrs,
@@ -1094,7 +1074,10 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
      ATTRIBUTE SELECT
   ========================================================= */
 
-  const handleAttributeSelect = (attributeKey: string, value: string) => {
+  const handleAttributeSelect = (
+    attributeKey: string,
+    value: string,
+  ) => {
     const nextAttributes = {
       ...selectedVariantAttributes,
       [attributeKey]: value,
@@ -1102,18 +1085,20 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
 
     setSelectedVariantAttributes(nextAttributes);
 
-    const matchingVariant = variantEntries.find((variant: any) => {
-      const attrs = variant?.parsedAttributes || {};
+    const matchingVariant = variantEntries.find(
+      (variant: any) => {
+        const attrs = variant?.parsedAttributes || {};
 
-      return Object.entries(nextAttributes).every(
-        ([key, selectedValue]) =>
-          String(attrs?.[key] ?? "") === String(selectedValue),
-      );
-    });
+        return Object.entries(nextAttributes).every(
+          ([key, selectedValue]) =>
+            String(attrs?.[key] ?? "") ===
+            String(selectedValue),
+        );
+      },
+    );
 
     if (matchingVariant) {
       setSelectedVariantId(matchingVariant.id);
-
       setActiveImage(0);
     }
   };
@@ -1131,7 +1116,8 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
 
     if (wishlistData?.data && product?.id) {
       const exists = wishlistData.data.some(
-        (item: any) => String(item.product_id) === String(product.id),
+        (item: any) =>
+          String(item.product_id) === String(product.id),
       );
 
       setIsWishlisted(exists);
@@ -1139,13 +1125,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
   }, [wishlistData, product?.id, hasToken]);
 
   useEffect(() => {
-    if (hasToken !== true) {
-      return;
-    }
-
-    if (!wishlistData?.data) {
-      return;
-    }
+    if (hasToken !== true || !wishlistData?.data) return;
 
     const map: Record<number, boolean> = {};
 
@@ -1160,20 +1140,17 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
      MAIN WISHLIST
   ========================================================= */
 
-  const handleWishlistToggle = async (e?: React.MouseEvent<HTMLElement>) => {
-    if (!product || isWishlistLoading) {
-      return;
-    }
+  const handleWishlistToggle = async (
+    e?: React.MouseEvent<HTMLElement>,
+  ) => {
+    if (!product || isWishlistLoading) return;
 
     if (hasToken !== true) {
       router.push(getLoginPath());
-
       return;
     }
 
-    if (e) {
-      popHeart(e);
-    }
+    if (e) popHeart(e);
 
     setIsWishlistLoading(true);
 
@@ -1210,7 +1187,9 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
     } catch (error: any) {
       dispatch(
         showToast({
-          message: error?.data?.message || "Failed to update wishlist",
+          message:
+            error?.data?.message ||
+            "Failed to update wishlist",
           type: "error",
         }),
       );
@@ -1226,7 +1205,6 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
   const toggleWishlist = async (productId: number) => {
     if (hasToken !== true) {
       router.push(getLoginPath());
-
       return;
     }
 
@@ -1271,7 +1249,9 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
     } catch (error: any) {
       dispatch(
         showToast({
-          message: error?.data?.message || "Failed to update wishlist",
+          message:
+            error?.data?.message ||
+            "Failed to update wishlist",
           type: "error",
         }),
       );
@@ -1301,15 +1281,10 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
         ...prev,
         {
           id: item.id,
-
           name: item.name,
-
           image: item.image,
-
           price: item.price,
-
           originalPrice: item.originalPrice,
-
           quantity: qty,
         },
       ];
@@ -1318,10 +1293,6 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
 
   /* =========================================================
      LIVE STOCK VALIDATION
-     (same logic as ProductCard)
-     The `checkProductStock` mutation invalidates the "Products"
-     tag, so the subscribed slug-detail and category queries
-     automatically refetch after the call. No manual refetch here.
   ========================================================= */
 
   const checkFreshStock = async (
@@ -1342,10 +1313,6 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
       );
     }
 
-    // Reusable RTK Query endpoint: HTTP GET with `cache: no-store`.
-    // Uses the selected sibling PRODUCT id; no variant_id is passed.
-    // `invalidatesTags: ["Products"]` on the endpoint triggers the
-    // automatic refetch of the current slug-detail query.
     let result;
 
     try {
@@ -1355,7 +1322,8 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
       }).unwrap();
     } catch (error: any) {
       throw new Error(
-        error?.data?.message || "Unable to verify live stock. Please retry.",
+        error?.data?.message ||
+          "Unable to verify live stock. Please retry.",
       );
     }
 
@@ -1368,10 +1336,15 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
       !Number.isFinite(stock?.stock_quantity) ||
       stock.stock_quantity < 0
     ) {
-      throw new Error("Invalid stock API response. Please retry.");
+      throw new Error(
+        "Invalid stock API response. Please retry.",
+      );
     }
 
-    if (!stock.available || stock.stock_quantity < quantityToCheck) {
+    if (
+      !stock.available ||
+      stock.stock_quantity < quantityToCheck
+    ) {
       throw new Error(
         "This product is currently out of stock or the requested quantity is unavailable.",
       );
@@ -1384,14 +1357,13 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
      ADD CART
   ========================================================= */
 
-  const handleAddToCart = async (e?: React.MouseEvent<HTMLElement>) => {
-    if (!product || !product.inStock) {
-      return;
-    }
+  const handleAddToCart = async (
+    e?: React.MouseEvent<HTMLElement>,
+  ) => {
+    if (!product || !product.inStock) return;
 
     if (hasToken !== true) {
       router.push(getLoginPath());
-
       return;
     }
 
@@ -1405,12 +1377,10 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
     }
 
     try {
-      // LIVE STOCK CHECK — invalidates "Products", auto-refetching detail.
       await checkFreshStock(Number(product.id), quantity);
 
       const payload: any = {
         product_id: product.id,
-
         quantity,
       };
 
@@ -1470,30 +1440,38 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
       return;
     }
 
-    // Direct Buy Now checkout: no add-to-cart request.
-    // Displayed product ID is authoritative for linked variant products.
     const productId = Number(product.id);
+
     const selectedVariantProductId = Number(
       selectedVariant?.product_id ?? selectedVariant?.id,
     );
+
     const variantId =
       !isMainProductSelected &&
       selectedVariant &&
       selectedVariantProductId === productId
-        ? (selectedVariant.product_variant_id ?? selectedVariant.variant_id)
+        ? selectedVariant.product_variant_id ??
+          selectedVariant.variant_id
         : undefined;
 
     if (!Number.isFinite(productId) || productId <= 0) {
       dispatch(
-        showToast({ message: "Invalid product selected", type: "error" }),
+        showToast({
+          message: "Invalid product selected",
+          type: "error",
+        }),
       );
       return;
     }
 
-    const purchaseQty = Math.max(1, Math.floor(Number(quantity) || 1));
+    const purchaseQty = Math.max(
+      1,
+      Math.floor(Number(quantity) || 1),
+    );
+
     setIsBuyingNow(true);
+
     try {
-      // LIVE STOCK CHECK — invalidates "Products", auto-refetching detail.
       await checkFreshStock(productId, purchaseQty);
 
       const params = new URLSearchParams({
@@ -1501,7 +1479,10 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
         product_id: String(productId),
         quantity: String(purchaseQty),
       });
-      if (variantId != null) params.set("variant_id", String(variantId));
+
+      if (variantId != null) {
+        params.set("variant_id", String(variantId));
+      }
 
       router.push(`/checkout?${params.toString()}`);
     } catch (error: any) {
@@ -1524,13 +1505,10 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
   ========================================================= */
 
   const handleNotifySubmit = async () => {
-    if (!product || isNotifyLoading) {
-      return;
-    }
+    if (!product || isNotifyLoading) return;
 
     if (hasToken !== true) {
       router.push(getLoginPath());
-
       return;
     }
 
@@ -1564,10 +1542,15 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
      QUANTITY
   ========================================================= */
 
-  const handleQuantityChange = (type: "increment" | "decrement") => {
+  const handleQuantityChange = (
+    type: "increment" | "decrement",
+  ) => {
     if (type === "increment") {
       setQuantity((prev) =>
-        Math.min(prev + 1, Math.min(product?.stockQuantity || 10, 10)),
+        Math.min(
+          prev + 1,
+          Math.min(product?.stockQuantity || 10, 10),
+        ),
       );
     } else {
       setQuantity((prev) => Math.max(prev - 1, 1));
@@ -1580,15 +1563,12 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
 
   const openFullscreen = (index: number) => {
     setFullscreenImageIndex(index);
-
     setIsFullscreen(true);
-
     document.body.style.overflow = "hidden";
   };
 
   const closeFullscreen = () => {
     setIsFullscreen(false);
-
     document.body.style.overflow = "";
   };
 
@@ -1612,32 +1592,27 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
      REVIEW VIEWER
   ========================================================= */
 
-  const openReviewViewer = (images: string[], index: number) => {
-    if (!images.length) {
-      return;
-    }
+  const openReviewViewer = (
+    images: string[],
+    index: number,
+  ) => {
+    if (!images.length) return;
 
     setReviewViewerImages(images);
-
     setReviewViewerIndex(index);
-
     setIsReviewViewerOpen(true);
-
     document.body.style.overflow = "hidden";
   };
 
   const closeReviewViewer = () => {
     setIsReviewViewerOpen(false);
-
     document.body.style.overflow = "";
   };
 
   const nextReviewViewerImage = (e?: React.MouseEvent) => {
     e?.stopPropagation();
 
-    if (reviewViewerImages.length === 0) {
-      return;
-    }
+    if (reviewViewerImages.length === 0) return;
 
     setReviewViewerIndex((prev) =>
       prev === reviewViewerImages.length - 1 ? 0 : prev + 1,
@@ -1647,9 +1622,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
   const prevReviewViewerImage = (e?: React.MouseEvent) => {
     e?.stopPropagation();
 
-    if (reviewViewerImages.length === 0) {
-      return;
-    }
+    if (reviewViewerImages.length === 0) return;
 
     setReviewViewerIndex((prev) =>
       prev === 0 ? reviewViewerImages.length - 1 : prev - 1,
@@ -1663,9 +1636,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (isFullscreen) {
-        if (e.key === "Escape") {
-          closeFullscreen();
-        }
+        if (e.key === "Escape") closeFullscreen();
 
         if (e.key === "ArrowLeft") {
           setFullscreenImageIndex((prev) =>
@@ -1683,19 +1654,21 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
       }
 
       if (isReviewViewerOpen) {
-        if (e.key === "Escape") {
-          closeReviewViewer();
-        }
+        if (e.key === "Escape") closeReviewViewer();
 
         if (e.key === "ArrowLeft") {
           setReviewViewerIndex((prev) =>
-            prev === 0 ? reviewViewerImages.length - 1 : prev - 1,
+            prev === 0
+              ? reviewViewerImages.length - 1
+              : prev - 1,
           );
         }
 
         if (e.key === "ArrowRight") {
           setReviewViewerIndex((prev) =>
-            prev === reviewViewerImages.length - 1 ? 0 : prev + 1,
+            prev === reviewViewerImages.length - 1
+              ? 0
+              : prev + 1,
           );
         }
       }
@@ -1717,10 +1690,10 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
      ZOOM
   ========================================================= */
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isZoomed) {
-      return;
-    }
+  const handleMouseMove = (
+    e: React.MouseEvent<HTMLDivElement>,
+  ) => {
+    if (!isZoomed) return;
 
     const rect = e.currentTarget.getBoundingClientRect();
 
@@ -1734,10 +1707,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
       Math.max(0, ((e.clientY - rect.top) / rect.height) * 100),
     );
 
-    setZoomPosition({
-      x,
-      y,
-    });
+    setZoomPosition({ x, y });
   };
 
   /* =========================================================
@@ -1745,12 +1715,11 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
   ========================================================= */
 
   const hasUserReviewed = useMemo(() => {
-    if (!currentUserId) {
-      return false;
-    }
+    if (!currentUserId) return false;
 
     return reviewsList.some(
-      (review: any) => String(review?.user?.id ?? "") === String(currentUserId),
+      (review: any) =>
+        String(review?.user?.id ?? "") === String(currentUserId),
     );
   }, [reviewsList, currentUserId]);
 
@@ -1766,13 +1735,18 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
     const lines: any[] = [];
 
     const collectLine = (item: any, parent: any = null) => {
-      if (!item || typeof item !== "object") {
-        return;
-      }
+      if (!item || typeof item !== "object") return;
 
-      const lineId = item?.line_id ?? item?.order_line_id ?? item?.id ?? null;
+      const lineId =
+        item?.line_id ??
+        item?.order_line_id ??
+        item?.id ??
+        null;
 
-      const productId = item?.product_id ?? item?.product?.id ?? null;
+      const productId =
+        item?.product_id ??
+        item?.product?.id ??
+        null;
 
       const orderId =
         item?.order_id ??
@@ -1781,22 +1755,25 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
         parent?.id ??
         null;
 
-      if (lineId != null && productId != null && orderId != null) {
+      if (
+        lineId != null &&
+        productId != null &&
+        orderId != null
+      ) {
         lines.push({
           ...item,
-
           line_id: lineId,
-
           order_line_id: lineId,
-
           product_id: productId,
-
           order_id: orderId,
-
-          order_status: item?.order_status ?? parent?.order_status ?? null,
-
+          order_status:
+            item?.order_status ??
+            parent?.order_status ??
+            null,
           delivery_status:
-            item?.delivery_status ?? parent?.delivery_status ?? null,
+            item?.delivery_status ??
+            parent?.delivery_status ??
+            null,
         });
       }
 
@@ -1815,7 +1792,8 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
     myOrdersData.data.forEach((item: any) => collectLine(item));
 
     const matching = lines.filter(
-      (line) => String(line.product_id) === String(apiProduct.id),
+      (line) =>
+        String(line.product_id) === String(apiProduct.id),
     );
 
     const delivered = matching.find(
@@ -1828,13 +1806,17 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
     return delivered || matching[0] || null;
   }, [myOrdersData, apiProduct?.id]);
 
-  const canReview = Boolean(currentUserId && reviewableOrderLine);
+  const canReview = Boolean(
+    currentUserId && reviewableOrderLine,
+  );
 
   /* =========================================================
      REVIEW SUBMIT
   ========================================================= */
 
-  const handleReviewSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleReviewSubmit = async (
+    e: React.FormEvent<HTMLFormElement>,
+  ) => {
     e.preventDefault();
 
     if (!reviewTitle.trim()) {
@@ -1857,15 +1839,12 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
     try {
       const payload = {
         rating: Number(reviewRating),
-
         review_text: reviewTitle.trim(),
-
         order_id: Number(reviewableOrderLine.order_id),
-
         order_line_id: Number(reviewableOrderLine.line_id),
-
-        product_id: Number(reviewableOrderLine.product_id || product.id),
-
+        product_id: Number(
+          reviewableOrderLine.product_id || product.id,
+        ),
         images: reviewImages,
       };
 
@@ -1873,7 +1852,9 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
 
       dispatch(
         showToast({
-          message: result?.message || "Review submitted successfully.",
+          message:
+            result?.message ||
+            "Review submitted successfully.",
           type: "success",
         }),
       );
@@ -1889,7 +1870,9 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
     } catch (error: any) {
       dispatch(
         showToast({
-          message: error?.data?.message || "Failed to submit review.",
+          message:
+            error?.data?.message ||
+            "Failed to submit review.",
           type: "error",
         }),
       );
@@ -1902,92 +1885,168 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
      REVIEW IMAGE UPLOAD
   ========================================================= */
 
-  const handleReviewImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files) {
-      return;
-    }
+  const handleReviewImageUpload = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    if (!e.target.files) return;
 
     const files = Array.from(e.target.files);
 
-    setReviewImages((prev) => [...prev, ...files.slice(0, 5 - prev.length)]);
+    setReviewImages((prev) => [
+      ...prev,
+      ...files.slice(0, 5 - prev.length),
+    ]);
 
     e.target.value = "";
   };
 
   const removeReviewImage = (index: number) => {
-    setReviewImages((prev) => prev.filter((_, i) => i !== index));
+    setReviewImages((prev) =>
+      prev.filter((_, i) => i !== index),
+    );
   };
 
   /* =========================================================
-     RELATED PRODUCTS
+     RELATED PRODUCTS API MAPPING
+     API RESPONSE:
+     {
+       category_id: 3,
+       total: 17,
+       data: [...]
+     }
+
+     RATING:
+     reviews_summary.average_rating
+     reviews_summary.total_reviews
   ========================================================= */
 
-  const similarProducts = Array.isArray(categoryProductsData?.data)
+  const categoryProductList: any[] = Array.isArray(
+    categoryProductsData?.data,
+  )
     ? categoryProductsData.data
-        .filter((p: any) => String(p.id) !== String(product?.id))
-        .slice(0, 10)
-        .map((p: any) => {
-          const distributor = userAccountType === "distributor";
+    : Array.isArray(categoryProductsData?.data?.data)
+      ? categoryProductsData.data.data
+      : Array.isArray(categoryProductsData)
+        ? categoryProductsData
+        : [];
 
-          const price = distributor
-            ? Number(p.distributor_price || p.retail_price || 0)
-            : Number(p.retail_price || 0);
+  const similarProducts = categoryProductList
+    .filter(
+      (p: any) => String(p.id) !== String(product?.id),
+    )
+    .slice(0, 10)
+    .map((p: any) => {
+      const distributor = userAccountType === "distributor";
 
-          const mrp = distributor
-            ? Number(p.distributor_mrp || p.retail_mrp || 0)
-            : Number(p.retail_mrp || 0);
+      const price = distributor
+        ? Number(
+            p.distributor_price ||
+              p.retail_price ||
+              0,
+          )
+        : Number(p.retail_price || 0);
 
-          return {
-            id: p.id,
+      const mrp = distributor
+        ? Number(
+            p.distributor_mrp ||
+              p.retail_mrp ||
+              0,
+          )
+        : Number(p.retail_mrp || 0);
 
-            name: p.name,
+      /*
+       * IMPORTANT:
+       * Category API returns reviews_summary directly.
+       * Do not rely only on reviews.summary.
+       */
+      const reviewSummary =
+        p?.reviews_summary ??
+        p?.reviews?.summary ??
+        {};
 
-            slug: p.slug || generateSlugFromName(p.name),
+      const rating = getAverageRating(reviewSummary);
 
-            category: p.category?.name || p.category_name || "",
-            brand: p.brand_name || p.brandName || p.brand || "",
-            description: p.short_description || p.description || "",
-            stockQuantity: Number(p.stock_quantity || 0),
-            lowStockThreshold: Number(p.low_stock_threshold || 0),
-            peopleBought: Number(
-              p.people_bought_this_week || p.peopleBoughtThisWeek || 0,
-            ),
-            badge:
-              p.badge ||
-              (p.is_deal_of_the_day
-                ? "Deal of the Day"
-                : p.sale_type === "today_best"
-                  ? "Best Seller"
-                  : ""),
+      const totalReviews = getTotalReviews(reviewSummary);
 
-            price,
+      return {
+        id: p.id,
 
-            originalPrice: mrp,
+        name: p.name,
 
-            discount:
-              mrp > price && price > 0
-                ? Math.round(((mrp - price) / mrp) * 100)
-                : null,
+        slug:
+          p.slug ||
+          generateSlugFromName(p.name),
 
-            image:
-              p.primary_image_url ||
-              p.images?.find((img: any) => img?.is_primary)?.image_url ||
-              p.images?.[0]?.image_url ||
-              PLACEHOLDER,
+        category:
+          p.category?.name ||
+          p.category_name ||
+          "",
 
-            rating: Number(p.reviews?.summary?.average_rating || 0),
+        brand:
+          p.brand_name ||
+          p.brandName ||
+          p.brand ||
+          "",
 
-            reviews: Number(p.reviews?.summary?.total_reviews || 0),
+        description:
+          p.short_description ||
+          p.description ||
+          "",
 
-            inStock: Number(p.stock_quantity || 0) > 0,
+        stockQuantity: Number(p.stock_quantity || 0),
 
-            createdAt: p.created_at || p.createdAt || null,
-          };
-        })
-    : [];
+        lowStockThreshold: Number(
+          p.low_stock_threshold || 0,
+        ),
+
+        peopleBought: Number(
+          p.people_bought_this_week ||
+            p.peopleBoughtThisWeek ||
+            0,
+        ),
+
+        badge:
+          p.badge ||
+          (p.is_deal_of_the_day
+            ? "Deal of the Day"
+            : p.sale_type === "today_best"
+              ? "Best Seller"
+              : ""),
+
+        price,
+
+        originalPrice: mrp,
+
+        discount:
+          mrp > price && price > 0
+            ? Math.round(((mrp - price) / mrp) * 100)
+            : null,
+
+        image:
+          p.primary_image_url ||
+          p.images?.find(
+            (img: any) => img?.is_primary,
+          )?.image_url ||
+          p.images?.[0]?.image_url ||
+          PLACEHOLDER,
+
+        // Correct rating mapping.
+        rating,
+
+        // Correct review count mapping.
+        reviews: totalReviews,
+
+        inStock: Number(p.stock_quantity || 0) > 0,
+
+        createdAt:
+          p.created_at ||
+          p.createdAt ||
+          null,
+      };
+    });
 
   /* =========================================================
-     SORT
+     SORT RELATED PRODUCTS
   ========================================================= */
 
   const sortedSimilarProducts = useMemo(() => {
@@ -2002,9 +2061,13 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
 
       case "newest":
         return list.sort((a, b) => {
-          const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const aTime = a.createdAt
+            ? new Date(a.createdAt).getTime()
+            : 0;
 
-          const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          const bTime = b.createdAt
+            ? new Date(b.createdAt).getTime()
+            : 0;
 
           return bTime - aTime;
         });
@@ -2014,13 +2077,20 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
     }
   }, [similarProducts, relatedSortOption]);
 
-  const visibleSimilarProducts = sortedSimilarProducts.slice(0, 12);
+  const visibleSimilarProducts =
+    sortedSimilarProducts.slice(0, 12);
 
   /* =========================================================
-     RELATED CARD
+     RELATED CARD BUSY STATE
   ========================================================= */
 
-  const [relatedBusyId, setRelatedBusyId] = useState<string | null>(null);
+  const [relatedBusyId, setRelatedBusyId] = useState<
+    string | null
+  >(null);
+
+  /* =========================================================
+     ADD RELATED TO CART
+  ========================================================= */
 
   const addRelatedToCart = async (
     item: (typeof similarProducts)[number],
@@ -2030,17 +2100,27 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
       router.push(getLoginPath());
       return;
     }
+
     if (!item.inStock || relatedBusyId !== null) return;
+
     setRelatedBusyId(String(item.id));
+
     try {
-      // LIVE STOCK CHECK — invalidates "Products", auto-refetching detail.
       await checkFreshStock(Number(item.id), 1);
 
-      await addToCart({ product_id: item.id, quantity: 1 }).unwrap();
+      await addToCart({
+        product_id: item.id,
+        quantity: 1,
+      }).unwrap();
+
       if (buyNow) {
         setShowRelatedSheet(false);
+
         router.push(
-          `/checkout?${new URLSearchParams({ product_id: String(item.id), quantity: "1" }).toString()}`,
+          `/checkout?${new URLSearchParams({
+            product_id: String(item.id),
+            quantity: "1",
+          }).toString()}`,
         );
       } else {
         dispatch(
@@ -2065,27 +2145,59 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
     }
   };
 
+  /* =========================================================
+     RELATED PRODUCT CARD
+  ========================================================= */
+
   const renderSimilarCard = (
     item: (typeof similarProducts)[number],
     index: number,
   ) => {
-    const url = `${buildProductPath(item.slug || generateSlugFromName(item.name) || String(item.id))}`;
-    const discounted = item.originalPrice > item.price && item.price > 0;
+    const url = buildProductPath(
+      item.slug ||
+        generateSlugFromName(item.name) ||
+        String(item.id),
+    );
+
+    const discounted =
+      item.originalPrice > item.price &&
+      item.price > 0;
+
     const discountPercent = discounted
-      ? Math.round((1 - item.price / item.originalPrice) * 100)
+      ? Math.round(
+          (1 - item.price / item.originalPrice) * 100,
+        )
       : 0;
+
     const lowStock =
       item.inStock &&
       item.stockQuantity > 0 &&
-      item.stockQuantity <= (item.lowStockThreshold || 10);
+      item.stockQuantity <=
+        (item.lowStockThreshold || 10);
+
+    // A zero/missing rating must not display a rating row.
+    const hasRating =
+      Number.isFinite(Number(item.rating)) &&
+      Number(item.rating) > 0;
+
     return (
       <motion.article
         key={item.id}
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.22, delay: Math.min(index, 8) * 0.03 }}
+        initial={{
+          opacity: 0,
+          y: 8,
+        }}
+        animate={{
+          opacity: 1,
+          y: 0,
+        }}
+        transition={{
+          duration: 0.22,
+          delay: Math.min(index, 8) * 0.03,
+        }}
         className="group/related flex min-w-0 flex-col overflow-hidden rounded-xl border border-[#e9e9e9] bg-white transition-all hover:border-[#d5d5d5] hover:shadow-[0_8px_24px_rgba(0,0,0,0.07)]"
       >
+        {/* IMAGE */}
         <div className="relative aspect-square overflow-hidden bg-[#faf9f7]">
           <Link
             href={url}
@@ -2100,11 +2212,14 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
               className="object-cover transition-transform duration-300 group-hover/related:scale-[1.025]"
             />
           </Link>
+
           {item.badge && (
             <span className="absolute left-2 top-2 max-w-[65%] truncate rounded bg-white/95 px-2 py-1 text-[9px] font-semibold text-[#222] shadow-sm">
               {item.badge}
             </span>
           )}
+
+          {/* WISHLIST */}
           <button
             type="button"
             onClick={(e) => {
@@ -2119,23 +2234,47 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
             }
           >
             <Heart
-              className={`h-4 w-4 ${wishlistState[Number(item.id)] ? "fill-red-500 text-red-500" : "text-[#222]"}`}
+              className={`h-4 w-4 ${
+                wishlistState[Number(item.id)]
+                  ? "fill-red-500 text-red-500"
+                  : "text-[#222]"
+              }`}
             />
           </button>
+
           {!item.inStock && (
             <span className="absolute bottom-2 left-2 rounded bg-[#222]/90 px-2 py-1 text-[9px] text-white">
               Out of stock
             </span>
           )}
         </div>
+
+        {/* PRODUCT CONTENT */}
         <div className="flex min-w-0 flex-1 flex-col px-2.5 pb-3 pt-2.5 sm:px-3">
-          <div className="mb-1.5 flex items-center gap-1 text-[10px]">
-            <span className="rounded bg-[#f4f4f4] px-1.5 py-0.5 text-[#444]">
-              {Number(item.rating || 0).toFixed(1)}{" "}
-              <Star className="inline h-2.5 w-2.5 fill-[#188447] text-[#188447]" />{" "}
-              <span className="text-[#bbb]">|</span> {item.reviews || 0}
-            </span>
-          </div>
+
+          {/* RATING - GREEN */}
+          {hasRating && (
+            <div className="mb-1.5 flex items-center gap-1.5">
+              <span className="inline-flex items-center gap-1 rounded bg-[#f4f4f4] px-1.5 py-0.5 text-[10px]">
+                <span className="font-semibold text-[#333]">
+                  {Number(item.rating).toFixed(1)}
+                </span>
+
+                <Star className="h-3 w-3 fill-[#188447] text-[#188447]" />
+
+                {item.reviews > 0 && (
+                  <>
+                    <span className="text-[#bbb]">|</span>
+
+                    <span className="text-[#777]">
+                      {item.reviews}
+                    </span>
+                  </>
+                )}
+              </span>
+            </div>
+          )}
+
           <Link
             href={url}
             onClick={() => setShowRelatedSheet(false)}
@@ -2145,8 +2284,12 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
               <span className="font-semibold text-[#171717]">
                 {item.brand || item.name}
               </span>
-              {item.category ? ` | ${item.category}` : ""}
+
+              {item.category
+                ? ` | ${item.category}`
+                : ""}
             </p>
+
             <p
               className="mt-0.5 truncate text-[10px] text-[#748095]"
               title={item.name}
@@ -2154,47 +2297,69 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
               {item.name}
             </p>
           </Link>
+
+          {/* PRICE */}
           <div className="mt-2 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
             <span className="text-[13px] font-bold text-[#161616]">
               ₹{Number(item.price || 0).toLocaleString("en-IN")}
             </span>
+
             {discounted && (
               <span className="text-[10px] text-[#939393] line-through">
-                ₹{Number(item.originalPrice).toLocaleString("en-IN")}
+                ₹
+                {Number(item.originalPrice).toLocaleString(
+                  "en-IN",
+                )}
               </span>
             )}
+
             {discountPercent > 0 && (
               <span className="text-[10px] font-semibold text-[#16803c]">
                 {discountPercent}% off
               </span>
             )}
           </div>
+
+          {/* STOCK */}
           {lowStock && (
             <p className="mt-1 text-[9px] font-medium text-[#d23c52]">
               Only {item.stockQuantity} left in stock!
             </p>
           )}
+
           {!lowStock && item.peopleBought > 0 && (
             <p className="mt-1 truncate text-[9px] text-[#444]">
               {item.peopleBought} people bought this week
             </p>
           )}
+
+          {/* ACTIONS */}
           <div className="mt-auto grid grid-cols-2 gap-1.5 pt-2.5">
             <button
               type="button"
-              disabled={!item.inStock || relatedBusyId !== null}
+              disabled={
+                !item.inStock ||
+                relatedBusyId !== null
+              }
               onClick={() => addRelatedToCart(item, true)}
               className="min-h-9 rounded-lg bg-[#171717] px-1 text-[10px] font-semibold text-white transition hover:bg-[#333] disabled:cursor-not-allowed disabled:opacity-40"
             >
-              Buy Now
+              {relatedBusyId === String(item.id)
+                ? "Please wait..."
+                : "Buy Now"}
             </button>
+
             <button
               type="button"
-              disabled={!item.inStock || relatedBusyId !== null}
+              disabled={
+                !item.inStock ||
+                relatedBusyId !== null
+              }
               onClick={() => addRelatedToCart(item, false)}
               className="flex min-h-9 items-center justify-center gap-1 rounded-lg border border-[#dedbd4] px-1 text-[10px] font-semibold text-[#222] transition hover:border-[#111] disabled:cursor-not-allowed disabled:opacity-40"
             >
-              <ShoppingCart className="h-3 w-3 shrink-0" /> Add to Cart
+              <ShoppingCart className="h-3 w-3 shrink-0" />
+              Add to Cart
             </button>
           </div>
         </div>
@@ -2217,7 +2382,13 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
 
       router.push("/products");
     }
-  }, [isProductLoading, product, error, router, dispatch]);
+  }, [
+    isProductLoading,
+    product,
+    error,
+    router,
+    dispatch,
+  ]);
 
   if (isProductLoading && !product) {
     return (
@@ -2233,7 +2404,9 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
         <div className="max-w-md px-4 text-center">
           <div className="mb-4 text-6xl">🔍</div>
 
-          <h2 className="mb-3 text-2xl font-bold">Product Not Found</h2>
+          <h2 className="mb-3 text-2xl font-bold">
+            Product Not Found
+          </h2>
 
           <p className="mb-6 text-sm text-[#777]">
             The product you're looking for doesn't exist or has been removed.
@@ -2263,19 +2436,27 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
      SPECIFICATIONS
   ========================================================= */
 
-  const specification = parseJsonObject(product.specification);
+  const specification = parseJsonObject(
+    product.specification,
+  );
 
   const specRows =
     Object.keys(specification).length > 0
-      ? Object.entries(specification).map(([key, value]) => [
-          key.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase()),
-
-          String(value),
-        ])
+      ? Object.entries(specification).map(
+          ([key, value]) => [
+            key
+              .replace(/_/g, " ")
+              .replace(/\b\w/g, (char) => char.toUpperCase()),
+            String(value),
+          ],
+        )
       : [
           ["Product Type", product.category],
           ["Product Code", product.productCode || "N/A"],
-          ["Availability", product.inStock ? "In Stock" : "Out of Stock"],
+          [
+            "Availability",
+            product.inStock ? "In Stock" : "Out of Stock",
+          ],
           ["Stock Quantity", product.stockQuantity],
           ["UOM", apiProduct?.uom || "NOS"],
           ["HSN Code", apiProduct?.hsn_code || "N/A"],
@@ -2294,24 +2475,30 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
       <Header />
 
       <main className="mx-auto w-full max-w-[1440px] px-3 py-3 sm:px-5 sm:py-4 lg:px-7 xl:px-10">
-        {/* ===================================================
-            BREADCRUMB
-        =================================================== */}
 
+        {/* BREADCRUMB */}
         <nav className="mb-3 flex items-center gap-1.5 overflow-x-auto whitespace-nowrap text-[11px] text-[#8A8A8A] sm:text-[12px]">
-          <Link href="/home" className="transition hover:text-[#111]">
+          <Link
+            href="/home"
+            className="transition hover:text-[#111]"
+          >
             Home
           </Link>
 
           <ChevronRight className="h-3 w-3 flex-shrink-0 text-[#CFCFCF]" />
 
-          <Link href="/products" className="transition hover:text-[#111]">
+          <Link
+            href="/products"
+            className="transition hover:text-[#111]"
+          >
             Products
           </Link>
 
           <ChevronRight className="h-3 w-3 flex-shrink-0 text-[#CFCFCF]" />
 
-          <span className="font-medium text-[#555]">{product.category}</span>
+          <span className="font-medium text-[#555]">
+            {product.category}
+          </span>
 
           <ChevronRight className="h-3 w-3 flex-shrink-0 text-[#CFCFCF]" />
 
@@ -2320,73 +2507,77 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
           </span>
         </nav>
 
-        {/* ===================================================
-            HERO
-        =================================================== */}
-
+        {/* HERO */}
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-[0.92fr_1.08fr] xl:gap-5">
-          {/* IMAGE AREA */}
 
+          {/* IMAGE AREA */}
           <div className="flex flex-col gap-2.5 lg:flex-row">
+
             {/* THUMBNAILS */}
             <div className="order-last flex w-full flex-row gap-2 overflow-x-auto pb-1 lg:order-first lg:w-[62px] lg:flex-shrink-0 lg:flex-col lg:gap-2 lg:overflow-visible lg:pb-0 xl:w-[76px]">
-              {gallery.slice(0, MAX_VISIBLE_THUMBS).map((img, index) => {
-                const isLastVisible = index === MAX_VISIBLE_THUMBS - 1;
-                const hasMore = gallery.length > MAX_VISIBLE_THUMBS;
+              {gallery
+                .slice(0, MAX_VISIBLE_THUMBS)
+                .map((img, index) => {
+                  const isLastVisible =
+                    index === MAX_VISIBLE_THUMBS - 1;
 
-                return (
-                  <button
-                    key={`${img}-${index}`}
-                    type="button"
-                    onClick={() =>
-                      isLastVisible && hasMore
-                        ? setShowAllThumbnails(true)
-                        : setActiveImage(index)
-                    }
-                    onMouseEnter={() => {
-                      if (!(isLastVisible && hasMore)) setActiveImage(index);
-                    }}
-                    className={`relative h-[62px] w-[62px] flex-shrink-0 overflow-hidden rounded-[7px] border-2 bg-white transition sm:h-[70px] sm:w-[70px] lg:h-[74px] lg:w-[74px] ${
-                      activeImage === index
-                        ? "border-[#111]"
-                        : "border-[#E4E4E4] hover:border-[#999]"
-                    }`}
-                  >
-                    <Image
-                      src={img || PLACEHOLDER}
-                      alt={`${product.name} ${index + 1}`}
-                      fill
-                      sizes="74px"
-                      className="object-cover transition duration-300 hover:scale-105"
-                    />
+                  const hasMore =
+                    gallery.length > MAX_VISIBLE_THUMBS;
 
-                    {/* Selected tick */}
-                    {activeImage === index && !(isLastVisible && hasMore) && (
-                      <span className="absolute inset-0 flex items-center justify-center bg-black/25">
-                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white shadow-sm">
-                          <CheckCircle className="h-3.5 w-3.5 text-[#111]" />
-                        </span>
-                      </span>
-                    )}
+                  return (
+                    <button
+                      key={`${img}-${index}`}
+                      type="button"
+                      onClick={() =>
+                        isLastVisible && hasMore
+                          ? setShowAllThumbnails(true)
+                          : setActiveImage(index)
+                      }
+                      onMouseEnter={() => {
+                        if (!(isLastVisible && hasMore)) {
+                          setActiveImage(index);
+                        }
+                      }}
+                      className={`relative h-[62px] w-[62px] flex-shrink-0 overflow-hidden rounded-[7px] border-2 bg-white transition sm:h-[70px] sm:w-[70px] lg:h-[74px] lg:w-[74px] ${
+                        activeImage === index
+                          ? "border-[#111]"
+                          : "border-[#E4E4E4] hover:border-[#999]"
+                      }`}
+                    >
+                      <Image
+                        src={img || PLACEHOLDER}
+                        alt={`${product.name} ${index + 1}`}
+                        fill
+                        sizes="74px"
+                        className="object-cover transition duration-300 hover:scale-105"
+                      />
 
-                    {/* "+N more" overlay on last visible thumb */}
-                    {isLastVisible && hasMore && (
-                      <span className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 text-white backdrop-blur-[1px]">
-                        <span className="text-[15px] font-bold leading-none">
-                          +{gallery.length - MAX_VISIBLE_THUMBS}
+                      {activeImage === index &&
+                        !(isLastVisible && hasMore) && (
+                          <span className="absolute inset-0 flex items-center justify-center bg-black/25">
+                            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white shadow-sm">
+                              <CheckCircle className="h-3.5 w-3.5 text-[#111]" />
+                            </span>
+                          </span>
+                        )}
+
+                      {isLastVisible && hasMore && (
+                        <span className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 text-white backdrop-blur-[1px]">
+                          <span className="text-[15px] font-bold leading-none">
+                            +{gallery.length - MAX_VISIBLE_THUMBS}
+                          </span>
+
+                          <span className="mt-0.5 text-[8px] font-semibold uppercase tracking-wide">
+                            More
+                          </span>
                         </span>
-                        <span className="mt-0.5 text-[8px] font-semibold uppercase tracking-wide">
-                          More
-                        </span>
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
+                      )}
+                    </button>
+                  );
+                })}
             </div>
 
             {/* MAIN IMAGE */}
-
             <div className="min-w-0 flex-1">
               <div
                 ref={mainImageBoxRef}
@@ -2418,7 +2609,9 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                     >
                       <Image
                         src={
-                          gallery[activeImage] || product.image || PLACEHOLDER
+                          gallery[activeImage] ||
+                          product.image ||
+                          PLACEHOLDER
                         }
                         alt={product.name}
                         fill
@@ -2446,27 +2639,31 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                     </span>
                   )}
 
+                  {/* WISHLIST */}
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-
                       handleWishlistToggle(e);
                     }}
                     disabled={isWishlistLoading}
                     className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/95 shadow-sm backdrop-blur"
                     aria-label={
-                      isWishlisted ? "Remove from wishlist" : "Add to wishlist"
+                      isWishlisted
+                        ? "Remove from wishlist"
+                        : "Add to wishlist"
                     }
                   >
                     <Heart
                       className={`h-4 w-4 ${
-                        isWishlisted ? "fill-[#111] text-[#111]" : "text-[#111]"
+                        isWishlisted
+                          ? "fill-[#111] text-[#111]"
+                          : "text-[#111]"
                       }`}
                     />
                   </button>
 
-                  {/* VIEW SIMILAR — CARD STACK ICON */}
+                  {/* VIEW SIMILAR */}
                   <button
                     type="button"
                     onClick={(e) => {
@@ -2476,10 +2673,11 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                     aria-label="View similar products"
                     className="group absolute bottom-3 right-3 z-10 flex h-11 items-center overflow-hidden rounded-full bg-white/95 pl-3 pr-3 shadow-md backdrop-blur transition-all duration-300 ease-out hover:pl-4 hover:pr-5 hover:shadow-lg sm:h-12"
                   >
-                    {/* Lucide Layers icon — card stack jaisa */}
-                    <Layers className="h-[22px] w-[22px] flex-shrink-0 text-[#111] sm:h-[24px] sm:w-[24px]" strokeWidth={1.8} />
+                    <Layers
+                      className="h-[22px] w-[22px] flex-shrink-0 text-[#111] sm:h-[24px] sm:w-[24px]"
+                      strokeWidth={1.8}
+                    />
 
-                    {/* Text — hover par expand */}
                     <span className="max-w-0 overflow-hidden whitespace-nowrap text-[11px] font-bold uppercase tracking-wider text-black opacity-0 transition-all duration-300 ease-out group-hover:ml-2 group-hover:max-w-[140px] group-hover:opacity-100 sm:text-[12px]">
                       View Similar
                     </span>
@@ -2487,7 +2685,6 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                 </div>
 
                 {/* ZOOM */}
-
                 <AnimatePresence>
                   {isZoomed && !prefersReduced() && (
                     <motion.div
@@ -2512,7 +2709,9 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                         className="absolute inset-0 bg-cover bg-no-repeat"
                         style={{
                           backgroundImage: `url(${
-                            gallery[activeImage] || product.image || PLACEHOLDER
+                            gallery[activeImage] ||
+                            product.image ||
+                            PLACEHOLDER
                           })`,
                           backgroundPosition: `${zoomPosition.x}% ${zoomPosition.y}%`,
                           backgroundSize: "250%",
@@ -2529,10 +2728,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
             </div>
           </div>
 
-          {/* =================================================
-              PRODUCT DETAILS
-          ================================================= */}
-
+          {/* PRODUCT DETAILS */}
           <div className="rounded-[8px] bg-white p-5 sm:p-6 lg:p-7">
             <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#999]">
               {product.category}
@@ -2542,31 +2738,38 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
               {product.name}
             </h1>
 
-            <div className="mt-2.5 flex items-center gap-2.5">
-              <div className="flex gap-0.5">
-                {[1, 2, 3, 4, 5].map((n) => (
-                  <Star
-                    key={n}
-                    className={`h-3.5 w-3.5 ${
-                      n <= Math.floor(product.rating)
-                        ? "fill-[#F6BE16] text-[#F6BE16]"
-                        : "fill-[#F6BE16]/15 text-[#F6BE16]"
-                    }`}
-                  />
-                ))}
+            {/* MAIN PRODUCT RATING - GREEN */}
+            {product.rating > 0 && (
+              <div className="mt-2.5 flex items-center gap-2.5">
+                <div className="flex gap-0.5">
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <Star
+                      key={n}
+                      className={`h-3.5 w-3.5 ${
+                        n <= Math.floor(product.rating)
+                          ? "fill-[#188447] text-[#188447]"
+                          : "fill-[#188447]/10 text-[#D1D5DB]"
+                      }`}
+                    />
+                  ))}
+                </div>
+
+                <span className="text-[12px] font-semibold text-[#333]">
+                  {product.rating.toFixed(1)}
+                </span>
+
+                {product.reviews > 0 && (
+                  <span className="text-[11px] text-[#888]">
+                    {product.reviews}{" "}
+                    {product.reviews === 1
+                      ? "Rating"
+                      : "Ratings"}
+                  </span>
+                )}
               </div>
-
-              <span className="text-[12px] font-semibold text-[#333]">
-                {product.rating.toFixed(1)} ★
-              </span>
-
-              <span className="text-[11px] text-[#888]">
-                {product.reviews} Ratings
-              </span>
-            </div>
+            )}
 
             {/* PRICE */}
-
             <div className="mt-3 flex items-end gap-2.5">
               <span className="text-[26px] font-bold tracking-[-0.02em] text-[#111]">
                 ₹{product.price.toLocaleString("en-IN")}
@@ -2589,7 +2792,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
               inclusive of all taxes
             </p>
 
-            {/* LOW STOCK URGENCY — only shown when quantity is positive */}
+            {/* LOW STOCK */}
             {product.isLowStock && (
               <div
                 className="mt-3 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5"
@@ -2598,6 +2801,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                 <span aria-hidden="true" className="text-base">
                   🔥
                 </span>
+
                 <span className="text-[12px] font-semibold text-amber-800">
                   Hurry! Only {product.stockQuantity} left in stock
                 </span>
@@ -2605,7 +2809,6 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
             )}
 
             {/* DESCRIPTION */}
-
             {product.description && (
               <div className="mt-4 border-t border-[#E8E8E8] pt-3">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#999]">
@@ -2629,7 +2832,6 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
             )}
 
             {/* ATTRIBUTES */}
-
             {hasVariants && (
               <div className="mt-5 border-t border-[#E8E8E8] pt-4">
                 {Object.entries(variantAttributeOptions).map(
@@ -2642,24 +2844,34 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                     }
 
                     return (
-                      <div key={attributeKey} className="mb-4">
+                      <div
+                        key={attributeKey}
+                        className="mb-4"
+                      >
                         <p className="mb-2 text-[11px] font-semibold text-[#222]">
                           {attributeKey
                             .replace(/_/g, " ")
-                            .replace(/\b\w/g, (char) => char.toUpperCase())}
+                            .replace(/\b\w/g, (char) =>
+                              char.toUpperCase(),
+                            )}
                         </p>
 
                         <div className="flex flex-wrap gap-2">
                           {values.map((value) => {
                             const selected =
-                              selectedVariantAttributes[attributeKey] === value;
+                              selectedVariantAttributes[
+                                attributeKey
+                              ] === value;
 
                             return (
                               <button
                                 key={`${attributeKey}-${value}`}
                                 type="button"
                                 onClick={() =>
-                                  handleAttributeSelect(attributeKey, value)
+                                  handleAttributeSelect(
+                                    attributeKey,
+                                    value,
+                                  )
                                 }
                                 className={`rounded-full border px-4 py-1.5 text-[11px] font-semibold transition ${
                                   selected
@@ -2678,7 +2890,6 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                 )}
 
                 {/* COLORS */}
-
                 <div className="mt-2">
                   <div className="mb-2.5 flex items-center gap-2">
                     <p className="text-[11px] font-semibold text-[#222]">
@@ -2692,50 +2903,66 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
 
                   <div className="flex flex-wrap items-start gap-3">
                     {displayVariants.map((variant: any) => {
-                      const isMain = variant?.isMainProduct === true;
+                      const isMain =
+                        variant?.isMainProduct === true;
 
                       const image = isMain
                         ? product.image
                         : getVariantImageUrl(variant);
 
-                      if (!image) {
-                        return null;
-                      }
+                      if (!image) return null;
 
                       const isSelected = isMain
                         ? isMainProductSelected
-                        : String(selectedVariantId) === String(variant.id);
+                        : String(selectedVariantId) ===
+                          String(variant.id);
 
                       const colorName =
                         variant?.parsedAttributes?.color1 ||
                         variant?.parsedAttributes?.color ||
                         variant?.parsedAttributes?.Color ||
-                        (/rose[\s-]*gold/i.test(variant?.name || "")
+                        (/rose[\s-]*gold/i.test(
+                          variant?.name || "",
+                        )
                           ? "Rose Gold"
-                          : /steel|silver/i.test(variant?.name || "")
+                          : /steel|silver/i.test(
+                                variant?.name || "",
+                              )
                             ? "Steel"
-                            : /gold/i.test(variant?.name || "")
+                            : /gold/i.test(
+                                  variant?.name || "",
+                                )
                               ? "Gold"
                               : variant?.name || "");
 
                       return (
                         <div
-                          key={isMain ? "main-product" : variant.id}
+                          key={
+                            isMain
+                              ? "main-product"
+                              : variant.id
+                          }
                           className="flex w-[60px] flex-col items-center"
                         >
                           <button
                             type="button"
-                            onClick={() => handleSelectVariant(variant)}
+                            onClick={() =>
+                              handleSelectVariant(variant)
+                            }
                             className={`relative h-[58px] w-[58px] overflow-hidden rounded-[8px] border-2 bg-white transition ${
                               isSelected
                                 ? "border-[#111] ring-1 ring-[#111]"
                                 : "border-[#E3E3E3] hover:border-[#999]"
                             }`}
-                            aria-label={colorName || product.name}
+                            aria-label={
+                              colorName || product.name
+                            }
                           >
                             <Image
                               src={image}
-                              alt={colorName || product.name}
+                              alt={
+                                colorName || product.name
+                              }
                               fill
                               sizes="58px"
                               className="object-cover transition duration-300 hover:scale-105"
@@ -2745,7 +2972,9 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                           {!isMain && colorName && (
                             <span
                               className={`mt-1 max-w-[60px] truncate text-center text-[9px] font-medium ${
-                                isSelected ? "text-[#111]" : "text-[#888]"
+                                isSelected
+                                  ? "text-[#111]"
+                                  : "text-[#888]"
                               }`}
                               title={colorName}
                             >
@@ -2761,35 +2990,34 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
             )}
 
             {/* SELECTED VARIANT */}
-
-            {!isMainProductSelected && selectedVariant && (
-              <div className="mt-3 rounded-[7px] bg-[#F8F8F8] px-3 py-2">
-                <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-[#777]">
-                  {selectedVariant?.sku && (
-                    <span>
-                      SKU:
-                      <span className="ml-1 font-semibold text-[#111]">
-                        {selectedVariant.sku}
+            {!isMainProductSelected &&
+              selectedVariant && (
+                <div className="mt-3 rounded-[7px] bg-[#F8F8F8] px-3 py-2">
+                  <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-[#777]">
+                    {selectedVariant?.sku && (
+                      <span>
+                        SKU:
+                        <span className="ml-1 font-semibold text-[#111]">
+                          {selectedVariant.sku}
+                        </span>
                       </span>
-                    </span>
-                  )}
+                    )}
 
-                  {Object.entries(selectedVariantAttributes).map(
-                    ([key, value]) => (
+                    {Object.entries(
+                      selectedVariantAttributes,
+                    ).map(([key, value]) => (
                       <span key={key}>
                         {key}:
                         <span className="ml-1 font-semibold text-[#111]">
                           {value}
                         </span>
                       </span>
-                    ),
-                  )}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
             {/* ACTIONS */}
-
             <div className="mt-5 flex items-center gap-2 border-t border-[#E8E8E8] pt-4">
               {product.inStock ? (
                 <>
@@ -2803,7 +3031,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                   >
                     {isBuyingNow ? (
                       <>
-                        <Loader2 className="h-4 w-4 animate-spin" />{" "}
+                        <Loader2 className="h-4 w-4 animate-spin" />
                         Processing...
                       </>
                     ) : (
@@ -2879,7 +3107,6 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
             )}
 
             {/* PRODUCT INFO */}
-
             <div className="mt-4 border-t border-[#E8E8E8] pt-4">
               <div className="flex items-center justify-between gap-3 rounded-[8px] bg-[#FAFAFA] px-3 py-2.5">
                 <div className="text-[12px] text-[#666]">
@@ -2891,7 +3118,9 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
 
                 <button
                   type="button"
-                  onClick={() => setShowManufacturingInfo(true)}
+                  onClick={() =>
+                    setShowManufacturingInfo(true)
+                  }
                   className="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-[#D9D9D9] bg-white text-[#222] shadow-sm transition hover:border-[#111] hover:bg-[#111] hover:text-white"
                   aria-label="View manufacturing and marketing information"
                 >
@@ -2901,23 +3130,29 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
 
               <div className="mt-2.5 flex flex-wrap gap-x-3 gap-y-1.5 text-[10px] text-[#666]">
                 <span>
-                  <span className="font-bold text-[#4CAF50]">✓</span> Pay Secure
+                  <span className="font-bold text-[#4CAF50]">
+                    ✓
+                  </span>{" "}
+                  Pay Secure
                 </span>
 
                 <span>
-                  <span className="font-bold text-[#4CAF50]">✓</span> Quality
-                  Assured
+                  <span className="font-bold text-[#4CAF50]">
+                    ✓
+                  </span>{" "}
+                  Quality Assured
                 </span>
 
                 <span>
-                  <span className="font-bold text-[#4CAF50]">✓</span> 100%
-                  Original
+                  <span className="font-bold text-[#4CAF50]">
+                    ✓
+                  </span>{" "}
+                  100% Original
                 </span>
               </div>
             </div>
 
             {/* QUICK INFO */}
-
             <div className="mt-4 grid grid-cols-3 gap-2 border-t border-[#E8E8E8] pt-4">
               {[
                 {
@@ -2943,22 +3178,21 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                     {label}
                   </p>
 
-                  <p className="text-[8px] text-[#999]">{sub}</p>
+                  <p className="text-[8px] text-[#999]">
+                    {sub}
+                  </p>
                 </div>
               ))}
             </div>
 
             {/* OFFER */}
-
             <div className="mt-4 border-t border-[#E8E8E8] pt-3">
               {/* Existing offer section intentionally kept commented */}
             </div>
           </div>
         </div>
 
-        {/* =====================================================
-            CONTENT TABS
-        ====================================================== */}
+        {/* CONTENT TABS */}
         <section
           ref={detailsSectionRef}
           id="product-details-section"
@@ -2981,9 +3215,12 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
               >
                 {label}
 
-                {key === "reviews" && (
-                  <span className="ml-1 text-[9px]">({product.reviews})</span>
-                )}
+                {key === "reviews" &&
+                  product.reviews > 0 && (
+                    <span className="ml-1 text-[9px]">
+                      ({product.reviews})
+                    </span>
+                  )}
 
                 {activeTab === key && (
                   <span className="absolute inset-x-0 bottom-0 h-[2px] bg-[#111]" />
@@ -2993,16 +3230,23 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
           </div>
 
           <AnimatePresence mode="wait">
-            {/* =================================================
-        DETAILS
-    ================================================== */}
 
+            {/* DETAILS */}
             {activeTab === "details" && (
               <motion.div
                 key="details"
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
+                initial={{
+                  opacity: 0,
+                  y: 6,
+                }}
+                animate={{
+                  opacity: 1,
+                  y: 0,
+                }}
+                exit={{
+                  opacity: 0,
+                  y: -6,
+                }}
                 className="grid gap-7 pt-6 lg:grid-cols-[1fr_240px]"
               >
                 <div>
@@ -3019,15 +3263,22 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                     <div className="grid md:grid-cols-2">
                       {specRows
                         .slice(0, 8)
-                        .filter(([label]) => label !== "Manufactured By:")
+                        .filter(
+                          ([label]) =>
+                            label !== "Manufactured By:",
+                        )
                         .map(([label, value], index) => (
                           <div
                             key={label}
                             className={`flex justify-between gap-4 border-b border-[#EFEFEF] px-4 py-2.5 text-[10px] ${
-                              index % 2 === 0 ? "bg-white" : "bg-[#FCFCFC]"
+                              index % 2 === 0
+                                ? "bg-white"
+                                : "bg-[#FCFCFC]"
                             }`}
                           >
-                            <span className="text-[#888]">{label}</span>
+                            <span className="text-[#888]">
+                              {label}
+                            </span>
 
                             <span className="text-right font-semibold text-[#2A2A2A]">
                               {value}
@@ -3063,16 +3314,22 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
               </motion.div>
             )}
 
-            {/* =================================================
-        REVIEWS
-    ================================================== */}
-
+            {/* REVIEWS */}
             {activeTab === "reviews" && (
               <motion.div
                 key="reviews"
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
+                initial={{
+                  opacity: 0,
+                  y: 6,
+                }}
+                animate={{
+                  opacity: 1,
+                  y: 0,
+                }}
+                exit={{
+                  opacity: 0,
+                  y: -6,
+                }}
                 className="grid gap-7 pt-6 lg:grid-cols-[1fr_270px]"
               >
                 <div>
@@ -3100,7 +3357,9 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                       >
                         <input
                           value={reviewName}
-                          onChange={(e) => setReviewName(e.target.value)}
+                          onChange={(e) =>
+                            setReviewName(e.target.value)
+                          }
                           placeholder="Name"
                           className="h-10 rounded-[6px] border border-[#D8D8D8] px-3 text-sm outline-none focus:border-[#111]"
                         />
@@ -3108,7 +3367,9 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                         <input
                           type="email"
                           value={reviewEmail}
-                          onChange={(e) => setReviewEmail(e.target.value)}
+                          onChange={(e) =>
+                            setReviewEmail(e.target.value)
+                          }
                           placeholder="Email"
                           className="h-10 rounded-[6px] border border-[#D8D8D8] px-3 text-sm outline-none focus:border-[#111]"
                         />
@@ -3122,13 +3383,15 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                             <button
                               type="button"
                               key={star}
-                              onClick={() => setReviewRating(star)}
+                              onClick={() =>
+                                setReviewRating(star)
+                              }
                             >
                               <Star
                                 className={`h-5 w-5 ${
                                   star <= reviewRating
-                                    ? "fill-[#F6BE16] text-[#F6BE16]"
-                                    : "text-[#CCC]"
+                                    ? "fill-[#188447] text-[#188447]"
+                                    : "text-[#D1D5DB]"
                                 }`}
                               />
                             </button>
@@ -3137,7 +3400,9 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
 
                         <textarea
                           value={reviewTitle}
-                          onChange={(e) => setReviewTitle(e.target.value)}
+                          onChange={(e) =>
+                            setReviewTitle(e.target.value)
+                          }
                           rows={4}
                           placeholder="Write your review..."
                           className="resize-none rounded-[6px] border border-[#D8D8D8] p-3 text-sm outline-none focus:border-[#111] md:col-span-2"
@@ -3157,6 +3422,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                               onChange={handleReviewImageUpload}
                               className="hidden"
                             />
+
                             Upload Images
                           </label>
 
@@ -3166,27 +3432,31 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
 
                           {reviewImages.length > 0 && (
                             <div className="mt-2 flex gap-2">
-                              {reviewImages.map((file, index) => (
-                                <div
-                                  key={`${file.name}-${index}`}
-                                  className="relative h-14 w-14 overflow-hidden rounded-[6px] border"
-                                >
-                                  <Image
-                                    src={URL.createObjectURL(file)}
-                                    alt="review"
-                                    fill
-                                    className="object-cover"
-                                  />
-
-                                  <button
-                                    type="button"
-                                    onClick={() => removeReviewImage(index)}
-                                    className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-black text-[10px] text-white"
+                              {reviewImages.map(
+                                (file, index) => (
+                                  <div
+                                    key={`${file.name}-${index}`}
+                                    className="relative h-14 w-14 overflow-hidden rounded-[6px] border"
                                   >
-                                    ×
-                                  </button>
-                                </div>
-                              ))}
+                                    <Image
+                                      src={URL.createObjectURL(file)}
+                                      alt="review"
+                                      fill
+                                      className="object-cover"
+                                    />
+
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        removeReviewImage(index)
+                                      }
+                                      className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-black text-[10px] text-white"
+                                    >
+                                      ×
+                                    </button>
+                                  </div>
+                                ),
+                              )}
                             </div>
                           )}
                         </div>
@@ -3212,8 +3482,11 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                     </div>
                   ) : null}
 
+                  {/* ALL REVIEWS */}
                   <div className="pt-6">
-                    <h3 className="text-sm font-semibold">All Reviews</h3>
+                    <h3 className="text-sm font-semibold">
+                      All Reviews
+                    </h3>
 
                     {reviewsList.length === 0 ? (
                       <p className="mt-4 text-xs text-[#999]">
@@ -3222,21 +3495,24 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                     ) : (
                       <div className="mt-4 space-y-5">
                         {reviewsList.map((review: any) => {
-                          const reviewImageUrls = Array.isArray(review.images)
-                            ? review.images
-                                .map((img: any) => img?.image_url)
-                                .filter(Boolean)
-                            : [];
+                          const reviewImageUrls =
+                            Array.isArray(review.images)
+                              ? review.images
+                                  .map(
+                                    (img: any) =>
+                                      img?.image_url,
+                                  )
+                                  .filter(Boolean)
+                              : [];
 
-                          const visibleReviewImages = reviewImageUrls.slice(
-                            0,
-                            5,
-                          );
+                          const visibleReviewImages =
+                            reviewImageUrls.slice(0, 5);
 
-                          const extraReviewImageCount = Math.max(
-                            reviewImageUrls.length - 5,
-                            0,
-                          );
+                          const extraReviewImageCount =
+                            Math.max(
+                              reviewImageUrls.length - 5,
+                              0,
+                            );
 
                           return (
                             <div
@@ -3246,7 +3522,9 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                               <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#EEE] text-[10px] font-bold">
                                 {review.user?.profile_picture ? (
                                   <Image
-                                    src={review.user.profile_picture}
+                                    src={
+                                      review.user.profile_picture
+                                    }
                                     alt=""
                                     width={32}
                                     height={32}
@@ -3271,18 +3549,22 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                                   )}
                                 </div>
 
-                                <div className="mt-1 flex gap-0.5">
-                                  {[1, 2, 3, 4, 5].map((n) => (
-                                    <Star
-                                      key={n}
-                                      className={`h-3 w-3 ${
-                                        n <= Number(review.rating)
-                                          ? "fill-[#F6BE16] text-[#F6BE16]"
-                                          : "text-[#DADADA]"
-                                      }`}
-                                    />
-                                  ))}
-                                </div>
+                                {/* REVIEW STARS - GREEN */}
+                                {Number(review.rating) > 0 && (
+                                  <div className="mt-1 flex gap-0.5">
+                                    {[1, 2, 3, 4, 5].map((n) => (
+                                      <Star
+                                        key={n}
+                                        className={`h-3 w-3 ${
+                                          n <=
+                                          Number(review.rating)
+                                            ? "fill-[#188447] text-[#188447]"
+                                            : "text-[#D1D5DB]"
+                                        }`}
+                                      />
+                                    ))}
+                                  </div>
+                                )}
 
                                 <p className="mt-1 text-xs leading-relaxed text-[#333]">
                                   {review.review_text}
@@ -3290,35 +3572,40 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
 
                                 {visibleReviewImages.length > 0 && (
                                   <div className="mt-2 flex flex-wrap gap-2">
-                                    {visibleReviewImages.map((img, index) => (
-                                      <button
-                                        key={`${img}-${index}`}
-                                        type="button"
-                                        onClick={() =>
-                                          openReviewViewer(
-                                            reviewImageUrls,
-                                            index,
-                                          )
-                                        }
-                                        className="group relative h-16 w-16 overflow-hidden rounded-[6px] border border-[#DDD] bg-[#F5F5F5]"
-                                      >
-                                        <Image
-                                          src={img}
-                                          alt=""
-                                          fill
-                                          className="object-cover transition duration-300 group-hover:scale-105"
-                                          sizes="64px"
-                                        />
+                                    {visibleReviewImages.map(
+                                      (img, index) => (
+                                        <button
+                                          key={`${img}-${index}`}
+                                          type="button"
+                                          onClick={() =>
+                                            openReviewViewer(
+                                              reviewImageUrls,
+                                              index,
+                                            )
+                                          }
+                                          className="group relative h-16 w-16 overflow-hidden rounded-[6px] border border-[#DDD] bg-[#F5F5F5]"
+                                        >
+                                          <Image
+                                            src={img}
+                                            alt=""
+                                            fill
+                                            className="object-cover transition duration-300 group-hover:scale-105"
+                                            sizes="64px"
+                                          />
 
-                                        <span className="absolute inset-0 bg-black/0 transition group-hover:bg-black/10" />
-                                      </button>
-                                    ))}
+                                          <span className="absolute inset-0 bg-black/0 transition group-hover:bg-black/10" />
+                                        </button>
+                                      ),
+                                    )}
 
                                     {extraReviewImageCount > 0 && (
                                       <button
                                         type="button"
                                         onClick={() =>
-                                          openReviewViewer(reviewImageUrls, 5)
+                                          openReviewViewer(
+                                            reviewImageUrls,
+                                            5,
+                                          )
                                         }
                                         className="relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-[6px] border border-[#DDD] bg-[#111] text-white transition hover:bg-[#222]"
                                       >
@@ -3345,73 +3632,97 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                 </div>
 
                 {/* REVIEW SUMMARY */}
-
-                <aside className="h-fit rounded-[10px] border border-[#E5E5E5] p-5 text-center">
-                  <div className="text-3xl font-semibold">
-                    {product.rating.toFixed(1)}
-                  </div>
-
-                  <div className="mt-1 text-xs text-[#777]">out of 5</div>
-
-                  <div className="mt-2 flex justify-center gap-0.5">
-                    {[1, 2, 3, 4, 5].map((n) => (
-                      <Star
-                        key={n}
-                        className={`h-4 w-4 ${
-                          n <= Math.round(product.rating)
-                            ? "fill-[#F6BE16] text-[#F6BE16]"
-                            : "text-[#DADADA]"
-                        }`}
-                      />
-                    ))}
-                  </div>
-
-                  <p className="mt-2 text-xs text-[#777]">
-                    {product.reviews} reviews
-                  </p>
-
-                  {reviewsSummary?.rating_distribution && (
-                    <div className="mt-4 space-y-1.5 text-left">
-                      {[5, 4, 3, 2, 1].map((star) => {
-                        const count = Number(
-                          reviewsSummary.rating_distribution?.[star] || 0,
-                        );
-
-                        const pct =
-                          product.reviews > 0
-                            ? Math.round((count / product.reviews) * 100)
-                            : 0;
-
-                        return (
-                          <div
-                            key={star}
-                            className="flex items-center gap-2 text-[9px] text-[#777]"
-                          >
-                            <span className="w-5">{star}★</span>
-
-                            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#EDEDED]">
-                              <div
-                                className="h-full rounded-full bg-[#F6BE16]"
-                                style={{ width: `${pct}%` }}
-                              />
-                            </div>
-
-                            <span className="w-5 text-right">{count}</span>
-                          </div>
-                        );
-                      })}
+                {product.rating > 0 ? (
+                  <aside className="h-fit rounded-[10px] border border-[#E5E5E5] p-5 text-center">
+                    <div className="text-3xl font-semibold">
+                      {product.rating.toFixed(1)}
                     </div>
-                  )}
-                </aside>
+
+                    <div className="mt-1 text-xs text-[#777]">
+                      out of 5
+                    </div>
+
+                    <div className="mt-2 flex justify-center gap-0.5">
+                      {[1, 2, 3, 4, 5].map((n) => (
+                        <Star
+                          key={n}
+                          className={`h-4 w-4 ${
+                            n <= Math.round(product.rating)
+                              ? "fill-[#188447] text-[#188447]"
+                              : "text-[#D1D5DB]"
+                          }`}
+                        />
+                      ))}
+                    </div>
+
+                    <p className="mt-2 text-xs text-[#777]">
+                      {product.reviews}{" "}
+                      {product.reviews === 1
+                        ? "review"
+                        : "reviews"}
+                    </p>
+
+                    {reviewsSummary?.rating_distribution && (
+                      <div className="mt-4 space-y-1.5 text-left">
+                        {[5, 4, 3, 2, 1].map((star) => {
+                          const count = Number(
+                            reviewsSummary.rating_distribution?.[
+                              star
+                            ] || 0,
+                          );
+
+                          const pct =
+                            product.reviews > 0
+                              ? Math.round(
+                                  (count / product.reviews) *
+                                    100,
+                                )
+                              : 0;
+
+                          return (
+                            <div
+                              key={star}
+                              className="flex items-center gap-2 text-[9px] text-[#777]"
+                            >
+                              <span className="w-5">
+                                {star}★
+                              </span>
+
+                              <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#EDEDED]">
+                                <div
+                                  className="h-full rounded-full bg-[#188447]"
+                                  style={{
+                                    width: `${pct}%`,
+                                  }}
+                                />
+                              </div>
+
+                              <span className="w-5 text-right">
+                                {count}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </aside>
+                ) : (
+                  <aside className="h-fit rounded-[10px] border border-[#E5E5E5] p-5 text-center">
+                    <p className="text-xs text-[#777]">
+                      No ratings yet
+                    </p>
+
+                    <p className="mt-1 text-[10px] text-[#999]">
+                      Be the first to review this product
+                    </p>
+                  </aside>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
         </section>
 
-        {/* =====================================================
-            RELATED PRODUCTS
-        ===================================================== */}
-
+        {/* RELATED PRODUCTS */}
         {similarProducts.length > 0 && (
           <section className="mt-7 rounded-[8px] bg-white p-5 sm:p-6 lg:p-7">
             <div className="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-[#666]">
@@ -3421,11 +3732,12 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
 
               <span className="text-[#CFCFCF]">|</span>
 
-              <span>Elegant picks curated for every occasion</span>
+              <span>
+                Elegant picks curated for every occasion
+              </span>
             </div>
 
             {/* PROMO BANNER */}
-
             <div className="relative mb-5 flex h-[110px] w-full items-center justify-between overflow-hidden rounded-[10px] bg-gradient-to-r from-[#EFE7DA] via-[#E9DFCF] to-[#3A332C] px-6 sm:h-[130px] sm:px-10">
               <div>
                 <p
@@ -3450,7 +3762,6 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
             </div>
 
             {/* SORT */}
-
             <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-[#EEE] pb-4">
               <div className="flex items-center gap-2">
                 <label
@@ -3470,20 +3781,28 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                   }
                   className="rounded-[6px] border border-[#D8D8D8] bg-white px-3 py-1.5 text-[11px] font-semibold text-[#111] outline-none focus:border-[#111]"
                 >
-                  <option value="recommended">Recommended</option>
+                  <option value="recommended">
+                    Recommended
+                  </option>
 
-                  <option value="price_asc">Price: Low to High</option>
+                  <option value="price_asc">
+                    Price: Low to High
+                  </option>
 
-                  <option value="price_desc">Price: High to Low</option>
+                  <option value="price_desc">
+                    Price: High to Low
+                  </option>
 
-                  <option value="newest">Newest</option>
+                  <option value="newest">
+                    Newest
+                  </option>
                 </select>
               </div>
 
               <p className="text-[11px] text-[#888]">
                 Showing 1-
-                {visibleSimilarProducts.length} of {similarProducts.length}{" "}
-                Products
+                {visibleSimilarProducts.length} of{" "}
+                {similarProducts.length} Products
               </p>
             </div>
 
@@ -3508,10 +3827,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
         )}
       </main>
 
-      {/* =====================================================
-          FULLSCREEN PRODUCT
-      ===================================================== */}
-
+      {/* FULLSCREEN PRODUCT */}
       <AnimatePresence>
         {isFullscreen && gallery.length > 0 && (
           <motion.div
@@ -3544,7 +3860,10 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
               onClick={(e) => e.stopPropagation()}
             >
               <Image
-                src={gallery[fullscreenImageIndex] || product.image}
+                src={
+                  gallery[fullscreenImageIndex] ||
+                  product.image
+                }
                 alt={product.name}
                 fill
                 className="object-contain"
@@ -3581,7 +3900,6 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
-
                     setFullscreenImageIndex(index);
                   }}
                   className={`relative h-10 w-10 flex-shrink-0 overflow-hidden rounded border-2 ${
@@ -3604,110 +3922,108 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
         )}
       </AnimatePresence>
 
-      {/* =====================================================
-          REVIEW IMAGE VIEWER
-      ===================================================== */}
-
+      {/* REVIEW IMAGE VIEWER */}
       <AnimatePresence>
-        {isReviewViewerOpen && reviewViewerImages.length > 0 && (
-          <motion.div
-            initial={{
-              opacity: 0,
-            }}
-            animate={{
-              opacity: 1,
-            }}
-            exit={{
-              opacity: 0,
-            }}
-            className="fixed inset-0 z-[10001] flex items-center justify-center bg-black/95 px-4"
-            onClick={closeReviewViewer}
-          >
-            <button
-              type="button"
+        {isReviewViewerOpen &&
+          reviewViewerImages.length > 0 && (
+            <motion.div
+              initial={{
+                opacity: 0,
+              }}
+              animate={{
+                opacity: 1,
+              }}
+              exit={{
+                opacity: 0,
+              }}
+              className="fixed inset-0 z-[10001] flex items-center justify-center bg-black/95 px-4"
               onClick={closeReviewViewer}
-              className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
-              aria-label="Close review image viewer"
             >
-              <X className="h-5 w-5" />
-            </button>
-
-            <div className="absolute left-1/2 top-5 -translate-x-1/2 rounded-full bg-white/10 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur">
-              {reviewViewerIndex + 1} / {reviewViewerImages.length}
-            </div>
-
-            <div
-              className="relative h-[78vh] w-[90vw] max-w-5xl"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <Image
-                src={reviewViewerImages[reviewViewerIndex]}
-                alt="Review image"
-                fill
-                className="object-contain"
-                sizes="90vw"
-                priority
-              />
-            </div>
-
-            {reviewViewerImages.length > 1 && (
               <button
                 type="button"
-                onClick={prevReviewViewerImage}
-                className="absolute left-3 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 sm:left-6"
-                aria-label="Previous review image"
+                onClick={closeReviewViewer}
+                className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
+                aria-label="Close review image viewer"
               >
-                <ChevronLeft className="h-6 w-6" />
+                <X className="h-5 w-5" />
               </button>
-            )}
 
-            {reviewViewerImages.length > 1 && (
-              <button
-                type="button"
-                onClick={nextReviewViewerImage}
-                className="absolute right-3 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 sm:right-6"
-                aria-label="Next review image"
-              >
-                <ChevronRight className="h-6 w-6" />
-              </button>
-            )}
+              <div className="absolute left-1/2 top-5 -translate-x-1/2 rounded-full bg-white/10 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur">
+                {reviewViewerIndex + 1} /{" "}
+                {reviewViewerImages.length}
+              </div>
 
-            {reviewViewerImages.length > 1 && (
               <div
-                className="absolute bottom-4 left-1/2 flex max-w-[90vw] -translate-x-1/2 gap-2 overflow-x-auto rounded-[10px] bg-black/20 p-2 backdrop-blur"
+                className="relative h-[78vh] w-[90vw] max-w-5xl"
                 onClick={(e) => e.stopPropagation()}
               >
-                {reviewViewerImages.map((img, index) => (
-                  <button
-                    type="button"
-                    key={`${img}-${index}`}
-                    onClick={() => setReviewViewerIndex(index)}
-                    className={`relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-[6px] border-2 transition ${
-                      reviewViewerIndex === index
-                        ? "border-white"
-                        : "border-transparent opacity-50 hover:opacity-100"
-                    }`}
-                    aria-label={`Open review image ${index + 1}`}
-                  >
-                    <Image
-                      src={img}
-                      alt=""
-                      fill
-                      className="object-cover"
-                      sizes="48px"
-                    />
-                  </button>
-                ))}
+                <Image
+                  src={reviewViewerImages[reviewViewerIndex]}
+                  alt="Review image"
+                  fill
+                  className="object-contain"
+                  sizes="90vw"
+                  priority
+                />
               </div>
-            )}
-          </motion.div>
-        )}
+
+              {reviewViewerImages.length > 1 && (
+                <button
+                  type="button"
+                  onClick={prevReviewViewerImage}
+                  className="absolute left-3 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 sm:left-6"
+                  aria-label="Previous review image"
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </button>
+              )}
+
+              {reviewViewerImages.length > 1 && (
+                <button
+                  type="button"
+                  onClick={nextReviewViewerImage}
+                  className="absolute right-3 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 sm:right-6"
+                  aria-label="Next review image"
+                >
+                  <ChevronRight className="h-6 w-6" />
+                </button>
+              )}
+
+              {reviewViewerImages.length > 1 && (
+                <div
+                  className="absolute bottom-4 left-1/2 flex max-w-[90vw] -translate-x-1/2 gap-2 overflow-x-auto rounded-[10px] bg-black/20 p-2 backdrop-blur"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {reviewViewerImages.map((img, index) => (
+                    <button
+                      type="button"
+                      key={`${img}-${index}`}
+                      onClick={() =>
+                        setReviewViewerIndex(index)
+                      }
+                      className={`relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-[6px] border-2 transition ${
+                        reviewViewerIndex === index
+                          ? "border-white"
+                          : "border-transparent opacity-50 hover:opacity-100"
+                      }`}
+                      aria-label={`Open review image ${index + 1}`}
+                    >
+                      <Image
+                        src={img}
+                        alt=""
+                        fill
+                        className="object-cover"
+                        sizes="48px"
+                      />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          )}
       </AnimatePresence>
 
-      {/* =====================================================
-          MANUFACTURING INFO
-      ===================================================== */}
-
+      {/* MANUFACTURING INFO */}
       <AnimatePresence>
         {showManufacturingInfo && (
           <motion.div
@@ -3721,7 +4037,9 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
               opacity: 0,
             }}
             className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 px-4"
-            onClick={() => setShowManufacturingInfo(false)}
+            onClick={() =>
+              setShowManufacturingInfo(false)
+            }
           >
             <motion.div
               initial={{
@@ -3758,7 +4076,9 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
 
                 <button
                   type="button"
-                  onClick={() => setShowManufacturingInfo(false)}
+                  onClick={() =>
+                    setShowManufacturingInfo(false)
+                  }
                   className="rounded-full p-2 text-[#777] transition hover:bg-[#F3F3F3] hover:text-[#111]"
                   aria-label="Close manufacturing details"
                 >
@@ -3801,7 +4121,9 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
               <div className="border-t border-[#E8E8E8] px-5 py-4 sm:px-6">
                 <button
                   type="button"
-                  onClick={() => setShowManufacturingInfo(false)}
+                  onClick={() =>
+                    setShowManufacturingInfo(false)
+                  }
                   className="h-10 w-full rounded-[7px] bg-[#111] text-[12px] font-bold uppercase tracking-wide text-white transition hover:bg-[#2A2A2A]"
                 >
                   Close
@@ -3812,23 +4134,41 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
         )}
       </AnimatePresence>
 
-      {/* =====================================================
-    SEE ALL THUMBNAILS MODAL
-===================================================== */}
+      {/* SEE ALL THUMBNAILS MODAL */}
       <AnimatePresence>
         {showAllThumbnails && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            initial={{
+              opacity: 0,
+            }}
+            animate={{
+              opacity: 1,
+            }}
+            exit={{
+              opacity: 0,
+            }}
             className="fixed inset-0 z-[10002] flex items-center justify-center bg-black/60 px-4"
             onClick={() => setShowAllThumbnails(false)}
           >
             <motion.div
-              initial={{ opacity: 0, y: 20, scale: 0.97 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.97 }}
-              transition={{ duration: 0.2 }}
+              initial={{
+                opacity: 0,
+                y: 20,
+                scale: 0.97,
+              }}
+              animate={{
+                opacity: 1,
+                y: 0,
+                scale: 1,
+              }}
+              exit={{
+                opacity: 0,
+                y: 20,
+                scale: 0.97,
+              }}
+              transition={{
+                duration: 0.2,
+              }}
               className="max-h-[85vh] w-full max-w-2xl overflow-hidden rounded-[14px] bg-white shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
@@ -3837,13 +4177,17 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                   <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#999]">
                     Product Gallery
                   </p>
+
                   <h3 className="mt-1 text-[18px] font-semibold text-[#111]">
                     All Images ({gallery.length})
                   </h3>
                 </div>
+
                 <button
                   type="button"
-                  onClick={() => setShowAllThumbnails(false)}
+                  onClick={() =>
+                    setShowAllThumbnails(false)
+                  }
                   className="rounded-full p-2 text-[#777] transition hover:bg-[#F3F3F3] hover:text-[#111]"
                 >
                   <X className="h-5 w-5" />
@@ -3873,6 +4217,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                         sizes="150px"
                         className="object-cover"
                       />
+
                       {activeImage === index && (
                         <span className="absolute inset-0 flex items-center justify-center bg-black/25">
                           <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-sm">
@@ -3888,28 +4233,46 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
           </motion.div>
         )}
       </AnimatePresence>
-      {/* Premium right-side Related Products drawer */}
+
+      {/* RELATED PRODUCTS DRAWER */}
       <AnimatePresence>
         {showRelatedSheet && (
           <motion.div
             className="fixed inset-0 z-[9998]"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            initial={{
+              opacity: 0,
+            }}
+            animate={{
+              opacity: 1,
+            }}
+            exit={{
+              opacity: 0,
+            }}
           >
             <div
               className="absolute inset-0 bg-black/45"
               onClick={() => setShowRelatedSheet(false)}
               aria-hidden="true"
             />
+
             <motion.aside
               role="dialog"
               aria-modal="true"
               aria-label="Similar products"
-              initial={{ x: "100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "100%" }}
-              transition={{ type: "spring", stiffness: 270, damping: 30 }}
+              initial={{
+                x: "100%",
+              }}
+              animate={{
+                x: 0,
+              }}
+              exit={{
+                x: "100%",
+              }}
+              transition={{
+                type: "spring",
+                stiffness: 270,
+                damping: 30,
+              }}
               className={`${poppins.className} absolute inset-y-0 right-0 flex w-full max-w-[560px] flex-col bg-white shadow-[-15px_0_45px_rgba(0,0,0,0.14)] sm:w-[min(560px,95vw)]`}
             >
               <div className="flex shrink-0 items-center justify-between border-b border-[#eee] px-5 py-4">
@@ -3917,6 +4280,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                   <p className="text-[10px] font-medium uppercase tracking-[0.15em] text-[#888]">
                     You may also like
                   </p>
+
                   <h2 className="mt-1 text-[19px] font-semibold text-[#161616]">
                     Similar Products{" "}
                     <span className="text-sm font-normal text-[#888]">
@@ -3924,20 +4288,25 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                     </span>
                   </h2>
                 </div>
+
                 <button
                   type="button"
-                  onClick={() => setShowRelatedSheet(false)}
+                  onClick={() =>
+                    setShowRelatedSheet(false)
+                  }
                   aria-label="Close similar products"
                   className="flex h-9 w-9 items-center justify-center rounded-full border border-[#e9e9e9] hover:bg-[#f5f5f5]"
                 >
                   <X className="h-4 w-4" />
                 </button>
               </div>
+
               <div className="flex-1 overflow-y-auto overscroll-contain px-3 pb-6 pt-4 sm:px-5">
                 <div className="mb-4 flex items-center justify-between gap-2">
                   <span className="text-[11px] text-[#888]">
                     {sortedSimilarProducts.length} products
                   </span>
+
                   <select
                     aria-label="Sort similar products"
                     value={relatedSortOption}
@@ -3948,20 +4317,33 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                     }
                     className="max-w-[185px] rounded-lg border border-[#e5e5e5] bg-white px-2 py-2 text-[11px] text-[#333] outline-none focus:border-[#222]"
                   >
-                    <option value="recommended">Recommended</option>
-                    <option value="price_asc">Price: Low to High</option>
-                    <option value="price_desc">Price: High to Low</option>
-                    <option value="newest">Newest</option>
+                    <option value="recommended">
+                      Recommended
+                    </option>
+
+                    <option value="price_asc">
+                      Price: Low to High
+                    </option>
+
+                    <option value="price_desc">
+                      Price: High to Low
+                    </option>
+
+                    <option value="newest">
+                      Newest
+                    </option>
                   </select>
                 </div>
+
                 {sortedSimilarProducts.length === 0 ? (
                   <p className="py-16 text-center text-sm text-[#777]">
                     No similar products available.
                   </p>
                 ) : (
                   <div className="grid grid-cols-2 items-stretch gap-2.5 sm:gap-3">
-                    {sortedSimilarProducts.map((item, index) =>
-                      renderSimilarCard(item, index),
+                    {sortedSimilarProducts.map(
+                      (item, index) =>
+                        renderSimilarCard(item, index),
                     )}
                   </div>
                 )}
@@ -3971,16 +4353,10 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
         )}
       </AnimatePresence>
 
-      {/* =====================================================
-          FOOTER
-      ===================================================== */}
-
+      {/* FOOTER */}
       <Footer />
 
-      {/* =====================================================
-          GLOBAL ANIMATIONS
-      ===================================================== */}
-
+      {/* GLOBAL ANIMATIONS */}
       <style jsx global>{`
         .ik-ripple {
           position: absolute;

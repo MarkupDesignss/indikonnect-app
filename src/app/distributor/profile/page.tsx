@@ -62,6 +62,12 @@ const labelClass =
 const sectionClass =
   "min-w-0 w-full rounded-[12px] border border-[#e9edf2] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)] sm:p-5 lg:p-[22px]";
 
+const getWordCount = (value: string) =>
+  value.trim() ? value.trim().split(/\s+/).length : 0;
+
+const MAX_PHONE_CHANGE_REASON_WORDS = 150;
+const MIN_PHONE_CHANGE_REASON_CHARACTERS = 10;
+
 type ApiError = {
   data?: {
     errors?: Record<string, string | string[]>;
@@ -161,9 +167,7 @@ function SaveButton({
           : "hover:brightness-110"
       }`}
     >
-      {loading && (
-        <Loader2 size={14} className="shrink-0 animate-spin" />
-      )}
+      {loading && <Loader2 size={14} className="shrink-0 animate-spin" />}
       {text}
     </button>
   );
@@ -554,8 +558,7 @@ function ProfileForm({
 
               setErrors((previous) => ({
                 ...previous,
-                fullName:
-                  validateFullName(formData.fullName) || "",
+                fullName: validateFullName(formData.fullName) || "",
               }));
             }}
             onKeyDown={handleKeyDown}
@@ -677,13 +680,6 @@ function PhoneChangeRequestCard({
       ? "completed"
       : "none";
 
-  const requestedNumberMatch =
-    latestRequest?.reason?.match(/\+91(\d{10})/);
-
-  const requestedNumber = requestedNumberMatch
-    ? `+91${requestedNumberMatch[1]}`
-    : null;
-
   const statusMeta: Record<
     Exclude<UIState, "none">,
     {
@@ -722,8 +718,7 @@ function PhoneChangeRequestCard({
 
   const meta = uiState !== "none" ? statusMeta[uiState] : null;
 
-  const showChangeButton =
-    uiState === "none" || uiState === "completed";
+  const showChangeButton = uiState === "none" || uiState === "completed";
 
   return (
     <section className={`${sectionClass} mt-4 sm:mt-[14px]`}>
@@ -782,12 +777,6 @@ function PhoneChangeRequestCard({
             >
               {meta.label}
             </p>
-
-            {requestedNumber && (
-              <span className="ml-auto break-all text-[10.5px] font-semibold text-[#667085]">
-                Requested: {requestedNumber}
-              </span>
-            )}
           </div>
 
           <p className="mt-2 text-[11px] leading-5 text-[#667085]">
@@ -816,13 +805,10 @@ function PhoneChangeRequestCard({
           {uiState === "pending" && latestRequest?.created_at && (
             <p className="mt-2 text-[10.5px] text-[#98a2b3]">
               Submitted on{" "}
-              {new Date(latestRequest.created_at).toLocaleString(
-                "en-IN",
-                {
-                  dateStyle: "medium",
-                  timeStyle: "short",
-                }
-              )}
+              {new Date(latestRequest.created_at).toLocaleString("en-IN", {
+                dateStyle: "medium",
+                timeStyle: "short",
+              })}
             </p>
           )}
 
@@ -842,8 +828,7 @@ function PhoneChangeRequestCard({
 /* -------------------------------------------------------------------------- */
 
 function BankWalletDetails({ user }: { user: any }) {
-  const bankProfile =
-    user?.distributor_profile ?? user?.business_profile;
+  const bankProfile = user?.distributor_profile ?? user?.business_profile;
 
   const maskedAccount = user?.account_last4
     ? `XXXX XXXX ${user.account_last4}`
@@ -1160,26 +1145,20 @@ function SecuritySection() {
     const nextErrors = { ...errors };
 
     if (field === "oldPassword") {
-      nextErrors.oldPassword =
-        validateOldPassword(value) || "";
+      nextErrors.oldPassword = validateOldPassword(value) || "";
     }
 
     if (field === "password") {
-      nextErrors.password =
-        validatePassword(value) || "";
+      nextErrors.password = validatePassword(value) || "";
 
       if (next.confirmPassword) {
         nextErrors.confirmPassword =
-          validateConfirmPassword(
-            next.confirmPassword,
-            value
-          ) || "";
+          validateConfirmPassword(next.confirmPassword, value) || "";
       }
     }
 
     if (field === "confirmPassword") {
-      nextErrors.confirmPassword =
-        validateConfirmPassword(value) || "";
+      nextErrors.confirmPassword = validateConfirmPassword(value) || "";
     }
 
     setErrors(nextErrors);
@@ -1188,17 +1167,9 @@ function SecuritySection() {
   const handleSave = async () => {
     const nextErrors: Record<string, string> = {};
 
-    const oldError = validateOldPassword(
-      security.oldPassword
-    );
-
-    const passwordError = validatePassword(
-      security.password
-    );
-
-    const confirmError = validateConfirmPassword(
-      security.confirmPassword
-    );
+    const oldError = validateOldPassword(security.oldPassword);
+    const passwordError = validatePassword(security.password);
+    const confirmError = validateConfirmPassword(security.confirmPassword);
 
     if (oldError) {
       nextErrors.oldPassword = oldError;
@@ -1226,9 +1197,7 @@ function SecuritySection() {
       if (response?.status) {
         dispatch(
           showToast({
-            message:
-              response?.message ||
-              "Password changed successfully!",
+            message: response?.message || "Password changed successfully!",
             type: "success",
           })
         );
@@ -1246,9 +1215,7 @@ function SecuritySection() {
       } else {
         dispatch(
           showToast({
-            message:
-              response?.message ||
-              "Failed to change password",
+            message: response?.message || "Failed to change password",
             type: "error",
           })
         );
@@ -1285,14 +1252,10 @@ function SecuritySection() {
           type={visible ? "text" : "password"}
           autoComplete={autoComplete}
           value={security[field]}
-          onChange={(event) =>
-            handleChange(field, event.target.value)
-          }
+          onChange={(event) => handleChange(field, event.target.value)}
           placeholder={placeholder}
           className={`${inputClass} pr-11 ${
-            errors[field]
-              ? "border-red-500 ring-2 ring-red-500/10"
-              : ""
+            errors[field] ? "border-red-500 ring-2 ring-red-500/10" : ""
           }`}
         />
 
@@ -1306,11 +1269,7 @@ function SecuritySection() {
           }
           className="absolute right-3 top-1/2 -translate-y-1/2 text-[#98a2b3] transition-colors hover:text-[#475066]"
         >
-          {visible ? (
-            <EyeOff size={16} />
-          ) : (
-            <Eye size={16} />
-          )}
+          {visible ? <EyeOff size={16} /> : <Eye size={16} />}
         </button>
       </div>
 
@@ -1374,16 +1333,16 @@ function SecuritySection() {
 /* -------------------------------------------------------------------------- */
 
 function ChangePhoneNumberModal({
-  phone,
-  setPhone,
+  reason,
+  setReason,
   error,
   setError,
   loading,
   onClose,
   onSubmit,
 }: {
-  phone: string;
-  setPhone: (value: string) => void;
+  reason: string;
+  setReason: (value: string) => void;
   error: string;
   setError: (value: string) => void;
   loading: boolean;
@@ -1413,7 +1372,7 @@ function ChangePhoneNumberModal({
               </h2>
 
               <p className="text-[11.5px] text-[#98a2b3]">
-                Send your new number to the admin for approval.
+                Tell the admin why you want to change your phone number.
               </p>
             </div>
           </div>
@@ -1429,10 +1388,7 @@ function ChangePhoneNumberModal({
           </button>
         </div>
 
-        <form
-          onSubmit={onSubmit}
-          className="space-y-4 px-5 py-5 sm:px-6"
-        >
+        <form onSubmit={onSubmit} className="space-y-4 px-5 py-5 sm:px-6">
           <div className="rounded-[10px] border border-[#e9edf2] bg-[#f8faff] p-3">
             <div className="flex items-start gap-2.5">
               <ShieldCheck
@@ -1441,92 +1397,87 @@ function ChangePhoneNumberModal({
               />
 
               <p className="text-[11px] leading-5 text-[#667085]">
-                Your request will be sent to the admin. Your registered
-                phone number will not change until the request is reviewed.
+                Your request will be sent to the admin for review. Your
+                registered phone number will not change until the request is
+                approved and completed.
               </p>
             </div>
           </div>
 
           <div>
-            <label
-              htmlFor="requested-phone"
-              className={labelClass}
-            >
-              New Phone Number
+            <label htmlFor="phone-change-reason" className={labelClass}>
+              Reason for Change
               <span className="ml-0.5 text-red-500">*</span>
             </label>
 
-            <div className="flex min-w-0 gap-2">
-              <span className="flex h-[44px] w-[58px] shrink-0 items-center justify-center rounded-[10px] border border-[#e9edf2] bg-[#f2f4f7] text-[13px] font-semibold text-[#475066]">
-                +91
-              </span>
+            <textarea
+              id="phone-change-reason"
+              rows={4}
+              autoComplete="off"
+              value={reason}
+              onChange={(event) => {
+                const nextValue = event.target.value;
+                const words = nextValue.trim()
+                  ? nextValue.trim().split(/\s+/)
+                  : [];
 
-              <input
-                id="requested-phone"
-                type="tel"
-                inputMode="numeric"
-                autoComplete="tel-national"
-                value={phone}
-                onChange={(event) => {
-                  const digitsOnly = event.target.value
-                    .replace(/\D/g, "")
-                    .slice(0, 10);
-
-                  setPhone(digitsOnly);
-                  setError("");
-                }}
-                placeholder="Enter 10-digit mobile number"
-                maxLength={10}
-                pattern="[0-9]{10}"
-                aria-invalid={Boolean(error)}
-                aria-describedby={
-                  error ? "requested-phone-error" : undefined
+                if (words.length > MAX_PHONE_CHANGE_REASON_WORDS) {
+                  setReason(words
+                    .slice(0, MAX_PHONE_CHANGE_REASON_WORDS)
+                    .join(" "));
+                  setError("Maximum 150 words are allowed.");
+                  return;
                 }
-                className={`${inputClass} h-[44px] flex-1 ${
-                  error
-                    ? "border-red-500 ring-2 ring-red-500/10"
-                    : ""
-                }`}
-              />
-            </div>
 
-            <div className="mt-1.5 flex items-center justify-between gap-3">
+                setReason(nextValue);
+                setError("");
+              }}
+              placeholder="Enter reason"
+              aria-invalid={Boolean(error)}
+              aria-describedby={error ? "phone-reason-error" : undefined}
+              className={`box-border min-h-[110px] min-w-0 w-full resize-y rounded-[10px] border border-[#e9edf2] bg-[#f7f8fa] px-3.5 py-3 text-[13px] leading-5 text-[#475066] outline-none placeholder:text-[#98a2b3] transition-all focus:border-[#0E1B3D] focus:bg-white focus:ring-2 focus:ring-[#0E1B3D]/10 sm:px-[14px] ${
+                error ? "border-red-500 ring-2 ring-red-500/10" : ""
+              }`}
+            />
+
+            <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2">
               {error ? (
                 <p
-                  id="requested-phone-error"
+                  id="phone-reason-error"
                   className="text-[10.5px] text-red-500"
                 >
                   {error}
                 </p>
               ) : (
                 <p className="text-[10.5px] text-[#98a2b3]">
-                  Enter digits only, without +91.
+                  Minimum 10 characters required.
                 </p>
               )}
 
               <span
-                className={`shrink-0 text-[10.5px] ${
-                  phone.length === 10
+                className={`ml-auto shrink-0 text-[10.5px] ${
+                  reason.trim().length >= MIN_PHONE_CHANGE_REASON_CHARACTERS
                     ? "text-[#1f9d6b]"
                     : "text-[#98a2b3]"
                 }`}
               >
-                {phone.length}/10
+                {getWordCount(reason)}/{MAX_PHONE_CHANGE_REASON_WORDS} words
+             
               </span>
             </div>
           </div>
 
           <div className="flex flex-col-reverse gap-2 border-t border-[#f0f2f5] pt-4 sm:flex-row sm:justify-end">
-            <GhostButton
-              text="Cancel"
-              onClick={onClose}
-            />
+            <GhostButton text="Cancel" onClick={onClose} />
 
             <SaveButton
               text="Send Request"
               type="submit"
               loading={loading}
-              disabled={phone.length !== 10}
+              disabled={
+                reason.trim().length < MIN_PHONE_CHANGE_REASON_CHARACTERS ||
+                getWordCount(reason) > MAX_PHONE_CHANGE_REASON_WORDS
+              }
             />
           </div>
         </form>
@@ -1542,12 +1493,8 @@ function ChangePhoneNumberModal({
 export default function DistributorProfilePage() {
   const dispatch = useDispatch();
 
-  const {
-    data,
-    isLoading,
-    isError,
-    refetch,
-  } = useGetUserProfileQuery(undefined);
+  const { data, isLoading, isError, refetch } =
+    useGetUserProfileQuery(undefined);
 
   const [updateUserProfile, { isLoading: isUpdating }] =
     useUpdateUserProfileMutation();
@@ -1560,7 +1507,7 @@ export default function DistributorProfilePage() {
   const user = data?.user;
 
   const [showPhoneModal, setShowPhoneModal] = useState(false);
-  const [requestedPhone, setRequestedPhone] = useState("");
+  const [phoneChangeReason, setPhoneChangeReason] = useState("");
   const [phoneRequestError, setPhoneRequestError] = useState("");
 
   /* ------------------------------------------------------------------------ */
@@ -1587,9 +1534,7 @@ export default function DistributorProfilePage() {
       if (response.status) {
         dispatch(
           showToast({
-            message:
-              response.message ||
-              "Profile updated successfully!",
+            message: response.message || "Profile updated successfully!",
             type: "success",
           })
         );
@@ -1598,9 +1543,7 @@ export default function DistributorProfilePage() {
       } else {
         dispatch(
           showToast({
-            message:
-              response.message ||
-              "Failed to update profile",
+            message: response.message || "Failed to update profile",
             type: "error",
           })
         );
@@ -1627,22 +1570,24 @@ export default function DistributorProfilePage() {
   ) => {
     event.preventDefault();
 
-    if (!/^\d{10}$/.test(requestedPhone)) {
-      setPhoneRequestError(
-        "Enter a valid 10-digit phone number."
-      );
+    const trimmedReason = phoneChangeReason.trim();
+
+    if (trimmedReason.length < MIN_PHONE_CHANGE_REASON_CHARACTERS) {
+      setPhoneRequestError("Please enter at least 10 characters.");
+      return;
+    }
+
+    if (getWordCount(trimmedReason) > MAX_PHONE_CHANGE_REASON_WORDS) {
+      setPhoneRequestError("Reason cannot exceed 150 words.");
       return;
     }
 
     try {
       const response = await createCorrectionRequest({
-        reason: `I wanna change my phone. Requested new phone number: +91${requestedPhone}`,
+        reason: `I wanna change my phone. Reason: ${trimmedReason}`,
       }).unwrap();
 
-      if (
-        response?.success === false ||
-        response?.status === false
-      ) {
+      if (response?.success === false || response?.status === false) {
         dispatch(
           showToast({
             message:
@@ -1665,7 +1610,7 @@ export default function DistributorProfilePage() {
       );
 
       setShowPhoneModal(false);
-      setRequestedPhone("");
+      setPhoneChangeReason("");
       setPhoneRequestError("");
 
       await refetch();
@@ -1716,7 +1661,7 @@ export default function DistributorProfilePage() {
       return;
     }
 
-    setRequestedPhone("");
+    setPhoneChangeReason("");
     setPhoneRequestError("");
     setShowPhoneModal(true);
   };
@@ -1729,7 +1674,7 @@ export default function DistributorProfilePage() {
     if (isSendingPhoneRequest) return;
 
     setShowPhoneModal(false);
-    setRequestedPhone("");
+    setPhoneChangeReason("");
     setPhoneRequestError("");
   };
 
@@ -1768,16 +1713,13 @@ export default function DistributorProfilePage() {
           Failed to load profile
         </p>
 
-        <GhostButton
-          text="Retry"
-          onClick={() => refetch()}
-        />
+        <GhostButton text="Retry" onClick={() => refetch()} />
       </div>
     );
   }
 
   /* ------------------------------------------------------------------------ */
-  /* Main UI                                                                   */
+  /* Main UI                                                                  */
   /* ------------------------------------------------------------------------ */
 
   return (
@@ -1801,9 +1743,7 @@ export default function DistributorProfilePage() {
         }
       `}</style>
 
-      <DashboardHeader
-        distributorId={user?.distributor_id || ""}
-      />
+      <DashboardHeader distributorId={user?.distributor_id || ""} />
 
       <div className="relative flex min-h-[calc(100dvh-72px)] min-w-0">
         <Sidebar />
@@ -1857,15 +1797,10 @@ export default function DistributorProfilePage() {
                 <ProfileForm
                   user={user}
                   loading={isUpdating}
-                  onSave={(profileData) =>
-                    handleUpdateProfile(profileData)
-                  }
+                  onSave={(profileData) => handleUpdateProfile(profileData)}
                 />
 
-                <PhoneChangeRequestCard
-                  user={user}
-                  onClick={openPhoneModal}
-                />
+                <PhoneChangeRequestCard user={user} onClick={openPhoneModal} />
 
                 <AddressSection />
 
@@ -1894,8 +1829,8 @@ export default function DistributorProfilePage() {
 
       {showPhoneModal && (
         <ChangePhoneNumberModal
-          phone={requestedPhone}
-          setPhone={setRequestedPhone}
+          reason={phoneChangeReason}
+          setReason={setPhoneChangeReason}
           error={phoneRequestError}
           setError={setPhoneRequestError}
           loading={isSendingPhoneRequest}

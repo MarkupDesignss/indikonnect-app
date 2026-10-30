@@ -17,7 +17,7 @@ const AMBER = "#d97706";
 const nodeData = [
     {
         id: "AIA182931-001",
-        name: "Saurabh Kainth",
+        name: "Abhay Chauhan",
         status: "Silver Activated",
         total: { left: 0, right: 0 },
         carryForward: { left: 0, right: 0 },

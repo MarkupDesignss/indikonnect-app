@@ -69,12 +69,12 @@ const SponsorTree = () => {
             className="mx-auto flex h-12 w-12 items-center justify-center rounded-full text-[14px] font-bold text-white sm:h-14 sm:w-14 sm:text-[15px]"
             style={{ backgroundColor: NAVY }}
           >
-            SK
+            AC
           </div>
 
           <p className="mt-4 text-[12px] text-[#98a2b3]">AIA182931-001</p>
           <p className="mt-1 break-words text-[17px] font-black text-[#101828] sm:text-[19px]">
-            Saurabh Kainth
+            Abhay Chauhan
           </p>
 
           {/* Status and Rank Badges */}
