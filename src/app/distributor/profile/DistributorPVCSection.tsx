@@ -28,24 +28,30 @@ import Logo from "../../../../public/indiekonnect-web/images/logo.png";
 
 const API_BASE = "/api/distributor-card";
 
-const MM_W = 85.6;
+const MM_W = 54;
 
-const MM_H = 54;
+const MM_H = 85.6;
 
-const PX_W = 1011;
+const PX_W = 638;
 
-const PX_H = 638;
+const PX_H = 1011;
+
 // Registered office address supplied for the PVC card. Verify legal-entity details before issuing cards.
+
 const COMPANY_ADDRESS = "SH05, The Eminence Plaza, Near Singhpura Lights, Rajpura, Mohali, Punjab - 140603, India";
 
 const COMPANY_EMAIL = "[Customer care email]";
 
 const COMPANY_PHONE = "[Customer care phone]";
+
 // Demo validity only; issue and expiry must come from backend for real cards.
+
 const DEMO_ISSUED = "2026-10-23";
 
 const DEMO_EXPIRY = "2027-10-22";
+
 // ---- Clean White / Black Theme ----
+
 const INK = "#16334C";
 
 const MUTED = "#657D8B";
@@ -63,12 +69,14 @@ const FONT_FAMILY = "Poppins, Arial, sans-serif";
 const MED = (px: number) => `500 ${px}px ${FONT_FAMILY}`;
 
 const SEMI = (px: number) => `600 ${px}px ${FONT_FAMILY}`;
+
 // Photo rectangle on the FRONT card.
-const PHOTO = { x: 760, y: 181, w: 196, h: 244, r: 16 };
+
+const PHOTO = { x: 199, y: 165, w: 240, h: 240, r: 120 };
 
 // The photo is embedded directly into the canvas for preview, PDF and print.
-// Do not overlay a separate HTML image: PDF export cannot capture HTML overlays.
 
+// Do not overlay a separate HTML image: PDF export cannot capture HTML overlays.
 
 type User = {
 
@@ -79,6 +87,9 @@ type User = {
     profile_picture?: string | { url?: string; path?: string } | null;
 
     profile_image?: string | null;
+    profile_photo?: string | null;
+    photo?: string | null;
+    image?: string | null;
 
     avatar?: string | null;
 
@@ -107,7 +118,9 @@ type User = {
         state?: string;
 
         joining_date?: string;
-
+        profile_picture?: string | { url?: string; path?: string } | null;
+        profile_image?: string | null;
+        photo?: string | null;
     };
 
 };
@@ -269,7 +282,9 @@ function loadRazorpay(): Promise<void> {
     });
 
 }
+
 // Load Poppins 500/600 for the UI and canvas card.
+
 async function loadPoppins(): Promise<void> {
 
     if (typeof document === "undefined") return;
@@ -327,125 +342,225 @@ async function loadPoppins(): Promise<void> {
         ]);
 
     } catch {
+
         // Fall back to Arial silently.
+
     }
 
 }
 
 function getProfilePhotoUrl(user: User): string | null {
-
-    const picture = user.profile_picture;
-
-    const candidate =
-
-        typeof picture === "string" ? picture : picture?.url || picture?.path;
-
-    const finalValue = candidate || user.profile_image || user.avatar;
-
-    if (!finalValue || typeof finalValue !== "string") return null;
-
-    return finalValue.trim() || null;
-
+    const nested = user.distributor_profile;
+    const candidates = [
+        user.profile_picture,
+        user.profile_image,
+        user.profile_photo,
+        user.avatar,
+        user.photo,
+        user.image,
+        nested?.profile_picture,
+        nested?.profile_image,
+        nested?.photo,
+    ];
+    for (const candidate of candidates) {
+        const raw = typeof candidate === "string"
+            ? candidate
+            : candidate?.url || candidate?.path;
+        if (typeof raw === "string" && raw.trim()) return raw.trim();
+    }
+    return null;
 }
 
 // External storage images must be fetched through a same-origin server route.
+
 // Canvas export cannot embed cross-origin images without appropriate CORS headers.
+
 function exportablePhotoUrl(rawUrl: string): string {
+
     const value = rawUrl.trim();
+
     if (/^data:image\/(png|jpeg|webp);base64,/i.test(value)) return value;
+
     if (value.startsWith("blob:")) return value;
+
     const url = new URL(value, window.location.origin);
+
     if (!/^(https?):$/.test(url.protocol)) {
+
         throw new Error("Unsupported profile photo URL");
+
     }
+
     if (url.origin === window.location.origin) return url.href;
+
     return `/api/distributor-card/profile-photo?url=${encodeURIComponent(url.href)}`;
+
 }
 
 // Try a direct CORS-safe image first, then the same-origin image route.
+
 // This keeps the original on-screen photo independent from PDF embedding.
+
 async function loadPhotoForCanvas(rawUrl: string): Promise<HTMLImageElement> {
+
     const value = rawUrl.trim();
+
     const direct = new URL(value, window.location.origin).href;
+
     const directErrors: string[] = [];
 
     // First try the original photo in a CORS-safe canvas (works for same-origin images).
+
     try {
+
         const image = await img(direct, true);
+
         const test = document.createElement("canvas");
+
         test.width = test.height = 1;
+
         const ctx = test.getContext("2d");
+
         if (!ctx) throw new Error("Canvas unavailable");
+
         ctx.drawImage(image, 0, 0, 1, 1);
+
         test.toDataURL("image/png");
+
         return image;
+
     } catch (err) {
+
         directErrors.push(err instanceof Error ? err.message : String(err));
+
     }
 
     // A cross-origin image visible in <img> is not automatically exportable.
+
     // Fetch it through our trusted server route, which exposes the actual HTTP error.
+
     const proxy = exportablePhotoUrl(value);
+
     if (proxy === direct || proxy.startsWith("data:") || proxy.startsWith("blob:")) {
+
         throw new Error(`Direct image is not canvas-exportable: ${directErrors.join(", ")}`);
+
     }
+
     // Next.js basePath deployments can expose the same route under a prefix.
+
     // Try the configured/base-path URL first, then the site-root API route.
+
     const pathPrefix = window.location.pathname.startsWith("/indiekonnect-web/")
+
         ? "/indiekonnect-web"
+
         : "";
+
     const routePath = `/api/distributor-card/profile-photo?url=${encodeURIComponent(direct)}`;
+
     const candidates = Array.from(new Set([
+
         `${pathPrefix}${routePath}`,
+
         proxy,
+
         `/indiekonnect-web${routePath}`,
+
     ]));
+
     let response: Response | null = null;
+
     const attempts: string[] = [];
+
     for (const candidate of candidates) {
+
         try {
+
             const result = await fetch(candidate, { credentials: "same-origin", cache: "no-store" });
+
             if (result.ok) { response = result; break; }
+
             let detail = "";
+
             try {
+
                 const data: unknown = await result.json();
+
                 if (data && typeof data === "object" && "error" in data) {
+
                     detail = String((data as { error?: unknown }).error || "");
+
                 }
+
             } catch { /* e.g. HTML 404 */ }
+
             attempts.push(`${candidate}: HTTP ${result.status}${detail ? ` (${detail})` : ""}`);
+
             // 404 means try the alternate route. Other errors also report details.
+
         } catch (err) {
+
             attempts.push(`${candidate}: ${err instanceof Error ? err.message : "Network error"}`);
+
         }
+
     }
+
     if (!response) {
+
         throw new Error(`Photo proxy failed. ${attempts.join("; ")}. Verify route.ts is in the running Next.js app and deployed.`);
+
     }
+
     const type = (response.headers.get("content-type") || "").toLowerCase();
+
     if (!type.startsWith("image/")) throw new Error(`Photo proxy returned ${type || "non-image content"}`);
+
     const blob = await response.blob();
+
     const objectUrl = URL.createObjectURL(blob);
+
     try {
+
         const image = await img(objectUrl, false);
+
         // Image has decoded before the object URL is revoked.
+
         const canvas = document.createElement("canvas");
+
         canvas.width = canvas.height = 1;
+
         const ctx = canvas.getContext("2d");
+
         if (!ctx) throw new Error("Canvas unavailable");
+
         ctx.drawImage(image, 0, 0, 1, 1);
+
         canvas.toDataURL("image/png");
+
         // Convert to data URL so the image stays valid after revoking the object URL.
+
         const dataUrl = await new Promise<string>((resolve, reject) => {
+
             const reader = new FileReader();
+
             reader.onload = () => resolve(String(reader.result));
+
             reader.onerror = () => reject(new Error("Image could not be decoded"));
+
             reader.readAsDataURL(blob);
+
         });
+
         return await img(dataUrl, false);
+
     } finally {
+
         URL.revokeObjectURL(objectUrl);
+
     }
+
 }
 
 function img(
@@ -473,17 +588,11 @@ function img(
 }
 
 function escapeHtmlAttribute(value: string): string {
-
     return value
-
         .replace(/&/g, "&amp;")
-
         .replace(/"/g, "&quot;")
-
         .replace(/</g, "&lt;")
-
         .replace(/>/g, "&gt;");
-
 }
 
 function formatDate(value?: string): string {
@@ -707,7 +816,9 @@ function fitName(
     return size;
 
 }
+
 // Clean white card background.
+
 function lightBackground(ctx: CanvasRenderingContext2D) {
 
     ctx.fillStyle = PAPER;
@@ -715,7 +826,9 @@ function lightBackground(ctx: CanvasRenderingContext2D) {
     ctx.fillRect(0, 0, PX_W, PX_H);
 
 }
+
 // ======================================================// SMALL, CENTERED WATERMARK// The logo stays inside the content area and does not// spread over the entire card or go outside the canvas.// ======================================================
+
 function drawWatermark(
 
     ctx: CanvasRenderingContext2D,
@@ -727,7 +840,9 @@ function drawWatermark(
 ) {
 
     if (!logo || !logo.naturalWidth || !logo.naturalHeight) return;
+
     // Front: keep the watermark behind the information area,// away from the distributor photo.// // Back: center it inside the card's inner content area.
+
     const area =
 
         side === "front"
@@ -755,11 +870,15 @@ function drawWatermark(
                 h: 470,
 
             };
+
     // Smaller maximum size for a subtle background watermark.
+
     const maxW = 310;
 
     const maxH = 190;
+
     // Keep the logo's original aspect ratio.
+
     const scale = Math.min(
 
         maxW / logo.naturalWidth,
@@ -775,19 +894,25 @@ function drawWatermark(
     const wmW = logo.naturalWidth * scale;
 
     const wmH = logo.naturalHeight * scale;
+
     // Center the watermark in its allowed area.
+
     const x = area.x + (area.w - wmW) / 2;
 
     const y = area.y + (area.h - wmH) / 2;
 
     ctx.save();
+
     // Prevent the watermark from drawing outside its area.
+
     ctx.beginPath();
 
     ctx.rect(area.x, area.y, area.w, area.h);
 
     ctx.clip();
+
     // Very light watermark, keeping foreground text readable.
+
     ctx.globalAlpha = 0.04;
 
     ctx.drawImage(logo, x, y, wmW, wmH);
@@ -968,100 +1093,75 @@ function wrapCardText(ctx: CanvasRenderingContext2D, text: string, maxWidth: num
 
 }
 
-async function drawCard(
-    user: User,
-    side: "front" | "back",
-    photo: HTMLImageElement | null,
-    logo: HTMLImageElement | null,
-): Promise<string> {
+async function drawCard(user: User, side: "front" | "back", photo: HTMLImageElement | null, logo: HTMLImageElement | null): Promise<string> {
     const canvas = document.createElement("canvas");
-    canvas.width = PX_W;
-    canvas.height = PX_H;
+    canvas.width = PX_W; canvas.height = PX_H;
     const ctx = canvas.getContext("2d");
     if (!ctx) throw new Error("Canvas unavailable");
-    const NAVY = "#173B55";
-    const TEAL = "#087F86";
-    const LIGHT = "#EAF6F7";
-    const SAND = "#F9FCFD";
-    ctx.fillStyle = "#FFFFFF";
-    ctx.fillRect(0, 0, PX_W, PX_H);
-
-    // A clean diagonal accent produces the same premium finish in print and PDF.
-    ctx.fillStyle = LIGHT;
-    ctx.beginPath();
-    ctx.moveTo(670, 0); ctx.lineTo(1011, 0); ctx.lineTo(1011, 500);
-    ctx.lineTo(906, 500); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = TEAL;
-    ctx.fillRect(0, 0, 12, PX_H);
-    ctx.fillStyle = NAVY;
-    ctx.fillRect(12, 0, PX_W - 12, 10);
-    ctx.fillStyle = "#DAEAED";
-    ctx.fillRect(45, 117, 922, 2);
-
-    // Brand lockup: logo remains the authentic locally imported logo.
-    if (logo && logo.naturalWidth && logo.naturalHeight) {
-        const scale = Math.min(246 / logo.naturalWidth, 75 / logo.naturalHeight);
-        ctx.drawImage(logo, 47, 26, logo.naturalWidth * scale, logo.naturalHeight * scale);
-    } else {
-        drawText(ctx, "INDIEKONNECT", 47, 79, SEMI(30), NAVY, 330);
-    }
-    drawText(ctx, "DISTRIBUTOR IDENTITY CARD", 963, 63, SEMI(22), NAVY, 560, "right", "1.5px");
-    drawText(ctx, "OFFICIAL BUSINESS IDENTIFICATION", 963, 93, MED(13), TEAL, 535, "right", "2px");
-
+    const navy = "#153C69", yellow = "#FFCC32", orange = "#F28A21", muted = "#506784";
+    ctx.fillStyle = "#FFFFFF"; ctx.fillRect(0, 0, PX_W, PX_H);
+    // Premium portrait card with print-safe vector artwork.
     if (side === "front") {
-        drawText(ctx, "AUTHORIZED DIRECT SELLER", 48, 175, SEMI(25), TEAL, 685, "left", "1px");
-        drawText(ctx, "FULL NAME", 48, 238, MED(17), MUTED, 605, "left", "1.4px");
-        const name = (user.full_name || "Direct Seller").trim().toUpperCase();
-        const size = fitName(ctx, name, 660);
-        drawText(ctx, name, 48, 289, SEMI(Math.min(size, 39)), NAVY, 658);
-        ctx.fillStyle = "#CFE6E9";
-        ctx.fillRect(48, 308, 635, 2);
-        drawText(ctx, "DISTRIBUTOR / BA ID", 48, 350, MED(16), MUTED, 590, "left", "1px");
-        drawText(ctx, user.distributor_id || "—", 48, 388, SEMI(27), NAVY, 615);
-        drawText(ctx, "ISSUED ON", 48, 447, MED(15), MUTED, 230);
-        drawText(ctx, formatDate(DEMO_ISSUED), 48, 480, SEMI(23), NAVY, 265);
-        drawText(ctx, "VALID UNTIL", 357, 447, MED(15), MUTED, 235);
-        drawText(ctx, formatDate(DEMO_EXPIRY), 357, 480, SEMI(23), NAVY, 270);
-        // Photo matches PHOTO and PHOTO_CSS overlay dimensions exactly.
-        const p = PHOTO;
-        ctx.fillStyle = "#FFFFFF";
-        roundRect(ctx, p.x - 9, p.y - 9, p.w + 18, p.h + 18, 23);
-        ctx.fill();
-        ctx.strokeStyle = "#B6D7DD";
-        ctx.lineWidth = 3; ctx.stroke();
-        if (photo) cropPhoto(ctx, photo, p.x, p.y, p.w, p.h, p.r);
-        else {
-            ctx.fillStyle = "#E2F0F2";
-            roundRect(ctx, p.x, p.y, p.w, p.h, p.r); ctx.fill();
-            drawText(ctx, initials(user.full_name), p.x + p.w / 2, p.y + 141, SEMI(66), TEAL, p.w - 18, "center");
+        ctx.fillStyle = navy;
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(PX_W, 0); ctx.lineTo(PX_W, 440); ctx.lineTo(515, 375); ctx.bezierCurveTo(320, 475, 170, 345, 0, 290); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = yellow; ctx.beginPath(); ctx.moveTo(420, 0); ctx.lineTo(PX_W, 0); ctx.lineTo(PX_W, 220); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = orange; ctx.beginPath(); ctx.moveTo(PX_W, 270); ctx.lineTo(PX_W, 590); ctx.lineTo(495, 445); ctx.closePath(); ctx.fill();
+        // Punch-slot safe zone.
+        ctx.fillStyle = "#FFFFFF"; roundRect(ctx, 264, 23, 110, 19, 10); ctx.fill();
+        // Display the original Indiekonnect logo without an extra colored box.
+        if (logo && logo.naturalWidth) {
+            const s = Math.min(180 / logo.naturalWidth, 112 / logo.naturalHeight);
+            ctx.drawImage(logo, 38, 54, logo.naturalWidth * s, logo.naturalHeight * s);
+        } else {
+            drawText(ctx, "INDIE", 55, 105, SEMI(30), navy, 130);
+            drawText(ctx, "KONNECT", 55, 137, SEMI(23), navy, 130);
         }
-        const active = user.is_active === true || (user.is_active == null && (user.distributor_status || "").toLowerCase() === "active");
-        drawStatusBadge(ctx, active ? "ACTIVE" : "INACTIVE", active, 774, 449, 180, 42);
-        ctx.fillStyle = NAVY;
-        ctx.fillRect(12, 527, PX_W - 12, 111);
-        drawText(ctx, "INDIEKONNECT ENTERPRISES PVT. LTD.", 48, 565, SEMI(18), "#FFFFFF", 650);
-        drawText(ctx, "Independent Direct Seller Identification", 48, 596, MED(15), "#C7E1E8", 660);
-        ctx.strokeStyle = "#C7E1E8"; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.moveTo(770, 574); ctx.lineTo(960, 574); ctx.stroke();
-        drawText(ctx, "Authorized Signatory", 866, 601, MED(14), "#FFFFFF", 200, "center");
+        // Circular portrait, fully embedded into the PDF canvas.
+        ctx.fillStyle = "#FFFFFF"; ctx.beginPath(); ctx.arc(319, 285, 137, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = "#E9EEF5"; ctx.lineWidth = 7; ctx.beginPath(); ctx.arc(319, 285, 128, 0, Math.PI * 2); ctx.stroke();
+        ctx.save(); ctx.beginPath(); ctx.arc(319, 285, 120, 0, Math.PI * 2); ctx.clip();
+        if (photo) {
+            const scale = Math.max(240 / photo.naturalWidth, 240 / photo.naturalHeight);
+            const w = photo.naturalWidth * scale, h = photo.naturalHeight * scale;
+            ctx.drawImage(photo, 319 - w / 2, 285 - h / 2, w, h);
+        } else {
+            ctx.fillStyle = "#E8EEF6"; ctx.fillRect(199, 165, 240, 240);
+            drawText(ctx, initials(user.full_name), 319, 308, SEMI(70), navy, 190, "center");
+        }
+        ctx.restore();
+        const name = (user.full_name || "Distributor").trim().toUpperCase();
+        drawText(ctx, name, 319, 515, SEMI(fitName(ctx, name, 570)), navy, 570, "center");
+        drawText(ctx, "AUTHORIZED DIRECT SELLER", 319, 554, SEMI(19), muted, 550, "center", "1px");
+        ctx.fillStyle = "#E6EBF1"; ctx.fillRect(66, 593, 506, 2);
+        const fields = [
+            ["ID NUMBER", user.distributor_id || "—"],
+            ["ISSUE DATE", formatDate(user.joining_date || user.created_at || DEMO_ISSUED)],
+            ["EXPIRY DATE", "As per membership validity"]
+        ];
+        fields.forEach(([label, value], i) => {
+            const y = 650 + i * 75;
+            drawText(ctx, label + " :", 76, y, SEMI(19), muted, 200);
+            drawText(ctx, value, 560, y, SEMI(i === 2 ? 17 : 20), navy, 300, "right");
+        });
+        ctx.strokeStyle = "#9DB2C9"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(370, 918); ctx.lineTo(564, 918); ctx.stroke();
+        drawText(ctx, "Authorized Signatory", 467, 945, MED(16), muted, 230, "center");
+        ctx.fillStyle = yellow; ctx.fillRect(0, 987, PX_W, 24);
     } else {
-        drawText(ctx, "COMPANY INFORMATION", 48, 171, SEMI(27), NAVY);
-        ctx.fillStyle = TEAL;
-        ctx.fillRect(48, 186, 85, 4);
-        drawText(ctx, "REGISTERED OFFICE", 48, 236, SEMI(16), TEAL, 600, "left", "1px");
-        wrapCardText(ctx, COMPANY_ADDRESS, 900, MED(22)).slice(0, 3).forEach((line, i) => {
-            drawText(ctx, line, 48, 274 + i * 30, MED(22), NAVY, 900);
-        });
-        ctx.fillStyle = "#EAF6F7";
-        roundRect(ctx, 45, 351, 919, 186, 18); ctx.fill();
-        drawText(ctx, "IMPORTANT INFORMATION", 65, 385, SEMI(18), TEAL, 830);
-        const disclaimer = "This card identifies an independent direct seller associated with Indiekonnect Enterprises Pvt. Ltd. It does not constitute proof of company employment or government-issued identification.";
-        wrapCardText(ctx, disclaimer, 870, MED(18)).slice(0, 4).forEach((line, i) => {
-            drawText(ctx, line, 65, 422 + i * 28, MED(18), NAVY, 870);
-        });
-        ctx.fillStyle = NAVY;
-        ctx.fillRect(12, 559, PX_W - 12, 79);
-        drawText(ctx, "PROPERTY OF INDIEKONNECT ENTERPRISES PVT. LTD.", PX_W / 2, 607, SEMI(17), "#FFFFFF", 925, "center", "0.7px");
+        ctx.fillStyle = navy; ctx.fillRect(0, 0, PX_W, 24);
+        ctx.fillStyle = "#FFFFFF"; roundRect(ctx, 264, 38, 110, 19, 10); ctx.fill();
+        drawText(ctx, "REGISTERED ADDRESS", 319, 151, SEMI(29), navy, 550, "center");
+        ctx.fillStyle = yellow; roundRect(ctx, 263, 174, 112, 5, 2); ctx.fill();
+        wrapCardText(ctx, COMPANY_ADDRESS, 520, MED(21)).slice(0, 5).forEach((line, i) => drawText(ctx, line, 319, 231 + i * 34, MED(21), muted, 530, "center"));
+        if (COMPANY_PHONE && !COMPANY_PHONE.startsWith("[")) drawText(ctx, "Phone: " + COMPANY_PHONE, 319, 410, MED(18), navy, 540, "center");
+        if (COMPANY_EMAIL && !COMPANY_EMAIL.startsWith("[")) drawText(ctx, "Email: " + COMPANY_EMAIL, 319, 445, MED(18), navy, 540, "center");
+        ctx.fillStyle = "#F3F6FA"; roundRect(ctx, 45, 501, 548, 255, 18); ctx.fill();
+        drawText(ctx, "LEGAL DISCLAIMER", 319, 554, SEMI(25), navy, 490, "center");
+        const legal = "This card identifies an independent authorized direct seller associated with Indiekonnect. The cardholder is not a direct employee of the company and this is not a government-issued identity document.";
+        wrapCardText(ctx, legal, 484, MED(19)).slice(0, 6).forEach((line, i) => drawText(ctx, line, 319, 606 + i * 29, MED(19), muted, 490, "center"));
+        drawText(ctx, "IF FOUND, PLEASE RETURN TO", 319, 829, SEMI(22), navy, 550, "center");
+        drawText(ctx, "Indiekonnect Registered Office", 319, 866, MED(19), muted, 540, "center");
+        ctx.fillStyle = yellow; ctx.beginPath(); ctx.moveTo(0, 919); ctx.quadraticCurveTo(319, 1100, 638, 919); ctx.lineTo(638, 1011); ctx.lineTo(0, 1011); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = navy; ctx.beginPath(); ctx.moveTo(0, 984); ctx.quadraticCurveTo(319, 1130, 638, 984); ctx.lineTo(638, 1011); ctx.lineTo(0, 1011); ctx.closePath(); ctx.fill();
     }
     return canvas.toDataURL("image/png");
 }
@@ -1111,27 +1211,43 @@ export default function DistributorPVCSection({
         setBusy("render");
 
         setError("");
+
         setPhotoExportError("");
 
         try {
 
             const [localLogo, photoResult] = await Promise.all([
+
                 img(Logo.src, false).catch(() => null),
+
                 profilePhotoUrl
+
                     ? Promise.resolve().then(() => loadPhotoForCanvas(profilePhotoUrl))
+
                         .then((image) => ({ image, problem: "" }))
+
                         .catch((cause) => ({
+
                             image: null,
+
                             problem: cause instanceof Error ? cause.message : "Profile photo could not be loaded",
+
                         }))
+
                     : Promise.resolve({ image: null, problem: "" }),
+
                 loadPoppins(),
+
             ]).then(([logoImage, photo]) => [logoImage, photo] as const);
 
             if (profilePhotoUrl && !photoResult.image) {
+
                 setPhotoExportError(
+
                     `Profile photo could not be embedded in the card (${photoResult.problem}). Check the image URL and image-proxy server route.`,
+
                 );
+
             }
 
             const [frontImg, backImg] = await Promise.all([
@@ -1201,10 +1317,13 @@ export default function DistributorPVCSection({
         void render();
 
     }, [render]);
+
     // ======================================================// DOWNLOAD PDF// ======================================================
+
     const download = () => {
 
         if (!front || !back) return;
+
         if (photoExportError) { setError(photoExportError); return; }
 
         setBusy("download");
@@ -1215,7 +1334,7 @@ export default function DistributorPVCSection({
 
             const pdf = new jsPDF({
 
-                orientation: "landscape",
+                orientation: "portrait",
 
                 unit: "mm",
 
@@ -1227,7 +1346,7 @@ export default function DistributorPVCSection({
 
             pdf.addImage(front, "PNG", 0, 0, MM_W, MM_H);
 
-            pdf.addPage([MM_W, MM_H], "landscape");
+            pdf.addPage([MM_W, MM_H], "portrait");
 
             pdf.addImage(back, "PNG", 0, 0, MM_W, MM_H);
 
@@ -1258,10 +1377,13 @@ export default function DistributorPVCSection({
         }
 
     };
+
     // ======================================================// PRINT CARD// ======================================================
+
     const print = () => {
 
         if (!front || !back) return;
+
         if (photoExportError) { setError(photoExportError); return; }
 
         const popup = window.open("", "_blank");
@@ -1304,9 +1426,9 @@ body{font:13px Arial,sans-serif;padding:0;margin:0}
 
   position:relative;
 
-  width:85.6mm;
+  width:54mm;
 
-  height:54mm;
+  height:85.6mm;
 
   margin:0 0 12mm 0;
 
@@ -1346,7 +1468,6 @@ body{font:13px Arial,sans-serif;padding:0;margin:0}
 
   <img class="card" src="${front}" alt="Front card" />
 
-
 </div>
 
 <div class="card-wrap">
@@ -1384,7 +1505,9 @@ window.addEventListener('load', function(){
         }
 
     };
+
     // ======================================================// REQUEST PVC CARD DELIVERY// ======================================================
+
     const startRequest = async () => {
 
         setBusy("quote");
@@ -1735,7 +1858,7 @@ window.addEventListener('load', function(){
 
                         <p className=" break-words text-[11px] leading-4 text-[#98a2b3] sm:text-[11.5px]">
 
-                            Horizontal PVC card • front and back • 85.6 × 54 mm
+                            Vertical PVC card • front and back • 54 × 85.6 mm
 
                         </p>
 
@@ -1765,7 +1888,7 @@ window.addEventListener('load', function(){
 
             {/* Front and back preview */}
 
-            <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+          <div className="grid grid-cols-2 gap-2 sm:gap-4 xl:gap-5">
 
                 {(
 
@@ -1797,13 +1920,13 @@ window.addEventListener('load', function(){
 
                             <span className="text-[11px] font-medium text-gray-500">
 
-                                Landscape
+                                Portrait
 
                             </span>
 
                         </div>
 
-                        <div className="relative aspect-[85.6/54] overflow-hidden rounded-[4%] border border-gray-200 bg-white shadow-[0_16px_32px_rgba(0,0,0,.1)]">
+                        <div className="relative mx-auto w-full max-w-[340px] aspect-[54/85.6] overflow-hidden rounded-[4%] border border-gray-200 bg-white shadow-[0_16px_32px_rgba(0,0,0,.1)]">
 
                             {card.src ? (
 
@@ -1836,21 +1959,37 @@ window.addEventListener('load', function(){
                             )}
 
                             {/* Always show the original photo in preview when PDF embedding fails. */}
+
                             {card.label === "FRONT" && profilePhotoUrl && photoExportError && (
+
                                 <img
+
                                     src={profilePhotoUrl}
+
                                     alt="Distributor profile photo"
+
                                     loading="eager"
+
                                     className="absolute object-cover"
+
                                     style={{
+
                                         left: `${PHOTO.x / PX_W * 100}%`,
+
                                         top: `${PHOTO.y / PX_H * 100}%`,
+
                                         width: `${PHOTO.w / PX_W * 100}%`,
+
                                         height: `${PHOTO.h / PX_H * 100}%`,
-                                        borderRadius: "7%",
+
+                                        borderRadius: "50%",
+
                                     }}
+
                                 />
+
                             )}
+
                         </div>
 
                     </div>
@@ -1899,31 +2038,7 @@ window.addEventListener('load', function(){
 
                 </button>
 
-                {/* <button*
 
-*                    type="button"*
-
-*                    disabled={!!busy || !user.distributor_id || !user.is_active}*
-
-*                    onClick={startRequest}*
-
-*                    className="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-5 py-3 text-xs font-semibold text-black transition-colors hover:bg-gray-50 disabled:opacity-50"*
-
-*                >*
-
-*                    {busy === "quote" ? (*
-
-*                        <Loader2 size={16} className="animate-spin" />*
-
-*                    ) : (*
-
-*                        <Truck size={16} />*
-
-*                    )}*
-
-*                    Request PVC Home Delivery*
-
-*                </button> */}
 
             </div>
 
@@ -1939,10 +2054,20 @@ window.addEventListener('load', function(){
 
             </p>
 
-            {photoExportError && (
+            {!profilePhotoUrl && (
                 <p role="alert" className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
-                    Preview photo is restored. PDF photo embedding failed: {photoExportError}. Ensure the image proxy route is installed and its URL returns image bytes. PDF is disabled until embedding succeeds.
+                    Profile image URL missing in distributor user data. Check profile_picture, profile_image, avatar, and distributor_profile fields returned by the backend.
                 </p>
+            )}
+
+            {photoExportError && (
+
+                <p role="alert" className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+
+                    Profile photo could not be embedded in the PDF: {photoExportError}. If the preview photo is also missing, verify the image URL is publicly accessible to the signed-in browser. Check that the same-origin image proxy route exists and returns image bytes. PDF is disabled until embedding succeeds.
+
+                </p>
+
             )}
 
             {message && (

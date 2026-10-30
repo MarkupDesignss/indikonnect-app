@@ -7,6 +7,7 @@ import { Poppins } from "next/font/google";
 import {
   AlertTriangle,
   BadgePercent,
+  Coins,
   Check,
   ChevronDown,
   ChevronRight,
@@ -143,6 +144,10 @@ interface CheckoutSummaryData {
   shipping_cost: number;
   subtotal_after_discount_and_tax: number;
   coin_balance: number;
+  yellow_bal?: number;
+  blue_bal?: number;
+  sma_balance?: number;
+  coin_balances?: { yellow?: number; blue?: number; sma?: number };
   max_coins_redeemable: number;
   coins_used: number;
   amount_redeemed: number;
@@ -398,9 +403,9 @@ const findMatchingCartLine = (
   const productId = Number(summaryItem.product_id);
   const explicitCartItemId = Number(
     summaryItem.cart_item_id ??
-      summaryItem.cartItemId ??
-      summaryItem.cart_item?.id ??
-      0
+    summaryItem.cartItemId ??
+    summaryItem.cart_item?.id ??
+    0
   );
 
   if (explicitCartItemId > 0) {
@@ -500,9 +505,8 @@ function PlaceOrderButton({
       onClick={onClick}
       disabled={disabled}
       aria-busy={isSubmitting}
-      className={`group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-[#173E2B] via-[#1B5538] to-[#16845B] px-4 text-[13px] font-semibold text-white ring-1 ring-inset ring-white/10 transition-all duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#16845B]/30 active:translate-y-0 active:scale-[0.99] disabled:cursor-not-allowed disabled:from-[#9DB2A5] disabled:via-[#9DB2A5] disabled:to-[#9DB2A5] disabled:hover:translate-y-0 ${
-        compact ? "min-h-[44px] py-2" : "min-h-[46px] py-2.5"
-      }`}
+      className={`group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-[#173E2B] via-[#1B5538] to-[#16845B] px-4 text-[13px] font-semibold text-white ring-1 ring-inset ring-white/10 transition-all duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#16845B]/30 active:translate-y-0 active:scale-[0.99] disabled:cursor-not-allowed disabled:from-[#9DB2A5] disabled:via-[#9DB2A5] disabled:to-[#9DB2A5] disabled:hover:translate-y-0 ${compact ? "min-h-[44px] py-2" : "min-h-[46px] py-2.5"
+        }`}
     >
       {!disabled && (
         <span
@@ -675,9 +679,8 @@ function QuantitySelect({
           <Loader2 className="h-3 w-3 animate-spin text-[#16845B]" />
         ) : (
           <ChevronDown
-            className={`h-3 w-3 text-[#748078] transition-transform ${
-              open ? "rotate-180" : ""
-            }`}
+            className={`h-3 w-3 text-[#748078] transition-transform ${open ? "rotate-180" : ""
+              }`}
           />
         )}
       </button>
@@ -697,11 +700,10 @@ function QuantitySelect({
                 role="option"
                 aria-selected={isSelected}
                 onClick={() => handleSelect(qty)}
-                className={`flex w-full items-center justify-between px-2.5 py-1.5 text-left text-[11px] font-semibold transition ${
-                  isSelected
+                className={`flex w-full items-center justify-between px-2.5 py-1.5 text-left text-[11px] font-semibold transition ${isSelected
                     ? "bg-[#EAF6EF] text-[#16845B]"
                     : "text-[#37473C] hover:bg-[#F4F8F5]"
-                }`}
+                  }`}
               >
                 <span className="tabular-nums">{qty}</span>
                 {isSelected && <Check className="h-3 w-3" />}
@@ -749,7 +751,7 @@ function TaxBreakdownPopup({
 
   const categories =
     Array.isArray(summaryData.tax_by_category) &&
-    summaryData.tax_by_category.length > 0
+      summaryData.tax_by_category.length > 0
       ? summaryData.tax_by_category
       : [];
 
@@ -840,8 +842,53 @@ function TaxBreakdownPopup({
   );
 }
 
+// Redemption UI: balances and discounts must be confirmed by the checkout API.
+// Coin type parameters must be supported and validated by the backend.
+type CoinKind = "yellow" | "blue" | "sma";
+function CoinRedemption({ summary, role, selected, onSelect, busy }: {
+  summary: CheckoutSummaryData;
+  role: string;
+  selected: CoinKind | null;
+  onSelect: (kind: CoinKind | null) => void;
+  busy: boolean;
+}) {
+  const isDistributor = role === "distributor";
+  const isSma = role === "sma" || role === "sma_user";
+  if (!isDistributor && !isSma) return null;
+  const available = [
+    { id: "yellow" as const, title: "Yellow Coins", balance: summary.coin_balances?.yellow ?? summary.yellow_bal, bg: "bg-amber-50", fg: "text-amber-600" },
+    { id: "blue" as const, title: "Blue Coins", balance: summary.coin_balances?.blue ?? summary.blue_bal, bg: "bg-blue-50", fg: "text-blue-600" },
+    { id: "sma" as const, title: "SMA Tokens", balance: summary.coin_balances?.sma ?? summary.sma_balance, bg: "bg-emerald-50", fg: "text-emerald-600" },
+  ].filter(c => isDistributor ? c.id !== "sma" : c.id === "sma");
+  return (
+    <div className="mx-4 my-3 rounded-xl border border-[#E2E8E4] bg-white p-3 sm:mx-5">
+      <div className="mb-3 flex items-center gap-2 text-[12px] font-semibold text-[#173E2B]">
+        <Coins className="h-4 w-4" /> Redeem your coins
+      </div>
+      <div className="space-y-2">
+        {available.map(c => {
+          const known = c.balance !== undefined && c.balance !== null;
+          const balance = Math.max(0, Number(c.balance || 0));
+          const enabled = known && balance > 0 && Number(summary.max_coins_redeemable || 0) > 0;
+          return (
+            <label key={c.id} className={`flex items-center gap-3 rounded-lg border border-[#E9EEEA] p-2.5 ${enabled ? "cursor-pointer" : "opacity-60"}`}>
+              <span className={`flex h-9 w-9 items-center justify-center rounded-full ${c.bg} ${c.fg}`}><Coins className="h-4 w-4" /></span>
+              <span className="min-w-0 flex-1"><span className="block text-[12px] font-semibold">{c.title}</span><span className="text-[10px] text-[#77837B]">{known ? `${balance.toLocaleString("en-IN")} available` : "Balance unavailable"}</span></span>
+              <input type="checkbox" aria-label={`Apply ${c.title}`} disabled={!enabled || busy} checked={selected === c.id} onChange={e => onSelect(e.target.checked ? c.id : null)} className="h-4 w-4 accent-[#16845B]" />
+            </label>
+          );
+        })}
+      </div>
+      {selected && <p className="mt-2 text-[10px] text-[#16845B]">Applied redemption is reflected only after server recalculation.</p>}
+    </div>
+  );
+}
+
 function CartSummary({
   summaryData,
+  coinRole,
+  selectedCoin,
+  onSelectCoin,
   loading,
   onPlaceOrder,
   isSubmitting,
@@ -870,6 +917,9 @@ function CartSummary({
   onUpdateQuantity,
 }: {
   summaryData?: CheckoutSummaryData;
+  coinRole: string;
+  selectedCoin: CoinKind | null;
+  onSelectCoin: (kind: CoinKind | null) => void;
   loading: boolean;
   onPlaceOrder: () => void;
   isSubmitting: boolean;
@@ -960,9 +1010,8 @@ function CartSummary({
 
       {/* Header */}
       <div
-        className={`${
-          retryMode ? "" : "rounded-t-2xl"
-        } border-b border-[#EDF1EE] bg-gradient-to-r from-[#F6FBF7] to-white px-4 py-2.5 sm:px-5`}
+        className={`${retryMode ? "" : "rounded-t-2xl"
+          } border-b border-[#EDF1EE] bg-gradient-to-r from-[#F6FBF7] to-white px-4 py-2.5 sm:px-5`}
       >
         <div className="flex items-center justify-between gap-2">
           <div>
@@ -983,11 +1032,10 @@ function CartSummary({
 
       {/* Items list */}
       <div
-        className={`space-y-3 px-4 py-2.5 sm:px-5 ${
-          items.length > 5
+        className={`space-y-3 px-4 py-2.5 sm:px-5 ${items.length > 5
             ? "max-h-[320px] overflow-y-auto overscroll-contain pr-2"
             : ""
-        }`}
+          }`}
       >
         {items.length > 0 ? (
           items.map((item, index) => {
@@ -1018,9 +1066,8 @@ function CartSummary({
             return (
               <div
                 key={`${item.product_id}-${item.variant_id ?? "none"}-${index}`}
-                className={`flex items-start gap-3 ${
-                  isUnavailable ? "opacity-70" : ""
-                }`}
+                className={`flex items-start gap-3 ${isUnavailable ? "opacity-70" : ""
+                  }`}
               >
                 {/* Product image + qty badge */}
                 <div className="relative h-[42px] w-[42px] shrink-0 mt-0.5">
@@ -1099,9 +1146,8 @@ function CartSummary({
                   {!retryMode && checkoutType === "cart" && (
                     <button
                       type="button"
-                      aria-label={`Remove ${
-                        item.product_name || "product"
-                      } from cart`}
+                      aria-label={`Remove ${item.product_name || "product"
+                        } from cart`}
                       title="Remove from cart"
                       onClick={() => onRemoveCartItem(item, index)}
                       disabled={
@@ -1146,9 +1192,8 @@ function CartSummary({
           >
             {showCouponList ? "Hide coupons" : "View coupons"}
             <ChevronDown
-              className={`h-3 w-3 transition-transform ${
-                showCouponList ? "rotate-180" : ""
-              }`}
+              className={`h-3 w-3 transition-transform ${showCouponList ? "rotate-180" : ""
+                }`}
             />
           </button>
         </div>
@@ -1274,6 +1319,8 @@ function CartSummary({
         )}
       </div>
 
+      <CoinRedemption summary={summaryData} role={coinRole} selected={selectedCoin} onSelect={onSelectCoin} busy={isSubmitting || loading} />
+
       {/* Total + CTA */}
       <div className="rounded-b-2xl border-t border-[#DEE7E0] bg-gradient-to-b from-white to-[#F8FBF8] px-4 pb-3 pt-2.5 sm:px-5">
         <div className="mb-2.5 flex items-center justify-between gap-3">
@@ -1341,13 +1388,12 @@ function CartSummary({
           <div className="flex items-center justify-center gap-2">
             <GatewayBrandIcon
               icon={selectedGateway.icon}
-              className={`h-3.5 w-3.5 shrink-0 ${
-                selectedGateway.icon === "hdfc"
+              className={`h-3.5 w-3.5 shrink-0 ${selectedGateway.icon === "hdfc"
                   ? "text-[#B51F2B]"
                   : selectedGateway.icon === "razorpay"
-                  ? "text-[#2457A7]"
-                  : "text-[#2F65B8]"
-              }`}
+                    ? "text-[#2457A7]"
+                    : "text-[#2F65B8]"
+                }`}
             />
             <p className="text-center text-[11px] text-[#748078]">
               Selected:{" "}
@@ -1416,19 +1462,17 @@ function AddressSelectorModal({
               <div
                 key={address.id}
                 onClick={() => onSelect(address)}
-                className={`relative cursor-pointer rounded-xl border p-4 transition-all duration-200 ${
-                  isSelected
+                className={`relative cursor-pointer rounded-xl border p-4 transition-all duration-200 ${isSelected
                     ? "border-[#16845B] bg-[#F5FBF6] shadow-sm ring-1 ring-[#16845B]"
                     : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
-                }`}
+                  }`}
               >
                 <div className="flex items-start gap-3">
                   <div
-                    className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
-                      isSelected
+                    className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${isSelected
                         ? "border-[#16845B] bg-[#16845B]"
                         : "border-gray-300"
-                    }`}
+                      }`}
                   >
                     {isSelected && (
                       <Check className="h-3.5 w-3.5 text-white" />
@@ -1539,6 +1583,14 @@ export default function CheckoutPage() {
 
   // ── State ──────────────────────────────────────────────────────────────────
 
+  const [selectedCoin, setSelectedCoin] = useState<CoinKind | null>(null);
+  const [coinRole, setCoinRole] = useState("");
+  useEffect(() => {
+    // Replace this with your authenticated user role from Redux/auth context.
+    // Never grant redemption eligibility based on localStorage alone.
+    const role = (window as any).__INDIEKONNECT_CHECKOUT_ROLE__;
+    setCoinRole(typeof role === "string" ? role.toLowerCase() : "");
+  }, []);
   const [selectedDeliveryAddress, setSelectedDeliveryAddress] =
     useState<Address | null>(null);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
@@ -1698,17 +1750,19 @@ export default function CheckoutPage() {
         ? { address_id: selectedDeliveryAddress.id }
         : {}),
       ...(appliedCoupon ? { coupon_code: appliedCoupon.trim() } : {}),
+      ...(selectedCoin ? { coin_type: selectedCoin, coins_used: 1 } : {}),
       ...(isDirectCheckout
         ? {
-            product_id: productId,
-            quantity,
-            ...(variantId > 0 ? { variant_id: variantId } : {}),
-          }
+          product_id: productId,
+          quantity,
+          ...(variantId > 0 ? { variant_id: variantId } : {}),
+        }
         : {}),
     }),
     [
       selectedDeliveryAddress?.id,
       appliedCoupon,
+      selectedCoin,
       isDirectCheckout,
       productId,
       quantity,
@@ -1730,7 +1784,7 @@ export default function CheckoutPage() {
 
   const displayCheckoutType: "cart" | "buy_now" =
     summaryData?.checkout_type === "buy_now" ||
-    summaryData?.checkout_type === "cart"
+      summaryData?.checkout_type === "cart"
       ? summaryData.checkout_type
       : checkoutType;
 
@@ -2401,6 +2455,7 @@ export default function CheckoutPage() {
       const response = await retryOrder({
         orderReference: retryOrderReference,
         payment_gateway: selectedGateway.paymentGateway,
+        ...(selectedCoin ? { coin_type: selectedCoin, coins_used: Number(latestSummary.coins_used || 0) } : {}),
       }).unwrap();
 
       if (!response?.success || !response?.data)
@@ -2554,6 +2609,9 @@ export default function CheckoutPage() {
       const latestSummary = await refreshAndValidateTotal(
         Number(summaryData.grand_total)
       );
+      if (selectedCoin && Number(latestSummary.coins_used || 0) <= 0) {
+        throw new Error("Coin redemption was not confirmed by the checkout API. Please remove coins or contact support.");
+      }
       const verifiedType = getCheckoutTypeFromSummary({
         data: latestSummary,
       });
@@ -2577,6 +2635,8 @@ export default function CheckoutPage() {
           subtotal: latestSummary.subtotal,
           coupon_discount: latestSummary.coupon_discount || 0,
           coupon_code: appliedCoupon || null,
+          coins_used: Number(latestSummary.coins_used || 0),
+          amount_redeemed: Number(latestSummary.amount_redeemed || 0),
           shipping_charge: latestSummary.shipping_cost || 0,
           total_tax: latestSummary.total_tax,
           net_subtotal: latestSummary.subtotal_after_discount,
@@ -2621,9 +2681,9 @@ export default function CheckoutPage() {
       );
       const orderReference = String(
         firstOrder?.order_reference ??
-          anyData?.order_reference ??
-          orderReferences[0] ??
-          ""
+        anyData?.order_reference ??
+        orderReferences[0] ??
+        ""
       ).trim();
       const razorpayOrderId = String(
         anyData?.razorpay_order_id || ""
@@ -2703,13 +2763,13 @@ export default function CheckoutPage() {
   const placeOrderDisabled = isRetryPaymentFlow
     ? isSubmitting || isLoadingGatewaySettings || !retryOrderReference
     : isSubmitting ||
-      !selectedDeliveryAddress?.id ||
-      isApplyingCoupon ||
-      Boolean(pendingCoupon) ||
-      Boolean(quantityUpdatingKey) ||
-      Boolean(removingSummaryItemKey) ||
-      hasUnavailable ||
-      isLoadingGatewaySettings;
+    !selectedDeliveryAddress?.id ||
+    isApplyingCoupon ||
+    Boolean(pendingCoupon) ||
+    Boolean(quantityUpdatingKey) ||
+    Boolean(removingSummaryItemKey) ||
+    hasUnavailable ||
+    isLoadingGatewaySettings;
 
   const handleExitPayment = () => {
     router.replace("/checkout");
@@ -2860,8 +2920,8 @@ export default function CheckoutPage() {
                       option.icon === "hdfc"
                         ? "text-[#B51F2B]"
                         : option.icon === "razorpay"
-                        ? "text-[#2457A7]"
-                        : "text-[#2F65B8]";
+                          ? "text-[#2457A7]"
+                          : "text-[#2F65B8]";
 
                     return (
                       <button
@@ -2873,11 +2933,10 @@ export default function CheckoutPage() {
                           setSelectedGatewayId(option.id);
                           setHasManuallySelectedGateway(true);
                         }}
-                        className={`group flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left transition-all duration-200 sm:gap-4 sm:px-4 ${
-                          isSelected
+                        className={`group flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left transition-all duration-200 sm:gap-4 sm:px-4 ${isSelected
                             ? "border-[#7CA2E8] bg-[#F8FBFF] shadow-[0_0_0_2px_rgba(59,112,207,0.10),0_6px_18px_-15px_rgba(20,76,160,0.45)]"
                             : "border-[#E5ECF6] bg-white hover:border-[#B9CDED] hover:bg-[#FBFDFF]"
-                        }`}
+                          }`}
                       >
                         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#E8EEF8] bg-[#F0F5FD] sm:h-10 sm:w-10">
                           <GatewayBrandIcon
@@ -2894,11 +2953,10 @@ export default function CheckoutPage() {
                           </span>
                         </span>
                         <span
-                          className={`flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full border transition-colors sm:h-[24px] sm:w-[24px] ${
-                            isSelected
+                          className={`flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full border transition-colors sm:h-[24px] sm:w-[24px] ${isSelected
                               ? "border-[#1557AD] bg-[#1557AD] text-white"
                               : "border-[#D6E0EF] bg-white text-transparent group-hover:border-[#9CB7E1]"
-                          }`}
+                            }`}
                         >
                           {isSelected ? (
                             <Check className="h-3 w-3 stroke-[3] sm:h-3.5 sm:w-3.5" />
@@ -2917,6 +2975,9 @@ export default function CheckoutPage() {
             <aside className="lg:sticky lg:top-4">
               <CartSummary
                 summaryData={summaryData}
+                coinRole={coinRole}
+                selectedCoin={selectedCoin}
+                onSelectCoin={setSelectedCoin}
                 loading={isLoadingCheckoutSummary && !summaryData}
                 onPlaceOrder={
                   isRetryPaymentFlow ? handleRetryPayment : handlePlaceOrder
