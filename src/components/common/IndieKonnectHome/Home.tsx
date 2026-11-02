@@ -2096,6 +2096,7 @@ export default function IndieKonnectHome() {
 ================================================= */}
 
 <section
+
   className="
     relative
     left-1/2
@@ -2110,6 +2111,7 @@ export default function IndieKonnectHome() {
 >
   {/* BANNER WRAPPER */}
   <div
+  
   className="
     relative
     w-full
