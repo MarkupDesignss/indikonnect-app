@@ -2091,20 +2091,32 @@ export default function IndieKonnectHome() {
     >
       <Header />
 
-      {/* =================================================
-          HERO
-      ================================================= */}
+    {/* =================================================
+    HERO BANNER - FULL WIDTH + FIXED HEIGHT
+================================================= */}
 
-<section className="relative isolate flow-root left-1/2 w-screen -translate-x-1/2 overflow-hidden bg-white">
+<section
+  className="
+    relative
+    left-1/2
+    isolate
+    flow-root
+    w-screen
+    max-w-none
+    -translate-x-1/2
+    overflow-hidden
+    bg-white
+  "
+>
+  {/* BANNER WRAPPER */}
   <div
-    className="
-      relative
-      w-full
-      aspect-[2034/773]
-      min-h-[150px]
-      max-h-[580px]
-    "
-  >
+  className="
+    relative
+    w-full
+    aspect-[16/9]
+    sm:aspect-[1920/700]
+  "
+>
     <AnimatePresence initial={false}>
       {heroSlides.map((slide: any, index: number) => {
         const total = heroSlides.length;
@@ -2126,7 +2138,10 @@ export default function IndieKonnectHome() {
               opacity: 0,
               x: diff > 0 ? "100%" : "-100%",
             }}
-            animate={{ opacity: 1, x: "0%" }}
+            animate={{
+              opacity: 1,
+              x: "0%",
+            }}
             exit={{
               opacity: 0,
               x: diff > 0 ? "-100%" : "100%",
@@ -2135,25 +2150,46 @@ export default function IndieKonnectHome() {
               duration: 0.68,
               ease: [0.16, 1, 0.3, 1],
             }}
-            className="absolute inset-0 h-full w-full"
+            className="
+              absolute
+              inset-0
+              h-full
+              w-full
+              overflow-hidden
+            "
             style={{ zIndex: isActive ? 20 : 10 }}
           >
             <button
               type="button"
               onClick={() => {
                 if (diff === -1) {
-                  setHeroIndex((heroIndex - 1 + total) % total);
+                  setHeroIndex(
+                    (heroIndex - 1 + total) % total
+                  );
                   return;
                 }
 
                 if (diff === 1) {
-                  setHeroIndex((heroIndex + 1) % total);
+                  setHeroIndex(
+                    (heroIndex + 1) % total
+                  );
                   return;
                 }
 
-                router.push(slide.navigationUrl || "/products");
+                router.push(
+                  slide.navigationUrl || "/products"
+                );
               }}
-              className="group relative block h-full w-full overflow-hidden bg-white focus:outline-none"
+              className="
+                group
+                relative
+                block
+                h-full
+                w-full
+                overflow-hidden
+                bg-white
+                focus:outline-none
+              "
             >
               {slide.mediaType === "video" && slide.video ? (
                 <video
@@ -2165,17 +2201,38 @@ export default function IndieKonnectHome() {
                   playsInline
                   preload={isActive ? "auto" : "metadata"}
                   poster={slide.image || undefined}
-                  className="absolute inset-0 h-full w-full object-contain"
+                  className="
+                    absolute
+                    inset-0
+                    block
+                    h-full
+                    w-full
+                    object-cover
+                    object-center
+                  "
                 />
               ) : (
                 <img
-                  src={slide.image || getPromoPlaceholderImage()}
+                  src={
+                    slide.image ||
+                    getPromoPlaceholderImage()
+                  }
                   alt={slide.alt || "Promotional banner"}
                   draggable={false}
                   loading={isActive ? "eager" : "lazy"}
-                  className="absolute inset-0 h-full w-full select-none object-cover"
+                  className="
+                    absolute
+                    inset-0
+                    block
+                    h-full
+                    w-full
+                    select-none
+                    object-cover
+                    object-center
+                  "
                   onError={(e) => {
-                    e.currentTarget.src = getPromoPlaceholderImage();
+                    e.currentTarget.src =
+                      getPromoPlaceholderImage();
                   }}
                 />
               )}
@@ -2185,6 +2242,7 @@ export default function IndieKonnectHome() {
       })}
     </AnimatePresence>
 
+    {/* PREVIOUS / NEXT BUTTONS */}
     {heroSlides.length > 1 && (
       <>
         <button
@@ -2192,37 +2250,82 @@ export default function IndieKonnectHome() {
           aria-label="Previous banner"
           onClick={() =>
             setHeroIndex(
-              (heroIndex - 1 + heroSlides.length) % heroSlides.length
+              (heroIndex - 1 + heroSlides.length) %
+                heroSlides.length
             )
           }
-          className="absolute left-2 top-1/2 z-30 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-[#111827] shadow lg:flex xl:left-5"
+          className="
+            absolute
+            left-3
+            top-1/2
+            z-30
+            hidden
+            h-10
+            w-10
+            -translate-y-1/2
+            items-center
+            justify-center
+            rounded-full
+            bg-white/95
+            text-[#111827]
+            shadow-lg
+            transition
+            hover:scale-105
+            lg:flex
+            xl:left-5
+          "
         >
-          <ChevronLeft size={17} />
+          <ChevronLeft size={19} />
         </button>
 
         <button
           type="button"
           aria-label="Next banner"
           onClick={() =>
-            setHeroIndex((heroIndex + 1) % heroSlides.length)
+            setHeroIndex(
+              (heroIndex + 1) % heroSlides.length
+            )
           }
-          className="absolute right-2 top-1/2 z-30 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-[#111827] shadow lg:flex xl:right-5"
+          className="
+            absolute
+            right-3
+            top-1/2
+            z-30
+            hidden
+            h-10
+            w-10
+            -translate-y-1/2
+            items-center
+            justify-center
+            rounded-full
+            bg-white/95
+            text-[#111827]
+            shadow-lg
+            transition
+            hover:scale-105
+            lg:flex
+            xl:right-5
+          "
         >
-          <ChevronRight size={17} />
+          <ChevronRight size={19} />
         </button>
       </>
     )}
   </div>
 
+  {/* SLIDER DOTS */}
   {heroSlides.length > 1 && (
-    <div className="flex items-center justify-center gap-1.5 py-2 sm:py-3">
+    <div className="flex w-full items-center justify-center gap-1.5 py-2 sm:py-3">
       {heroSlides.map((slide: any, index: number) => (
         <button
           key={slide.id}
           type="button"
           onClick={() => setHeroIndex(index)}
           className={`
-            h-[5px] rounded-full transition-all duration-300
+            h-[5px]
+            rounded-full
+            transition-all
+            duration-300
             ${
               index === heroIndex
                 ? "w-7 bg-[#071a41]"
@@ -2235,8 +2338,6 @@ export default function IndieKonnectHome() {
     </div>
   )}
 </section>
-
-
       {/* =================================================
           MAIN
       ================================================= */}
