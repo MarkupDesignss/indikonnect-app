@@ -52,413 +52,544 @@ import { useGetCategoriesQuery } from "@/lib/redux/api/categoryApi";
 import { useGetHeaderQuery } from "@/lib/redux/api/headerApi";
 
 /* =========================================================
-   🪔 DIWALI THEME
-   Diwali khatam hone par bas DIWALI_MODE = false kar do,
-   saari decoration hat jayegi (baaki header same rahega).
+   PREMIUM DIWALI EDIT — festive visuals only.
+   Set DIWALI_MODE = false after the festival to restore the
+   existing non-festive header. All business logic is unchanged.
 ========================================================= */
 
 const DIWALI_MODE = true;
 
-/* Asli Diwali wale rocket (stick wale): left % = kahan se chhootega,
-   dx/dy = udaan (dy itna rakha hai ki rocket search bar ke upar tak nikle),
-   tilt = thoda tirchha, color = rocket ka rang, spark = dhamake ke sparks ka rang */
-const DIWALI_ROCKETS = [
-  { left: "6%", delay: 0, dx: 30, dy: -155, tilt: 16, color: "#e8372c", spark: "#ffd23f" },
-  { left: "17%", delay: 4.4, dx: -20, dy: -150, tilt: -11, color: "#ff6a00", spark: "#7dffb0" },
-  { left: "27%", delay: 1.6, dx: -28, dy: -160, tilt: -15, color: "#2f80ed", spark: "#ff6ad5" },
-  { left: "39%", delay: 5.2, dx: 22, dy: -156, tilt: 12, color: "#eb2f96", spark: "#ffd23f" },
-  { left: "50%", delay: 3.1, dx: 24, dy: -165, tilt: 13, color: "#27ae60", spark: "#7dffb0" },
-  { left: "61%", delay: 6.0, dx: -24, dy: -154, tilt: -13, color: "#00b8d9", spark: "#ff6ad5" },
-  { left: "72%", delay: 0.8, dx: -30, dy: -158, tilt: -16, color: "#9b51e0", spark: "#ffd23f" },
-  { left: "83%", delay: 3.8, dx: 20, dy: -160, tilt: 11, color: "#e8372c", spark: "#7dffb0" },
-  { left: "92%", delay: 2.4, dx: -22, dy: -152, tilt: -12, color: "#f2994a", spark: "#ff5a5a" },
-];
-
-const DIWALI_SPARK_ANGLES = [0, 36, 72, 108, 144, 180, 216, 252, 288, 324];
-
-/* Black announcement strip ke upar ki jagmag karti PEELI lights ki lari */
-const DIWALI_BULBS = Array.from({ length: 44 }, (_, i) => ({
-  delay: ((i * 0.37) % 2.4).toFixed(2),
-}));
-
-/* Upar uthte sunehri sparkles (angaare / chingari jaisa) */
-const DIWALI_FLOATS = Array.from({ length: 22 }, (_, i) => ({
-  left: `${(i * 4.7 + 3) % 98}%`,
-  delay: ((i * 0.53) % 5).toFixed(2),
-  dur: (4 + ((i * 0.7) % 3.2)).toFixed(2),
-  sx: ((i % 2 ? 1 : -1) * (6 + ((i * 3) % 14))).toString(),
-  size: 3 + (i % 3),
-}));
-
-const DIWALI_CSS = `
-.dw-layer {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  overflow: hidden;
-  z-index: 6;
+const FESTIVE_CSS = `
+/* Premium Diwali: handcrafted firework bursts, restrained and non-interactive. */
+.premium-header--festive {
+  --ik-wine: #562438;
+  --ik-wine-deep: #361a2b;
+  --ik-gold: #dcb778;
+  --ik-ink: #292127;
+  --ik-ivory: #fcfaf7;
 }
 
-/* Garam kesar / laal roshni dono kinaaron se */
-.dw-warm {
+/* The announcement collapses correctly with the original scroll behavior */
+.premium-header--festive .premium-header-announcement-wrap {
+  height: 62px !important;
+  max-height: 62px !important;
+  overflow: hidden;
+  opacity: 1;
+  transition: height .24s ease, max-height .24s ease, opacity .2s ease;
+}
+.premium-header--festive .premium-header-announcement-wrap.is-collapsed {
+  height: 0 !important;
+  max-height: 0 !important;
+  opacity: 0;
+  pointer-events: none;
+}
+.premium-header--festive .premium-benefits.ik-festive-benefits {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  min-height: 62px;
+  height: 62px;
+  box-sizing: border-box;
+  overflow: hidden;
+  padding: 0 max(24px, calc((100vw - 1500px) / 2));
+  background: linear-gradient(105deg, #351a2b 0%, #59233a 52%, #402031 100%);
+  color: #fffaf1;
+  border-top: 2px solid #dcb778;
+  border-bottom: 1px solid rgba(244, 210, 157, .3);
+}
+.premium-header--festive .ik-festive-benefits::before,
+.premium-header--festive .ik-festive-benefits::after {
+  content: "";
+  position: absolute;
+  width: 180px;
+  height: 180px;
+  top: -70px;
+  border-radius: 50%;
+  pointer-events: none;
+  background:
+    repeating-radial-gradient(circle, transparent 0px, transparent 16px, rgba(229, 192, 136, .19) 17px, transparent 18px),
+    repeating-conic-gradient(from 15deg, transparent 0deg, transparent 28deg, rgba(229, 192, 136, .08) 30deg, transparent 32deg);
+  opacity: .54;
+}
+.premium-header--festive .ik-festive-benefits::before { left: -68px; }
+.premium-header--festive .ik-festive-benefits::after { right: -75px; }
+.premium-header--festive .ik-festive-hero {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 11px;
+  height: 100%;
+}
+.premium-header--festive .ik-festive-diya {
+  display: inline-flex;
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(231, 189, 125, .5);
+  border-radius: 50%;
+  background: rgba(244, 209, 150, .07);
+  color: #f0ca89;
+}
+.premium-header--festive .ik-festive-copy {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  align-items: center;
+  gap: 14px;
+  letter-spacing: .01em;
+}
+.premium-header--festive .ik-festive-title {
+  flex: 0 0 auto;
+  color: #f6dba7;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.premium-header--festive .ik-festive-divider {
+  flex: 0 0 1px;
+  align-self: stretch;
+  max-height: 17px;
+  margin: auto 0;
+  background: rgba(239, 212, 168, .48);
+}
+.premium-header--festive .ik-festive-subtitle {
+  overflow: hidden;
+  color: rgba(255, 250, 241, .91);
+  font-size: 12px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.premium-header--festive .ik-festive-shop {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  color: #fae0ad;
+  border: 1px solid rgba(241, 204, 144, .4);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, .07);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: background .18s ease, border-color .18s ease, transform .18s ease;
+}
+.premium-header--festive .ik-festive-shop:hover,
+.premium-header--festive .ik-festive-shop:focus-visible {
+  background: rgba(255, 255, 255, .15);
+  border-color: rgba(241, 204, 144, .8);
+}
+.premium-header--festive .ik-festive-benefits .premium-deliver.ik-festive-deliver {
+  position: relative;
+  z-index: 1;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: stretch;
+  max-width: 250px;
+  height: auto;
+  padding: 6px 0 6px 17px;
+  margin: 0;
+  background: transparent;
+  color: #fff9ef;
+  border: 0;
+  border-left: 1px solid rgba(244, 209, 156, .25);
+  border-radius: 0;
+  box-shadow: none;
+  text-align: left;
+}
+.premium-header--festive .ik-festive-deliver > span { min-width: 0; }
+.premium-header--festive .ik-festive-deliver small {
+  display: block;
+  color: rgba(255, 246, 227, .69);
+  font-size: 9px;
+  letter-spacing: .09em;
+}
+.premium-header--festive .ik-festive-deliver b {
+  display: block;
+  overflow: hidden;
+  max-width: 170px;
+  color: #fffaf1;
+  font-size: 11px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.premium-header--festive .ik-festive-deliver:hover { color: #f3cc8a; }
+
+/* Clean large-commerce main row: logo, search and actions remain unchanged */
+.premium-header--festive .premium-main {
+  position: relative;
+  background: linear-gradient(180deg, #fffdfa 0%, #ffffff 60%);
+  box-shadow: inset 0 -1px 0 rgba(92, 47, 58, .075);
+}
+.premium-header--festive .premium-brand-divider { background: #e8d8c6; }
+.premium-header--festive .premium-brand-tagline { color: #65565d; }
+.premium-header--festive .premium-search-form {
+  background: #fffdfa;
+  border: 1px solid #ded2cb;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(76, 37, 48, .035);
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+.premium-header--festive .premium-search-form:focus-within {
+  border-color: #bc9662;
+  box-shadow: 0 0 0 3px rgba(214, 179, 126, .16);
+}
+.premium-header--festive .premium-search-form input {
+  background: transparent;
+  color: #2f2630;
+}
+.premium-header--festive .premium-search-form input::placeholder { color: #948b8d; }
+.premium-header--festive .premium-search-form > button:first-child { color: #6a3146; }
+.premium-header--festive .premium-search-form .premium-search-divider { background: #e9e0d8; }
+.premium-header--festive .premium-action { color: #352e35; }
+.premium-header--festive .premium-action:hover { color: #843f55; }
+.premium-header--festive .premium-icon-wrap i {
+  background: #752a45;
+  color: #fff;
+}
+
+
+/* -----------------------------------------------------------
+   REFINED DIWALI CRACKER / FIREWORKS
+   The fireworks render behind all content, do not catch clicks,
+   and completely disappear with the announcement on scroll.
+----------------------------------------------------------- */
+.premium-header--festive .ik-festive-benefits {
+  isolation: isolate;
+}
+.premium-header--festive .ik-cracker-layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: 0;
+  pointer-events: none;
+  user-select: none;
+}
+.premium-header--festive .ik-cracker-layer::before {
+  content: "";
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse at 0% 60%, rgba(255, 153, 51, 0.2), transparent 42%),
-    radial-gradient(ellipse at 100% 60%, rgba(232, 55, 44, 0.15), transparent 42%),
-    radial-gradient(ellipse at 50% 100%, rgba(255, 210, 63, 0.12), transparent 55%);
-  animation: dw-warm-pulse 4s ease-in-out infinite;
+    radial-gradient(circle at 10% 30%, rgba(246, 187, 104, .16), transparent 22%),
+    radial-gradient(circle at 89% 70%, rgba(244, 144, 164, .13), transparent 25%),
+    linear-gradient(90deg, transparent, rgba(255, 224, 154, .055) 52%, transparent);
 }
-
-/* Top festive strip: kesar → laal → sunehri shimmer */
-.dw-strip {
+.premium-header--festive .ik-cracker-burst {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
+  width: 3px;
   height: 3px;
-  background: linear-gradient(
-    90deg,
-    #ff9933,
-    #e8372c,
-    #ffd23f,
-    #ff6a00,
-    #ffd23f,
-    #e8372c,
-    #ff9933
-  );
-  background-size: 200% 100%;
-  animation: dw-shimmer 6s linear infinite;
-}
-
-/* Peeli jagmag lights ki lari (black strip ke top par) */
-.dw-lights {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 3px;
-  height: 14px;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  padding: 0 8px;
   pointer-events: none;
-  z-index: 3;
+  color: var(--ik-fire-color, #f6cb88);
+  filter: drop-shadow(0 0 4px currentColor);
 }
-.dw-lights::before {
+.premium-header--festive .ik-cracker-burst-core {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #fff8df;
+  box-shadow: 0 0 10px 3px currentColor;
+  animation: ik-cracker-core 7.2s ease-out var(--ik-fire-delay, 0s) infinite;
+  opacity: 0;
+}
+.premium-header--festive .ik-cracker-burst-ring {
+  position: absolute;
+  left: -10px;
+  top: -10px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+  box-shadow: 0 0 6px rgba(255, 225, 163, .24);
+  animation: ik-cracker-ring 7.2s ease-out var(--ik-fire-delay, 0s) infinite;
+  opacity: 0;
+}
+.premium-header--festive .ik-cracker-ray {
+  position: absolute;
+  left: -1px;
+  top: -3px;
+  width: 2px;
+  height: 9px;
+  border-radius: 8px;
+  background: currentColor;
+  opacity: 0;
+  transform: rotate(var(--ik-angle, 0deg)) translateY(-2px) scale(.1);
+  transform-origin: 50% 50%;
+  animation: ik-cracker-spark 7.2s cubic-bezier(.12,.65,.3,1) var(--ik-fire-delay, 0s) infinite;
+}
+.premium-header--festive .ik-cracker-ray:nth-child(3n) {
+  color: #fff9e8;
+  height: 6px;
+  width: 2.5px;
+}
+.premium-header--festive .ik-cracker-ray:nth-child(4n) {
+  color: #f4a99f;
+}
+.premium-header--festive .ik-cracker-trail {
+  position: absolute;
+  left: -1px;
+  top: 11px;
+  width: 2px;
+  height: 26px;
+  background: linear-gradient(180deg, rgba(255,232,186,.9), transparent);
+  transform: rotate(18deg);
+  opacity: 0;
+  animation: ik-cracker-lift 7.2s ease-in var(--ik-fire-delay, 0s) infinite;
+}
+.premium-header--festive .ik-cracker-glint {
+  position: absolute;
+  left: var(--ik-glint-x);
+  top: var(--ik-glint-y);
+  width: 5px;
+  height: 5px;
+  opacity: 0;
+  transform: rotate(45deg) scale(.4);
+  animation: ik-cracker-twinkle var(--ik-glint-time, 3.1s) ease-in-out var(--ik-glint-delay, 0s) infinite;
+}
+.premium-header--festive .ik-cracker-glint::before,
+.premium-header--festive .ik-cracker-glint::after {
   content: "";
   position: absolute;
+  inset: 0;
+  margin: auto;
+  border-radius: 100%;
+  background: #ffe6b5;
+  box-shadow: 0 0 5px rgba(255, 228, 174, .8);
+}
+.premium-header--festive .ik-cracker-glint::before { width: 2px; height: 10px; top: -2.5px; }
+.premium-header--festive .ik-cracker-glint::after { width: 10px; height: 2px; left: -2.5px; }
+/* Delicate glittering line looks like a sparkler; never crosses header controls. */
+.premium-header--festive .ik-festive-benefits .ik-cracker-lightline {
+  position: absolute;
+  z-index: 0;
   left: 0;
   right: 0;
-  top: 0;
-  height: 1px;
-  background: rgba(255, 255, 255, 0.28);
+  bottom: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent 0%, #d49a58 19%, #fff0c5 50%, #d49a58 81%, transparent 100%);
+  background-size: 170% 100%;
+  opacity: .8;
+  animation: ik-cracker-shimmer 9s linear infinite;
 }
-.dw-bulb {
-  position: relative;
-  display: block;
-  width: 5px;
-  height: 7px;
-  margin-top: 1px;
-  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
-  background: #ffd23f;
-  box-shadow: 0 0 8px 2px rgba(255, 210, 63, 0.9);
-  opacity: 0.45;
-  animation: dw-blink 1.8s ease-in-out var(--dw-d, 0s) infinite;
+.premium-header--festive .ik-festive-diya {
+  animation: ik-diya-glow 4.4s ease-in-out infinite;
 }
-.dw-bulb:nth-child(even) {
-  margin-top: 3px;
+@keyframes ik-cracker-spark {
+  0%, 13%, 100% { opacity: 0; transform: rotate(var(--ik-angle)) translateY(-1px) scale(.1); }
+  17% { opacity: 1; transform: rotate(var(--ik-angle)) translateY(-8px) scale(.8); }
+  24% { opacity: .94; transform: rotate(var(--ik-angle)) translateY(-23px) scale(1); }
+  38% { opacity: 0; transform: rotate(var(--ik-angle)) translateY(-36px) scale(.25); }
 }
-
-/* Upar uthti sunehri chingariyan */
-.dw-float {
-  position: absolute;
-  bottom: -6px;
-  border-radius: 50%;
-  background: #ffd23f;
-  box-shadow: 0 0 6px #ffb300, 0 0 12px rgba(255, 140, 0, 0.7);
-  opacity: 0;
-  animation: dw-rise var(--dw-dur, 5s) linear var(--dw-d, 0s) infinite;
+@keyframes ik-cracker-core {
+  0%, 12%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(.2); }
+  17% { opacity: .95; transform: translate(-50%, -50%) scale(1); }
+  28% { opacity: 0; transform: translate(-50%, -50%) scale(1.9); }
 }
-
-/* Header ke dono kinaare par patake / diya emojis */
-.dw-side {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 18px;
-  line-height: 1;
+@keyframes ik-cracker-ring {
+  0%, 15%, 100% { opacity: 0; transform: scale(.1); }
+  19% { opacity: .5; transform: scale(.7); }
+  34% { opacity: 0; transform: scale(3.1); }
 }
-.dw-side-l { left: 4px; }
-.dw-side-r { right: 4px; }
-.dw-side span {
-  display: block;
-  animation: dw-bob 2.4s ease-in-out infinite;
-  filter: drop-shadow(0 0 6px rgba(255, 160, 0, 0.7));
+@keyframes ik-cracker-lift {
+  0%, 5%, 100% { opacity: 0; transform: translateY(26px) rotate(14deg) scaleY(.4); }
+  8% { opacity: .75; transform: translateY(16px) rotate(14deg) scaleY(1); }
+  15% { opacity: .65; transform: translateY(0) rotate(14deg) scaleY(.7); }
+  17% { opacity: 0; transform: translateY(-8px) rotate(14deg) scaleY(.1); }
 }
-.dw-side span:nth-child(2) { animation-delay: 0.4s; }
-.dw-side span:nth-child(3) { animation-delay: 0.8s; }
-
-/* Diwali ROCKET (stick wala) */
-.dw-rocket {
-  position: absolute;
-  bottom: -44px;
-  width: 14px;
-  height: 40px;
-  opacity: 0;
-  animation: dw-fly 7s linear var(--dw-delay, 0s) infinite;
+@keyframes ik-cracker-twinkle {
+  0%, 100% { opacity: 0; transform: rotate(45deg) scale(.3); }
+  45% { opacity: .8; transform: rotate(45deg) scale(1); }
+  55% { opacity: .85; transform: rotate(45deg) scale(1.12); }
 }
-.dw-rocket-body {
-  position: absolute;
-  inset: 0;
-  display: block;
-  animation: dw-rocket-vis 7s linear var(--dw-delay, 0s) infinite;
+@keyframes ik-cracker-shimmer {
+  from { background-position: -100% 0; }
+  to { background-position: 170% 0; }
 }
-.dw-rocket-body svg {
-  display: block;
-  overflow: visible;
+@keyframes ik-diya-glow {
+  0%, 100% { box-shadow: 0 0 0 rgba(242,193,112,0); }
+  50% { box-shadow: 0 0 13px rgba(242,193,112,.3); }
 }
-.dw-flame {
-  transform-origin: 7px 38px;
-  animation: dw-flicker 0.14s ease-in-out infinite alternate;
+@media (max-width: 860px) {
+  .premium-header--festive .ik-cracker-burst:nth-of-type(3),
+  .premium-header--festive .ik-cracker-burst:nth-of-type(4) { display: none; }
+  .premium-header--festive .ik-cracker-glint:nth-of-type(even) { display: none; }
 }
-.dw-trail {
-  position: absolute;
-  left: 50%;
-  top: 100%;
-  width: 3px;
-  height: 38px;
-  margin-left: -1.5px;
-  border-radius: 3px;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 170, 0, 0.95),
-    rgba(255, 106, 0, 0)
-  );
-  filter: drop-shadow(0 0 4px rgba(255, 140, 0, 0.9));
+@media (max-width: 640px) {
+  .premium-header--festive .ik-cracker-burst { transform: scale(.57); }
+  .premium-header--festive .ik-cracker-glint { opacity: .35; }
 }
-
-/* Rocket ke end par rang-birange sparks ka dhamaka */
-.dw-burst {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 0;
-  height: 0;
-}
-.dw-spark {
-  position: absolute;
-  left: -3px;
-  top: -3px;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  opacity: 0;
-  box-shadow: 0 0 6px currentColor, 0 0 10px rgba(255, 200, 0, 0.8);
-  animation: dw-spark 7s linear var(--dw-delay, 0s) infinite;
-}
-.dw-glow {
-  position: absolute;
-  left: -14px;
-  top: -14px;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  opacity: 0;
-  filter: blur(7px);
-  animation: dw-glow 7s linear var(--dw-delay, 0s) infinite;
-}
-
-@keyframes dw-fly {
-  0% { transform: translate3d(0, 0, 0); opacity: 0; }
-  3% { opacity: 1; }
-  45% { transform: translate3d(var(--dw-dx), var(--dw-dy), 0); opacity: 1; }
-  62% { transform: translate3d(var(--dw-dx), var(--dw-dy), 0); opacity: 1; }
-  63% { transform: translate3d(var(--dw-dx), var(--dw-dy), 0); opacity: 0; }
-  100% { transform: translate3d(var(--dw-dx), var(--dw-dy), 0); opacity: 0; }
-}
-@keyframes dw-rocket-vis {
-  0% { opacity: 1; }
-  42% { opacity: 1; }
-  45% { opacity: 0; }
-  100% { opacity: 0; }
-}
-@keyframes dw-spark {
-  0% { opacity: 0; transform: rotate(var(--a)) translateY(0) scale(1); }
-  43% { opacity: 0; transform: rotate(var(--a)) translateY(0) scale(1); }
-  46% { opacity: 1; transform: rotate(var(--a)) translateY(-4px) scale(1.1); }
-  62% { opacity: 0; transform: rotate(var(--a)) translateY(-40px) scale(0.3); }
-  100% { opacity: 0; transform: rotate(var(--a)) translateY(-40px) scale(0.3); }
-}
-@keyframes dw-glow {
-  0% { opacity: 0; transform: scale(0.3); }
-  43% { opacity: 0; transform: scale(0.3); }
-  47% { opacity: 0.9; transform: scale(1); }
-  62% { opacity: 0; transform: scale(2.2); }
-  100% { opacity: 0; transform: scale(2.2); }
-}
-@keyframes dw-flicker {
-  0% { transform: scale(1, 0.8); opacity: 0.85; }
-  100% { transform: scale(1.25, 1.2); opacity: 1; }
-}
-@keyframes dw-bob {
-  0%, 100% { transform: translateY(0) rotate(-6deg); }
-  50% { transform: translateY(-3px) rotate(6deg); }
-}
-@keyframes dw-shimmer {
-  0% { background-position: 0% 0; }
-  100% { background-position: 200% 0; }
-}
-@keyframes dw-blink {
-  0%, 100% { opacity: 0.35; transform: scale(0.9); }
-  50% { opacity: 1; transform: scale(1.1); }
-}
-@keyframes dw-rise {
-  0% { opacity: 0; transform: translate3d(0, 0, 0) scale(0.6); }
-  15% { opacity: 0.95; }
-  100% { opacity: 0; transform: translate3d(var(--dw-sx, 0px), -120px, 0) scale(1); }
-}
-@keyframes dw-warm-pulse {
-  0%, 100% { opacity: 0.75; }
-  50% { opacity: 1; }
-}
-
-@media (max-width: 768px) {
-  .dw-side { font-size: 13px; gap: 4px; }
-  .dw-side span:nth-child(3) { display: none; }
-  .dw-rocket { transform-origin: bottom center; }
-  .dw-bulb:nth-child(3n) { display: none; }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .dw-rocket,
-  .dw-float { display: none; }
-  .dw-side span,
-  .dw-bulb,
-  .dw-warm,
-  .dw-strip { animation: none; }
+  .premium-header--festive .ik-cracker-layer { display: none; }
+  .premium-header--festive .ik-festive-diya { animation: none; }
+}
+
+/* Warm navigation with subtle gold and a high-contrast category button */
+.premium-header--festive .premium-nav {
+  background: #fcf9f4;
+  border-top: 1px solid #efe7df;
+  border-bottom: 1px solid #eadfce;
+}
+.premium-header--festive .premium-all-categories {
+  color: #fff !important;
+  background: #642b42;
+  border: 1px solid #642b42;
+  border-radius: 7px;
+  padding: 9px 13px;
+  transition: background .16s ease;
+}
+.premium-header--festive .premium-all-categories:hover { background: #4e1e33; }
+.premium-header--festive .premium-nav-button {
+  color: #4d4246;
+  transition: color .18s ease, background-color .18s ease;
+}
+.premium-header--festive .premium-nav-button:hover,
+.premium-header--festive .premium-nav-button.premium-nav-active {
+  color: #793448;
+}
+.premium-header--festive .premium-nav-separator { background: #e7dbcf; }
+.premium-header--festive .premium-suggestions,
+.premium-header--festive .premium-popover,
+.premium-header--festive .premium-category-submenu {
+  border-color: #eadfd5;
+  box-shadow: 0 16px 40px rgba(65, 32, 44, .11);
+}
+.premium-header--festive .premium-mobile-drawer { background: #fffdfa; }
+.premium-header--festive button:focus-visible,
+.premium-header--festive a:focus-visible {
+  outline: 2px solid #c79a5d;
+  outline-offset: 2px;
+}
+
+@media (max-width: 1100px) {
+  .premium-header--festive .ik-festive-copy { gap: 10px; }
+  .premium-header--festive .ik-festive-subtitle { font-size: 11px; }
+  .premium-header--festive .ik-festive-shop { font-size: 10px; }
+}
+@media (max-width: 860px) {
+  .premium-header--festive .ik-festive-benefits .premium-deliver.ik-festive-deliver {
+    display: none;
+  }
+  .premium-header--festive .premium-benefits.ik-festive-benefits {
+    justify-content: center;
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+  .premium-header--festive .ik-festive-hero { justify-content: center; flex: 0 1 auto; }
+}
+@media (max-width: 640px) {
+  .premium-header--festive .premium-header-announcement-wrap {
+    height: 46px !important;
+    max-height: 46px !important;
+  }
+  .premium-header--festive .premium-header-announcement-wrap.is-collapsed {
+    height: 0 !important;
+    max-height: 0 !important;
+  }
+  .premium-header--festive .premium-benefits.ik-festive-benefits {
+    min-height: 46px;
+    height: 46px;
+    border-top-width: 2px;
+  }
+  .premium-header--festive .ik-festive-hero { gap: 8px; }
+  .premium-header--festive .ik-festive-diya { width: 30px; height: 30px; flex-basis: 30px; }
+  .premium-header--festive .ik-festive-title { font-size: 10px; letter-spacing: .085em; }
+  .premium-header--festive .ik-festive-subtitle { font-size: 10px; }
+  .premium-header--festive .ik-festive-divider { display: none; }
+  .premium-header--festive .ik-festive-copy { display: block; }
+  .premium-header--festive .ik-festive-title,
+  .premium-header--festive .ik-festive-subtitle { display: block; line-height: 1.35; }
+  .premium-header--festive .ik-festive-shop { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .premium-header--festive *, .premium-header--festive *::before,
+  .premium-header--festive *::after { animation-duration: .01ms !important; }
 }
 `;
 
-function DiwaliDecor() {
+
+/* CSS-only, decorative fireworks. No timers, no canvas, no overlays. */
+const IK_FIREWORKS = [
+  { x: "7%", y: "51%", color: "#ffd995", delay: "-1.5s" },
+  { x: "94%", y: "44%", color: "#ffc6af", delay: "-4.3s" },
+  { x: "24%", y: "41%", color: "#ffd995", delay: "-6.1s" },
+  { x: "78%", y: "52%", color: "#ffe8bb", delay: "-3.0s" },
+];
+const IK_GLINTS = [
+  ["2%", "28%", "-2.2s"], ["15%", "68%", "-1.3s"],
+  ["30%", "18%", "-2.8s"], ["43%", "76%", "-0.6s"],
+  ["56%", "23%", "-1.8s"], ["69%", "67%", "-3.1s"],
+  ["85%", "16%", "-2.6s"], ["98%", "77%", "-0.4s"],
+];
+
+function FestiveCrackers() {
   return (
-    <div className="dw-layer" aria-hidden="true">
-      <style>{DIWALI_CSS}</style>
-
-      {/* Garam roshni ka glow */}
-      <div className="dw-warm" />
-
-      <div className="dw-strip" />
-
-      {/* LEFT SIDE patake */}
-      <div className="dw-side dw-side-l">
-        <span>🧨</span>
-        <span>🎇</span>
-        <span>🪔</span>
-      </div>
-
-      {/* RIGHT SIDE patake */}
-      <div className="dw-side dw-side-r">
-        <span>🪔</span>
-        <span>🎆</span>
-        <span>🧨</span>
-      </div>
-
-      {/* UPAR UTHTI CHINGARIYAN */}
-      {DIWALI_FLOATS.map((f, i) => (
-        <i
-          key={`float-${i}`}
-          className="dw-float"
-          style={
-            {
-              left: f.left,
-              width: f.size,
-              height: f.size,
-              "--dw-d": `${f.delay}s`,
-              "--dw-dur": `${f.dur}s`,
-              "--dw-sx": `${f.sx}px`,
-            } as React.CSSProperties
-          }
+    <div className="ik-cracker-layer" aria-hidden="true">
+      {IK_FIREWORKS.map((firework, i) => (
+        <span
+          key={`firework-${i}`}
+          className="ik-cracker-burst"
+          style={{
+            left: firework.x,
+            top: firework.y,
+            "--ik-fire-color": firework.color,
+            "--ik-fire-delay": firework.delay,
+          } as React.CSSProperties}
+        >
+          <span className="ik-cracker-trail" />
+          <span className="ik-cracker-burst-ring" />
+          <span className="ik-cracker-burst-core" />
+          {Array.from({ length: 12 }, (_, ray) => (
+            <i
+              key={ray}
+              className="ik-cracker-ray"
+              style={{ "--ik-angle": `${ray * 30}deg` } as React.CSSProperties}
+            />
+          ))}
+        </span>
+      ))}
+      {IK_GLINTS.map(([x, y, delay], i) => (
+        <span
+          className="ik-cracker-glint"
+          key={`glint-${i}`}
+          style={{
+            "--ik-glint-x": x,
+            "--ik-glint-y": y,
+            "--ik-glint-delay": delay,
+            "--ik-glint-time": `${2.8 + (i % 3) * .6}s`,
+          } as React.CSSProperties}
         />
       ))}
-
-      {/* DIWALI ROCKETS */}
-      {DIWALI_ROCKETS.map((r, i) => (
-        <div
-          key={i}
-          className="dw-rocket"
-          style={
-            {
-              left: r.left,
-              "--dw-delay": `${r.delay}s`,
-              "--dw-dx": `${r.dx}px`,
-              "--dw-dy": `${r.dy}px`,
-            } as React.CSSProperties
-          }
-        >
-          <span
-            className="dw-rocket-body"
-            style={{ transform: `rotate(${r.tilt}deg)` }}
-          >
-            <span className="dw-trail" />
-            <svg viewBox="0 0 14 40" width="14" height="40">
-              {/* lakdi ki stick */}
-              <rect x="6.3" y="16" width="1.4" height="22" fill="#8b5a2b" />
-              {/* rocket ki body */}
-              <rect x="3" y="7" width="8" height="12" rx="1" fill={r.color} />
-              <rect x="3" y="11" width="8" height="2" fill="#ffd23f" />
-              {/* nukili nose */}
-              <path d="M3 7 L7 0 L11 7 Z" fill="#ffd23f" />
-              {/* chhote fins */}
-              <path d="M3 19 L0.5 22 L3 21 Z" fill={r.color} />
-              <path d="M11 19 L13.5 22 L11 21 Z" fill={r.color} />
-              {/* jalti hui fuse / flame */}
-              <g className="dw-flame">
-                <ellipse cx="7" cy="39" rx="2.2" ry="3" fill="#ff6a00" />
-                <ellipse cx="7" cy="39.5" rx="1.1" ry="1.8" fill="#ffe27a" />
-              </g>
-            </svg>
-          </span>
-
-          <span className="dw-burst">
-            <i className="dw-glow" style={{ background: r.spark }} />
-            {DIWALI_SPARK_ANGLES.map((a, j) => (
-              <i
-                key={j}
-                className="dw-spark"
-                style={
-                  {
-                    "--a": `${a}deg`,
-                    "--dw-delay": `${r.delay}s`,
-                    background: j % 2 ? "#ffffff" : r.spark,
-                    color: r.spark,
-                  } as React.CSSProperties
-                }
-              />
-            ))}
-          </span>
-        </div>
-      ))}
-
+      <span className="ik-cracker-lightline" />
     </div>
   );
 }
 
-/* Black announcement strip par peeli lights (strip ke saath hi collapse hoti hain) */
-function DiwaliLights() {
+function FestiveDiyaMark() {
   return (
-    <div className="dw-lights" aria-hidden="true">
-      {DIWALI_BULBS.map((b, i) => (
-        <span
-          key={`bulb-${i}`}
-          className="dw-bulb"
-          style={{ "--dw-d": `${b.delay}s` } as React.CSSProperties}
-        />
-      ))}
-    </div>
+    <svg width="28" height="28" viewBox="0 0 36 36" fill="none" aria-hidden="true">
+      <path d="M18 5.3c-3.9 4.5-3.5 7.6-.3 9.1 3.4-1.3 3.8-4.6.3-9.1Z" fill="#F7D69B" />
+      <path d="M17.8 10.6c-1.7 2.2-1.4 3.6.1 4.5 1.8-.9 1.9-2.6-.1-4.5Z" fill="#EAA763" />
+      <path d="M7 19.2h22c-.9 7.2-5 10.9-11 10.9S7.9 26.4 7 19.2Z" stroke="#F1CC88" strokeWidth="1.6" />
+      <path d="M5.3 18.8c4.2 2.1 21.3 2.1 25.4 0" stroke="#F1CC88" strokeWidth="1.6" strokeLinecap="round" />
+      <path d="M13 25.3c3.3 1.7 6.7 1.7 10 0" stroke="#F1CC88" strokeWidth="1.1" strokeLinecap="round" />
+      <path d="M9.5 32.3h17" stroke="#F1CC88" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
   );
 }
 
@@ -2092,9 +2223,8 @@ function HeaderInner({
 
       <header
         ref={headerRef}
-        className={`premium-header premium-header-fixed font-lato ${
-          isScrolled ? "premium-header-compact" : ""
-        }`}
+        className={`premium-header premium-header-fixed font-lato ${isScrolled ? "premium-header-compact" : ""
+          } ${DIWALI_MODE ? "premium-header--festive" : ""}`}
         style={{
           position: "fixed",
           top: 0,
@@ -2104,65 +2234,77 @@ function HeaderInner({
           willChange: "transform",
         }}
       >
-        {/* 🪔 DIWALI DECOR — rockets, sparkles, patake, diya (click-through) */}
-        {DIWALI_MODE && <DiwaliDecor />}
+        {/* Themed styles are local to this header; original CSS stays in use. */}
+        {DIWALI_MODE && <style>{FESTIVE_CSS}</style>}
 
-        {/* ── TOP ANNOUNCEMENT STRIP (scroll par hide) ── */}
+        {/* Top announcement: premium festive ribbon or standard store benefits */}
         {!hideAnnouncement && (
           <div
             className={`premium-header-announcement-wrap ${isScrolled ? "is-collapsed" : ""}`}
             aria-hidden={isScrolled}
             style={{ position: "relative" }}
           >
-            {DIWALI_MODE && <DiwaliLights />}
-            <div className="premium-benefits premium-benefits-refreshed">
-              <div
-                className="premium-benefits-marquee"
-                aria-label="Store benefits"
-              >
-                <div className="premium-benefits-track">
-                  {[0, 1].map((copy) => (
-                    <div
-                      className="premium-benefits-group"
-                      key={copy}
-                      aria-hidden={copy === 1}
-                    >
-                      {DIWALI_MODE && (
-                        <span className="premium-benefit-item">
-                          🪔 Happy Diwali! Shubh Deepavali 🎆
-                        </span>
-                      )}
-                      <span className="premium-benefit-item">
-                        <Grid3x3 size={15} /> Explore premium collections
-                      </span>
-                      {DIWALI_MODE && (
-                        <span className="premium-benefit-item">
-                          ✨ Festive Season Special ✨
-                        </span>
-                      )}
-                      <span className="premium-benefit-item">
-                        <BadgeCheck size={15} /> 100% genuine products
-                      </span>
-                      <span className="premium-benefit-item">
-                        <Tag size={15} /> Discover new arrivals
-                      </span>
-                      {DIWALI_MODE && (
-                        <span className="premium-benefit-item">
-                          🎁 Perfect gifts for your loved ones 🪔
-                        </span>
-                      )}
-                      <span className="premium-benefit-item">
-                        <Headphones size={15} /> Dedicated customer support
-                      </span>
-                    </div>
-                  ))}
+            <div
+              className={`premium-benefits premium-benefits-refreshed ${DIWALI_MODE ? "ik-festive-benefits" : ""
+                }`}
+            >
+              {DIWALI_MODE && <FestiveCrackers />}
+              {DIWALI_MODE ? (
+                <div className="ik-festive-hero">
+                  <span className="ik-festive-diya" aria-hidden="true">
+                    <FestiveDiyaMark />
+                  </span>
+                  <div className="ik-festive-copy">
+                    <strong className="ik-festive-title">Diwali Dhamaka</strong>
+                    <span className="ik-festive-divider" aria-hidden="true" />
+                    <span className="ik-festive-subtitle">
+                      Festive finds. Sparkling celebrations. Only at IndieKonnect.
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className="ik-festive-shop"
+                    onClick={() => {
+                      router.push("/products");
+                      closeHeaderOverlays();
+                    }}
+                    tabIndex={isScrolled ? -1 : 0}
+                  >
+                    Shop the edit <ArrowRight size={14} aria-hidden="true" />
+                  </button>
                 </div>
-              </div>
+              ) : (
+                <div className="premium-benefits-marquee" aria-label="Store benefits">
+                  <div className="premium-benefits-track">
+                    {[0, 1].map((copy) => (
+                      <div
+                        className="premium-benefits-group"
+                        key={copy}
+                        aria-hidden={copy === 1}
+                      >
+                        <span className="premium-benefit-item">
+                          <Grid3x3 size={15} /> Explore premium collections
+                        </span>
+                        <span className="premium-benefit-item">
+                          <BadgeCheck size={15} /> 100% genuine products
+                        </span>
+                        <span className="premium-benefit-item">
+                          <Tag size={15} /> Discover new arrivals
+                        </span>
+                        <span className="premium-benefit-item">
+                          <Headphones size={15} /> Dedicated customer support
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               <button
                 type="button"
                 onClick={handleCheckAvailability}
                 disabled={locationLoading}
-                className="premium-deliver premium-deliver-refreshed"
+                className={`premium-deliver premium-deliver-refreshed ${DIWALI_MODE ? "ik-festive-deliver" : ""
+                  }`}
                 title={locationError || "Detect delivery location"}
                 tabIndex={isScrolled ? -1 : 0}
               >
@@ -2505,9 +2647,8 @@ function HeaderInner({
                         onClick={() => handleNavigation(item)}
                         aria-current={isNavItemActive(item) ? "page" : undefined}
                         tabIndex={isNavCollapsed ? -1 : 0}
-                        className={`${navClass} ${
-                          isNavItemActive(item) ? "premium-nav-active" : ""
-                        }`}
+                        className={`${navClass} ${isNavItemActive(item) ? "premium-nav-active" : ""
+                          }`}
                       >
                         {item.label}
                       </button>
@@ -2614,9 +2755,8 @@ function HeaderInner({
                     isParentCategoryActive(item)) &&
                   item.subcategories?.map((sub: any) => (
                     <button
-                      className={`premium-mobile-sub ${
-                        isSubmenuActive(sub) ? "premium-submenu-active" : ""
-                      }`}
+                      className={`premium-mobile-sub ${isSubmenuActive(sub) ? "premium-submenu-active" : ""
+                        }`}
                       aria-current={isSubmenuActive(sub) ? "page" : undefined}
                       key={sub.id}
                       onClick={() => {
