@@ -386,11 +386,8 @@ function ShopReelsRow({
 
                             {/* Product details are text-only, so the video stays visible. */}
                             <div className="absolute inset-x-0 bottom-0 px-3.5 pb-4 pt-16 sm:px-4 sm:pb-5">
-                                <div className="mb-2 flex min-w-0 items-center gap-2 text-[10px] font-medium text-white/80">
-                                    <span className="h-1 w-1 shrink-0 rounded-full bg-[#e9c789]" />
-                                    <span className="truncate">{creator || "Indiekonnect"}</span>
-                                </div>
-                                <div className="mb-2.5 h-px w-full bg-white/20" />
+                               
+                                <div className="mb-2.5 h-px w-full " />
                                 <div className="flex items-end gap-2">
                                     <div className="min-w-0 flex-1">
                                         <p className="truncate text-[13px] font-semibold leading-snug tracking-[-0.01em] text-white sm:text-[14px]">
