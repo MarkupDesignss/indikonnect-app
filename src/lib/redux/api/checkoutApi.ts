@@ -129,6 +129,7 @@ export interface CheckoutSummaryParams {
   address_id?: number;
   coupon_code?: string;
   coins?: number;
+  redemption_id?: number | string;   // <-- ADD
 
   // Buy Now
   product_id?: number;
@@ -487,6 +488,9 @@ export const checkoutApi = baseApi.injectEndpoints({
 
         if (params?.coins !== undefined) {
           queryParams.coins = params.coins;
+        }
+        if (params?.redemption_id !== undefined && params?.redemption_id !== null) {
+          queryParams.redemption_id = params.redemption_id;
         }
 
         if (params?.product_id !== undefined) {

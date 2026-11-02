@@ -2058,22 +2058,12 @@ export default function CheckoutPage() {
   const [hasManuallySelectedGateway, setHasManuallySelectedGateway] =
     useState(false);
 
-  // ───────────────────────────────────────────────────────────────────────────
-  // IMPORTANT: Double order prevention
-  // ───────────────────────────────────────────────────────────────────────────
 
-  // Synchronous lock: prevents rapid double clicks before React re-renders.
   const paymentActionInProgress = useRef(false);
-
-  // Permanent lock: prevents another order after successful order creation.
   const orderCreatedRef = useRef(false);
 
   const [orderCreatedForCheckout, setOrderCreatedForCheckout] =
     useState(false);
-
-  // ───────────────────────────────────────────────────────────────────────────
-  // API hooks
-  // ───────────────────────────────────────────────────────────────────────────
 
   const {
     data: addressesData,
@@ -2111,13 +2101,8 @@ export default function CheckoutPage() {
   const { data: dashboardResponse } = useGetUserDashboardQuery();
 
   const [triggerGetCart] = useLazyGetCartQuery();
-
   const [checkCartStock] = useCheckCartStockMutation();
   const [checkProductStock] = useCheckProductStockMutation();
-
-  // ───────────────────────────────────────────────────────────────────────────
-  // Derived values
-  // ───────────────────────────────────────────────────────────────────────────
 
   const selectedGateway = useMemo(
     () =>
@@ -2127,8 +2112,6 @@ export default function CheckoutPage() {
     [selectedGatewayId]
   );
 
-  // Dashboard API can return either { data: { ignite } }
-  // or { data: { data: { ignite } } }.
   const dashboardInfo = useMemo(() => {
     const response = dashboardResponse as any;
 
@@ -2151,20 +2134,12 @@ export default function CheckoutPage() {
     blue: Math.max(0, Number(dashboardInfo?.ignite?.blue_bal ?? 0)),
   };
 
-  // ───────────────────────────────────────────────────────────────────────────
-  // Restore order lock for payment retry flow
-  // ───────────────────────────────────────────────────────────────────────────
-
   useEffect(() => {
     if (isRetryPaymentFlow) {
       orderCreatedRef.current = true;
       setOrderCreatedForCheckout(true);
     }
   }, [isRetryPaymentFlow]);
-
-  // ───────────────────────────────────────────────────────────────────────────
-  // Gateway auto-selection
-  // ───────────────────────────────────────────────────────────────────────────
 
   useEffect(() => {
     if (
@@ -2294,6 +2269,11 @@ export default function CheckoutPage() {
         ? { coins: appliedCoinAmount }
         : {}),
 
+        ...(redemptionId !== null && redemptionId !== ""
+          ? { redemption_id: redemptionId }
+          : {}),
+
+          
       ...(isDirectCheckout
         ? {
             product_id: productId,
@@ -2306,6 +2286,7 @@ export default function CheckoutPage() {
       selectedDeliveryAddress?.id,
       appliedCoupon,
       appliedCoinAmount,
+      redemptionId, 
       isDirectCheckout,
       productId,
       quantity,
@@ -2342,10 +2323,6 @@ export default function CheckoutPage() {
       : checkoutType;
   };
 
-  // ───────────────────────────────────────────────────────────────────────────
-  // Refresh checkout summary on window focus
-  // ───────────────────────────────────────────────────────────────────────────
-
   useEffect(() => {
     if (typeof document === "undefined") return;
 
@@ -2361,10 +2338,6 @@ export default function CheckoutPage() {
       window.removeEventListener("focus", onFocus);
     };
   }, [refetchCheckoutSummary]);
-
-  // ───────────────────────────────────────────────────────────────────────────
-  // Fetch cart lines + check stock
-  // ───────────────────────────────────────────────────────────────────────────
 
   useEffect(() => {
     const fetchAndCheckCartStock = async () => {
@@ -2408,10 +2381,6 @@ export default function CheckoutPage() {
 
     void fetchAndCheckCartStock();
   }, [checkoutType, triggerGetCart, checkCartStock]);
-
-  // ───────────────────────────────────────────────────────────────────────────
-  // Update summary quantity
-  // ───────────────────────────────────────────────────────────────────────────
 
   const handleUpdateSummaryQuantity = async (
     summaryItem: CheckoutSummaryItem,
@@ -2871,7 +2840,7 @@ export default function CheckoutPage() {
   const handleRemoveCoins = () => {
     if (isSubmitting || isApplyingCoins) return;
 
-    setRedemptionId(null);
+    setRedemptionId(null); 
     setAppliedCoinAmount(0);
     setSelectedCoin(null);
     setCoinAmount("");
@@ -4124,14 +4093,41 @@ export default function CheckoutPage() {
       isFetchingCheckoutSummary ||
       (selectedCoin !== null && redemptionId === null);
 
-  // Exit payment retry.
+  // Exit payment retry — resets order lock so user can place a NEW order.
   const handleExitPayment = () => {
-    router.replace("/checkout");
-  };
+    // Clear all locks (synchronous refs + React state).
+    orderCreatedRef.current = false;
+    paymentActionInProgress.current = false;
+    setOrderCreatedForCheckout(false);
+    setIsSubmitting(false);
 
-  // ───────────────────────────────────────────────────────────────────────────
-  // Render
-  // ───────────────────────────────────────────────────────────────────────────
+    // Remove every retry-flow query param from the URL.
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("order_reference");
+    params.delete("gateway");
+    params.delete("payment_status");
+    params.delete("cancelled");
+    params.delete("show_repay");
+
+    const query = params.toString();
+
+    router.replace(query ? `/checkout?${query}` : "/checkout", {
+      scroll: false,
+    });
+
+    // Re-fetch latest summary for a fresh order attempt.
+    setTimeout(() => {
+      void refetchCheckoutSummary();
+    }, 100);
+
+    dispatch(
+      showToast({
+        message:
+          "Exited payment retry. You can now place a new order.",
+        type: "info",
+      })
+    );
+  };
 
   return (
     <>

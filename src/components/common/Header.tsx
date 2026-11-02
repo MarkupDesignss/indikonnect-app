@@ -52,6 +52,330 @@ import { useGetCategoriesQuery } from "@/lib/redux/api/categoryApi";
 import { useGetHeaderQuery } from "@/lib/redux/api/headerApi";
 
 /* =========================================================
+   🪔 DIWALI THEME
+   Diwali khatam hone par bas DIWALI_MODE = false kar do,
+   saari decoration hat jayegi (baaki header same rahega).
+========================================================= */
+
+const DIWALI_MODE = true;
+
+/* Asli Diwali wale rocket (stick wale): left % = kahan se chhootega,
+   dx/dy = udaan (dy itna rakha hai ki rocket search bar ke upar tak nikle),
+   tilt = thoda tirchha, color = rocket ka rang, spark = dhamake ke sparks ka rang */
+const DIWALI_ROCKETS = [
+  { left: "6%", delay: 0, dx: 30, dy: -155, tilt: 16, color: "#e8372c", spark: "#ffd23f" },
+  { left: "27%", delay: 1.6, dx: -28, dy: -160, tilt: -15, color: "#2f80ed", spark: "#ff6ad5" },
+  { left: "50%", delay: 3.1, dx: 24, dy: -165, tilt: 13, color: "#27ae60", spark: "#7dffb0" },
+  { left: "72%", delay: 0.8, dx: -30, dy: -158, tilt: -16, color: "#9b51e0", spark: "#ffd23f" },
+  { left: "92%", delay: 2.4, dx: -22, dy: -152, tilt: -12, color: "#f2994a", spark: "#ff5a5a" },
+];
+
+const DIWALI_SPARK_ANGLES = [0, 36, 72, 108, 144, 180, 216, 252, 288, 324];
+
+const DIWALI_CSS = `
+.dw-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 6;
+}
+
+/* Top festive strip: kesar → laal → sunehri shimmer */
+.dw-strip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    #ff9933,
+    #e8372c,
+    #ffd23f,
+    #ff6a00,
+    #ffd23f,
+    #e8372c,
+    #ff9933
+  );
+  background-size: 200% 100%;
+  animation: dw-shimmer 6s linear infinite;
+}
+
+/* Header ke dono kinaare par patake / diya emojis */
+.dw-side {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 18px;
+  line-height: 1;
+}
+.dw-side-l { left: 4px; }
+.dw-side-r { right: 4px; }
+.dw-side span {
+  display: block;
+  animation: dw-bob 2.4s ease-in-out infinite;
+  filter: drop-shadow(0 0 6px rgba(255, 160, 0, 0.7));
+}
+.dw-side span:nth-child(2) { animation-delay: 0.4s; }
+.dw-side span:nth-child(3) { animation-delay: 0.8s; }
+
+/* Search box ke dono side stars / patake */
+.dw-search-deco {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 18px;
+  line-height: 1;
+  pointer-events: none;
+  z-index: 2;
+}
+.dw-search-deco-l { left: -28px; }
+.dw-search-deco-r { right: -28px; }
+.dw-search-deco span {
+  display: block;
+  animation: dw-twinkle 1.8s ease-in-out infinite;
+  filter: drop-shadow(0 0 5px rgba(255, 190, 0, 0.85));
+}
+.dw-search-deco span:nth-child(2) { animation-delay: 0.6s; }
+
+/* Diwali ROCKET (stick wala) */
+.dw-rocket {
+  position: absolute;
+  bottom: -44px;
+  width: 14px;
+  height: 40px;
+  opacity: 0;
+  animation: dw-fly 7s linear var(--dw-delay, 0s) infinite;
+}
+.dw-rocket-body {
+  position: absolute;
+  inset: 0;
+  display: block;
+  animation: dw-rocket-vis 7s linear var(--dw-delay, 0s) infinite;
+}
+.dw-rocket-body svg {
+  display: block;
+  overflow: visible;
+}
+.dw-flame {
+  transform-origin: 7px 38px;
+  animation: dw-flicker 0.14s ease-in-out infinite alternate;
+}
+.dw-trail {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 3px;
+  height: 38px;
+  margin-left: -1.5px;
+  border-radius: 3px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 170, 0, 0.95),
+    rgba(255, 106, 0, 0)
+  );
+  filter: drop-shadow(0 0 4px rgba(255, 140, 0, 0.9));
+}
+
+/* Rocket ke end par rang-birange sparks ka dhamaka */
+.dw-burst {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+}
+.dw-spark {
+  position: absolute;
+  left: -3px;
+  top: -3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  opacity: 0;
+  box-shadow: 0 0 6px currentColor, 0 0 10px rgba(255, 200, 0, 0.8);
+  animation: dw-spark 7s linear var(--dw-delay, 0s) infinite;
+}
+.dw-glow {
+  position: absolute;
+  left: -14px;
+  top: -14px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  opacity: 0;
+  filter: blur(7px);
+  animation: dw-glow 7s linear var(--dw-delay, 0s) infinite;
+}
+
+@keyframes dw-fly {
+  0% { transform: translate3d(0, 0, 0); opacity: 0; }
+  3% { opacity: 1; }
+  45% { transform: translate3d(var(--dw-dx), var(--dw-dy), 0); opacity: 1; }
+  62% { transform: translate3d(var(--dw-dx), var(--dw-dy), 0); opacity: 1; }
+  63% { transform: translate3d(var(--dw-dx), var(--dw-dy), 0); opacity: 0; }
+  100% { transform: translate3d(var(--dw-dx), var(--dw-dy), 0); opacity: 0; }
+}
+@keyframes dw-rocket-vis {
+  0% { opacity: 1; }
+  42% { opacity: 1; }
+  45% { opacity: 0; }
+  100% { opacity: 0; }
+}
+@keyframes dw-spark {
+  0% { opacity: 0; transform: rotate(var(--a)) translateY(0) scale(1); }
+  43% { opacity: 0; transform: rotate(var(--a)) translateY(0) scale(1); }
+  46% { opacity: 1; transform: rotate(var(--a)) translateY(-4px) scale(1.1); }
+  62% { opacity: 0; transform: rotate(var(--a)) translateY(-40px) scale(0.3); }
+  100% { opacity: 0; transform: rotate(var(--a)) translateY(-40px) scale(0.3); }
+}
+@keyframes dw-glow {
+  0% { opacity: 0; transform: scale(0.3); }
+  43% { opacity: 0; transform: scale(0.3); }
+  47% { opacity: 0.9; transform: scale(1); }
+  62% { opacity: 0; transform: scale(2.2); }
+  100% { opacity: 0; transform: scale(2.2); }
+}
+@keyframes dw-flicker {
+  0% { transform: scale(1, 0.8); opacity: 0.85; }
+  100% { transform: scale(1.25, 1.2); opacity: 1; }
+}
+@keyframes dw-bob {
+  0%, 100% { transform: translateY(0) rotate(-6deg); }
+  50% { transform: translateY(-3px) rotate(6deg); }
+}
+@keyframes dw-twinkle {
+  0%, 100% { opacity: 0.55; transform: scale(0.85) rotate(-8deg); }
+  50% { opacity: 1; transform: scale(1.18) rotate(8deg); }
+}
+@keyframes dw-shimmer {
+  0% { background-position: 0% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@media (max-width: 1023px) {
+  .dw-search-deco { display: none; }
+}
+@media (max-width: 768px) {
+  .dw-side { font-size: 13px; gap: 4px; }
+  .dw-side span:nth-child(3) { display: none; }
+  .dw-rocket { transform-origin: bottom center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dw-rocket { display: none; }
+  .dw-side span,
+  .dw-search-deco span,
+  .dw-strip { animation: none; }
+}
+`;
+
+/* Search box ke side me stars / patake emojis */
+function DiwaliSearchDecor() {
+  return (
+    <>
+      <div className="dw-search-deco dw-search-deco-l" aria-hidden="true">
+        <span>✨</span>
+        <span>🧨</span>
+      </div>
+      <div className="dw-search-deco dw-search-deco-r" aria-hidden="true">
+        <span>🎇</span>
+        <span>✨</span>
+      </div>
+    </>
+  );
+}
+
+function DiwaliDecor() {
+  return (
+    <div className="dw-layer" aria-hidden="true">
+      <style>{DIWALI_CSS}</style>
+
+      <div className="dw-strip" />
+
+      {/* LEFT SIDE patake */}
+      <div className="dw-side dw-side-l">
+        <span>🧨</span>
+        <span>🎇</span>
+        <span>🪔</span>
+      </div>
+
+      {/* RIGHT SIDE patake */}
+      <div className="dw-side dw-side-r">
+        <span>🪔</span>
+        <span>🎆</span>
+        <span>🧨</span>
+      </div>
+
+      {/* DIWALI ROCKETS */}
+      {DIWALI_ROCKETS.map((r, i) => (
+        <div
+          key={i}
+          className="dw-rocket"
+          style={
+            {
+              left: r.left,
+              "--dw-delay": `${r.delay}s`,
+              "--dw-dx": `${r.dx}px`,
+              "--dw-dy": `${r.dy}px`,
+            } as React.CSSProperties
+          }
+        >
+          <span
+            className="dw-rocket-body"
+            style={{ transform: `rotate(${r.tilt}deg)` }}
+          >
+            <span className="dw-trail" />
+            <svg viewBox="0 0 14 40" width="14" height="40">
+              {/* lakdi ki stick */}
+              <rect x="6.3" y="16" width="1.4" height="22" fill="#8b5a2b" />
+              {/* rocket ki body */}
+              <rect x="3" y="7" width="8" height="12" rx="1" fill={r.color} />
+              <rect x="3" y="11" width="8" height="2" fill="#ffd23f" />
+              {/* nukili nose */}
+              <path d="M3 7 L7 0 L11 7 Z" fill="#ffd23f" />
+              {/* chhote fins */}
+              <path d="M3 19 L0.5 22 L3 21 Z" fill={r.color} />
+              <path d="M11 19 L13.5 22 L11 21 Z" fill={r.color} />
+              {/* jalti hui fuse / flame */}
+              <g className="dw-flame">
+                <ellipse cx="7" cy="39" rx="2.2" ry="3" fill="#ff6a00" />
+                <ellipse cx="7" cy="39.5" rx="1.1" ry="1.8" fill="#ffe27a" />
+              </g>
+            </svg>
+          </span>
+
+          <span className="dw-burst">
+            <i className="dw-glow" style={{ background: r.spark }} />
+            {DIWALI_SPARK_ANGLES.map((a, j) => (
+              <i
+                key={j}
+                className="dw-spark"
+                style={
+                  {
+                    "--a": `${a}deg`,
+                    "--dw-delay": `${r.delay}s`,
+                    background: j % 2 ? "#ffffff" : r.spark,
+                    color: r.spark,
+                  } as React.CSSProperties
+                }
+              />
+            ))}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* =========================================================
    SPEECH / LOCATION TYPES
 ========================================================= */
 
@@ -1693,6 +2017,9 @@ function HeaderInner({
           willChange: "transform",
         }}
       >
+        {/* 🪔 DIWALI DECOR — rockets, patake emojis, diya (click-through) */}
+        {DIWALI_MODE && <DiwaliDecor />}
+
         {/* ── TOP ANNOUNCEMENT STRIP (scroll par hide) ── */}
         {!hideAnnouncement && (
           <div
@@ -1711,6 +2038,11 @@ function HeaderInner({
                       key={copy}
                       aria-hidden={copy === 1}
                     >
+                      {DIWALI_MODE && (
+                        <span className="premium-benefit-item">
+                          🪔 Happy Diwali! Shubh Deepavali 🎆
+                        </span>
+                      )}
                       <span className="premium-benefit-item">
                         <Grid3x3 size={15} /> Explore premium collections
                       </span>
@@ -1785,7 +2117,13 @@ function HeaderInner({
             </Link>
 
             {/* DESKTOP SEARCH (mobile par hidden) */}
-            <div className="premium-search-wrap" ref={searchRef}>
+            <div
+              className="premium-search-wrap"
+              ref={searchRef}
+              style={{ position: "relative" }}
+            >
+              {/* ✨ Search ke side me Diwali stars / patake */}
+              {DIWALI_MODE && <DiwaliSearchDecor />}
               <form onSubmit={handleSearch} className="premium-search-form">
                 <button type="submit" aria-label="Search products">
                   <Search size={26} />
