@@ -2095,17 +2095,17 @@ export default function IndieKonnectHome() {
           HERO
       ================================================= */}
 
-      <section className="relative isolate flow-root w-full overflow-hidden bg-white">
+      <section className="relative isolate flow-root left-1/2 w-screen -translate-x-1/2 overflow-hidden bg-white">
         <div
           className="
     relative
     w-full
-    h-[320px]
-    sm:h-[400px]
-    md:h-[480px]
-    lg:h-[560px]
-    xl:h-[640px]
-    2xl:h-[700px]
+    h-[280px]
+    sm:h-[340px]
+    md:h-[410px]
+    lg:h-[470px]
+    xl:h-[530px]
+    2xl:h-[570px]
   "
         >
           <AnimatePresence initial={false}>
@@ -2114,21 +2114,13 @@ export default function IndieKonnectHome() {
 
               let diff = index - heroIndex;
 
-              if (diff > total / 2) {
-                diff -= total;
-              }
-
-              if (diff < -total / 2) {
-                diff += total;
-              }
+              if (diff > total / 2) diff -= total;
+              if (diff < -total / 2) diff += total;
 
               const isActive = diff === 0;
-
               const isNearby = Math.abs(diff) <= 1;
 
-              if (!isNearby) {
-                return null;
-              }
+              if (!isNearby) return null;
 
               return (
                 <motion.div
@@ -2150,37 +2142,24 @@ export default function IndieKonnectHome() {
                     ease: [0.16, 1, 0.3, 1],
                   }}
                   className="absolute inset-0 h-full w-full"
-                  style={{
-                    zIndex: isActive ? 20 : 10,
-                  }}
+                  style={{ zIndex: isActive ? 20 : 10 }}
                 >
                   <button
                     type="button"
                     onClick={() => {
                       if (diff === -1) {
                         setHeroIndex((heroIndex - 1 + total) % total);
-
                         return;
                       }
 
                       if (diff === 1) {
                         setHeroIndex((heroIndex + 1) % total);
-
                         return;
                       }
 
                       router.push(slide.navigationUrl || "/products");
                     }}
-                    className="
-                  group
-                  relative
-                  block
-                  h-full
-                  w-full
-                  overflow-hidden
-                  bg-[#edf1ee]
-                  focus:outline-none
-                "
+                    className="group relative block h-full w-full overflow-hidden bg-white focus:outline-none"
                   >
                     {slide.mediaType === "video" && slide.video ? (
                       <video
@@ -2192,30 +2171,15 @@ export default function IndieKonnectHome() {
                         playsInline
                         preload={isActive ? "auto" : "metadata"}
                         poster={slide.image || undefined}
-                        className="
-    absolute
-    inset-0
-    block
-    h-full
-    w-full
-    object-cover
-    object-top
-  "
+                        className="absolute inset-0 block h-full w-full object-cover object-center"
                       />
                     ) : (
                       <img
                         src={slide.image || getPromoPlaceholderImage()}
-                        alt={slide.alt}
+                        alt={slide.alt || "Promotional banner"}
                         draggable={false}
                         loading={isActive ? "eager" : "lazy"}
-                        className="
-      block
-      h-full
-      w-full
-      select-none
-      object-cover
-      object-center
-    "
+                        className="absolute inset-0 block h-full w-full select-none object-cover object-center"
                         onError={(e) => {
                           e.currentTarget.src = getPromoPlaceholderImage();
                         }}
@@ -2237,24 +2201,7 @@ export default function IndieKonnectHome() {
                     (heroIndex - 1 + heroSlides.length) % heroSlides.length,
                   )
                 }
-                className="
-            absolute
-            left-2
-            top-1/2
-            z-30
-            hidden
-            h-9
-            w-9
-            -translate-y-1/2
-            items-center
-            justify-center
-            rounded-full
-            bg-white/95
-            text-[#111827]
-            shadow
-            lg:flex
-            xl:left-5
-          "
+                className="absolute left-2 top-1/2 z-30 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-[#111827] shadow lg:flex xl:left-5"
               >
                 <ChevronLeft size={17} />
               </button>
@@ -2265,24 +2212,7 @@ export default function IndieKonnectHome() {
                 onClick={() =>
                   setHeroIndex((heroIndex + 1) % heroSlides.length)
                 }
-                className="
-            absolute
-            right-2
-            top-1/2
-            z-30
-            hidden
-            h-9
-            w-9
-            -translate-y-1/2
-            items-center
-            justify-center
-            rounded-full
-            bg-white/95
-            text-[#111827]
-            shadow
-            lg:flex
-            xl:right-5
-          "
+                className="absolute right-2 top-1/2 z-30 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-[#111827] shadow lg:flex xl:right-5"
               >
                 <ChevronRight size={17} />
               </button>
@@ -2298,22 +2228,18 @@ export default function IndieKonnectHome() {
                 type="button"
                 onClick={() => setHeroIndex(index)}
                 className={`
-              h-[5px]
-              rounded-full
-              transition-all
-              duration-300
-              ${index === heroIndex
+            h-[5px] rounded-full transition-all duration-300
+            ${index === heroIndex
                     ? "w-7 bg-[#071a41]"
                     : "w-[5px] bg-[#cfd3d7]"
                   }
-            `}
+          `}
                 aria-label={`Go to banner ${index + 1}`}
               />
             ))}
           </div>
         )}
       </section>
-
       {/* =================================================
           MAIN
       ================================================= */}
