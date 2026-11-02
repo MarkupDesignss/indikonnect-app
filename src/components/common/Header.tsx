@@ -64,13 +64,31 @@ const DIWALI_MODE = true;
    tilt = thoda tirchha, color = rocket ka rang, spark = dhamake ke sparks ka rang */
 const DIWALI_ROCKETS = [
   { left: "6%", delay: 0, dx: 30, dy: -155, tilt: 16, color: "#e8372c", spark: "#ffd23f" },
+  { left: "17%", delay: 4.4, dx: -20, dy: -150, tilt: -11, color: "#ff6a00", spark: "#7dffb0" },
   { left: "27%", delay: 1.6, dx: -28, dy: -160, tilt: -15, color: "#2f80ed", spark: "#ff6ad5" },
+  { left: "39%", delay: 5.2, dx: 22, dy: -156, tilt: 12, color: "#eb2f96", spark: "#ffd23f" },
   { left: "50%", delay: 3.1, dx: 24, dy: -165, tilt: 13, color: "#27ae60", spark: "#7dffb0" },
+  { left: "61%", delay: 6.0, dx: -24, dy: -154, tilt: -13, color: "#00b8d9", spark: "#ff6ad5" },
   { left: "72%", delay: 0.8, dx: -30, dy: -158, tilt: -16, color: "#9b51e0", spark: "#ffd23f" },
+  { left: "83%", delay: 3.8, dx: 20, dy: -160, tilt: 11, color: "#e8372c", spark: "#7dffb0" },
   { left: "92%", delay: 2.4, dx: -22, dy: -152, tilt: -12, color: "#f2994a", spark: "#ff5a5a" },
 ];
 
 const DIWALI_SPARK_ANGLES = [0, 36, 72, 108, 144, 180, 216, 252, 288, 324];
+
+/* Black announcement strip ke upar ki jagmag karti PEELI lights ki lari */
+const DIWALI_BULBS = Array.from({ length: 44 }, (_, i) => ({
+  delay: ((i * 0.37) % 2.4).toFixed(2),
+}));
+
+/* Upar uthte sunehri sparkles (angaare / chingari jaisa) */
+const DIWALI_FLOATS = Array.from({ length: 22 }, (_, i) => ({
+  left: `${(i * 4.7 + 3) % 98}%`,
+  delay: ((i * 0.53) % 5).toFixed(2),
+  dur: (4 + ((i * 0.7) % 3.2)).toFixed(2),
+  sx: ((i % 2 ? 1 : -1) * (6 + ((i * 3) % 14))).toString(),
+  size: 3 + (i % 3),
+}));
 
 const DIWALI_CSS = `
 .dw-layer {
@@ -79,6 +97,17 @@ const DIWALI_CSS = `
   pointer-events: none;
   overflow: hidden;
   z-index: 6;
+}
+
+/* Garam kesar / laal roshni dono kinaaron se */
+.dw-warm {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 0% 60%, rgba(255, 153, 51, 0.2), transparent 42%),
+    radial-gradient(ellipse at 100% 60%, rgba(232, 55, 44, 0.15), transparent 42%),
+    radial-gradient(ellipse at 50% 100%, rgba(255, 210, 63, 0.12), transparent 55%);
+  animation: dw-warm-pulse 4s ease-in-out infinite;
 }
 
 /* Top festive strip: kesar → laal → sunehri shimmer */
@@ -102,6 +131,56 @@ const DIWALI_CSS = `
   animation: dw-shimmer 6s linear infinite;
 }
 
+/* Peeli jagmag lights ki lari (black strip ke top par) */
+.dw-lights {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 3px;
+  height: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 0 8px;
+  pointer-events: none;
+  z-index: 3;
+}
+.dw-lights::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.28);
+}
+.dw-bulb {
+  position: relative;
+  display: block;
+  width: 5px;
+  height: 7px;
+  margin-top: 1px;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  background: #ffd23f;
+  box-shadow: 0 0 8px 2px rgba(255, 210, 63, 0.9);
+  opacity: 0.45;
+  animation: dw-blink 1.8s ease-in-out var(--dw-d, 0s) infinite;
+}
+.dw-bulb:nth-child(even) {
+  margin-top: 3px;
+}
+
+/* Upar uthti sunehri chingariyan */
+.dw-float {
+  position: absolute;
+  bottom: -6px;
+  border-radius: 50%;
+  background: #ffd23f;
+  box-shadow: 0 0 6px #ffb300, 0 0 12px rgba(255, 140, 0, 0.7);
+  opacity: 0;
+  animation: dw-rise var(--dw-dur, 5s) linear var(--dw-d, 0s) infinite;
+}
+
 /* Header ke dono kinaare par patake / diya emojis */
 .dw-side {
   position: absolute;
@@ -122,28 +201,6 @@ const DIWALI_CSS = `
 }
 .dw-side span:nth-child(2) { animation-delay: 0.4s; }
 .dw-side span:nth-child(3) { animation-delay: 0.8s; }
-
-/* Search box ke dono side stars / patake */
-.dw-search-deco {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 18px;
-  line-height: 1;
-  pointer-events: none;
-  z-index: 2;
-}
-.dw-search-deco-l { left: -28px; }
-.dw-search-deco-r { right: -28px; }
-.dw-search-deco span {
-  display: block;
-  animation: dw-twinkle 1.8s ease-in-out infinite;
-  filter: drop-shadow(0 0 5px rgba(255, 190, 0, 0.85));
-}
-.dw-search-deco span:nth-child(2) { animation-delay: 0.6s; }
 
 /* Diwali ROCKET (stick wala) */
 .dw-rocket {
@@ -251,52 +308,48 @@ const DIWALI_CSS = `
   0%, 100% { transform: translateY(0) rotate(-6deg); }
   50% { transform: translateY(-3px) rotate(6deg); }
 }
-@keyframes dw-twinkle {
-  0%, 100% { opacity: 0.55; transform: scale(0.85) rotate(-8deg); }
-  50% { opacity: 1; transform: scale(1.18) rotate(8deg); }
-}
 @keyframes dw-shimmer {
   0% { background-position: 0% 0; }
   100% { background-position: 200% 0; }
 }
-
-@media (max-width: 1023px) {
-  .dw-search-deco { display: none; }
+@keyframes dw-blink {
+  0%, 100% { opacity: 0.35; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.1); }
 }
+@keyframes dw-rise {
+  0% { opacity: 0; transform: translate3d(0, 0, 0) scale(0.6); }
+  15% { opacity: 0.95; }
+  100% { opacity: 0; transform: translate3d(var(--dw-sx, 0px), -120px, 0) scale(1); }
+}
+@keyframes dw-warm-pulse {
+  0%, 100% { opacity: 0.75; }
+  50% { opacity: 1; }
+}
+
 @media (max-width: 768px) {
   .dw-side { font-size: 13px; gap: 4px; }
   .dw-side span:nth-child(3) { display: none; }
   .dw-rocket { transform-origin: bottom center; }
+  .dw-bulb:nth-child(3n) { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .dw-rocket { display: none; }
+  .dw-rocket,
+  .dw-float { display: none; }
   .dw-side span,
-  .dw-search-deco span,
+  .dw-bulb,
+  .dw-warm,
   .dw-strip { animation: none; }
 }
 `;
-
-/* Search box ke side me stars / patake emojis */
-function DiwaliSearchDecor() {
-  return (
-    <>
-      <div className="dw-search-deco dw-search-deco-l" aria-hidden="true">
-        <span>✨</span>
-        <span>🧨</span>
-      </div>
-      <div className="dw-search-deco dw-search-deco-r" aria-hidden="true">
-        <span>🎇</span>
-        <span>✨</span>
-      </div>
-    </>
-  );
-}
 
 function DiwaliDecor() {
   return (
     <div className="dw-layer" aria-hidden="true">
       <style>{DIWALI_CSS}</style>
+
+      {/* Garam roshni ka glow */}
+      <div className="dw-warm" />
 
       <div className="dw-strip" />
 
@@ -313,6 +366,24 @@ function DiwaliDecor() {
         <span>🎆</span>
         <span>🧨</span>
       </div>
+
+      {/* UPAR UTHTI CHINGARIYAN */}
+      {DIWALI_FLOATS.map((f, i) => (
+        <i
+          key={`float-${i}`}
+          className="dw-float"
+          style={
+            {
+              left: f.left,
+              width: f.size,
+              height: f.size,
+              "--dw-d": `${f.delay}s`,
+              "--dw-dur": `${f.dur}s`,
+              "--dw-sx": `${f.sx}px`,
+            } as React.CSSProperties
+          }
+        />
+      ))}
 
       {/* DIWALI ROCKETS */}
       {DIWALI_ROCKETS.map((r, i) => (
@@ -370,6 +441,22 @@ function DiwaliDecor() {
             ))}
           </span>
         </div>
+      ))}
+
+    </div>
+  );
+}
+
+/* Black announcement strip par peeli lights (strip ke saath hi collapse hoti hain) */
+function DiwaliLights() {
+  return (
+    <div className="dw-lights" aria-hidden="true">
+      {DIWALI_BULBS.map((b, i) => (
+        <span
+          key={`bulb-${i}`}
+          className="dw-bulb"
+          style={{ "--dw-d": `${b.delay}s` } as React.CSSProperties}
+        />
       ))}
     </div>
   );
@@ -2017,7 +2104,7 @@ function HeaderInner({
           willChange: "transform",
         }}
       >
-        {/* 🪔 DIWALI DECOR — rockets, patake emojis, diya (click-through) */}
+        {/* 🪔 DIWALI DECOR — rockets, sparkles, patake, diya (click-through) */}
         {DIWALI_MODE && <DiwaliDecor />}
 
         {/* ── TOP ANNOUNCEMENT STRIP (scroll par hide) ── */}
@@ -2025,7 +2112,9 @@ function HeaderInner({
           <div
             className={`premium-header-announcement-wrap ${isScrolled ? "is-collapsed" : ""}`}
             aria-hidden={isScrolled}
+            style={{ position: "relative" }}
           >
+            {DIWALI_MODE && <DiwaliLights />}
             <div className="premium-benefits premium-benefits-refreshed">
               <div
                 className="premium-benefits-marquee"
@@ -2046,12 +2135,22 @@ function HeaderInner({
                       <span className="premium-benefit-item">
                         <Grid3x3 size={15} /> Explore premium collections
                       </span>
+                      {DIWALI_MODE && (
+                        <span className="premium-benefit-item">
+                          ✨ Festive Season Special ✨
+                        </span>
+                      )}
                       <span className="premium-benefit-item">
                         <BadgeCheck size={15} /> 100% genuine products
                       </span>
                       <span className="premium-benefit-item">
                         <Tag size={15} /> Discover new arrivals
                       </span>
+                      {DIWALI_MODE && (
+                        <span className="premium-benefit-item">
+                          🎁 Perfect gifts for your loved ones 🪔
+                        </span>
+                      )}
                       <span className="premium-benefit-item">
                         <Headphones size={15} /> Dedicated customer support
                       </span>
@@ -2122,8 +2221,6 @@ function HeaderInner({
               ref={searchRef}
               style={{ position: "relative" }}
             >
-              {/* ✨ Search ke side me Diwali stars / patake */}
-              {DIWALI_MODE && <DiwaliSearchDecor />}
               <form onSubmit={handleSearch} className="premium-search-form">
                 <button type="submit" aria-label="Search products">
                   <Search size={26} />
