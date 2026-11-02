@@ -30,7 +30,6 @@ import { useGetUserProfileQuery } from "@/lib/redux/api/authApi";
 import CustomerFavourites from "./CustomerFavourites";
 import StyleFinder from "./StyleFinder";
 
-
 const LOGO_SRC = "/indiekonnect-web/images/logo.png";
 const PLACEHOLDER_IMAGE = "/indiekonnect-web/images/test.jpg";
 
@@ -68,6 +67,7 @@ interface Category {
   name?: string;
   slug?: string;
   subcategories?: SubCategory[];
+  brands?: any[];
 }
 
 const SORT_LABELS: Record<SortOption, string> = {
@@ -335,8 +335,7 @@ export default function ProductsPage() {
   const [activeBanner, setActiveBanner] = useState(0);
 
   /*
-   * Keep refs synchronized during render instead of using four additional
-   * useEffect hooks only for copying the current state into refs.
+   * Keep refs synchronized during render.
    */
 
   const filtersRef = useRef(filters);
@@ -403,6 +402,8 @@ export default function ProductsPage() {
     isLoading: isCategoriesLoading,
   } = useGetCategoriesQuery({});
 
+  /* ---------------------------- Category ID map --------------------------- */
+
   const categoryIdMap = useMemo(() => {
     const map = new Map<string, number>();
 
@@ -417,6 +418,8 @@ export default function ProductsPage() {
     return map;
   }, [categoriesData]);
 
+  /* ------------------------------ Brand ID map --------------------------- */
+
   const brandIdMap = useMemo(() => {
     const map = new Map<string, number>();
 
@@ -424,6 +427,109 @@ export default function ProductsPage() {
       if (brand?.id != null) {
         map.set(String(brand.id), Number(brand.id));
       }
+    });
+
+    return map;
+  }, [categoriesData]);
+
+  /* ------------------------------------------------------------------------ */
+  /* BRAND - CATEGORY RELATIONSHIP MAPS                                      */
+  /* ------------------------------------------------------------------------ */
+
+  /*
+   * brandCategoryMap:
+   *
+   * Brand ID -> Category ID
+   *
+   * Example:
+   * 1 -> 6  (FABIUS -> All Watches)
+   * 2 -> 22 (KINTSUGI -> Dinnerware)
+   *
+   * This map is created using the API's category_id field.
+   */
+
+  const brandCategoryMap = useMemo(() => {
+    const map = new Map<string, string>();
+
+    // First use the top-level brands array.
+    categoriesData?.brands?.forEach((brand: any) => {
+      if (brand?.id != null && brand?.category_id != null) {
+        map.set(
+          String(brand.id),
+          String(brand.category_id),
+        );
+      }
+    });
+
+    // Also use brands nested inside each category.
+    categoriesData?.data?.forEach((category: any) => {
+      const categoryId = category?.id;
+
+      if (categoryId == null) return;
+
+      (category?.brands || []).forEach((brand: any) => {
+        if (brand?.id != null) {
+          map.set(
+            String(brand.id),
+            String(brand.category_id ?? categoryId),
+          );
+        }
+      });
+    });
+
+    return map;
+  }, [categoriesData]);
+
+  /*
+   * categoryBrandMap:
+   *
+   * Category ID -> Brand IDs
+   *
+   * Example:
+   * 6 -> ["1"]  (All Watches -> FABIUS)
+   * 22 -> ["2"] (Dinnerware -> KINTSUGI)
+   *
+   * One category can have multiple brands, so we store an array.
+   */
+
+  const categoryBrandMap = useMemo(() => {
+    const map = new Map<string, string[]>();
+
+    const addBrandToCategory = (
+      categoryId: string,
+      brandId: string,
+    ) => {
+      const existingBrands = map.get(categoryId) || [];
+
+      if (!existingBrands.includes(brandId)) {
+        map.set(categoryId, [...existingBrands, brandId]);
+      }
+    };
+
+    // Read brands from the top-level brands array.
+    categoriesData?.brands?.forEach((brand: any) => {
+      if (brand?.id == null || brand?.category_id == null) {
+        return;
+      }
+
+      addBrandToCategory(
+        String(brand.category_id),
+        String(brand.id),
+      );
+    });
+
+    // Read brands nested inside each category as well.
+    categoriesData?.data?.forEach((category: any) => {
+      if (category?.id == null) return;
+
+      (category?.brands || []).forEach((brand: any) => {
+        if (brand?.id == null) return;
+
+        addBrandToCategory(
+          String(brand.category_id ?? category.id),
+          String(brand.id),
+        );
+      });
     });
 
     return map;
@@ -857,11 +963,7 @@ export default function ProductsPage() {
           finalImages = [PLACEHOLDER_IMAGE];
         }
 
-        /*
-         * Rating fix:
-         * Products with an average rating of 0 should not display
-         * a zero-rating value or an empty rating summary.
-         */
+        /* Rating fix */
 
         const rawRating = Number(
           product?.reviews_summary?.average_rating ??
@@ -915,11 +1017,6 @@ export default function ProductsPage() {
 
           image: finalImages[0],
           images: finalImages,
-
-          /*
-           * Return null instead of 0. Also override the original rating
-           * fields so ProductCard cannot read the old zero value.
-           */
 
           rating: averageRating,
           average_rating: averageRating,
@@ -1004,11 +1101,6 @@ export default function ProductsPage() {
         ? [...previousProducts, ...newProducts]
         : previousProducts;
     });
-
-    /*
-     * Allow the observer to load the following page after the current
-     * request finishes. Existing cards remain rendered during the request.
-     */
 
     hasTriggeredRef.current = false;
   }, [
@@ -1113,12 +1205,6 @@ export default function ProductsPage() {
     isFetching ||
     shouldDeferProductQuery ||
     (!productsData && !error);
-
-  /*
-   * Skeletons are displayed only when there are no products to show.
-   * During pagination, allProducts stays visible and the custom loader
-   * is displayed instead.
-   */
 
   const showSkeletons =
     products.length === 0 && isQueryPending && !error;
@@ -1232,21 +1318,308 @@ export default function ProductsPage() {
     return insertionMap;
   }, [products.length, gridColumns]);
 
-  /* --------------------------- Filter changes ---------------------------- */
+  /* ------------------------------------------------------------------------ */
+  /* FILTER CHANGE: AUTOMATIC BRAND AND CATEGORY SELECTION                    */
+  /* ------------------------------------------------------------------------ */
 
   const handleFilterChange = useCallback(
     (newFilters: FilterState) => {
-      setFilters(newFilters);
+      const previousFilters = filtersRef.current;
+
+      /*
+       * Detect which filter was changed by the user.
+       */
+
+      const categoryChanged =
+        JSON.stringify(previousFilters.categories) !==
+        JSON.stringify(newFilters.categories);
+
+      const brandChanged =
+        JSON.stringify(previousFilters.brands) !==
+        JSON.stringify(newFilters.brands);
+
+      /*
+       * Create a fresh filter object.
+       */
+
+      const syncedFilters: FilterState = {
+        ...newFilters,
+        brands: [...newFilters.brands],
+        categories: [...newFilters.categories],
+        subCategories: [...newFilters.subCategories],
+        priceRange: [...newFilters.priceRange] as [number, number],
+        availability: {
+          ...newFilters.availability,
+        },
+      };
+
+      /*
+       * Convert category ID into category title.
+       *
+       * Example:
+       * 6 -> All Watches
+       * 22 -> Dinnerware
+       */
+
+      const categoryTitleById = new Map<string, string>();
+
+      categoryIdMap.forEach((categoryId, categoryTitle) => {
+        categoryTitleById.set(
+          String(categoryId),
+          categoryTitle,
+        );
+      });
+
+      /*
+       * CASE 1:
+       * User selects or removes a CATEGORY.
+       *
+       * Selecting a category:
+       * Automatically selects its related brands.
+       *
+       * Removing a category:
+       * Automatically removes its related brands.
+       */
+
+      if (categoryChanged && !brandChanged) {
+        const previousCategorySet = new Set(
+          previousFilters.categories,
+        );
+
+        const nextCategorySet = new Set(
+          newFilters.categories,
+        );
+
+        // Find categories that were removed.
+        const removedCategoryIds = new Set<string>();
+
+        previousCategorySet.forEach((categoryTitle) => {
+          if (!nextCategorySet.has(categoryTitle)) {
+            const categoryId = categoryIdMap.get(categoryTitle);
+
+            if (categoryId != null) {
+              removedCategoryIds.add(String(categoryId));
+            }
+          }
+        });
+
+        /*
+         * Remove brands that belong to removed categories.
+         * Keep brands from all other categories.
+         */
+
+        const nextBrands = new Set(
+          newFilters.brands.filter((brandId) => {
+            const categoryId = brandCategoryMap.get(
+              String(brandId),
+            );
+
+            return (
+              !categoryId ||
+              !removedCategoryIds.has(categoryId)
+            );
+          }),
+        );
+
+        /*
+         * Automatically add brands for every selected category.
+         */
+
+        newFilters.categories.forEach((categoryTitle) => {
+          const categoryId = categoryIdMap.get(categoryTitle);
+
+          if (categoryId == null) return;
+
+          const relatedBrands =
+            categoryBrandMap.get(String(categoryId)) || [];
+
+          relatedBrands.forEach((brandId) => {
+            nextBrands.add(brandId);
+          });
+        });
+
+        syncedFilters.brands = Array.from(nextBrands);
+      }
+
+      /*
+       * CASE 2:
+       * User selects or removes a BRAND.
+       *
+       * Selecting a brand:
+       * Automatically selects its parent category.
+       *
+       * Removing the last selected brand of a category:
+       * Automatically removes that category.
+       */
+
+      else if (brandChanged && !categoryChanged) {
+        /*
+         * Get category IDs of previously selected brands.
+         */
+
+        const previousBrandCategoryIds = new Set<string>();
+
+        previousFilters.brands.forEach((brandId) => {
+          const categoryId = brandCategoryMap.get(
+            String(brandId),
+          );
+
+          if (categoryId) {
+            previousBrandCategoryIds.add(categoryId);
+          }
+        });
+
+        /*
+         * Get category IDs of currently selected brands.
+         */
+
+        const nextBrandCategoryIds = new Set<string>();
+
+        newFilters.brands.forEach((brandId) => {
+          const categoryId = brandCategoryMap.get(
+            String(brandId),
+          );
+
+          if (categoryId) {
+            nextBrandCategoryIds.add(categoryId);
+          }
+        });
+
+        /*
+         * Find categories whose previously selected brands
+         * are no longer selected.
+         */
+
+        const categoriesToRemove = new Set<string>();
+
+        previousFilters.categories.forEach((categoryTitle) => {
+          const categoryId = categoryIdMap.get(categoryTitle);
+
+          if (categoryId == null) return;
+
+          const categoryIdString = String(categoryId);
+
+          const wasLinkedToSelectedBrand =
+            previousBrandCategoryIds.has(categoryIdString);
+
+          const stillHasSelectedBrand =
+            nextBrandCategoryIds.has(categoryIdString);
+
+          if (
+            wasLinkedToSelectedBrand &&
+            !stillHasSelectedBrand
+          ) {
+            categoriesToRemove.add(categoryTitle);
+          }
+        });
+
+        /*
+         * Keep categories that still have selected brands
+         * or were not linked to the removed brands.
+         */
+
+        const nextCategories = new Set(
+          newFilters.categories.filter(
+            (categoryTitle) =>
+              !categoriesToRemove.has(categoryTitle),
+          ),
+        );
+
+        /*
+         * Automatically add the category of each selected brand.
+         */
+
+        newFilters.brands.forEach((brandId) => {
+          const categoryId = brandCategoryMap.get(
+            String(brandId),
+          );
+
+          if (!categoryId) return;
+
+          const categoryTitle =
+            categoryTitleById.get(categoryId);
+
+          if (categoryTitle) {
+            nextCategories.add(categoryTitle);
+          }
+        });
+
+        syncedFilters.categories = Array.from(nextCategories);
+      }
+
+      /*
+       * CASE 3:
+       * Both categories and brands changed together.
+       *
+       * Keep both selections synchronized.
+       * This also handles clearing all filters.
+       */
+
+      else if (categoryChanged && brandChanged) {
+        const nextBrands = new Set(newFilters.brands);
+        const nextCategories = new Set(newFilters.categories);
+
+        // Add brands belonging to selected categories.
+        newFilters.categories.forEach((categoryTitle) => {
+          const categoryId = categoryIdMap.get(categoryTitle);
+
+          if (categoryId == null) return;
+
+          const relatedBrands =
+            categoryBrandMap.get(String(categoryId)) || [];
+
+          relatedBrands.forEach((brandId) => {
+            nextBrands.add(brandId);
+          });
+        });
+
+        // Add categories belonging to selected brands.
+        nextBrands.forEach((brandId) => {
+          const categoryId = brandCategoryMap.get(
+            String(brandId),
+          );
+
+          if (!categoryId) return;
+
+          const categoryTitle =
+            categoryTitleById.get(categoryId);
+
+          if (categoryTitle) {
+            nextCategories.add(categoryTitle);
+          }
+        });
+
+        syncedFilters.brands = Array.from(nextBrands);
+        syncedFilters.categories = Array.from(nextCategories);
+      }
+
+      /*
+       * Update filters with synchronized values.
+       */
+
+      setFilters(syncedFilters);
+
       setCurrentPage(1);
+
       hasTriggeredRef.current = false;
+
       setShowEndMessage(false);
 
+      /*
+       * Update URL with BOTH selected brands and categories.
+       */
+
       updateBrowserUrl({
-        nextFilters: newFilters,
+        nextFilters: syncedFilters,
         nextPage: 1,
       });
     },
-    [updateBrowserUrl],
+    [
+      updateBrowserUrl,
+      categoryIdMap,
+      brandCategoryMap,
+      categoryBrandMap,
+    ],
   );
 
   /* -------------------------------- Search -------------------------------- */
@@ -1691,7 +2064,7 @@ export default function ProductsPage() {
                   aria-hidden="true"
                 />
 
-                {/* CUSTOM LOADER: NO PAGINATION SKELETONS */}
+                {/* CUSTOM LOADER */}
 
                 {isAppending && renderBrandLoader()}
 

@@ -16,6 +16,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "react-hot-toast";
 
 import DashboardHeader from "@/components/Distributor/distributor/DashboardHeader";
 import Sidebar from "../../../components/Distributor/distributor/Sidebar";
@@ -28,8 +29,13 @@ import type {
   IgniteDashboard,
 } from "@/lib/redux/api/distributor/userDashboardApi";
 
-import { useGetUserDashboardQuery } from "@/lib/redux/api/distributor/userDashboardApi";
+import {
+  useGetUserDashboardQuery,
+  usePlaceBankedTcMutation,
+} from "@/lib/redux/api/distributor/userDashboardApi";
+
 import { useGetPairingsQuery } from "@/lib/redux/api/distributor/pairingsApi";
+
 import Loding from "@/components/common/Loding";
 
 // --------------------------------------------------
@@ -244,7 +250,7 @@ function WelcomeHero({
 }
 
 // --------------------------------------------------
-// Cash wallet, floating retail profit and direct referral
+// Quick stats cards
 // --------------------------------------------------
 
 function QuickStatsCards({
@@ -413,13 +419,15 @@ function DashboardOverview({
 type IgniteCoinValues = {
   yellow_value_usd?: number | string | null;
   yellow_value_inr?: number | string | null;
-
   green_value_usd?: number | string | null;
   green_value_inr?: number | string | null;
-
   blue_value_usd?: number | string | null;
   blue_value_inr?: number | string | null;
 };
+
+// --------------------------------------------------
+// Coin card
+// --------------------------------------------------
 
 function CoinCard({
   color,
@@ -464,7 +472,6 @@ function CoinCard({
     <div
       className={`flex min-h-[130px] min-w-0 flex-1 flex-col items-center justify-center rounded-[12px] border ${style.border} bg-gradient-to-b ${style.background} to-white px-1.5 py-2 transition-colors duration-200 hover:border-[#d1d5df] sm:min-h-[140px] sm:px-2`}
     >
-      {/* Coin Icon */}
       <div
         className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${style.circle} sm:h-9 sm:w-9`}
       >
@@ -474,12 +481,10 @@ function CoinCard({
         />
       </div>
 
-      {/* Balance */}
       <p className="mt-1 text-center text-[17px] font-black leading-tight text-[#101828] sm:text-[19px]">
         {formatNumber(value)}
       </p>
 
-      {/* Label */}
       <p
         className="mt-0.5 break-words text-center text-[10px] font-bold leading-3 sm:text-[11px]"
         style={{ color: style.text }}
@@ -487,12 +492,12 @@ function CoinCard({
         {label}
       </p>
 
-      {/* Values */}
       <div className="mt-2 w-full space-y-1 border-t border-[#e9edf2] pt-1.5">
         <div className="flex items-center justify-between gap-1">
           <span className="text-[9px] font-semibold text-[#8a92a6] sm:text-[10px]">
             USD
           </span>
+
           <span className="break-all text-right text-[10px] font-extrabold text-[#344054] sm:text-[11px]">
             {formatCurrency(valueUsd, "USD")}
           </span>
@@ -502,6 +507,7 @@ function CoinCard({
           <span className="text-[9px] font-semibold text-[#8a92a6] sm:text-[10px]">
             INR
           </span>
+
           <span className="break-all text-right text-[10px] font-extrabold text-[#344054] sm:text-[11px]">
             {formatCurrency(valueInr, "INR")}
           </span>
@@ -510,6 +516,10 @@ function CoinCard({
     </div>
   );
 }
+
+// --------------------------------------------------
+// Coins section
+// --------------------------------------------------
 
 function CoinsSection({
   ignite,
@@ -559,6 +569,7 @@ function CoinsSection({
     </section>
   );
 }
+
 // --------------------------------------------------
 // Account summary
 // --------------------------------------------------
@@ -684,15 +695,23 @@ function AccountSummary({
 // Account details table
 // --------------------------------------------------
 
+type BankedTcSide = 1 | 2;
+
 function AccountTable({
   ignite,
+  onOpenBankedTc,
 }: {
   ignite?: IgniteDashboard | null;
+  onOpenBankedTc: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
 
   const isActive =
     ignite?.membership_status?.toLowerCase() === "active";
+
+  const availableBankedTc = toNumber(
+    ignite?.tc_bank_available
+  );
 
   const details = [
     {
@@ -759,12 +778,30 @@ function AccountTable({
 
   return (
     <section className={`${CARD} self-start p-4 sm:p-5`}>
-      <div className="flex min-w-0 items-center justify-between gap-2">
+      <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
         <SectionTitle>My account</SectionTitle>
 
-        <span className="shrink-0 rounded-full bg-[#EAF3FF] px-2.5 py-1 text-[10px] font-bold text-[#3955A6] sm:px-3 sm:text-[11px]">
-          {ignite?.is_placed ? "Placed" : "Account details"}
-        </span>
+        <div className="flex flex-wrap items-center gap-2">
+          {availableBankedTc > 0 && ignite?.ba_id && (
+            <button
+              type="button"
+              onClick={onOpenBankedTc}
+              className="inline-flex h-9 items-center justify-center gap-2 rounded-[10px] bg-[#0E1B3D] px-3 text-[11px] font-bold text-white shadow-sm transition-all hover:bg-[#1d315f] active:scale-[0.97] sm:h-10 sm:px-3.5 sm:text-[12px]"
+            >
+              <HandCoins size={15} />
+
+              <span>Place Banked TC</span>
+
+              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-white px-1 text-[10px] font-black text-[#0E1B3D]">
+                {availableBankedTc}
+              </span>
+            </button>
+          )}
+
+          <span className="shrink-0 rounded-full bg-[#EAF3FF] px-2.5 py-1 text-[10px] font-bold text-[#3955A6] sm:px-3 sm:text-[11px]">
+            {ignite?.is_placed ? "Placed" : "Account details"}
+          </span>
+        </div>
       </div>
 
       <div className="mt-4">
@@ -872,6 +909,191 @@ function AccountTable({
         )}
       </div>
     </section>
+  );
+}
+
+// --------------------------------------------------
+// BANKED TC PLACEMENT POPUP
+// --------------------------------------------------
+
+function BankedTcModal({
+  isOpen,
+  availableCount,
+  isLoading,
+  pendingSide,
+  onClose,
+  onSelectSide,
+}: {
+  isOpen: boolean;
+  availableCount: number;
+  isLoading: boolean;
+  pendingSide: BankedTcSide | null;
+  onClose: () => void;
+  onSelectSide: (side: BankedTcSide) => void;
+}) {
+  return (
+    <AnimatePresence>
+      {isOpen && availableCount > 0 && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#0E1B3D]/55 px-4 py-6 backdrop-blur-[3px]"
+          onClick={() => !isLoading && onClose()}
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.96 }}
+            transition={{ duration: 0.22, ease: "easeOut" }}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="banked-tc-title"
+            onClick={(event) => event.stopPropagation()}
+            className="w-full max-w-[440px] overflow-hidden rounded-[20px] border border-[#e7e9ee] bg-white shadow-[0_25px_70px_rgba(0,0,0,0.2)]"
+          >
+            {/* Header */}
+
+            <div className="relative overflow-hidden border-b border-[#eef0f4] px-5 py-5 sm:px-6">
+              <div
+                className="pointer-events-none absolute -right-10 -top-12 h-36 w-36 rounded-full opacity-[0.08] blur-2xl"
+                style={{ backgroundColor: BRASS }}
+              />
+
+              <div className="relative flex items-start justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] bg-[#f8f1e4] text-[#B8935A]">
+                    <HandCoins size={23} />
+                  </div>
+
+                  <div className="min-w-0">
+                    <h3
+                      id="banked-tc-title"
+                      className="text-[17px] font-black text-[#101828] sm:text-[19px]"
+                    >
+                      Place Banked TC
+                    </h3>
+
+                    <p className="mt-1 text-[11px] text-[#667085] sm:text-[12px]">
+                      Choose your preferred placement side
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={onClose}
+                  disabled={isLoading}
+                  aria-label="Close popup"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#f2f4f7] text-[#667085] transition-colors hover:bg-[#e4e7ec] disabled:opacity-50"
+                >
+                  <span className="text-[20px] leading-none">
+                    ×
+                  </span>
+                </button>
+              </div>
+
+              <div className="relative mt-4 flex items-center justify-between rounded-[11px] border border-[#dbe6fb] bg-[#f4f8ff] px-3.5 py-3">
+                <div>
+                  <p className="text-[11px] font-semibold text-[#667085]">
+                    Available Banked TC
+                  </p>
+
+                  <p className="mt-0.5 text-[12px] font-bold text-[#3955A6]">
+                    Select a side to place your TC
+                  </p>
+                </div>
+
+                <span className="flex h-9 min-w-9 items-center justify-center rounded-[10px] bg-white px-2 text-[17px] font-black text-[#3955A6] shadow-sm">
+                  {availableCount}
+                </span>
+              </div>
+            </div>
+
+            {/* Side selection */}
+
+            <div className="p-5 sm:p-6">
+              <p className="mb-3 text-[12px] font-bold text-[#475467]">
+                Select placement side
+              </p>
+
+              <div className="grid grid-cols-2 gap-3">
+                {/* LEFT SIDE - 1 */}
+
+                <button
+                  type="button"
+                  disabled={isLoading}
+                  onClick={() => onSelectSide(1)}
+                  className="group flex min-h-[125px] flex-col items-center justify-center rounded-[15px] border border-[#ccebdc] bg-[#f3fbf6] px-3 py-4 transition-all hover:border-[#1f9d6b] hover:bg-[#eaf7f0] hover:shadow-[0_5px_18px_rgba(31,157,107,0.10)] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-[#1f9d6b] shadow-sm ring-1 ring-[#d6eee1]">
+                    {isLoading && pendingSide === 1 ? (
+                      <Loader2
+                        size={19}
+                        className="animate-spin"
+                      />
+                    ) : (
+                      <span className="text-[17px] font-black">
+                        1
+                      </span>
+                    )}
+                  </span>
+
+                  <span className="mt-3 text-[14px] font-black text-[#18794e]">
+                    Left Side
+                  </span>
+
+                
+                </button>
+
+                {/* RIGHT SIDE - 2 */}
+
+                <button
+                  type="button"
+                  disabled={isLoading}
+                  onClick={() => onSelectSide(2)}
+                  className="group flex min-h-[125px] flex-col items-center justify-center rounded-[15px] border border-[#dbe6fb] bg-[#f4f8ff] px-3 py-4 transition-all hover:border-[#3955A6] hover:bg-[#eaf3ff] hover:shadow-[0_5px_18px_rgba(57,85,166,0.10)] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-[#3955A6] shadow-sm ring-1 ring-[#dbe6fb]">
+                    {isLoading && pendingSide === 2 ? (
+                      <Loader2
+                        size={19}
+                        className="animate-spin"
+                      />
+                    ) : (
+                      <span className="text-[17px] font-black">
+                        2
+                      </span>
+                    )}
+                  </span>
+
+                  <span className="mt-3 text-[14px] font-black text-[#3955A6]">
+                    Right Side
+                  </span>
+
+                 
+                </button>
+              </div>
+
+              {isLoading && (
+                <div className="mt-4 flex items-center justify-center gap-2 rounded-[10px] bg-[#f7f8fa] px-3 py-3">
+                  <Loader2
+                    size={14}
+                    className="animate-spin text-[#3955A6]"
+                  />
+
+                  <p className="text-[11px] font-semibold text-[#667085]">
+                    Placing your Banked TC...
+                  </p>
+                </div>
+              )}
+
+            
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 
@@ -1113,6 +1335,10 @@ type PairingsQueryResult = {
   refetch?: () => Promise<unknown> | unknown;
 };
 
+// --------------------------------------------------
+// Calendar helpers
+// --------------------------------------------------
+
 function parseCalendarDate(value?: string | null): Date | null {
   if (!value) return null;
 
@@ -1174,6 +1400,7 @@ function buildCvWeekOptions(
 }> {
   const calendarYear = getCalendarYear(calendar);
   const apiWeekNo = getCurrentCalendarWeek(calendar);
+
   const apiWeekStart = parseCalendarDate(
     calendar?.current_week?.start
   );
@@ -1246,6 +1473,10 @@ function getCvYearOptions(calendar?: SalesCalendar): number[] {
     (_, index) => currentYear - index
   );
 }
+
+// --------------------------------------------------
+// Pairings metrics
+// --------------------------------------------------
 
 function getPairingsMetrics(
   response: any
@@ -1322,6 +1553,10 @@ function getPairingsMetrics(
 
   return null;
 }
+
+// --------------------------------------------------
+// Dropdown types
+// --------------------------------------------------
 
 type DropdownOption<T extends string | number> = {
   value: T;
@@ -1861,6 +2096,25 @@ export default function DistributorDashboardPage() {
   const [submittedCvFilters, setSubmittedCvFilters] =
     useState<CvSearchFilters | null>(null);
 
+  // --------------------------------------------------
+  // BANKED TC MODAL STATES
+  // --------------------------------------------------
+
+  const [isBankedTcModalOpen, setIsBankedTcModalOpen] =
+    useState(false);
+
+  const [pendingBankedTcSide, setPendingBankedTcSide] =
+    useState<BankedTcSide | null>(null);
+
+  // --------------------------------------------------
+  // BANKED TC MUTATION
+  // --------------------------------------------------
+
+  const [
+    placeBankedTc,
+    { isLoading: isPlacingBankedTc },
+  ] = usePlaceBankedTcMutation();
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -1943,6 +2197,10 @@ export default function DistributorDashboardPage() {
 
   const hasSalesCalendar = Boolean(salesCalendar);
 
+  // --------------------------------------------------
+  // Set current calendar filters
+  // --------------------------------------------------
+
   useEffect(() => {
     if (!hasSalesCalendar) return;
 
@@ -1972,6 +2230,10 @@ export default function DistributorDashboardPage() {
     }
   ) as unknown as PairingsQueryResult;
 
+  // --------------------------------------------------
+  // CV search
+  // --------------------------------------------------
+
   const handleCvSearch = () => {
     const nextFilters: CvSearchFilters = {
       year: selectedCvYear,
@@ -1989,6 +2251,10 @@ export default function DistributorDashboardPage() {
     setSubmittedCvFilters(nextFilters);
   };
 
+  // --------------------------------------------------
+  // Pairings metrics
+  // --------------------------------------------------
+
   const periodIgniteMetrics = getPairingsMetrics(
     pairingsQuery.data
   );
@@ -1999,6 +2265,66 @@ export default function DistributorDashboardPage() {
         ...periodIgniteMetrics,
       } as IgniteDashboard)
     : ignite;
+
+  // --------------------------------------------------
+  // HANDLE BANKED TC PLACEMENT
+  // --------------------------------------------------
+
+  const handleBankedTcPlacement = async (
+    side: BankedTcSide
+  ) => {
+    if (isPlacingBankedTc) return;
+
+    if (!ignite?.ba_id) {
+      toast.error("Distributor ID is not available.");
+      return;
+    }
+
+    if (toNumber(ignite.tc_bank_available) <= 0) {
+      toast.error("No Banked TC available.");
+      setIsBankedTcModalOpen(false);
+      return;
+    }
+
+    try {
+      setPendingBankedTcSide(side);
+
+      const response = await placeBankedTc({
+        ba_id: ignite.ba_id,
+        side,
+      }).unwrap();
+
+      if (
+        response.success === false ||
+        response.status === false
+      ) {
+        toast.error(
+          response.message || "Unable to place Banked TC."
+        );
+        return;
+      }
+
+      toast.success(
+        response.message ||
+          `Banked TC placed on ${
+            side === 1 ? "Left" : "Right"
+          } Side successfully.`
+      );
+
+      setIsBankedTcModalOpen(false);
+
+      // Refresh dashboard to get updated Banked TC count
+      await refetch();
+    } catch (error: any) {
+      toast.error(
+        error?.data?.message ||
+          error?.message ||
+          "Failed to place Banked TC. Please try again."
+      );
+    } finally {
+      setPendingBankedTcSide(null);
+    }
+  };
 
   // --------------------------------------------------
   // Loading
@@ -2117,7 +2443,12 @@ export default function DistributorDashboardPage() {
               <div className="mt-4 grid min-w-0 grid-cols-1 gap-4 sm:mt-5 sm:gap-5 xl:grid-cols-2">
                 <AccountSummary ignite={cvCounterIgnite} />
 
-                <AccountTable ignite={cvCounterIgnite} />
+                <AccountTable
+                  ignite={cvCounterIgnite}
+                  onOpenBankedTc={() =>
+                    setIsBankedTcModalOpen(true)
+                  }
+                />
               </div>
             </section>
 
@@ -2133,6 +2464,19 @@ export default function DistributorDashboardPage() {
           </div>
         </main>
       </div>
+
+      {/* -------------------------------------------------- */}
+      {/* BANKED TC PLACEMENT MODAL */}
+      {/* -------------------------------------------------- */}
+
+      <BankedTcModal
+        isOpen={isBankedTcModalOpen}
+        availableCount={toNumber(ignite?.tc_bank_available)}
+        isLoading={isPlacingBankedTc}
+        pendingSide={pendingBankedTcSide}
+        onClose={() => setIsBankedTcModalOpen(false)}
+        onSelectSide={handleBankedTcPlacement}
+      />
     </div>
   );
 }

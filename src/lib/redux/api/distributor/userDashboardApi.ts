@@ -1,11 +1,19 @@
 import { baseApi } from "../baseApi";
 
+// =====================================================
+// DASHBOARD USER
+// =====================================================
+
 export interface DashboardUser {
   name: string;
   email: string;
   account_type: string;
   member_since: string;
 }
+
+// =====================================================
+// DASHBOARD STATS
+// =====================================================
 
 export interface DashboardStats {
   total_orders: number;
@@ -16,11 +24,19 @@ export interface DashboardStats {
   cart_items: number;
 }
 
+// =====================================================
+// DASHBOARD IMAGE
+// =====================================================
+
 export interface DashboardImage {
   id: number;
   image_url: string;
   is_primary: boolean;
 }
+
+// =====================================================
+// DASHBOARD WISHLIST ITEM
+// =====================================================
 
 export interface DashboardWishlistItem {
   id: number;
@@ -34,6 +50,10 @@ export interface DashboardWishlistItem {
   added_at: string;
 }
 
+// =====================================================
+// DASHBOARD CART ITEM
+// =====================================================
+
 export interface DashboardCartItem {
   id: number;
   product_id: number;
@@ -45,6 +65,10 @@ export interface DashboardCartItem {
   line_total: number;
   images: DashboardImage[];
 }
+
+// =====================================================
+// DASHBOARD ACTIVITY
+// =====================================================
 
 export interface DashboardActivity {
   type: string;
@@ -58,6 +82,10 @@ export interface DashboardActivity {
   quantity?: number;
   product_name?: string;
 }
+
+// =====================================================
+// IGNITE DASHBOARD
+// =====================================================
 
 export interface IgniteDashboard {
   member_id?: number;
@@ -82,6 +110,10 @@ export interface IgniteDashboard {
   placement_leg?: number;
 }
 
+// =====================================================
+// DASHBOARD LATEST ORDER
+// =====================================================
+
 export interface DashboardLatestOrder {
   order_reference?: string;
   order_number?: string;
@@ -91,6 +123,10 @@ export interface DashboardLatestOrder {
   created_at?: string;
   [key: string]: unknown;
 }
+
+// =====================================================
+// USER DASHBOARD RESPONSE
+// =====================================================
 
 export interface UserDashboardResponse {
   success: boolean;
@@ -106,6 +142,10 @@ export interface UserDashboardResponse {
   };
 }
 
+// =====================================================
+// CREATE CORRECTION REQUEST
+// =====================================================
+
 export interface CreateCorrectionRequestPayload {
   reason: string;
 }
@@ -118,14 +158,44 @@ export interface CreateCorrectionRequestResponse {
   errors?: Record<string, string | string[]>;
 }
 
+// =====================================================
+// PLACE BANKED TC
+// =====================================================
+
+export interface PlaceBankedTcPayload {
+  ba_id: string;
+  side: 1 | 2;
+}
+
+export interface PlaceBankedTcResponse {
+  success?: boolean;
+  status?: boolean;
+  message?: string;
+  data?: unknown;
+  errors?: Record<string, string | string[]>;
+}
+
+// =====================================================
+// USER DASHBOARD API
+// =====================================================
+
 export const userDashboardApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
+    // -------------------------------------------------
+    // GET USER DASHBOARD
+    // -------------------------------------------------
+
     getUserDashboard: builder.query<UserDashboardResponse, void>({
       query: () => ({
         url: "/user/dashboard",
         method: "GET",
       }),
     }),
+
+    // -------------------------------------------------
+    // CREATE CORRECTION REQUEST
+    // -------------------------------------------------
+
     createCorrectionRequest: builder.mutation<
       CreateCorrectionRequestResponse,
       CreateCorrectionRequestPayload
@@ -136,12 +206,32 @@ export const userDashboardApi = baseApi.injectEndpoints({
         body,
       }),
     }),
+
+    // -------------------------------------------------
+    // PLACE BANKED TC
+    // -------------------------------------------------
+
+    placeBankedTc: builder.mutation<
+      PlaceBankedTcResponse,
+      PlaceBankedTcPayload
+    >({
+      query: (body) => ({
+        url: "/distributor/genealogy/place-banked-tc",
+        method: "POST",
+        body,
+      }),
+    }),
   }),
 });
+
+// =====================================================
+// EXPORT HOOKS
+// =====================================================
 
 export const {
   useGetUserDashboardQuery,
   useCreateCorrectionRequestMutation,
+  usePlaceBankedTcMutation,
 } = userDashboardApi;
 
 export default userDashboardApi;
