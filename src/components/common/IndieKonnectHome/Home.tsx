@@ -2095,151 +2095,148 @@ export default function IndieKonnectHome() {
           HERO
       ================================================= */}
 
-      <section className="relative isolate flow-root left-1/2 w-screen -translate-x-1/2 overflow-hidden bg-white">
-        <div
-          className="
-    relative
-    w-full
-    h-[280px]
-    sm:h-[340px]
-    md:h-[410px]
-    lg:h-[470px]
-    xl:h-[530px]
-    2xl:h-[570px]
-  "
-        >
-          <AnimatePresence initial={false}>
-            {heroSlides.map((slide: any, index: number) => {
-              const total = heroSlides.length;
+<section className="relative isolate flow-root left-1/2 w-screen -translate-x-1/2 overflow-hidden bg-white">
+  <div
+    className="
+      relative
+      w-full
+      aspect-[2034/773]
+      min-h-[150px]
+      max-h-[580px]
+    "
+  >
+    <AnimatePresence initial={false}>
+      {heroSlides.map((slide: any, index: number) => {
+        const total = heroSlides.length;
 
-              let diff = index - heroIndex;
+        let diff = index - heroIndex;
 
-              if (diff > total / 2) diff -= total;
-              if (diff < -total / 2) diff += total;
+        if (diff > total / 2) diff -= total;
+        if (diff < -total / 2) diff += total;
 
-              const isActive = diff === 0;
-              const isNearby = Math.abs(diff) <= 1;
+        const isActive = diff === 0;
+        const isNearby = Math.abs(diff) <= 1;
 
-              if (!isNearby) return null;
+        if (!isNearby) return null;
 
-              return (
-                <motion.div
+        return (
+          <motion.div
+            key={slide.id}
+            initial={{
+              opacity: 0,
+              x: diff > 0 ? "100%" : "-100%",
+            }}
+            animate={{ opacity: 1, x: "0%" }}
+            exit={{
+              opacity: 0,
+              x: diff > 0 ? "-100%" : "100%",
+            }}
+            transition={{
+              duration: 0.68,
+              ease: [0.16, 1, 0.3, 1],
+            }}
+            className="absolute inset-0 h-full w-full"
+            style={{ zIndex: isActive ? 20 : 10 }}
+          >
+            <button
+              type="button"
+              onClick={() => {
+                if (diff === -1) {
+                  setHeroIndex((heroIndex - 1 + total) % total);
+                  return;
+                }
+
+                if (diff === 1) {
+                  setHeroIndex((heroIndex + 1) % total);
+                  return;
+                }
+
+                router.push(slide.navigationUrl || "/products");
+              }}
+              className="group relative block h-full w-full overflow-hidden bg-white focus:outline-none"
+            >
+              {slide.mediaType === "video" && slide.video ? (
+                <video
                   key={slide.id}
-                  initial={{
-                    opacity: 0,
-                    x: diff > 0 ? "100%" : "-100%",
+                  src={slide.video}
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  preload={isActive ? "auto" : "metadata"}
+                  poster={slide.image || undefined}
+                  className="absolute inset-0 h-full w-full object-contain"
+                />
+              ) : (
+                <img
+                  src={slide.image || getPromoPlaceholderImage()}
+                  alt={slide.alt || "Promotional banner"}
+                  draggable={false}
+                  loading={isActive ? "eager" : "lazy"}
+                  className="absolute inset-0 h-full w-full select-none object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src = getPromoPlaceholderImage();
                   }}
-                  animate={{
-                    opacity: 1,
-                    x: "0%",
-                  }}
-                  exit={{
-                    opacity: 0,
-                    x: diff > 0 ? "-100%" : "100%",
-                  }}
-                  transition={{
-                    duration: 0.68,
-                    ease: [0.16, 1, 0.3, 1],
-                  }}
-                  className="absolute inset-0 h-full w-full"
-                  style={{ zIndex: isActive ? 20 : 10 }}
-                >
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (diff === -1) {
-                        setHeroIndex((heroIndex - 1 + total) % total);
-                        return;
-                      }
+                />
+              )}
+            </button>
+          </motion.div>
+        );
+      })}
+    </AnimatePresence>
 
-                      if (diff === 1) {
-                        setHeroIndex((heroIndex + 1) % total);
-                        return;
-                      }
+    {heroSlides.length > 1 && (
+      <>
+        <button
+          type="button"
+          aria-label="Previous banner"
+          onClick={() =>
+            setHeroIndex(
+              (heroIndex - 1 + heroSlides.length) % heroSlides.length
+            )
+          }
+          className="absolute left-2 top-1/2 z-30 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-[#111827] shadow lg:flex xl:left-5"
+        >
+          <ChevronLeft size={17} />
+        </button>
 
-                      router.push(slide.navigationUrl || "/products");
-                    }}
-                    className="group relative block h-full w-full overflow-hidden bg-white focus:outline-none"
-                  >
-                    {slide.mediaType === "video" && slide.video ? (
-                      <video
-                        key={slide.id}
-                        src={slide.video}
-                        autoPlay
-                        muted
-                        loop
-                        playsInline
-                        preload={isActive ? "auto" : "metadata"}
-                        poster={slide.image || undefined}
-                        className="absolute inset-0 block h-full w-full object-cover object-center"
-                      />
-                    ) : (
-                      <img
-                        src={slide.image || getPromoPlaceholderImage()}
-                        alt={slide.alt || "Promotional banner"}
-                        draggable={false}
-                        loading={isActive ? "eager" : "lazy"}
-                        className="absolute inset-0 block h-full w-full select-none object-cover object-center"
-                        onError={(e) => {
-                          e.currentTarget.src = getPromoPlaceholderImage();
-                        }}
-                      />
-                    )}
-                  </button>
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
+        <button
+          type="button"
+          aria-label="Next banner"
+          onClick={() =>
+            setHeroIndex((heroIndex + 1) % heroSlides.length)
+          }
+          className="absolute right-2 top-1/2 z-30 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-[#111827] shadow lg:flex xl:right-5"
+        >
+          <ChevronRight size={17} />
+        </button>
+      </>
+    )}
+  </div>
 
-          {heroSlides.length > 1 && (
-            <>
-              <button
-                type="button"
-                aria-label="Previous banner"
-                onClick={() =>
-                  setHeroIndex(
-                    (heroIndex - 1 + heroSlides.length) % heroSlides.length,
-                  )
-                }
-                className="absolute left-2 top-1/2 z-30 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-[#111827] shadow lg:flex xl:left-5"
-              >
-                <ChevronLeft size={17} />
-              </button>
-
-              <button
-                type="button"
-                aria-label="Next banner"
-                onClick={() =>
-                  setHeroIndex((heroIndex + 1) % heroSlides.length)
-                }
-                className="absolute right-2 top-1/2 z-30 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-[#111827] shadow lg:flex xl:right-5"
-              >
-                <ChevronRight size={17} />
-              </button>
-            </>
-          )}
-        </div>
-
-        {heroSlides.length > 1 && (
-          <div className="flex items-center justify-center gap-1.5 py-2 sm:py-3">
-            {heroSlides.map((slide: any, index: number) => (
-              <button
-                key={slide.id}
-                type="button"
-                onClick={() => setHeroIndex(index)}
-                className={`
+  {heroSlides.length > 1 && (
+    <div className="flex items-center justify-center gap-1.5 py-2 sm:py-3">
+      {heroSlides.map((slide: any, index: number) => (
+        <button
+          key={slide.id}
+          type="button"
+          onClick={() => setHeroIndex(index)}
+          className={`
             h-[5px] rounded-full transition-all duration-300
-            ${index === heroIndex
-                    ? "w-7 bg-[#071a41]"
-                    : "w-[5px] bg-[#cfd3d7]"
-                  }
+            ${
+              index === heroIndex
+                ? "w-7 bg-[#071a41]"
+                : "w-[5px] bg-[#cfd3d7]"
+            }
           `}
-                aria-label={`Go to banner ${index + 1}`}
-              />
-            ))}
-          </div>
-        )}
-      </section>
+          aria-label={`Go to banner ${index + 1}`}
+        />
+      ))}
+    </div>
+  )}
+</section>
+
+
       {/* =================================================
           MAIN
       ================================================= */}
