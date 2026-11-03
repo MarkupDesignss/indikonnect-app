@@ -57,7 +57,7 @@ import Loding from "@/components/common/Loding";
 // --------------------------------------------------
 
 const CARD =
-  "min-w-0 rounded-[20px] border border-[#E6E9EF] bg-white shadow-[0_4px_20px_rgba(24,39,75,0.03)]";
+  "min-w-0 rounded-[16px] border border-[#E6E9EF] bg-white shadow-[0_4px_20px_rgba(24,39,75,0.03)]";
 
 const CARD_HOVER =
   "transition-all duration-200 hover:border-[#C8CFD9] hover:shadow-[0_12px_28px_rgba(24,39,75,0.06)] motion-reduce:transition-none";
@@ -150,7 +150,7 @@ function SectionTitle({
         <span className="h-2 w-2 rounded-[3px] bg-[#617896]" />
       </span>
       <h2
-        className={`min-w-0 font-bold leading-tight tracking-[-0.035em] text-[#181818] ${large ? "text-[19px] sm:text-[22px]" : "text-[17px] sm:text-[19px]"}`}
+        className={`min-w-0 font-bold leading-tight tracking-[-0.035em] text-[#181818] ${large ? "text-[16px] sm:text-[18px]" : "text-[16px] sm:text-[18px]"}`}
       >
         {children}
       </h2>
@@ -211,18 +211,18 @@ function WelcomeHero({
         aria-hidden="true"
         className="pointer-events-none absolute bottom-[-150px] left-[35%] h-64 w-64 rounded-full bg-[#D6E0F4]/10 blur-3xl"
       />
-      <div className="relative grid gap-5 p-5 sm:p-7 lg:grid-cols-[minmax(0,1fr)_minmax(240px,310px)] lg:items-center lg:px-9 lg:py-8">
+      <div className="relative grid gap-3 p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_minmax(210px,270px)] lg:items-center lg:px-6 lg:py-5">
         <div className="min-w-0">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#E1E7F0] bg-white/90 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[.13em] text-[#4564B7] sm:text-[11px]">
+          <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-[#E1E7F0] bg-white/90 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[.13em] text-[#4564B7] sm:text-[11px]">
             <span className="h-2 w-2 rounded-full bg-[#6686B9]" /> Distributor
             workspace
           </div>
           <div className="flex min-w-0 items-center gap-3.5">
-            <div className="hidden h-[54px] w-[54px] shrink-0 items-center justify-center rounded-[16px] bg-[#283B55] text-[18px] font-bold text-white shadow-[0_8px_20px_rgba(34,52,77,.12)] sm:flex">
+            <div className="hidden h-[44px] w-[44px] shrink-0 items-center justify-center rounded-[16px] bg-[#283B55] text-[18px] font-bold text-white shadow-[0_8px_20px_rgba(34,52,77,.12)] sm:flex">
               {initials || "D"}
             </div>
             <div className="min-w-0">
-              <h1 className="break-words text-[25px] font-bold leading-tight tracking-[-.045em] text-[#233254] sm:text-[31px]">
+              <h1 className="break-words text-[20px] font-bold leading-tight tracking-[-.04em] text-[#233254] sm:text-[24px]">
                 Welcome back, {displayName}
               </h1>
               <p className="mt-2 max-w-xl text-[12px] leading-5 text-[#6C7794] sm:text-[13px] sm:leading-6">
@@ -231,7 +231,7 @@ function WelcomeHero({
               </p>
             </div>
           </div>
-          <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-[#DCE5F6] pt-4">
+          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-[#DCE5F6] pt-4">
             <span className="inline-flex items-center gap-2 text-[11px] font-semibold text-[#6475A0]">
               <ShieldCheck size={14} className="text-[#5E83DA]" />
               {formatStatus(user?.account_type || "distributor")} account
@@ -252,13 +252,13 @@ function WelcomeHero({
               <Sparkles size={17} />
             </span>
           </div>
-          <p className="mt-5 text-[11px] font-semibold text-[#7B869D]">
+          <p className="mt-3 text-[10px] font-semibold text-[#7B869D]">
             Distributor ID
           </p>
-          <p className="dashboard-number mt-1 break-all text-[22px] font-bold tracking-[-.03em] text-[#293962] sm:text-[25px]">
+          <p className="dashboard-number mt-1 break-all text-[18px] font-bold tracking-[-.03em] text-[#293962] sm:text-[20px]">
             {distributorId}
           </p>
-          <div className="mt-4 flex items-center gap-2 border-t border-[#E8ECF7] pt-3 text-[10px] text-[#8390AE]">
+          <div className="mt-3 flex items-center gap-2 border-t border-[#E8ECF7] pt-3 text-[10px] text-[#8390AE]">
             <span className="h-2 w-2 rounded-full bg-[#55A58C]" /> IndieKonnect
             distributor portal
           </div>
@@ -318,21 +318,21 @@ function QuickStatsCards({
   ] as const;
   return (
     <section aria-label="Key performance indicators" className="mt-4 sm:mt-5">
-      <div className="grid grid-cols-1 gap-3 min-[540px]:grid-cols-2 lg:grid-cols-3 sm:gap-4">
+      <div className="grid grid-cols-1 gap-2.5 min-[540px]:grid-cols-2 lg:grid-cols-3 sm:gap-3">
         {cards.map((item) => {
           const Icon = item.icon;
           return (
             <div
               key={item.label}
-              className="group relative flex min-h-[150px] min-w-0 flex-col justify-between overflow-hidden rounded-[20px] border p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_26px_rgba(64,84,133,.09)] sm:p-5"
+              className="group relative flex min-h-[116px] min-w-0 flex-col justify-between overflow-hidden rounded-[15px] border p-3 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_26px_rgba(64,84,133,.09)] sm:p-4"
               style={{ background: item.bg, borderColor: item.border }}
             >
               <div className="flex items-center justify-between gap-2">
                 <span
-                  className="flex h-11 w-11 items-center justify-center rounded-[14px]"
+                  className="flex h-9 w-9 items-center justify-center rounded-[11px]"
                   style={{ backgroundColor: item.iconBg, color: item.tone }}
                 >
-                  <Icon size={21} strokeWidth={1.8} />
+                  <Icon size={18} strokeWidth={1.8} />
                 </span>
                 <ArrowUpRight
                   size={18}
@@ -340,11 +340,11 @@ function QuickStatsCards({
                   style={{ color: item.tone }}
                 />
               </div>
-              <div className="mt-5 min-w-0">
+              <div className="mt-3 min-w-0">
                 <p className="text-[12px] font-semibold text-[#64718C]">
                   {item.label}
                 </p>
-                <p className="dashboard-number mt-1 break-words text-[27px] font-bold leading-tight tracking-[-.045em] text-[#24334F] sm:text-[31px]">
+                <p className="dashboard-number mt-1 break-words text-[21px] font-bold leading-tight tracking-[-.045em] text-[#24334F] sm:text-[24px]">
                   {item.value === null
                     ? "—"
                     : item.kind === "currency"
@@ -415,7 +415,7 @@ function DashboardOverview({ stats }: { stats?: DashboardStats }) {
     },
   ];
   return (
-    <section className="mt-7 sm:mt-8">
+    <section className="mt-5 sm:mt-6">
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
           <SectionTitle>Business overview</SectionTitle>
@@ -433,7 +433,7 @@ function DashboardOverview({ stats }: { stats?: DashboardStats }) {
           return (
             <div
               key={item.label}
-              className="group flex min-h-[139px] min-w-0 flex-col justify-between rounded-[18px] border border-[#E8EDF5] bg-white p-3.5 shadow-[0_3px_12px_rgba(52,72,120,.03)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_26px_rgba(52,72,120,.08)] sm:p-4"
+              className="group flex min-h-[112px] min-w-0 flex-col justify-between rounded-[14px] border border-[#E8EDF5] bg-white p-3 shadow-[0_3px_12px_rgba(52,72,120,.03)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_26px_rgba(52,72,120,.08)] sm:p-4"
             >
               <div className="flex items-start justify-between">
                 <span
@@ -448,7 +448,7 @@ function DashboardOverview({ stats }: { stats?: DashboardStats }) {
                 />
               </div>
               <div className="pt-4">
-                <p className="dashboard-number break-words text-[25px] font-bold leading-none tracking-[-.045em] text-[#25334F] sm:text-[29px]">
+                <p className="dashboard-number break-words text-[20px] font-bold leading-none tracking-[-.045em] text-[#25334F] sm:text-[23px]">
                   {item.value == null ? "—" : formatNumber(item.value)}
                 </p>
                 <p className="mt-2 text-[11px] font-medium leading-4 text-[#78859D] sm:text-[12px]">
@@ -1022,8 +1022,8 @@ function RecentActivity({ activity }: { activity: DashboardActivity[] }) {
           style={
             hasOverflow
               ? {
-                  maxHeight: `${MAX_VISIBLE_ACTIVITY * ACTIVITY_ITEM_HEIGHT}px`,
-                }
+                maxHeight: `${MAX_VISIBLE_ACTIVITY * ACTIVITY_ITEM_HEIGHT}px`,
+              }
               : undefined
           }
         >
@@ -1057,7 +1057,7 @@ function RecentActivity({ activity }: { activity: DashboardActivity[] }) {
           ))}
         </div>
       ) : (
-        <div className="mt-4 flex min-h-[185px] flex-col items-center justify-center rounded-[14px] border border-dashed border-[#E8E8E8] bg-[#FBFBFB] p-5 text-center">
+        <div className="mt-4 flex min-h-[145px] flex-col items-center justify-center rounded-[14px] border border-dashed border-[#E8E8E8] bg-[#FBFBFB] p-5 text-center">
           <span className="flex h-11 w-11 items-center justify-center rounded-[13px] bg-white text-[#989898] ring-1 ring-[#EBEBEB]">
             <Activity size={19} />
           </span>
@@ -1082,16 +1082,16 @@ function LatestOrderSection({ order }: { order: DashboardLatestOrder | null }) {
     order?.order_reference || order?.order_number || order?.reference;
   const orderData = order as
     | (DashboardLatestOrder & {
-        total_payable?: number | string;
-        order_date?: string;
-      })
+      total_payable?: number | string;
+      order_date?: string;
+    })
     | null;
   const amount = order?.total_amount ?? orderData?.total_payable;
   const status = order?.status?.toLowerCase() ?? "";
   const statusStyle =
     status.includes("deliver") ||
-    status.includes("confirm") ||
-    status.includes("complete")
+      status.includes("confirm") ||
+      status.includes("complete")
       ? "border-[#D8EEE0] bg-[#F1FAF5] text-[#21815A]"
       : status.includes("fail") || status.includes("cancel")
         ? "border-[#F1D6D6] bg-[#FFF5F5] text-[#B45454]"
@@ -1152,7 +1152,7 @@ function LatestOrderSection({ order }: { order: DashboardLatestOrder | null }) {
           )}
         </div>
       ) : (
-        <div className="mt-4 flex min-h-[185px] flex-col items-center justify-center rounded-[14px] border border-dashed border-[#E8E8E8] bg-[#FBFBFB] p-5 text-center">
+        <div className="mt-4 flex min-h-[145px] flex-col items-center justify-center rounded-[14px] border border-dashed border-[#E8E8E8] bg-[#FBFBFB] p-5 text-center">
           <span className="flex h-11 w-11 items-center justify-center rounded-[13px] bg-white text-[#989898] ring-1 ring-[#EBEBEB]">
             <ShoppingBag size={19} />
           </span>
@@ -1380,15 +1380,15 @@ function PosterCalendarTable({
   onSelectWeek: (weekNo: number) => void;
 }) {
   const header =
-    "border border-[#b1c6e2] px-1.5 py-2 text-center text-[9px] font-extrabold uppercase leading-tight sm:text-[10px]";
+    "border border-[#c5d1e1] px-1 py-1.5 text-center text-[8px] font-bold uppercase leading-[1.2] sm:text-[9px]";
   const cell =
-    "border border-[#b1c6e2] px-1.5 py-[9px] text-center text-[10px] leading-4 sm:text-[11px]";
+    "border border-[#c5d1e1] px-1 py-[5px] text-center text-[9px] leading-[1.2] sm:text-[9.5px]";
   return (
-    <div className="min-w-0 overflow-x-auto rounded-xl border-[3px] border-[#0a3681] bg-[#0a3681] shadow-[0_8px_18px_rgba(4,28,90,.15)]">
-      <table className="w-full min-w-[575px] border-collapse bg-white">
+    <div className="min-w-0 overflow-x-auto rounded-lg border border-[#d8e2f0] bg-white shadow-[0_2px_8px_rgba(16,42,85,.06)]">
+      <table className="w-full min-w-[455px] table-fixed border-collapse bg-white">
         <thead>
           <tr className="bg-[#113a83] text-white">
-            <th className={`${header} w-[11%] border-[#29549c]`}>
+            <th className={`${header} w-[9%] border-[#29549c]`}>
               Sales
               <br />
               month
@@ -1396,12 +1396,12 @@ function PosterCalendarTable({
             <th className={`${header} border-[#29549c]`} colSpan={3}>
               Sales week
             </th>
-            <th className={`${header} w-[21%] border-[#29549c]`}>
+            <th className={`${header} w-[20%] border-[#29549c]`}>
               Commission
               <br />
               payout
             </th>
-            <th className={`${header} w-[22%] border-[#29549c]`}>Rank basis</th>
+            <th className={`${header} w-[19%] border-[#29549c]`}>Rank basis</th>
           </tr>
           <tr className="bg-[#f5cb53] text-[#173a70]">
             <th className={header} aria-label="Month number" />
@@ -1432,21 +1432,21 @@ function PosterCalendarTable({
                     {index === 0 && (
                       <td
                         rowSpan={weeks.length}
-                        className="border-[2px] border-[#214a89] bg-[#f8d064] px-1 text-center align-middle"
+                        className="border border-[#c5d1e1] bg-[#f8dfa0] px-0.5 text-center align-middle"
                       >
-                        <span className="text-[33px] font-black leading-none text-[#123d84]">
+                        <span className="text-[19px] font-extrabold leading-none text-[#123d84] sm:text-[22px]">
                           {month.month_no}
                         </span>
                       </td>
                     )}
-                    <td className={`${cell} w-[9%] font-black text-[#123d84]`}>
+                    <td className={`${cell} w-[8%] font-black text-[#123d84]`}>
                       <button
                         type="button"
                         title={`Week ${week.week_no} · ${week.is_settled ? "Settled" : "Pending"}${active ? " · Current week" : ""}`}
                         onClick={() => onSelectWeek(week.week_no!)}
                         aria-label={`Select week ${week.week_no} for CV search`}
                         aria-pressed={selected}
-                        className={`mx-auto flex h-8 min-w-8 items-center justify-center rounded-md px-1 text-[15px] font-black outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[#f2a91b] ${selected ? "bg-[#123d84] text-white" : active ? "bg-[#ffe6a0] text-[#123d84] hover:bg-[#fbd473]" : "text-[#123d84] hover:bg-[#dceaff]"}`}
+                        className={`mx-auto flex h-[22px] min-w-[24px] items-center justify-center rounded px-0.5 text-[10px] font-bold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[#f2a91b] ${selected ? "bg-[#123d84] text-white" : active ? "bg-[#ffe6a0] text-[#123d84] hover:bg-[#fbd473]" : "text-[#123d84] hover:bg-[#dceaff]"}`}
                       >
                         {week.week_no}
                       </button>
@@ -1467,20 +1467,20 @@ function PosterCalendarTable({
                       className={`${cell} whitespace-nowrap bg-[#fff0b5]`}
                       title={week.payout_date ?? ""}
                     >
-                      <span className="rounded bg-[#f7d66f] px-1.5 py-1 font-extrabold text-[#143f82]">
+                      <span className="rounded-sm bg-[#f8e6a9] px-0.5 py-0.5 font-bold text-[#143f82]">
                         {formatPosterApiDate(week.payout_date)}
                       </span>
                     </td>
                     {index === 0 && (
                       <td
                         rowSpan={weeks.length}
-                        className="border-[2px] border-[#214a89] bg-[#f7f9fd] px-1.5 py-2 text-center align-middle"
+                        className="border border-[#c5d1e1] bg-[#f9fafc] px-1 py-1.5 text-center align-middle"
                       >
                         {basis ? (
-                          <div className="mx-auto max-w-[150px] text-[10px] font-extrabold uppercase leading-[1.45] text-[#153c79]">
+                          <div className="mx-auto max-w-[125px] text-[9px] font-bold uppercase leading-[1.3] text-[#153c79]">
                             {basis.title}
                             {basis.period && (
-                              <div className="mt-1 text-[8px] font-semibold text-[#68778c]">
+                              <div className="mt-0.5 text-[8px] font-medium text-[#68778c]">
                                 ({basis.period})
                               </div>
                             )}
@@ -1507,10 +1507,12 @@ function SalesCalendarPoster({
   calendar,
   selectedWeek,
   onSelectWeek,
+  children,
 }: {
   calendar?: SalesCalendar;
   selectedWeek: number;
   onSelectWeek: (weekNo: number) => void;
+  children?: React.ReactNode;
 }) {
   const year = getCalendarYear(calendar);
   const months = [...(calendar?.all_months ?? [])].sort(
@@ -1532,60 +1534,68 @@ function SalesCalendarPoster({
             </p>
           </div>
         </div>
+        {children && <div className="mt-4 border-t border-[#e3e8f0] pt-3">{children}</div>}
       </section>
     );
   }
 
   return (
-    <section className="relative isolate mt-5 overflow-hidden rounded-[22px] border border-[#18448c] bg-[#0f4ca7] p-3 shadow-[0_16px_35px_rgba(8,51,126,.12)] sm:p-5 lg:p-6">
+    <section className="relative isolate mt-3 overflow-hidden rounded-[16px] border border-[#d7e0eb] bg-gradient-to-br from-[#eaf1fb] via-[#f5f8fc] to-white p-3 shadow-[0_3px_14px_rgba(16,42,85,.04)] sm:p-4">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 opacity-30"
         style={{
           backgroundImage:
-            "repeating-conic-gradient(from 0deg at 50% 27%, rgba(255,255,255,.12) 0deg, rgba(255,255,255,.12) 7deg, transparent 7deg, transparent 17deg)",
+            "linear-gradient(90deg,rgba(54,95,157,.035),transparent)",
         }}
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -right-12 -top-12 h-48 w-48 rounded-full border-[20px] border-white/10"
+        className="pointer-events-none absolute -right-12 -top-12 h-48 w-48 rounded-full border-[12px] border-[#d5e4f8]/20"
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -left-10 top-20 h-36 w-36 rounded-full bg-[#c7e1ff]/10 blur-2xl"
+        className="pointer-events-none absolute -left-10 top-20 h-36 w-36 rounded-full bg-[#c7e1ff]/15 blur-2xl"
       />
 
-      <div className="relative mb-5 flex flex-wrap items-start justify-between gap-3 sm:mb-6">
-        <div className="inline-flex items-center gap-2 rounded-xl border border-[#f4df92] bg-[#ffdf74] px-3 py-2 shadow-sm">
-          <span className="text-[12px] font-black leading-[1.05] tracking-tight text-[#164286]">
+      <div className="relative mb-2 flex flex-wrap items-center justify-between gap-2">
+        <div className="inline-flex items-center gap-2 rounded-md border border-[#e9d8a0] bg-[#fff2c7] px-2 py-1">
+          <span className="text-[9px] font-black leading-[1.05] tracking-tight text-[#164286]">
             INDIE
             <br />
             KONNECT
           </span>
         </div>
         {activeWeek && (
-          <span className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1.5 text-[11px] font-semibold text-white backdrop-blur-sm">
-            <span className="h-2 w-2 rounded-full bg-[#ffd46a]" />
+          <span className="inline-flex items-center gap-2 rounded-full border border-[#d7e2ee] bg-white px-2.5 py-1 text-[10px] font-semibold text-[#34547f]">
+            <span className="h-2 w-2 rounded-full bg-[#d09e36]" />
             Current week {activeWeek.week_no}
           </span>
         )}
       </div>
 
-      <div className="relative mb-6 text-center sm:mb-7">
-        <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-4">
-          <h2 className="text-[26px] font-black uppercase leading-[1.06] tracking-[-.035em] text-[#ffcd4d] [text-shadow:0_2px_0_#0b347c] sm:text-[38px] lg:text-[48px]">
+      {/* Find CV appears ABOVE the sales calendar, within the same card. */}
+      {children && (
+        <div className="relative mb-4 rounded-[12px] border border-[#dce5ef] bg-white/90 p-3 sm:p-4">
+          {children}
+        </div>
+      )}
+
+      <div className="relative mb-3 text-center">
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <h2 className="text-[17px] font-extrabold uppercase leading-tight tracking-[-.025em] text-[#1c3d71] sm:text-[19px] lg:text-[21px]">
             Sales Month Calendar
           </h2>
-          <span className="rounded-[12px] border-2 border-white/80 bg-[#ffd25d] px-3 py-1 text-[18px] font-black text-[#153d80] shadow-sm sm:text-[24px]">
+          <span className="rounded-md border border-[#e3d098] bg-[#fff0c3] px-2 py-0.5 text-[13px] font-extrabold text-[#234b85] sm:text-[14px]">
             {year}
           </span>
         </div>
-        <p className="mt-2 text-[11px] leading-5 text-white/80 sm:text-[12px]">
+        <p className="mt-1 text-[10px] leading-4 text-[#65758b]">
           Click a week number to select it for CV performance search
         </p>
       </div>
 
-      <div className="relative grid min-w-0 grid-cols-1 items-start gap-4 2xl:grid-cols-2">
+      <div className="relative grid min-w-0 grid-cols-1 items-start gap-2 xl:grid-cols-2">
         <PosterCalendarTable
           months={months.slice(0, half)}
           year={year}
@@ -1600,12 +1610,12 @@ function SalesCalendarPoster({
         />
       </div>
 
-      <div className="relative mt-5 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/20 bg-[#0c397f]/65 px-4 py-3 text-[10px] leading-4 text-white/90 sm:text-[11px]">
+      <div className="relative mt-2 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[#e0e8f1] bg-white/80 px-2.5 py-2 text-[9px] leading-4 text-[#66758b] sm:text-[10px]">
         <span>
           Week dates and payout dates: dashboard API • Rank basis: supplied 2026
           reference poster
         </span>
-        <span className="font-bold text-[#ffe291]">www.indiekonnect.com</span>
+        <span className="font-bold text-[#284e85]">www.indiekonnect.com</span>
       </div>
     </section>
   );
@@ -1824,9 +1834,8 @@ function SearchableDropdown<T extends string | number>({
 
         <ChevronDown
           size={16}
-          className={`shrink-0 text-[#7c879b] transition-transform duration-200 group-hover:text-[#262626] ${
-            open ? "rotate-180 text-[#262626]" : ""
-          }`}
+          className={`shrink-0 text-[#7c879b] transition-transform duration-200 group-hover:text-[#262626] ${open ? "rotate-180 text-[#262626]" : ""
+            }`}
         />
       </button>
 
@@ -1887,11 +1896,10 @@ function SearchableDropdown<T extends string | number>({
                     role="option"
                     aria-selected={featuredOption.value === value}
                     onClick={() => chooseOption(featuredOption)}
-                    className={`flex w-full items-center gap-2.5 rounded-[11px] border px-3 py-2.5 text-left transition-colors ${
-                      featuredOption.value === value
+                    className={`flex w-full items-center gap-2.5 rounded-[11px] border px-3 py-2.5 text-left transition-colors ${featuredOption.value === value
                         ? "border-[#D0D0D0] bg-[#F2F2F2]"
                         : "border-[#E7E7E7] bg-[#FAFAFA] hover:bg-[#EFEFEF]"
-                    }`}
+                      }`}
                   >
                     <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] bg-white text-[#1f9d6b] ring-1 ring-[#d9eee2]">
                       <CalendarDays size={15} />
@@ -1928,11 +1936,10 @@ function SearchableDropdown<T extends string | number>({
                         role="option"
                         aria-selected={isSelected}
                         onClick={() => chooseOption(option)}
-                        className={`flex w-full items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-left transition-colors ${
-                          isSelected
+                        className={`flex w-full items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-left transition-colors ${isSelected
                             ? "bg-[#EFEFEF] text-[#202020]"
                             : "text-[#344054] hover:bg-[#F7F7F7]"
-                        }`}
+                          }`}
                       >
                         <span className="min-w-0 flex-1">
                           <span className="block truncate text-[12px] font-bold">
@@ -2034,35 +2041,33 @@ function CvFilters({
     apiCurrentMonth ??
     (derivedCurrentMonth
       ? {
-          year: calendar?.year,
-          month_no: derivedCurrentMonth.month_no,
-          label: derivedCurrentMonth.label,
-          start: derivedCurrentMonth.weeks?.[0]?.start,
-          end: (derivedCurrentMonth.weeks ?? []).slice(-1)[0]?.end,
-        }
+        year: calendar?.year,
+        month_no: derivedCurrentMonth.month_no,
+        label: derivedCurrentMonth.label,
+        start: derivedCurrentMonth.weeks?.[0]?.start,
+        end: (derivedCurrentMonth.weeks ?? []).slice(-1)[0]?.end,
+      }
       : undefined);
 
   const currentWeekLabel =
     currentWeek?.start && currentWeek?.end
       ? `Week ${currentWeek.week_no ?? "—"}: ${formatCalendarDate(
-          currentWeek.start,
-        )} – ${formatCalendarDate(currentWeek.end)} ${
-          currentWeek.year ?? calendar?.year ?? ""
+        currentWeek.start,
+      )} – ${formatCalendarDate(currentWeek.end)} ${currentWeek.year ?? calendar?.year ?? ""
         }`.trim()
       : "Sales calendar from dashboard";
 
   const currentMonthLabel =
     currentMonth?.start && currentMonth?.end
       ? `${formatCalendarDate(
-          currentMonth.start,
-        )} – ${formatCalendarDate(currentMonth.end)} ${
-          currentMonth.year ?? calendar?.year ?? ""
+        currentMonth.start,
+      )} – ${formatCalendarDate(currentMonth.end)} ${currentMonth.year ?? calendar?.year ?? ""
         }`.trim()
       : currentMonth?.label || "—";
 
   return (
-    <div className={`${CARD} dashboard-card mt-4 p-4 sm:p-5 lg:p-6`}>
-      <div className="mb-4 flex min-w-0 flex-col gap-3 border-b border-[#f0f2f5] pb-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="min-w-0">
+      <div className="mb-3 flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-start gap-3">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] border border-[#ECECEC] bg-[#F7F7F7] text-[#313131]">
             <CalendarDays size={18} />
@@ -2070,7 +2075,7 @@ function CvFilters({
 
           <div className="min-w-0">
             <h3 className="text-[13px] font-black text-[#101828] sm:text-[14px]">
-              Sales calendar
+              Find CV for a sales week
             </h3>
 
             <p className="mt-1 break-words text-[11px] leading-4 text-[#667085] sm:text-[12px]">
@@ -2086,16 +2091,14 @@ function CvFilters({
 
         {currentWeek?.is_settled !== undefined && (
           <span
-            className={`inline-flex w-fit shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold sm:text-[11px] ${
-              currentWeek.is_settled
+            className={`inline-flex w-fit shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold sm:text-[11px] ${currentWeek.is_settled
                 ? "bg-[#eaf7f0] text-[#1f9d6b]"
                 : "bg-[#fff4e5] text-[#a15c07]"
-            }`}
+              }`}
           >
             <span
-              className={`h-1.5 w-1.5 rounded-full ${
-                currentWeek.is_settled ? "bg-[#1f9d6b]" : "bg-[#f79009]"
-              }`}
+              className={`h-1.5 w-1.5 rounded-full ${currentWeek.is_settled ? "bg-[#1f9d6b]" : "bg-[#f79009]"
+                }`}
             />
 
             {currentWeek.is_settled ? "Settled" : "Pending settlement"}
@@ -2103,7 +2106,7 @@ function CvFilters({
         )}
       </div>
 
-      <div className="grid min-w-0 grid-cols-1 items-end gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(150px,0.8fr)_minmax(260px,1.8fr)_auto] sm:gap-4">
+      <div className="grid min-w-0 grid-cols-1 items-end gap-2 sm:grid-cols-[minmax(100px,.6fr)_minmax(190px,1.4fr)_auto]">
         <SearchableDropdown
           id="cv-calendar-year"
           label="Year"
@@ -2161,13 +2164,12 @@ function CvFilters({
         searchedWeek !== undefined && (
           <div
             role={isError ? "alert" : "status"}
-            className={`mt-4 flex min-w-0 items-start gap-2 rounded-[11px] px-3 py-2.5 text-[11px] leading-5 sm:text-[12px] ${
-              isError
+            className={`mt-4 flex min-w-0 items-start gap-2 rounded-[11px] px-3 py-2.5 text-[11px] leading-5 sm:text-[12px] ${isError
                 ? "border border-[#f2c6c3] bg-[#fff4f3] text-[#b42318]"
                 : isFetching
                   ? "border border-[#E4E4E4] bg-[#FAFAFA] text-[#454545]"
                   : "border border-[#DAEBDD] bg-[#F6FBF6] text-[#28724C]"
-            }`}
+              }`}
           >
             {isFetching && (
               <Loader2 size={14} className="mt-0.5 shrink-0 animate-spin" />
@@ -2318,9 +2320,9 @@ export default function DistributorDashboardPage() {
   const pairingsQuery = useGetPairingsQuery(
     (submittedCvFilters
       ? {
-          year: submittedCvFilters.year,
-          week_no: submittedCvFilters.week_no,
-        }
+        year: submittedCvFilters.year,
+        week_no: submittedCvFilters.week_no,
+      }
       : undefined) as any,
     {
       skip: !submittedCvFilters,
@@ -2357,9 +2359,9 @@ export default function DistributorDashboardPage() {
 
   const cvCounterIgnite = periodIgniteMetrics
     ? ({
-        ...(ignite ?? {}),
-        ...periodIgniteMetrics,
-      } as IgniteDashboard)
+      ...(ignite ?? {}),
+      ...periodIgniteMetrics,
+    } as IgniteDashboard)
     : ignite;
 
   // --------------------------------------------------
@@ -2395,9 +2397,8 @@ export default function DistributorDashboardPage() {
 
       toast.success(
         response.message ||
-          `Banked TC placed on ${
-            side === 1 ? "Left" : "Right"
-          } Side successfully.`,
+        `Banked TC placed on ${side === 1 ? "Left" : "Right"
+        } Side successfully.`,
       );
 
       setIsBankedTcModalOpen(false);
@@ -2407,8 +2408,8 @@ export default function DistributorDashboardPage() {
     } catch (error: any) {
       toast.error(
         error?.data?.message ||
-          error?.message ||
-          "Failed to place Banked TC. Please try again.",
+        error?.message ||
+        "Failed to place Banked TC. Please try again.",
       );
     } finally {
       setPendingBankedTcSide(null);
@@ -2440,8 +2441,8 @@ export default function DistributorDashboardPage() {
       <div className="relative flex min-h-0 min-w-0 flex-1 overflow-hidden">
         <Sidebar />
 
-        <main className="thin-scroll min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain bg-[#F8F9FB] px-3 pb-9 pt-4 sm:px-5 sm:pb-12 sm:pt-5 lg:px-7 lg:pt-7 xl:px-8">
-          <div className="mx-auto w-full min-w-0 max-w-[1500px]">
+        <main className="thin-scroll min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain bg-[#F8F9FB] px-3 pb-7 pt-3 sm:px-4 sm:pb-9 sm:pt-4 lg:px-5 lg:pt-5 xl:px-6">
+          <div className="mx-auto w-full min-w-0 max-w-[1390px]">
             {/* Welcome hero */}
 
             <WelcomeHero user={user} distributorId={ignite?.ba_id || "N/A"} />
@@ -2493,7 +2494,7 @@ export default function DistributorDashboardPage() {
 
             {/* Latest order and recent activity */}
 
-            <section className="mt-7 grid min-w-0 grid-cols-1 gap-4 sm:mt-8 sm:gap-5 xl:grid-cols-2">
+            <section className="mt-5 grid min-w-0 grid-cols-1 gap-3 sm:mt-6 sm:gap-4 xl:grid-cols-2">
               <LatestOrderSection order={dashboard?.latest_order ?? null} />
 
               <RecentActivity activity={activity} />
@@ -2501,7 +2502,7 @@ export default function DistributorDashboardPage() {
 
             {/* CV counter */}
 
-            <section className="mt-8 min-w-0 sm:mt-9">
+            <section className="mt-5 min-w-0 sm:mt-6">
               <div className="flex flex-wrap items-end justify-between gap-3">
                 <div>
                   <SectionTitle large>
@@ -2526,29 +2527,29 @@ export default function DistributorDashboardPage() {
                   setSelectedCvYear(calendarYear);
                   setSelectedCvWeek(weekNo);
                 }}
-              />
+              >
+                <CvFilters
+                  calendar={salesCalendar}
+                  selectedYear={selectedCvYear}
+                  selectedWeek={selectedCvWeek}
+                  onYearChange={(year) => {
+                    setSelectedCvYear(year);
 
-              <CvFilters
-                calendar={salesCalendar}
-                selectedYear={selectedCvYear}
-                selectedWeek={selectedCvWeek}
-                onYearChange={(year) => {
-                  setSelectedCvYear(year);
+                    setSelectedCvWeek(year === calendarYear ? calendarWeek : 1);
+                  }}
+                  onWeekChange={setSelectedCvWeek}
+                  onSearch={handleCvSearch}
+                  isFetching={Boolean(
+                    pairingsQuery.isFetching || pairingsQuery.isLoading,
+                  )}
+                  isError={Boolean(pairingsQuery.isError)}
+                  hasSearched={Boolean(submittedCvFilters)}
+                  searchedYear={submittedCvFilters?.year}
+                  searchedWeek={submittedCvFilters?.week_no}
+                />
+              </SalesCalendarPoster>
 
-                  setSelectedCvWeek(year === calendarYear ? calendarWeek : 1);
-                }}
-                onWeekChange={setSelectedCvWeek}
-                onSearch={handleCvSearch}
-                isFetching={Boolean(
-                  pairingsQuery.isFetching || pairingsQuery.isLoading,
-                )}
-                isError={Boolean(pairingsQuery.isError)}
-                hasSearched={Boolean(submittedCvFilters)}
-                searchedYear={submittedCvFilters?.year}
-                searchedWeek={submittedCvFilters?.week_no}
-              />
-
-              <div className="mt-4 grid min-w-0 grid-cols-1 items-stretch gap-4 sm:mt-5 sm:gap-5 xl:grid-cols-2">
+              <div className="mt-3 grid min-w-0 grid-cols-1 items-stretch gap-3 sm:mt-4 sm:gap-4 xl:grid-cols-2">
                 <AccountSummary ignite={cvCounterIgnite} />
 
                 <AccountTable

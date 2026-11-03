@@ -140,7 +140,7 @@ const menuGroups: NavGroup[] = [
         icon: ReceiptText,
         href: "/distributor/transactions",
       },
-      { label: "Commission", icon: Percent, href: "/distributor/commissions" },
+    //   { label: "Commission", icon: Percent, href: "/distributor/commissions" },
       { label: "Buy Back", icon: Repeat2, href: "/distributor/buy-back" },
     ],
   },
