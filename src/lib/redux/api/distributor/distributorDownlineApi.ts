@@ -1,5 +1,5 @@
-import { baseApi } from "../baseApi";
 
+import { baseApi } from "../baseApi";
 
 export interface DistributorDownlineMember {
   member_id: number;
@@ -24,7 +24,6 @@ export interface DistributorDownlineMember {
   level: number;
 }
 
-
 export interface DistributorDownlineResponse {
   success: boolean;
   data: DistributorDownlineMember[];
@@ -36,11 +35,14 @@ export const distributorDownlineApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getDistributorDownline: builder.query<
       DistributorDownlineResponse,
-      void
+      number
     >({
-      query: () => ({
+      query: (depth) => ({
         url: "/distributor/genealogy/downline",
         method: "GET",
+        params: {
+          depth,
+        },
       }),
     }),
   }),
