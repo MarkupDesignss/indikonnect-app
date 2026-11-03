@@ -56,10 +56,10 @@ import Loding from "@/components/common/Loding";
 // --------------------------------------------------
 
 const CARD =
-  "min-w-0 rounded-[20px] border border-[#E6ECF6] bg-white shadow-[0_4px_20px_rgba(43,72,130,0.035)]";
+  "min-w-0 rounded-[20px] border border-[#E6E9EF] bg-white shadow-[0_4px_20px_rgba(24,39,75,0.03)]";
 
 const CARD_HOVER =
-  "transition-all duration-200 hover:border-[#C5D3EC] hover:shadow-[0_12px_28px_rgba(49,84,154,0.07)] motion-reduce:transition-none";
+  "transition-all duration-200 hover:border-[#C8CFD9] hover:shadow-[0_12px_28px_rgba(24,39,75,0.06)] motion-reduce:transition-none";
 
 // --------------------------------------------------
 // Font
@@ -144,9 +144,9 @@ function SectionTitle({
     <div className="flex min-w-0 items-center gap-3">
       <span
         aria-hidden="true"
-        className="flex h-[31px] w-[31px] shrink-0 items-center justify-center rounded-[10px] border border-[#DAE6FD] bg-[#EEF4FF]"
+        className="flex h-[31px] w-[31px] shrink-0 items-center justify-center rounded-[10px] border border-[#E2E7EF] bg-[#F2F5F9]"
       >
-        <span className="h-2 w-2 rounded-[3px] bg-[#6683D6]" />
+        <span className="h-2 w-2 rounded-[3px] bg-[#617896]" />
       </span>
       <h2
         className={`min-w-0 font-bold leading-tight tracking-[-0.035em] text-[#181818] ${large ? "text-[19px] sm:text-[22px]" : "text-[17px] sm:text-[19px]"}`}
@@ -200,24 +200,24 @@ function WelcomeHero({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.32, ease: "easeOut" }}
-      className="relative isolate overflow-hidden rounded-[24px] border border-[#DCE6FC] bg-gradient-to-[110deg] from-[#EFF5FF] via-[#F8F5FF] to-[#FFF6ED] shadow-[0_12px_36px_rgba(65,91,155,0.06)]"
+      className="relative isolate overflow-hidden rounded-[24px] border border-[#E5E9F1] bg-gradient-to-r from-[#F1F5FB] via-white to-[#F7F9FC] shadow-[0_8px_30px_rgba(24,39,75,0.045)]"
     >
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -right-20 -top-32 h-80 w-80 rounded-full bg-[#B4C7FF]/25 blur-3xl"
+        className="pointer-events-none absolute -right-20 -top-32 h-80 w-80 rounded-full bg-[#C6D5F0]/15 blur-3xl"
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute bottom-[-150px] left-[35%] h-64 w-64 rounded-full bg-[#F4D6FF]/30 blur-3xl"
+        className="pointer-events-none absolute bottom-[-150px] left-[35%] h-64 w-64 rounded-full bg-[#D6E0F4]/10 blur-3xl"
       />
       <div className="relative grid gap-5 p-5 sm:p-7 lg:grid-cols-[minmax(0,1fr)_minmax(240px,310px)] lg:items-center lg:px-9 lg:py-8">
         <div className="min-w-0">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#D9E5FD] bg-white/80 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[.13em] text-[#4564B7] sm:text-[11px]">
-            <span className="h-2 w-2 rounded-full bg-[#6688E8]" /> Distributor
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#E1E7F0] bg-white/90 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[.13em] text-[#4564B7] sm:text-[11px]">
+            <span className="h-2 w-2 rounded-full bg-[#6686B9]" /> Distributor
             workspace
           </div>
           <div className="flex min-w-0 items-center gap-3.5">
-            <div className="hidden h-[54px] w-[54px] shrink-0 items-center justify-center rounded-[16px] bg-gradient-to-br from-[#617FE2] to-[#956AD6] text-[18px] font-bold text-white shadow-[0_8px_20px_rgba(92,115,212,.2)] sm:flex">
+            <div className="hidden h-[54px] w-[54px] shrink-0 items-center justify-center rounded-[16px] bg-[#283B55] text-[18px] font-bold text-white shadow-[0_8px_20px_rgba(34,52,77,.12)] sm:flex">
               {initials || "D"}
             </div>
             <div className="min-w-0">
@@ -247,7 +247,7 @@ function WelcomeHero({
             <span className="text-[10px] font-bold uppercase tracking-[.13em] text-[#8994AC]">
               Member identification
             </span>
-            <span className="flex h-9 w-9 items-center justify-center rounded-[11px] bg-[#EDF1FF] text-[#6B75CB]">
+            <span className="flex h-9 w-9 items-center justify-center rounded-[11px] bg-[#EFF3F9] text-[#607797]">
               <Sparkles size={17} />
             </span>
           </div>
@@ -258,7 +258,7 @@ function WelcomeHero({
             {distributorId}
           </p>
           <div className="mt-4 flex items-center gap-2 border-t border-[#E8ECF7] pt-3 text-[10px] text-[#8390AE]">
-            <span className="h-2 w-2 rounded-full bg-[#42B99A]" /> IndieKonnect
+            <span className="h-2 w-2 rounded-full bg-[#55A58C]" /> IndieKonnect
             distributor portal
           </div>
         </div>
@@ -287,10 +287,10 @@ function QuickStatsCards({
       icon: Wallet,
       kind: "currency",
       note: "Available wallet balance",
-      bg: "#EEF4FF",
-      border: "#DBE7FF",
-      iconBg: "#DEE9FF",
-      tone: "#496ECD",
+      bg: "#FFFFFF",
+      border: "#E6E9EF",
+      iconBg: "#EFF3F9",
+      tone: "#57749D",
     },
     {
       label: "Floating retail profit",
@@ -298,10 +298,10 @@ function QuickStatsCards({
       icon: TrendingUp,
       kind: "currency",
       note: "Retail profit overview",
-      bg: "#ECFAF6",
-      border: "#D7F2E9",
-      iconBg: "#D2F3E7",
-      tone: "#208F73",
+      bg: "#FFFFFF",
+      border: "#E6E9EF",
+      iconBg: "#ECF7F2",
+      tone: "#28866B",
     },
     {
       label: "Direct referrals",
@@ -309,10 +309,10 @@ function QuickStatsCards({
       icon: UsersRound,
       kind: "number",
       note: "Direct network members",
-      bg: "#F6F0FF",
-      border: "#E9DDFF",
-      iconBg: "#EADDFF",
-      tone: "#8962C5",
+      bg: "#FFFFFF",
+      border: "#E6E9EF",
+      iconBg: "#F3F0F8",
+      tone: "#776A99",
     },
   ] as const;
   return (
@@ -381,36 +381,36 @@ function DashboardOverview({ stats }: { stats?: DashboardStats }) {
       label: "Wishlist",
       value: stats?.wishlist,
       icon: Heart,
-      tone: "#D17E9A",
-      bg: "#FFF0F4",
+      tone: "#9D7890",
+      bg: "#F7F3F6",
     },
     {
       label: "Points earned",
       value: stats?.points_earned,
       icon: Coins,
-      tone: "#D49A38",
-      bg: "#FFF7E8",
+      tone: "#B58E4E",
+      bg: "#FAF7EF",
     },
     {
       label: "Reviews",
       value: stats?.reviews,
       icon: Star,
-      tone: "#8E70D1",
-      bg: "#F4EFFF",
+      tone: "#7F78A8",
+      bg: "#F6F4FA",
     },
     {
       label: "Cart items",
       value: stats?.cart_items,
       icon: LayoutGrid,
-      tone: "#249D94",
-      bg: "#EAF9F6",
+      tone: "#488D83",
+      bg: "#F1F7F5",
     },
     {
       label: "Average rating",
       value: stats?.average_rating,
       icon: Trophy,
-      tone: "#DB865A",
-      bg: "#FFF2E8",
+      tone: "#B18A6B",
+      bg: "#FAF6F2",
     },
   ];
   return (
@@ -632,7 +632,7 @@ function AccountSummary({ ignite }: { ignite?: IgniteDashboard | null }) {
           return (
             <div
               key={item.label}
-              className={`min-w-0 rounded-[14px] border p-3 sm:p-4 ${index === 0 ? "border-[#F0DEB9] bg-[#FFF8EA]" : index === 1 ? "border-[#D4EFE6] bg-[#EFFAF5]" : "border-[#DDDFFA] bg-[#F3F3FF]"}`}
+              className={`min-w-0 rounded-[14px] border p-3 sm:p-4 ${index === 0 ? "border-[#EAE5D9] bg-[#FBFAF7]" : index === 1 ? "border-[#E9ECEF] bg-[#F9FAFB]" : "border-[#E9ECEF] bg-[#F9FAFB]"}`}
             >
               <Icon
                 size={16}
@@ -846,7 +846,7 @@ function AccountTable({
           <button
             type="button"
             onClick={onOpenBankedTc}
-            className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-[11px] bg-[#4569C8] px-4 text-[12px] font-semibold text-white shadow-[0_6px_14px_rgba(0,0,0,.12)] transition-all hover:bg-[#3455B4] active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#333333]/30 focus-visible:ring-offset-2"
+            className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-[11px] bg-[#171717] px-4 text-[12px] font-semibold text-white shadow-[0_6px_14px_rgba(0,0,0,.12)] transition-all hover:bg-[#333333] active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#333333]/30 focus-visible:ring-offset-2"
           >
             <HandCoins size={15} /> Place Banked TC <ArrowRight size={14} />
           </button>
@@ -903,7 +903,7 @@ function BankedTcModal({
             <div className="border-b border-[#EBEBEB] px-5 py-5 sm:px-6">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px] bg-[#607CDA] text-white">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px] bg-[#171717] text-white">
                     <HandCoins size={20} />
                   </span>
                   <div>
@@ -953,7 +953,7 @@ function BankedTcModal({
                     type="button"
                     disabled={isLoading}
                     onClick={() => onSelectSide(side)}
-                    className="group flex min-h-[134px] flex-col items-center justify-center rounded-[15px] border border-[#DDE6F7] bg-[#F4F7FF] px-3 py-4 transition-all hover:border-[#6589E4] hover:bg-[#EAF1FF] disabled:cursor-not-allowed disabled:opacity-50"
+                    className="group flex min-h-[134px] flex-col items-center justify-center rounded-[15px] border border-[#E5E7EB] bg-[#FAFAFB] px-3 py-4 transition-all hover:border-[#A9B1BE] hover:bg-[#F2F4F7] disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <span className="flex h-11 w-11 items-center justify-center rounded-[12px] bg-[#607CDA] text-[16px] font-bold text-white">
                       {isLoading && pendingSide === side ? (
@@ -1836,7 +1836,7 @@ function CvFilters({
           type="button"
           onClick={onSearch}
           disabled={isFetching || weekOptions.length === 0}
-          className="inline-flex h-12 w-full min-w-0 items-center justify-center gap-2 rounded-[12px] bg-[#4569C8] px-5 text-[13px] font-semibold text-white shadow-[0_6px_14px_rgba(0,0,0,0.10)] transition-all hover:bg-[#3455B4] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#171717]/30 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 sm:text-[13.5px] xl:w-auto xl:min-w-[128px]"
+          className="inline-flex h-12 w-full min-w-0 items-center justify-center gap-2 rounded-[12px] bg-[#171717] px-5 text-[13px] font-semibold text-white shadow-[0_6px_14px_rgba(0,0,0,0.10)] transition-all hover:bg-[#333333] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#171717]/30 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 sm:text-[13.5px] xl:w-auto xl:min-w-[128px]"
         >
           {isFetching ? (
             <Loader2 size={15} className="animate-spin" />
@@ -2145,7 +2145,7 @@ export default function DistributorDashboardPage() {
       <div className="relative flex min-h-0 min-w-0 flex-1 overflow-hidden">
         <Sidebar />
 
-        <main className="thin-scroll min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain bg-[#F7F9FD] px-3 pb-9 pt-4 sm:px-5 sm:pb-12 sm:pt-5 lg:px-7 lg:pt-7 xl:px-8">
+        <main className="thin-scroll min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain bg-[#F8F9FB] px-3 pb-9 pt-4 sm:px-5 sm:pb-12 sm:pt-5 lg:px-7 lg:pt-7 xl:px-8">
           <div className="mx-auto w-full min-w-0 max-w-[1500px]">
             {/* Welcome hero */}
 
@@ -2165,7 +2165,7 @@ export default function DistributorDashboardPage() {
                 <button
                   type="button"
                   onClick={() => refetch()}
-                  className="shrink-0 rounded-[9px] bg-[#4569C8] px-4 py-2.5 text-[12px] font-semibold text-white transition-colors hover:bg-[#3455B4]"
+                  className="shrink-0 rounded-[9px] bg-[#171717] px-4 py-2.5 text-[12px] font-semibold text-white transition-colors hover:bg-[#333333]"
                 >
                   Retry
                 </button>

@@ -111,7 +111,14 @@ interface OrderLineItem {
   gst_rate: number;
   gst_amount: number;
   line_total: number;
-  refunded_amount?: number;
+  refunded_amount?: number | string | null;
+  deducted_shipping_charges?: number | string | null;
+  gateway_charges?: number | string | null;
+  gateway_charges_percent?: number | string | null;
+  total_returnable_amount?: number | string | null;
+  tax_amount?: number | string | null;
+  return_method?: string | null;
+  is_buyback_enabled?: string | boolean | number | null;
   final_amount?: number;
   delivery_charges?: number;
 
@@ -155,7 +162,7 @@ interface OrderLineItem {
   payment_gateway: string;
   can_repay?: boolean;
   payment_expires_at?: string | null;
-  gateway_transaction_id: string;
+  gateway_transaction_id: string | null;
   amount_paid: number;
   payment_status: string;
 
@@ -1217,7 +1224,7 @@ const ModalShell = ({
         exit={{ opacity: 0, scale: 0.98, y: 12 }}
         transition={{ duration: 0.2 }}
         onClick={(e) => e.stopPropagation()}
-        className={`flex max-h-[92vh] w-full ${maxWidth} flex-col overflow-hidden rounded-[8px] border border-[#E4E4E2] bg-white shadow-[0_18px_60px_rgba(0,0,0,0.14)]`}
+        className={`flex max-h-[92vh] w-full ${maxWidth} flex-col overflow-hidden rounded-[18px] border border-[#E4E9F0] bg-white shadow-[0_24px_75px_rgba(18,30,50,0.17)]`}
       >
         {children}
       </motion.div>
@@ -1594,7 +1601,7 @@ const TrackingModal = ({ isOpen, onClose, order }: TrackingModalProps) => {
 };
 
 /* ========================================================================== */
-/* ORDER BREAKUP MODAL                                                        */
+/* COMPLETE ORDER PRICE, TAX, PAYMENT & REFUND BREAKDOWN                     */
 /* ========================================================================== */
 
 interface BreakupModalProps {
@@ -1604,6 +1611,68 @@ interface BreakupModalProps {
   allOrders?: OrderLineItem[];
 }
 
+const moneyValue = (v: unknown): number => {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+};
+const hasAmount = (v: unknown) => v !== undefined && v !== null && v !== "";
+const showMoney = (v: unknown) =>
+  hasAmount(v) ? formatCurrency(moneyValue(v)) : "—";
+
+function BreakupRow({
+  label,
+  value,
+  emphasized = false,
+  negative = false,
+}: {
+  label: string;
+  value: React.ReactNode;
+  emphasized?: boolean;
+  negative?: boolean;
+}) {
+  return (
+    <div
+      className={`flex min-w-0 items-start justify-between gap-4 py-2.5 ${emphasized ? "border-t border-[#E5E9EF] pt-3.5" : ""}`}
+    >
+      <span
+        className={`text-[12px] leading-5 ${emphasized ? "font-semibold text-[#151D2E]" : "text-[#697386]"}`}
+      >
+        {label}
+      </span>
+      <span
+        className={`min-w-0 break-all text-right text-[12px] leading-5 tabular-nums ${emphasized ? "font-bold text-[#151D2E]" : negative ? "font-semibold text-[#A35436]" : "font-semibold text-[#263247]"}`}
+      >
+        {value}
+      </span>
+    </div>
+  );
+}
+function BreakupPanel({
+  title,
+  children,
+  description,
+}: {
+  title: string;
+  children: React.ReactNode;
+  description?: string;
+}) {
+  return (
+    <section className="overflow-hidden rounded-2xl border border-[#E5E9F0] bg-white shadow-[0_2px_10px_rgba(15,23,42,0.025)]">
+      <div className="border-b border-[#EDF0F4] px-4 py-3.5 sm:px-5">
+        <h4 className="text-[13px] font-bold tracking-[-0.01em] text-[#192235]">
+          {title}
+        </h4>
+        {description && (
+          <p className="mt-0.5 text-[10.5px] leading-4 text-[#8992A2]">
+            {description}
+          </p>
+        )}
+      </div>
+      <div className="px-4 py-1 sm:px-5">{children}</div>
+    </section>
+  );
+}
+
 const OrderBreakupModal = ({
   isOpen,
   onClose,
@@ -1611,214 +1680,617 @@ const OrderBreakupModal = ({
   allOrders = [],
 }: BreakupModalProps) => {
   const orderLines = useMemo(() => {
-    if (!order) {
-      return [];
-    }
-
-    const lines = allOrders.filter(
-      (item) => Number(item.order_id) === Number(order.order_id),
+    if (!order) return [];
+    const matches = allOrders.filter(
+      (line) => Number(line.order_id) === Number(order.order_id),
     );
-
-    const fallback = lines.length > 0 ? lines : [order];
-
-    return [...fallback].sort((a, b) => Number(a.line_id) - Number(b.line_id));
+    return (matches.length ? matches : [order])
+      .slice()
+      .sort((a, b) => Number(a.line_id) - Number(b.line_id));
   }, [allOrders, order]);
 
-  if (!isOpen || !order) {
-    return null;
-  }
+  if (!isOpen || !order) return null;
 
-  const orderSummary = orderLines[0] || order;
-
-  const subtotal = orderLines.reduce(
-    (sum, line) => sum + (Number(line.line_total) || 0),
+  const summary = orderLines[0] || order;
+  const taxSummary = summary.tax_breakdown?.summary;
+  const taxableSubtotal = hasAmount(taxSummary?.subtotal_after_discount)
+    ? moneyValue(taxSummary.subtotal_after_discount)
+    : hasAmount(summary.subtotal)
+      ? moneyValue(summary.subtotal)
+      : orderLines.reduce(
+          (acc, line) =>
+            acc + moneyValue(line.unit_price) * moneyValue(line.quantity),
+          0,
+        );
+  const gstTotal = hasAmount(taxSummary?.total_tax)
+    ? moneyValue(taxSummary.total_tax)
+    : hasAmount(summary.total_gst)
+      ? moneyValue(summary.total_gst)
+      : orderLines.reduce((acc, line) => acc + moneyValue(line.gst_amount), 0);
+  const shippingTotal = hasAmount(taxSummary?.shipping_charge)
+    ? moneyValue(taxSummary.shipping_charge)
+    : hasAmount(summary.shipping_charge)
+      ? moneyValue(summary.shipping_charge)
+      : orderLines.reduce(
+          (acc, line) => acc + moneyValue(line.delivery_charges),
+          0,
+        );
+  const discount = moneyValue(taxSummary?.coupon_discount);
+  const coinAmount = moneyValue(summary.coin_redeemed_amount);
+  const grandTotal = hasAmount(taxSummary?.grand_total)
+    ? moneyValue(taxSummary.grand_total)
+    : hasAmount(summary.total_payable)
+      ? moneyValue(summary.total_payable)
+      : taxableSubtotal + gstTotal + shippingTotal - coinAmount;
+  const taxCategories = Array.isArray(summary.tax_breakdown?.tax_by_category)
+    ? summary.tax_breakdown.tax_by_category
+    : [];
+  const uniqueReturns = Array.from(
+    new Map(
+      orderLines
+        .flatMap((l) => l.returns || [])
+        .map((r: ReturnRecord) => [r.id, r]),
+    ).values(),
+  );
+  const creditNotes = Array.from(
+    new Map(
+      orderLines
+        .flatMap((l) => l.credit_notes || [])
+        .map((c: any) => [c.id, c]),
+    ).values(),
+  );
+  const paymentCompleted = normalizeStatus(summary.payment_status) === "paid";
+  const paymentFailed = isPaymentFailed(summary);
+  const actualRefunds = orderLines.filter((l) => hasAmount(l.refunded_amount));
+  const totalActualRefund = actualRefunds.reduce(
+    (sum, l) => sum + moneyValue(l.refunded_amount),
     0,
   );
-
-  const shipping = Number(
-    orderSummary.shipping_charge ??
-      orderLines.reduce(
-        (sum, line) => sum + (Number(line.delivery_charges) || 0),
-        0,
-      ),
-  );
-
-  const totalPayable = Number(
-    orderSummary.total_payable ??
-      orderSummary.final_amount ??
-      orderSummary.amount_paid ??
-      orderLines.reduce(
-        (sum, line) =>
-          sum + (Number(line.final_amount ?? line.line_total) || 0),
-        0,
-      ),
-  );
-
-  const coinRedeemed = Number(orderSummary.coin_redeemed ?? 0);
-
-  const coinRedeemedAmount = Number(orderSummary.coin_redeemed_amount ?? 0);
+  const paymentSummary = summary.tax_breakdown?.summary;
+  const rowTax = (line: OrderLineItem) => {
+    const item = Array.isArray(line.tax_breakdown?.items)
+      ? line.tax_breakdown.items.find(
+          (v: any) => Number(v.product_id) === Number(line.product_id),
+        )
+      : null;
+    return item;
+  };
+  const timelineLabels: Array<[string, string]> = [
+    ["order_placed", "Order placed"],
+    ["order_confirmed", "Order confirmed"],
+    ["dispatched_at", "Dispatched"],
+    ["shipped_at", "Shipped"],
+    ["delivered_at", "Delivered"],
+    ["cancelled_at", "Cancelled"],
+    ["return_requested_at", "Return requested"],
+    ["return_approved_at", "Return approved"],
+    ["return_rejected_at", "Return rejected"],
+    ["return_completed_at", "Return completed"],
+    ["buyback_requested_at", "Buyback requested"],
+    ["buyback_approved_at", "Buyback approved"],
+    ["buyback_rejected_at", "Buyback rejected"],
+    ["buyback_refunded_at", "Buyback refunded"],
+  ];
 
   return (
-    <ModalShell onClose={onClose} maxWidth="max-w-lg">
-      {/* HEADER */}
-      <div className="flex shrink-0 items-center justify-between border-b border-[#E6E6E4] px-4 py-3 sm:px-5">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] bg-[#f8f1e4]">
-            <LuReceiptIndianRupee
-              className="h-4 w-4"
-              style={{ color: BRASS }}
-            />
+    <ModalShell onClose={onClose} maxWidth="max-w-4xl">
+      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[#E8EBF0] bg-white px-4 py-4 sm:px-6">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#DDE7F4] bg-[#F1F6FC] text-[#315B87]">
+            <LuReceiptIndianRupee size={19} />
           </div>
-
           <div className="min-w-0">
-            <h3 className="truncate text-[14px] font-semibold text-[#171717] sm:text-[15px]">
-              Price Breakup
+            <h3 className="text-[16px] font-bold tracking-[-0.02em] text-[#161E2E] sm:text-[18px]">
+              Order details & price breakdown
             </h3>
-
-            <p className="mt-0.5 truncate text-[10px] text-black">
-              {order.order_reference}
-              {" • "}
-              {orderLines.length} item
-              {orderLines.length > 1 ? "s" : ""}
+            <p className="mt-0.5 break-all text-[10.5px] text-[#858FA0]">
+              {order.order_reference} · {orderLines.length} product
+              {orderLines.length === 1 ? "" : "s"} ·{" "}
+              {formatDate(order.order_date)}
             </p>
           </div>
         </div>
-
         <button
           type="button"
           onClick={onClose}
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[6px] border border-[#D7D7D5] bg-white text-[#777777] hover:bg-[#f7f8fa]"
-          aria-label="Close"
+          aria-label="Close order details"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#E4E8EF] bg-white text-[#677286] transition hover:bg-[#F5F7FA]"
         >
-          <X className="h-3.5 w-3.5" />
+          <X size={17} />
         </button>
       </div>
-
-      {/* BODY */}
-      <div className="min-h-0 flex-1 overflow-y-auto bg-[#fafbfc] px-4 py-4 sm:px-5">
-        {/* ITEMS SUMMARY */}
-        <div className="mb-3 overflow-hidden rounded-[10px] border border-[#e1e5eb] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.03)]">
-          <div className="border-b border-[#edf0f3] px-3.5 py-2.5">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a92a6]">
-              Items
-            </p>
-          </div>
-
-          <div className="divide-y divide-[#f0f2f5]">
-            {orderLines.map((line) => (
-              <div
-                key={`${line.order_id}-${line.line_id}`}
-                className="flex items-center gap-3 px-3.5 py-3"
+      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto bg-[#F7F9FC] p-3.5 sm:p-5">
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
+          {[
+            { label: "Order total", value: formatCurrency(grandTotal) },
+            {
+              label: "Amount paid",
+              value: formatCurrency(summary.amount_paid),
+              tone: paymentCompleted ? "green" : "normal",
+            },
+            {
+              label: "Items",
+              value: String(
+                orderLines.reduce((n, l) => n + moneyValue(l.quantity), 0),
+              ),
+            },
+            {
+              label: "Payment status",
+              value: formatStatusLabel(summary.payment_status),
+              tone: paymentCompleted
+                ? "green"
+                : paymentFailed
+                  ? "red"
+                  : "normal",
+            },
+          ].map((item) => (
+            <div
+              key={item.label}
+              className="min-w-0 rounded-xl border border-[#E5EAF0] bg-white p-3.5"
+            >
+              <p className="text-[10px] font-medium text-[#8992A2]">
+                {item.label}
+              </p>
+              <p
+                className={`mt-2 break-words text-[15px] font-bold tracking-[-0.02em] sm:text-[17px] ${item.tone === "green" ? "text-[#23775A]" : item.tone === "red" ? "text-[#BE4A4A]" : "text-[#182137]"}`}
               >
-                {/* Image */}
-                <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-[7px] border border-[#E4E4E2] bg-white">
-                  {line.primary_image ? (
-                    <Image
-                      src={line.primary_image}
-                      alt={line.product_name || "Product"}
-                      fill
-                      sizes="44px"
-                      className="object-cover"
-                    />
-                  ) : (
-                    <span className="flex h-full w-full items-center justify-center">
-                      <Package className="h-4 w-4 text-[#999999]" />
+                {item.value}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        <BreakupPanel
+          title="Product-wise price breakdown"
+          description="Unit price, taxable value, GST and delivery charges for every product"
+        >
+          <div className="divide-y divide-[#EEF1F4]">
+            {orderLines.map((line) => {
+              const tax = rowTax(line);
+              const taxable =
+                moneyValue(line.unit_price) * moneyValue(line.quantity);
+              const gst = moneyValue(line.gst_amount);
+              const delivery = moneyValue(
+                line.delivery_charges ?? tax?.shipping_charge,
+              );
+              const itemTotal = hasAmount(line.final_amount)
+                ? moneyValue(line.final_amount)
+                : moneyValue(line.line_total) + delivery;
+              return (
+                <div key={line.line_id} className="py-4">
+                  <div className="mb-3 flex items-start gap-3">
+                    <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-[#E9ECF2] bg-[#FAFBFC]">
+                      {line.primary_image ? (
+                        <Image
+                          src={line.primary_image}
+                          alt={line.product_name}
+                          fill
+                          sizes="56px"
+                          className="object-contain p-1"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center">
+                          <Package size={18} className="text-[#A7B0BD]" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h5 className="text-[12.5px] font-semibold leading-5 text-[#202B3E]">
+                        {line.product_name}
+                      </h5>
+                      <p className="mt-0.5 break-all text-[10px] text-[#939CAC]">
+                        {line.product_code} ·{" "}
+                        {line.item_reference_id ?? `Line #${line.line_id}`}
+                      </p>
+                      <span className="mt-1.5 inline-flex rounded-md bg-[#F0F4FA] px-2 py-0.5 text-[10px] font-semibold text-[#45627E]">
+                        {formatStatusLabel(line.delivery_status)}
+                      </span>
+                    </div>
+                    <span className="shrink-0 text-right text-[13px] font-bold text-[#1B2C42]">
+                      {formatCurrency(itemTotal)}
                     </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-5 gap-y-2 rounded-xl bg-[#F9FAFC] p-3 sm:grid-cols-4">
+                    {[
+                      ["Unit price", formatCurrency(line.unit_price)],
+                      ["Quantity", String(line.quantity)],
+                      ["Taxable amount", formatCurrency(taxable)],
+                      ["GST rate", `${line.gst_rate ?? 0}%`],
+                      ["GST amount", formatCurrency(gst)],
+                      ["After GST", formatCurrency(line.line_total)],
+                      ["Shipping", formatCurrency(delivery)],
+                      ["Item payable", formatCurrency(itemTotal)],
+                    ].map(([label, value]) => (
+                      <div key={label}>
+                        <p className="text-[10px] text-[#8B94A4]">{label}</p>
+                        <p className="mt-0.5 break-words text-[11.5px] font-semibold tabular-nums text-[#27364C]">
+                          {value}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                  {tax && (
+                    <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-[#748094]">
+                      <span>CGST: {formatCurrency(tax.cgst_amount)}</span>
+                      <span>SGST: {formatCurrency(tax.sgst_amount)}</span>
+                      <span>IGST: {formatCurrency(tax.igst_amount)}</span>
+                    </div>
                   )}
                 </div>
+              );
+            })}
+          </div>
+        </BreakupPanel>
 
-                {/* Name + Qty */}
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[12px] font-semibold text-[#101828]">
+        <div className="grid gap-4 md:grid-cols-2">
+          <BreakupPanel
+            title="Order amount summary"
+            description="Full order totals (not repeated per product)"
+          >
+            <BreakupRow
+              label="Product subtotal (before GST)"
+              value={formatCurrency(taxableSubtotal + discount)}
+            />
+            {discount > 0 && (
+              <BreakupRow
+                label="Coupon discount"
+                value={`− ${formatCurrency(discount)}`}
+                negative
+              />
+            )}
+            <BreakupRow
+              label="Taxable subtotal"
+              value={formatCurrency(taxableSubtotal)}
+            />
+            <BreakupRow label="GST / tax" value={formatCurrency(gstTotal)} />
+            <BreakupRow
+              label="Delivery / shipping"
+              value={formatCurrency(shippingTotal)}
+            />
+            <BreakupRow
+              label={`Coins redeemed (${summary.coin_redeemed ?? 0})`}
+              value={
+                coinAmount > 0
+                  ? `− ${formatCurrency(coinAmount)}`
+                  : formatCurrency(0)
+              }
+            />
+            <BreakupRow
+              label="Total payable"
+              value={formatCurrency(grandTotal)}
+              emphasized
+            />
+            <BreakupRow
+              label="Amount paid"
+              value={formatCurrency(summary.amount_paid)}
+            />
+          </BreakupPanel>
+          <BreakupPanel
+            title="Tax breakdown"
+            description="GST category, interstate/intrastate split and location"
+          >
+            {taxCategories.length > 0 ? (
+              taxCategories.map((tax: any, index: number) => (
+                <div
+                  key={index}
+                  className="border-b border-[#F0F2F5] py-1 last:border-0"
+                >
+                  <BreakupRow
+                    label={`${tax.tax_category || "GST"} (${tax.tax_rate ?? 0}%) taxable`}
+                    value={formatCurrency(tax.taxable_amount)}
+                  />
+                  <BreakupRow
+                    label="CGST"
+                    value={formatCurrency(tax.cgst_amount)}
+                  />
+                  <BreakupRow
+                    label="SGST"
+                    value={formatCurrency(tax.sgst_amount)}
+                  />
+                  <BreakupRow
+                    label="IGST"
+                    value={formatCurrency(tax.igst_amount)}
+                  />
+                  <BreakupRow
+                    label="Tax total"
+                    value={formatCurrency(tax.tax_amount)}
+                    emphasized
+                  />
+                </div>
+              ))
+            ) : (
+              <BreakupRow label="Total GST" value={formatCurrency(gstTotal)} />
+            )}
+            <BreakupRow
+              label="Supplier state"
+              value={summary.tax_breakdown?.supplier_state || "—"}
+            />
+            <BreakupRow
+              label="Delivery state"
+              value={summary.tax_breakdown?.delivery_state || "—"}
+            />
+          </BreakupPanel>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <BreakupPanel title="Payment & invoice information">
+            <BreakupRow
+              label="Payment gateway"
+              value={formatStatusLabel(summary.payment_gateway)}
+            />
+            <BreakupRow
+              label="Payment status"
+              value={formatStatusLabel(summary.payment_status)}
+            />
+            <BreakupRow
+              label="Transaction ID"
+              value={summary.gateway_transaction_id || "—"}
+            />
+            <BreakupRow
+              label="Invoice number"
+              value={summary.invoice?.invoice_number || "Not generated"}
+            />
+            {summary.invoice?.generated_at && (
+              <BreakupRow
+                label="Invoice generated"
+                value={formatDate(summary.invoice.generated_at)}
+              />
+            )}
+            <BreakupRow
+              label="Order status"
+              value={formatStatusLabel(summary.order_status)}
+            />
+            <BreakupRow
+              label="Order type"
+              value={formatStatusLabel(summary.order_type)}
+            />
+          </BreakupPanel>
+          <BreakupPanel title="Addresses & delivery">
+            <div className="py-3">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.07em] text-[#8C96A5]">
+                Delivery address
+              </p>
+              <p className="mt-1 text-[11.5px] leading-5 text-[#263247]">
+                {summary.delivery_address?.full_address || "Not available"}
+              </p>
+            </div>
+            <div className="border-t border-[#F0F2F5] py-3">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.07em] text-[#8C96A5]">
+                Billing address
+              </p>
+              <p className="mt-1 text-[11.5px] leading-5 text-[#263247]">
+                {summary.billing_address?.full_address || "Not available"}
+              </p>
+            </div>
+            <BreakupRow
+              label="Shipping method"
+              value={summary.shipping_method || "Not specified"}
+            />
+            <BreakupRow
+              label="Return method"
+              value={summary.return_method || "Not specified"}
+            />
+          </BreakupPanel>
+        </div>
+
+        <BreakupPanel
+          title="Return / buyback & refund calculation"
+          description="Estimated eligibility does not mean a refund has been processed"
+        >
+          {orderLines.map((line) => {
+            const matchingReturns = uniqueReturns.filter((r: ReturnRecord) =>
+              r.items?.some(
+                (i) => Number(i.order_line_id) === Number(line.line_id),
+              ),
+            );
+            const refundProcessed = hasAmount(line.refunded_amount);
+            const hasRelatedReturn = matchingReturns.length > 0;
+            return (
+              <div
+                key={line.line_id}
+                className="border-b border-[#EEF1F4] py-3 last:border-0"
+              >
+                <div className="mb-1 flex flex-wrap justify-between gap-2">
+                  <h5 className="text-[12px] font-semibold text-[#1B293E]">
                     {line.product_name}
-                  </p>
-
-                  <p className="mt-0.5 truncate text-[10px] text-[#98a2b3]">
-                    Qty: {line.quantity}
-                    {line.item_reference_id && (
-                      <>
-                        {" • "}
-                        {line.item_reference_id}
-                      </>
-                    )}
-                  </p>
+                  </h5>
+                  <span className="text-[10px] text-[#7E8C9B]">
+                    Line #{line.line_id}
+                  </span>
                 </div>
-
-                {/* Line Total */}
-                <div className="shrink-0 text-right">
-                  <p className="text-[12.5px] font-bold text-[#0E1B3D]">
-                    {formatCurrency(line.line_total)}
-                  </p>
+                <div className="grid gap-x-6 sm:grid-cols-2">
+                  <div>
+                    <BreakupRow
+                      label="Item payable"
+                      value={showMoney(line.final_amount)}
+                    />
+                    <BreakupRow
+                      label="Shipping deduction"
+                      value={
+                        hasAmount(line.deducted_shipping_charges)
+                          ? `− ${showMoney(line.deducted_shipping_charges)}`
+                          : "—"
+                      }
+                      negative
+                    />
+                    <BreakupRow
+                      label="Gateway charges"
+                      value={
+                        hasAmount(line.gateway_charges)
+                          ? `− ${showMoney(line.gateway_charges)}`
+                          : "—"
+                      }
+                      negative
+                    />
+                    <BreakupRow
+                      label="Gateway charge %"
+                      value={
+                        hasAmount(line.gateway_charges_percent)
+                          ? `${line.gateway_charges_percent}%`
+                          : "—"
+                      }
+                    />
+                  </div>
+                  <div>
+                    <BreakupRow
+                      label="Potential returnable amount (API)"
+                      value={showMoney(line.total_returnable_amount)}
+                    />
+                    <BreakupRow
+                      label="Actual refunded (API)"
+                      value={
+                        refundProcessed
+                          ? showMoney(line.refunded_amount)
+                          : "Not refunded"
+                      }
+                      emphasized
+                    />
+                    <BreakupRow
+                      label="Returned qty"
+                      value={String(line.returned_quantity ?? 0)}
+                    />
+                    <BreakupRow
+                      label="Return status"
+                      value={formatStatusLabel(line.return_status)}
+                    />
+                  </div>
                 </div>
+                {matchingReturns.map((r: ReturnRecord) => (
+                  <div
+                    key={r.id}
+                    className="mt-2 rounded-xl border border-[#E7EDF2] bg-[#FAFCFE] p-3"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-[11px] font-semibold text-[#33445C]">
+                        {formatStatusLabel(r.type)} request #{r.id}
+                      </p>
+                      <span className="text-[10px] font-semibold text-[#58738B]">
+                        {formatStatusLabel(r.status)}
+                      </span>
+                    </div>
+                    <div className="grid gap-x-5 sm:grid-cols-2">
+                      <BreakupRow
+                        label="Requested refund (API)"
+                        value={showMoney(r.total_refund_amount)}
+                      />
+                      <BreakupRow
+                        label="Refund status"
+                        value={formatStatusLabel(r.refund_status)}
+                      />
+                      {r.refund_processed_at && (
+                        <BreakupRow
+                          label="Processed at"
+                          value={formatDate(r.refund_processed_at)}
+                        />
+                      )}
+                      {r.rejection_reason && (
+                        <BreakupRow
+                          label="Rejection reason"
+                          value={r.rejection_reason}
+                        />
+                      )}
+                    </div>
+                    {r.items
+                      ?.filter(
+                        (i) => Number(i.order_line_id) === Number(line.line_id),
+                      )
+                      .map((i, index) => (
+                        <p
+                          key={index}
+                          className="mt-1 text-[10px] leading-4 text-[#728095]"
+                        >
+                          Reason: {i.reason || "Not specified"} · Request qty:{" "}
+                          {i.quantity}
+                        </p>
+                      ))}
+                  </div>
+                ))}
+                {!hasRelatedReturn && (
+                  <p className="mt-2 text-[10px] text-[#8792A2]">
+                    No return/buyback request recorded for this item.
+                  </p>
+                )}
+              </div>
+            );
+          })}
+          {actualRefunds.length > 0 && (
+            <div className="flex items-center justify-between gap-3 py-3">
+              <span className="text-[12px] font-bold text-[#1E5948]">
+                Total actual refunds reported
+              </span>
+              <span className="text-[15px] font-bold text-[#1E7057]">
+                {formatCurrency(totalActualRefund)}
+              </span>
+            </div>
+          )}
+        </BreakupPanel>
+
+        {creditNotes.length > 0 && (
+          <BreakupPanel title="Credit notes">
+            {creditNotes.map((n: any) => (
+              <div
+                key={n.id}
+                className="border-b border-[#F0F2F5] py-3 last:border-0"
+              >
+                <div className="flex flex-wrap justify-between gap-2">
+                  <span className="text-[11px] font-semibold text-[#293850]">
+                    {n.credit_note_number}
+                  </span>
+                  <span className="text-[12px] font-bold text-[#263247]">
+                    {showMoney(n.amount)}
+                  </span>
+                </div>
+                <p className="mt-1 text-[10px] text-[#8A94A5]">
+                  Original ref: {n.original_invoice_number || "—"} · Issued:{" "}
+                  {formatDate(n.issued_at)}
+                </p>
+                {n.original_invoice_number &&
+                  ![
+                    summary.order_reference,
+                    summary.invoice?.invoice_number,
+                  ].includes(n.original_invoice_number) && (
+                    <p className="mt-2 text-[10px] text-[#A46938]">
+                      This credit note references a different order/invoice.
+                      Please verify with support.
+                    </p>
+                  )}
               </div>
             ))}
-          </div>
-        </div>
+          </BreakupPanel>
+        )}
 
-        {/* PAYMENT SUMMARY */}
-        <div className="overflow-hidden rounded-[10px] border border-[#e1e5eb] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.03)]">
-          <div className="border-b border-[#edf0f3] px-3.5 py-2.5">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a92a6]">
-              Payment Summary
-            </p>
-          </div>
-
-          <div className="px-3.5 py-1">
-            <div className="flex items-center justify-between border-b border-[#f0f2f5] py-2.5">
-              <span className="text-[11.5px] text-[#667085]">Subtotal</span>
-              <span className="text-[12.5px] font-semibold text-[#101828]">
-                {formatCurrency(subtotal)}
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between border-b border-[#f0f2f5] py-2.5">
-              <span className="text-[11.5px] text-[#667085]">Shipping</span>
-              <span className="text-[12.5px] font-semibold text-[#101828]">
-                {formatCurrency(shipping)}
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between border-b border-[#f0f2f5] py-2.5">
-              <div className="flex items-center gap-1.5">
-                <Coins size={12} className="text-[#1F7A56]" />
-                <span className="text-[11.5px] text-[#667085]">
-                  Coins Redeemed
-                </span>
-              </div>
-
-              <span className="text-[12px] font-semibold text-[#1F7A56]">
-                {coinRedeemed} coins
-                {coinRedeemedAmount > 0 && (
-                  <span className="ml-1 text-[10.5px] font-normal text-[#98a2b3]">
-                    ({formatCurrency(coinRedeemedAmount)})
-                  </span>
-                )}
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between rounded-[8px] bg-[#f6fbf7] px-3 py-3 my-2">
-              <span className="text-[12px] font-bold text-[#1F7A56]">
-                Total Payable
-              </span>
-              <span className="text-[16px] font-extrabold text-[#1F7A56]">
-                {formatCurrency(totalPayable)}
-              </span>
-            </div>
-          </div>
-        </div>
+        <BreakupPanel
+          title="Order timeline"
+          description="Only milestones recorded by the API are displayed"
+        >
+          {timelineLabels
+            .filter(([key]) => (order.timeline as any)?.[key])
+            .map(([key, label]) => (
+              <BreakupRow
+                key={key}
+                label={label}
+                value={formatDate((order.timeline as any)[key])}
+              />
+            ))}
+          {order.timeline?.return_applicable_till && (
+            <BreakupRow
+              label="Return applicable until"
+              value={formatDate(order.timeline.return_applicable_till)}
+            />
+          )}
+        </BreakupPanel>
       </div>
-
-      {/* FOOTER */}
-      <div className="shrink-0 border-t border-[#E6E6E4] bg-white px-4 py-2.5 sm:px-5">
-        <div className="flex items-center justify-end">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-[6px] border border-[#D7D7D5] bg-white px-3.5 py-1.5 text-[11px] font-medium text-[#666666] hover:bg-[#f7f8fa]"
-          >
-            Close
-          </button>
-        </div>
+      <div className="flex shrink-0 items-center justify-between gap-3 border-t border-[#E8EBF0] bg-white px-4 py-3 sm:px-6">
+        <span className="text-[10px] text-[#9099A8]">
+          Figures shown directly from the order API
+        </span>
+        <button
+          type="button"
+          onClick={onClose}
+          className="inline-flex min-h-9 items-center justify-center rounded-lg bg-[#17243A] px-5 text-[11px] font-semibold text-white transition hover:bg-[#283B56]"
+        >
+          Close
+        </button>
       </div>
     </ModalShell>
   );
@@ -4042,7 +4514,7 @@ const OrderDetails = ({
                 className="inline-flex items-center gap-1.5 rounded-[7px] border border-[#C9D5F7] bg-[#F4F6FC] px-3.5 py-2 text-[11px] font-semibold text-[#3955A6] transition-colors hover:bg-[#ECEFFC]"
               >
                 <LuReceiptIndianRupee size={14} />
-                View Breakup
+                Full Breakdown
               </button>
             </div>
           </div>
