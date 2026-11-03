@@ -83,7 +83,7 @@ const menuGroups: NavGroup[] = [
             href: "/distributor/profile",
           },
           {
-            label: "CV tracking stats",
+            label: "Rank Information",
             icon: TrendingUp,
             href: "/distributor/profile/weekly-commission/",
           },
@@ -141,7 +141,7 @@ const menuGroups: NavGroup[] = [
         href: "/distributor/transactions",
       },
     //   { label: "Commission", icon: Percent, href: "/distributor/commissions" },
-      { label: "Buy Back", icon: Repeat2, href: "/distributor/buy-back" },
+    //   { label: "Buy Back", icon: Repeat2, href: "/distributor/buy-back" },
     ],
   },
   {
@@ -164,11 +164,11 @@ const menuGroups: NavGroup[] = [
             icon: WalletCards,
             href: "/distributor/kyc/bank-details",
           },
-          {
-            label: "Document upload",
-            icon: FileText,
-            href: "/distributor/kyc/document-upload",
-          },
+        //   {
+        //     label: "Document upload",
+        //     icon: FileText,
+        //     href: "/distributor/kyc/document-upload",
+        //   },
         ],
       },
     ],
