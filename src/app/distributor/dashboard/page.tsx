@@ -24,7 +24,6 @@ import {
   LayoutGrid,
   Clock3,
   Info,
-  CalendarClock,
 } from "lucide-react";
 
 import { useEffect, useRef, useState } from "react";
@@ -46,6 +45,7 @@ import type {
 import {
   useGetUserDashboardQuery,
   usePlaceBankedTcMutation,
+  useRedeemCoinsMutation,
 } from "@/lib/redux/api/distributor/userDashboardApi";
 
 import { useGetPairingsQuery } from "@/lib/redux/api/distributor/pairingsApi";
@@ -59,12 +59,6 @@ import Loding from "@/components/common/Loding";
 const CARD =
   "min-w-0 rounded-[16px] border border-[#E6E9EF] bg-white shadow-[0_4px_20px_rgba(24,39,75,0.03)]";
 
-const CARD_HOVER =
-  "transition-all duration-200 hover:border-[#C8CFD9] hover:shadow-[0_12px_28px_rgba(24,39,75,0.06)] motion-reduce:transition-none";
-
-// --------------------------------------------------
-// Font
-// --------------------------------------------------
 
 const FontImport = () => (
   <style>{`
@@ -76,6 +70,17 @@ const FontImport = () => (
     .distributor-dashboard .dashboard-number { font-variant-numeric: tabular-nums; }
     .distributor-dashboard .dashboard-card { transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease; }
     .distributor-dashboard .dashboard-card:hover { border-color: #d8d8d8; box-shadow: 0 14px 32px rgba(17,17,17,.045); }
+
+    .distributor-dashboard input::-webkit-outer-spin-button,
+    .distributor-dashboard input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    .distributor-dashboard input[type=number] {
+      -moz-appearance: textfield;
+    }
+
     @media (prefers-reduced-motion: reduce) {
       .distributor-dashboard *, .distributor-dashboard *::before, .distributor-dashboard *::after {
         scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important;
@@ -128,6 +133,124 @@ function formatCurrency(
   const formattedValue = formatNumber(value);
 
   return currency === "USD" ? `$${formattedValue}` : `₹${formattedValue}`;
+}
+
+// --------------------------------------------------
+// Sales calendar types & helpers
+// --------------------------------------------------
+
+type SalesCalendarWeek = {
+  week_no?: number | string | null;
+  start?: string | null;
+  end?: string | null;
+  label?: string | null;
+};
+
+type SalesCalendar = {
+  year?: number | string | null;
+  weeks?: SalesCalendarWeek[] | null;
+  current_week?: SalesCalendarWeek | null;
+  start_date?: string | null;
+  end_date?: string | null;
+};
+
+function getCalendarYear(calendar?: SalesCalendar | null): number {
+  const rawYear = calendar?.year;
+  const parsedYear = Number(rawYear);
+
+  if (Number.isFinite(parsedYear) && parsedYear > 0) {
+    return parsedYear;
+  }
+
+  // Fall back to deriving the year from the current week start date.
+  const start = calendar?.current_week?.start ?? calendar?.start_date;
+  if (start) {
+    const date = new Date(start);
+    if (!Number.isNaN(date.getTime())) {
+      return date.getFullYear();
+    }
+  }
+
+  return new Date().getFullYear();
+}
+
+function getCurrentCalendarWeek(calendar?: SalesCalendar | null): number {
+  const rawWeek = calendar?.current_week?.week_no;
+  const parsedWeek = Number(rawWeek);
+
+  if (Number.isFinite(parsedWeek) && parsedWeek > 0) {
+    return parsedWeek;
+  }
+
+  // Try deriving from the start date if week_no isn't provided.
+  const start = calendar?.current_week?.start;
+  if (start) {
+    const date = new Date(start);
+    if (!Number.isNaN(date.getTime())) {
+      const firstDay = new Date(date.getFullYear(), 0, 1);
+      const diffDays = Math.floor(
+        (date.getTime() - firstDay.getTime()) / 86400000,
+      );
+      return Math.max(1, Math.ceil((diffDays + firstDay.getDay() + 1) / 7));
+    }
+  }
+
+  return 1;
+}
+
+// --------------------------------------------------
+// Pairings types & metrics helper
+// --------------------------------------------------
+
+type CvSearchFilters = {
+  year: number;
+  week_no: number;
+};
+
+type PairingsQueryResult = {
+  data?: any;
+  isLoading?: boolean;
+  isFetching?: boolean;
+  isError?: boolean;
+  refetch?: () => Promise<any> | any;
+};
+
+type PeriodIgniteMetrics = {
+  total_cv_left?: number;
+  total_cv_right?: number;
+  floating_cv_left?: number;
+  floating_cv_right?: number;
+  cv_left?: number;
+  cv_right?: number;
+  total_steps?: number;
+};
+
+function getPairingsMetrics(data: any): PeriodIgniteMetrics | null {
+  if (!data) return null;
+
+  // Support both `{ data: {...} }` and raw payload shapes.
+  const payload = data?.data ?? data;
+
+  if (!payload || typeof payload !== "object") return null;
+
+  const pick = (...keys: string[]) => {
+    for (const key of keys) {
+      if (payload[key] !== undefined && payload[key] !== null) {
+        return toNumber(payload[key]);
+      }
+    }
+    return undefined;
+  };
+
+  return {
+    total_cv_left: pick("total_cv_left", "left_cv", "leftCv"),
+    total_cv_right: pick("total_cv_right", "right_cv", "rightCv"),
+    floating_cv_left: pick("floating_cv_left", "floating_left"),
+    floating_cv_right: pick("floating_cv_right", "floating_right"),
+    cv_left: pick("cv_left"),
+    cv_right: pick("cv_right"),
+    total_steps: pick("total_steps", "steps"),
+  };
 }
 
 // --------------------------------------------------
@@ -190,12 +313,14 @@ function WelcomeHero({
   distributorId: string;
 }) {
   const displayName = user?.name?.trim() || "Distributor";
+
   const initials = displayName
     .split(/\s+/)
     .slice(0, 2)
     .map((part) => part[0])
     .join("")
     .toUpperCase();
+
   return (
     <motion.section
       initial={{ opacity: 0, y: 8 }}
@@ -207,35 +332,42 @@ function WelcomeHero({
         aria-hidden="true"
         className="pointer-events-none absolute -right-20 -top-32 h-80 w-80 rounded-full bg-[#C6D5F0]/15 blur-3xl"
       />
+
       <div
         aria-hidden="true"
         className="pointer-events-none absolute bottom-[-150px] left-[35%] h-64 w-64 rounded-full bg-[#D6E0F4]/10 blur-3xl"
       />
+
       <div className="relative grid gap-3 p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_minmax(210px,270px)] lg:items-center lg:px-6 lg:py-5">
         <div className="min-w-0">
           <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-[#E1E7F0] bg-white/90 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[.13em] text-[#4564B7] sm:text-[11px]">
-            <span className="h-2 w-2 rounded-full bg-[#6686B9]" /> Distributor
-            workspace
+            <span className="h-2 w-2 rounded-full bg-[#6686B9]" />
+            Distributor workspace
           </div>
+
           <div className="flex min-w-0 items-center gap-3.5">
             <div className="hidden h-[44px] w-[44px] shrink-0 items-center justify-center rounded-[16px] bg-[#283B55] text-[18px] font-bold text-white shadow-[0_8px_20px_rgba(34,52,77,.12)] sm:flex">
               {initials || "D"}
             </div>
+
             <div className="min-w-0">
               <h1 className="break-words text-[20px] font-bold leading-tight tracking-[-.04em] text-[#233254] sm:text-[24px]">
                 Welcome back, {displayName}
               </h1>
+
               <p className="mt-2 max-w-xl text-[12px] leading-5 text-[#6C7794] sm:text-[13px] sm:leading-6">
                 Your business at a glance. Track performance, manage your
                 network and stay on top of every update.
               </p>
             </div>
           </div>
+
           <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-[#DCE5F6] pt-4">
             <span className="inline-flex items-center gap-2 text-[11px] font-semibold text-[#6475A0]">
               <ShieldCheck size={14} className="text-[#5E83DA]" />
               {formatStatus(user?.account_type || "distributor")} account
             </span>
+
             {user?.email && (
               <span className="max-w-full truncate text-[11px] text-[#7A849C]">
                 {user.email}
@@ -243,24 +375,29 @@ function WelcomeHero({
             )}
           </div>
         </div>
+
         <div className="min-w-0 rounded-[18px] border border-white bg-white/80 p-4 shadow-[0_8px_30px_rgba(73,95,167,.07)] backdrop-blur-sm sm:p-5">
           <div className="flex items-center justify-between gap-2">
             <span className="text-[10px] font-bold uppercase tracking-[.13em] text-[#8994AC]">
               Member identification
             </span>
+
             <span className="flex h-9 w-9 items-center justify-center rounded-[11px] bg-[#EFF3F9] text-[#607797]">
               <Sparkles size={17} />
             </span>
           </div>
+
           <p className="mt-3 text-[10px] font-semibold text-[#7B869D]">
             Distributor ID
           </p>
+
           <p className="dashboard-number mt-1 break-all text-[18px] font-bold tracking-[-.03em] text-[#293962] sm:text-[20px]">
             {distributorId}
           </p>
+
           <div className="mt-3 flex items-center gap-2 border-t border-[#E8ECF7] pt-3 text-[10px] text-[#8390AE]">
-            <span className="h-2 w-2 rounded-full bg-[#55A58C]" /> IndieKonnect
-            distributor portal
+            <span className="h-2 w-2 rounded-full bg-[#55A58C]" />
+            IndieKonnect distributor portal
           </div>
         </div>
       </div>
@@ -316,11 +453,13 @@ function QuickStatsCards({
       tone: "#776A99",
     },
   ] as const;
+
   return (
     <section aria-label="Key performance indicators" className="mt-4 sm:mt-5">
       <div className="grid grid-cols-1 gap-2.5 min-[540px]:grid-cols-2 lg:grid-cols-3 sm:gap-3">
         {cards.map((item) => {
           const Icon = item.icon;
+
           return (
             <div
               key={item.label}
@@ -334,16 +473,19 @@ function QuickStatsCards({
                 >
                   <Icon size={18} strokeWidth={1.8} />
                 </span>
+
                 <ArrowUpRight
                   size={18}
                   className="opacity-45 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
                   style={{ color: item.tone }}
                 />
               </div>
+
               <div className="mt-3 min-w-0">
                 <p className="text-[12px] font-semibold text-[#64718C]">
                   {item.label}
                 </p>
+
                 <p className="dashboard-number mt-1 break-words text-[21px] font-bold leading-tight tracking-[-.045em] text-[#24334F] sm:text-[24px]">
                   {item.value === null
                     ? "—"
@@ -351,6 +493,7 @@ function QuickStatsCards({
                       ? formatCurrency(item.value, "INR")
                       : formatNumber(item.value)}
                 </p>
+
                 <p className="mt-2 text-[10px] leading-4 text-[#8792A6]">
                   {item.value === null
                     ? "Not available from the API"
@@ -414,22 +557,27 @@ function DashboardOverview({ stats }: { stats?: DashboardStats }) {
       bg: "#FAF6F2",
     },
   ];
+
   return (
     <section className="mt-5 sm:mt-6">
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
           <SectionTitle>Business overview</SectionTitle>
+
           <p className="ml-11 mt-1 text-[11px] leading-5 text-[#8591A8]">
             Your latest account activity and shopping metrics
           </p>
         </div>
+
         <span className="text-[10px] font-semibold uppercase tracking-[.12em] text-[#A3ADC0]">
           Overview / 06 metrics
         </span>
       </div>
+
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6 sm:gap-4">
         {cards.map((item) => {
           const Icon = item.icon;
+
           return (
             <div
               key={item.label}
@@ -442,15 +590,18 @@ function DashboardOverview({ stats }: { stats?: DashboardStats }) {
                 >
                   <Icon size={17} strokeWidth={1.9} />
                 </span>
+
                 <span
                   className="h-1.5 w-1.5 rounded-full"
                   style={{ backgroundColor: item.tone }}
                 />
               </div>
+
               <div className="pt-4">
                 <p className="dashboard-number break-words text-[20px] font-bold leading-none tracking-[-.045em] text-[#25334F] sm:text-[23px]">
                   {item.value == null ? "—" : formatNumber(item.value)}
                 </p>
+
                 <p className="mt-2 text-[11px] font-medium leading-4 text-[#78859D] sm:text-[12px]">
                   {item.label}
                 </p>
@@ -476,6 +627,8 @@ type IgniteCoinValues = {
   blue_value_inr?: number | string | null;
 };
 
+type RedeemPointType = "yellow_bal" | "blue_bal";
+
 // --------------------------------------------------
 // Coin card
 // --------------------------------------------------
@@ -498,6 +651,7 @@ function CoinCard({
     green: { tone: "#25876B", light: "#EDF8F3", ring: "#D3EADD" },
     blue: { tone: "#4F6AC0", light: "#F0F4FE", ring: "#DBE3FA" },
   }[color];
+
   return (
     <div
       className="group min-w-0 rounded-[15px] border p-3 transition-colors hover:shadow-[0_8px_22px_rgba(75,93,155,.06)] sm:p-4"
@@ -513,26 +667,33 @@ function CoinCard({
         >
           <Coins size={20} strokeWidth={1.8} style={{ color: style.tone }} />
         </span>
+
         <span
           className="h-2 w-2 rounded-full"
           style={{ backgroundColor: style.tone }}
         />
       </div>
+
       <p className="dashboard-number mt-4 break-words text-[23px] font-bold leading-tight tracking-[-.05em] text-[#1B1B1B] sm:text-[27px]">
         {formatNumber(value)}
       </p>
+
       <p className="mt-1 text-[11px] font-medium leading-4 text-[#777777] sm:text-[12px]">
         {label}
       </p>
+
       <div className="mt-3 space-y-2 border-t border-[#F0F0F0] pt-3">
         <div className="flex min-w-0 items-center justify-between gap-2">
           <span className="text-[10px] text-[#999999]">Value in USD</span>
+
           <span className="dashboard-number min-w-0 break-all text-right text-[11px] font-semibold text-[#353535]">
             {valueUsd == null ? "—" : formatCurrency(valueUsd, "USD")}
           </span>
         </div>
+
         <div className="flex min-w-0 items-center justify-between gap-2">
           <span className="text-[10px] text-[#999999]">Value in INR</span>
+
           <span className="dashboard-number min-w-0 break-all text-right text-[11px] font-semibold text-[#353535]">
             {valueInr == null ? "—" : formatCurrency(valueInr, "INR")}
           </span>
@@ -543,25 +704,471 @@ function CoinCard({
 }
 
 // --------------------------------------------------
-// Coins section
+// REDEEM COINS POPUP
 // --------------------------------------------------
 
-function CoinsSection({ ignite }: { ignite?: IgniteDashboard | null }) {
+function RedeemCoinsModal({
+  isOpen,
+  yellowBalance,
+  blueBalance,
+  selectedRedeemPoint,
+  redeemAmount,
+  isRedeeming,
+  onClose,
+  onSelectPoint,
+  onAmountChange,
+  onRedeem,
+}: {
+  isOpen: boolean;
+  yellowBalance: number;
+  blueBalance: number;
+  selectedRedeemPoint: RedeemPointType;
+  redeemAmount: string;
+  isRedeeming: boolean;
+  onClose: () => void;
+  onSelectPoint: (point: RedeemPointType) => void;
+  onAmountChange: (value: string) => void;
+  onRedeem: () => void;
+}) {
+  const selectedBalance =
+    selectedRedeemPoint === "yellow_bal" ? yellowBalance : blueBalance;
+
+  const amountNumber = Number(redeemAmount);
+
+  const isAmountValid =
+    redeemAmount.trim() !== "" &&
+    Number.isSafeInteger(amountNumber) &&
+    amountNumber > 0;
+
+  const exceedsBalance = isAmountValid && amountNumber > selectedBalance;
+
+  const canRedeem =
+    isAmountValid && !exceedsBalance && selectedBalance > 0 && !isRedeeming;
+
+  // Close on Escape key
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !isRedeeming) onClose();
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isOpen, isRedeeming, onClose]);
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4 backdrop-blur-[4px]"
+          onClick={() => !isRedeeming && onClose()}
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 16, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 12, scale: 0.98 }}
+            transition={{ duration: 0.2 }}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="redeem-coins-title"
+            onClick={(e) => e.stopPropagation()}
+            className="thin-scroll max-h-[92dvh] w-full max-w-[500px] overflow-y-auto rounded-[22px] border border-[#E8E8E8] bg-white shadow-[0_30px_100px_rgba(0,0,0,.25)]"
+          >
+            {/* Header */}
+            <div className="flex items-start justify-between gap-3 border-b border-[#EBEBEB] px-5 py-5 sm:px-6">
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px] border border-[#F0E5C9] bg-[#FFF9EA] text-[#B78B30]">
+                  <HandCoins size={20} />
+                </span>
+
+                <div className="min-w-0">
+                  <h3
+                    id="redeem-coins-title"
+                    className="text-[18px] font-bold tracking-[-.035em] text-[#191919]"
+                  >
+                    Redeem your coins
+                  </h3>
+
+                  <p className="mt-1 text-[11px] text-[#888888]">
+                    Enter the number of coins you want to redeem manually.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isRedeeming}
+                aria-label="Close redeem dialog"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] border border-[#E9E9E9] text-[#666666] hover:bg-[#F5F5F5] disabled:opacity-50"
+              >
+                <span className="text-[21px] leading-none">×</span>
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-5 sm:p-6">
+              <div>
+                <label className="mb-2 block text-[11px] font-bold text-[#525D70]">
+                  Select coin type
+                </label>
+
+                <div className="grid grid-cols-2 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => onSelectPoint("yellow_bal")}
+                    disabled={isRedeeming}
+                    aria-pressed={selectedRedeemPoint === "yellow_bal"}
+                    className={`flex min-w-0 items-center justify-between gap-2 rounded-[12px] border px-3 py-3 text-left transition-all disabled:cursor-not-allowed disabled:opacity-60 ${
+                      selectedRedeemPoint === "yellow_bal"
+                        ? "border-[#DCC58F] bg-[#FFF9EA] shadow-[0_3px_10px_rgba(183,139,48,.07)]"
+                        : "border-[#E6E9EF] bg-white hover:border-[#D5D9E1]"
+                    }`}
+                  >
+                    <span className="flex min-w-0 items-center gap-2.5">
+                      <span
+                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] ${
+                          selectedRedeemPoint === "yellow_bal"
+                            ? "bg-[#F4E8C9] text-[#A77B22]"
+                            : "bg-[#F4F5F7] text-[#858B96]"
+                        }`}
+                      >
+                        <Coins size={16} />
+                      </span>
+
+                      <span className="min-w-0">
+                        <span className="block text-[11px] font-bold text-[#30394A]">
+                          Yellow coins
+                        </span>
+                        <span className="mt-0.5 block text-[10px] text-[#8790A0]">
+                          {formatNumber(yellowBalance)} available
+                        </span>
+                      </span>
+                    </span>
+
+                    <span
+                      className={`flex h-[17px] w-[17px] shrink-0 items-center justify-center rounded-full border ${
+                        selectedRedeemPoint === "yellow_bal"
+                          ? "border-[#B78B30] bg-[#B78B30] text-white"
+                          : "border-[#CCD2DC] bg-white"
+                      }`}
+                    >
+                      {selectedRedeemPoint === "yellow_bal" && (
+                        <Check size={11} strokeWidth={3} />
+                      )}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => onSelectPoint("blue_bal")}
+                    disabled={isRedeeming}
+                    aria-pressed={selectedRedeemPoint === "blue_bal"}
+                    className={`flex min-w-0 items-center justify-between gap-2 rounded-[12px] border px-3 py-3 text-left transition-all disabled:cursor-not-allowed disabled:opacity-60 ${
+                      selectedRedeemPoint === "blue_bal"
+                        ? "border-[#BFCBF0] bg-[#F0F4FE] shadow-[0_3px_10px_rgba(79,106,192,.07)]"
+                        : "border-[#E6E9EF] bg-white hover:border-[#D5D9E1]"
+                    }`}
+                  >
+                    <span className="flex min-w-0 items-center gap-2.5">
+                      <span
+                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] ${
+                          selectedRedeemPoint === "blue_bal"
+                            ? "bg-[#DDE5FA] text-[#4F6AC0]"
+                            : "bg-[#F4F5F7] text-[#858B96]"
+                        }`}
+                      >
+                        <Coins size={16} />
+                      </span>
+
+                      <span className="min-w-0">
+                        <span className="block text-[11px] font-bold text-[#30394A]">
+                          Blue coins
+                        </span>
+                        <span className="mt-0.5 block text-[10px] text-[#8790A0]">
+                          {formatNumber(blueBalance)} available
+                        </span>
+                      </span>
+                    </span>
+
+                    <span
+                      className={`flex h-[17px] w-[17px] shrink-0 items-center justify-center rounded-full border ${
+                        selectedRedeemPoint === "blue_bal"
+                          ? "border-[#4F6AC0] bg-[#4F6AC0] text-white"
+                          : "border-[#CCD2DC] bg-white"
+                      }`}
+                    >
+                      {selectedRedeemPoint === "blue_bal" && (
+                        <Check size={11} strokeWidth={3} />
+                      )}
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <label
+                    htmlFor="redeem-coins-amount"
+                    className="text-[11px] font-bold text-[#525D70]"
+                  >
+                    Enter coins to redeem
+                  </label>
+
+                  <span className="text-[10px] font-semibold text-[#8992A2]">
+                    Available: {formatNumber(selectedBalance)}
+                  </span>
+                </div>
+
+                <div
+                  className={`flex h-[47px] items-center gap-2.5 rounded-[12px] border bg-white px-3.5 transition-all focus-within:ring-4 ${
+                    exceedsBalance
+                      ? "border-[#E7B5B5] focus-within:border-[#CE6464] focus-within:ring-[#CE6464]/10"
+                      : "border-[#E2E6ED] focus-within:border-[#7183A3] focus-within:ring-[#7183A3]/10"
+                  }`}
+                >
+                  <Coins
+                    size={17}
+                    className={
+                      selectedRedeemPoint === "yellow_bal"
+                        ? "shrink-0 text-[#B78B30]"
+                        : "shrink-0 text-[#4F6AC0]"
+                    }
+                  />
+
+                  <input
+                    id="redeem-coins-amount"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    autoComplete="off"
+                    autoFocus
+                    placeholder="Enter coin quantity"
+                    value={redeemAmount}
+                    disabled={isRedeeming || selectedBalance <= 0}
+                    onChange={(event) => {
+                      const numericValue = event.target.value
+                        .replace(/\D/g, "")
+                        .slice(0, 12);
+
+                      onAmountChange(numericValue);
+                    }}
+                    className="h-full min-w-0 flex-1 bg-transparent text-[14px] font-bold text-[#202A3D] outline-none placeholder:text-[11px] placeholder:font-normal placeholder:text-[#A0A7B3] disabled:cursor-not-allowed"
+                  />
+
+                  <span className="shrink-0 text-[10px] font-semibold text-[#929AAA]">
+                    Coins
+                  </span>
+                </div>
+
+                {exceedsBalance ? (
+                  <p className="mt-1.5 text-[10px] font-semibold text-[#C34E4E]">
+                    Amount cannot exceed your available coin balance.
+                  </p>
+                ) : (
+                  <p className="mt-1.5 text-[10px] text-[#929AAA]">
+                    Enter a whole number. Decimal values are not allowed.
+                  </p>
+                )}
+              </div>
+
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-[11px] border border-[#E8EAEF] bg-[#FBFBFC] px-3 py-2.5">
+                <div className="flex min-w-0 items-center gap-2">
+                  <Info size={14} className="shrink-0 text-[#8792A6]" />
+
+                  <p className="text-[10px] leading-4 text-[#7D8798]">
+                    Redemption will be processed using your selected coin
+                    balance.
+                  </p>
+                </div>
+
+                <span
+                  className={`shrink-0 text-[10px] font-bold ${
+                    selectedBalance > 0 ? "text-[#28866B]" : "text-[#B85D5D]"
+                  }`}
+                >
+                  {selectedBalance > 0
+                    ? "Balance available"
+                    : "Insufficient balance"}
+                </span>
+              </div>
+
+              <p className="mt-2 text-[9px] leading-4 text-[#A0A6B1]">
+                Green coins are displayed in your wallet but are not supported
+                by the current redemption API.
+              </p>
+
+              <div className="mt-5 grid grid-cols-2 gap-2.5">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  disabled={isRedeeming}
+                  className="inline-flex h-[47px] w-full items-center justify-center rounded-[12px] border border-[#E2E6ED] bg-white px-4 text-[12px] font-bold text-[#4A5568] transition-all hover:bg-[#F5F6F8] active:scale-[.98] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  onClick={onRedeem}
+                  disabled={!canRedeem}
+                  className="inline-flex h-[47px] w-full items-center justify-center gap-2 rounded-[12px] bg-[#171717] px-4 text-[12px] font-bold text-white shadow-[0_5px_14px_rgba(0,0,0,.09)] transition-all hover:bg-[#333333] active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#171717]/30 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-[#C9CDD4] disabled:text-white disabled:shadow-none"
+                >
+                  {isRedeeming ? (
+                    <>
+                      <Loader2 size={15} className="animate-spin" />
+                      Redeeming...
+                    </>
+                  ) : (
+                    <>
+                      <HandCoins size={15} />
+                      Redeem Coins
+                      <ArrowRight size={14} />
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+// --------------------------------------------------
+// Coins section (redeem opens in a popup)
+// --------------------------------------------------
+
+function CoinsSection({
+  ignite,
+  onRedeemSuccess,
+}: {
+  ignite?: IgniteDashboard | null;
+  onRedeemSuccess: () => void;
+}) {
   const coinValues = ignite as
-    (IgniteDashboard & IgniteCoinValues) | null | undefined;
+    | (IgniteDashboard & IgniteCoinValues)
+    | null
+    | undefined;
+
+  const [isRedeemModalOpen, setIsRedeemModalOpen] = useState(false);
+
+  const [selectedRedeemPoint, setSelectedRedeemPoint] =
+    useState<RedeemPointType>("yellow_bal");
+
+  const [redeemAmount, setRedeemAmount] = useState("");
+
+  const [redeemCoins, { isLoading: isRedeeming }] =
+    useRedeemCoinsMutation();
+
+  const yellowBalance = toNumber(coinValues?.yellow_bal);
+  const blueBalance = toNumber(coinValues?.blue_bal);
+
+  const selectedBalance =
+    selectedRedeemPoint === "yellow_bal"
+      ? yellowBalance
+      : blueBalance;
+
+  const handleCloseModal = () => {
+    if (isRedeeming) return;
+    setIsRedeemModalOpen(false);
+    setRedeemAmount("");
+  };
+
+  const handleSelectPoint = (point: RedeemPointType) => {
+    setSelectedRedeemPoint(point);
+    setRedeemAmount("");
+  };
+
+  const handleRedeemCoins = async () => {
+    if (isRedeeming) return;
+
+    const amountNumber = Number(redeemAmount);
+
+    const isAmountValid =
+      redeemAmount.trim() !== "" &&
+      Number.isSafeInteger(amountNumber) &&
+      amountNumber > 0;
+
+    if (!isAmountValid) {
+      toast.error("Please enter a valid number of coins.");
+      return;
+    }
+
+    if (amountNumber > selectedBalance) {
+      toast.error("Redeem amount cannot exceed your available balance.");
+      return;
+    }
+
+    if (selectedBalance <= 0) {
+      toast.error("You do not have enough coins to redeem.");
+      return;
+    }
+
+    try {
+      const response = await redeemCoins({
+        coins_to_redeem: amountNumber,
+        point_type: selectedRedeemPoint,
+      }).unwrap();
+
+      if (response.success === false || response.status === false) {
+        toast.error(response.message || "Unable to redeem coins.");
+        return;
+      }
+
+      toast.success(response.message || "Coins redeemed successfully.");
+
+      setRedeemAmount("");
+      setIsRedeemModalOpen(false);
+
+      onRedeemSuccess();
+    } catch (error: unknown) {
+      const apiError = error as {
+        data?: { message?: string };
+        message?: string;
+      };
+
+      toast.error(
+        apiError?.data?.message ||
+          apiError?.message ||
+          "Failed to redeem coins. Please try again.",
+      );
+    }
+  };
+
   return (
     <section className={`${CARD} dashboard-card p-4 sm:p-5`}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <SectionTitle>My coins</SectionTitle>
+
           <p className="ml-11 mt-1 text-[11px] text-[#929292]">
             Balances and estimated value by coin type
           </p>
         </div>
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-[#EAEAEA] bg-[#FAFAFA] px-3 py-1 text-[10px] font-semibold text-[#666666]">
-          <Coins size={13} /> Coin wallet
-        </span>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-[#EAEAEA] bg-[#FAFAFA] px-3 py-1 text-[10px] font-semibold text-[#666666]">
+            <Coins size={13} />
+            Coin wallet
+          </span>
+
+          <button
+            type="button"
+            onClick={() => setIsRedeemModalOpen(true)}
+            className="inline-flex h-[36px] items-center justify-center gap-2 rounded-[11px] bg-[#171717] px-4 text-[12px] font-bold text-white shadow-[0_5px_14px_rgba(0,0,0,.09)] transition-all hover:bg-[#333333] active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#171717]/30 focus-visible:ring-offset-2"
+          >
+            <HandCoins size={15} />
+            Redeem Coins
+          </button>
+        </div>
       </div>
+
       <div className="mt-4 grid grid-cols-1 gap-3 min-[480px]:grid-cols-3 sm:gap-3">
         <CoinCard
           color="yellow"
@@ -570,6 +1177,7 @@ function CoinsSection({ ignite }: { ignite?: IgniteDashboard | null }) {
           valueInr={coinValues?.yellow_value_inr}
           label="Yellow coins"
         />
+
         <CoinCard
           color="green"
           value={coinValues?.green_bal ?? 0}
@@ -577,6 +1185,7 @@ function CoinsSection({ ignite }: { ignite?: IgniteDashboard | null }) {
           valueInr={coinValues?.green_value_inr}
           label="Green coins"
         />
+
         <CoinCard
           color="blue"
           value={coinValues?.blue_bal ?? 0}
@@ -585,6 +1194,19 @@ function CoinsSection({ ignite }: { ignite?: IgniteDashboard | null }) {
           label="Blue coins"
         />
       </div>
+
+      <RedeemCoinsModal
+        isOpen={isRedeemModalOpen}
+        yellowBalance={yellowBalance}
+        blueBalance={blueBalance}
+        selectedRedeemPoint={selectedRedeemPoint}
+        redeemAmount={redeemAmount}
+        isRedeeming={isRedeeming}
+        onClose={handleCloseModal}
+        onSelectPoint={handleSelectPoint}
+        onAmountChange={setRedeemAmount}
+        onRedeem={handleRedeemCoins}
+      />
     </section>
   );
 }
@@ -603,37 +1225,56 @@ function AccountSummary({ ignite }: { ignite?: IgniteDashboard | null }) {
     },
     { label: "Base rank", value: ignite?.base_rank_no, icon: ShieldCheck },
   ];
+
   const left = toNumber(ignite?.total_cv_left);
   const right = toNumber(ignite?.total_cv_right);
   const total = left + right;
+
   const leftPct = total > 0 ? (left / total) * 100 : 0;
   const rightPct = total > 0 ? (right / total) * 100 : 0;
+
   const isActive = ignite?.membership_status?.toLowerCase() === "active";
+
   return (
     <section className={`${CARD} dashboard-card h-full p-4 sm:p-5`}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <SectionTitle>Network performance</SectionTitle>
+
           <p className="ml-11 mt-1 text-[11px] leading-5 text-[#888888]">
             Rank progress and CV distribution
           </p>
         </div>
+
         <span
-          className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold ${isActive ? "border-[#D9EDE2] bg-[#F0FAF4] text-[#21845F]" : "border-[#EBEBEB] bg-[#F8F8F8] text-[#777777]"}`}
+          className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold ${
+            isActive
+              ? "border-[#D9EDE2] bg-[#F0FAF4] text-[#21845F]"
+              : "border-[#EBEBEB] bg-[#F8F8F8] text-[#777777]"
+          }`}
         >
           <span
-            className={`h-1.5 w-1.5 rounded-full ${isActive ? "bg-[#21845F]" : "bg-[#BDBDBD]"}`}
+            className={`h-1.5 w-1.5 rounded-full ${
+              isActive ? "bg-[#21845F]" : "bg-[#BDBDBD]"
+            }`}
           />
+
           {formatStatus(ignite?.membership_status)}
         </span>
       </div>
+
       <div className="mt-5 grid grid-cols-3 gap-2.5">
         {ranks.map((item, index) => {
           const Icon = item.icon;
+
           return (
             <div
               key={item.label}
-              className={`min-w-0 rounded-[14px] border p-3 sm:p-4 ${index === 0 ? "border-[#EAE5D9] bg-[#FBFAF7]" : index === 1 ? "border-[#E9ECEF] bg-[#F9FAFB]" : "border-[#E9ECEF] bg-[#F9FAFB]"}`}
+              className={`min-w-0 rounded-[14px] border p-3 sm:p-4 ${
+                index === 0
+                  ? "border-[#EAE5D9] bg-[#FBFAF7]"
+                  : "border-[#E9ECEF] bg-[#F9FAFB]"
+              }`}
             >
               <Icon
                 size={16}
@@ -646,9 +1287,11 @@ function AccountSummary({ ignite }: { ignite?: IgniteDashboard | null }) {
                 }
                 strokeWidth={1.7}
               />
+
               <p className="dashboard-number mt-4 break-words text-[23px] font-bold leading-none tracking-[-.05em] text-[#191919] sm:text-[28px]">
                 {item.value ?? "—"}
               </p>
+
               <p className="mt-2 text-[10px] font-medium leading-4 text-[#777777] sm:text-[11px]">
                 {item.label}
               </p>
@@ -656,29 +1299,36 @@ function AccountSummary({ ignite }: { ignite?: IgniteDashboard | null }) {
           );
         })}
       </div>
+
       <div className="mt-5 rounded-[14px] border border-[#EAEAEA] bg-[#FCFCFC] p-3.5 sm:p-4">
         <div className="flex items-center justify-between gap-2">
           <span className="text-[12px] font-semibold text-[#303030]">
             CV distribution
           </span>
+
           <span className="dashboard-number text-[11px] font-bold text-[#8A8A8A]">
             {formatNumber(total)} total
           </span>
         </div>
+
         <div className="mt-4 flex min-w-0 items-end justify-between gap-3">
           <div className="min-w-0">
             <p className="text-[10px] text-[#8A8A8A]">Left leg</p>
+
             <p className="dashboard-number mt-1 break-words text-[19px] font-bold leading-none text-[#202020]">
               {formatNumber(left)}
             </p>
           </div>
+
           <div className="min-w-0 text-right">
             <p className="text-[10px] text-[#8A8A8A]">Right leg</p>
+
             <p className="dashboard-number mt-1 break-words text-[19px] font-bold leading-none text-[#202020]">
               {formatNumber(right)}
             </p>
           </div>
         </div>
+
         <div className="mt-4 flex h-[9px] w-full gap-[3px] overflow-hidden rounded-full bg-[#E9E9E9]">
           {leftPct > 0 && (
             <div
@@ -686,6 +1336,7 @@ function AccountSummary({ ignite }: { ignite?: IgniteDashboard | null }) {
               style={{ width: `${leftPct}%` }}
             />
           )}
+
           {rightPct > 0 && (
             <div
               className="h-full rounded-r-full bg-[#37B89A] transition-all"
@@ -693,19 +1344,25 @@ function AccountSummary({ ignite }: { ignite?: IgniteDashboard | null }) {
             />
           )}
         </div>
+
         <div className="mt-2.5 flex justify-between gap-2 text-[10px] font-semibold text-[#888888]">
           <span>
             <span className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full bg-[#5B83D8]" />
             Left {total > 0 ? leftPct.toFixed(0) : 0}%
           </span>
+
           <span>
             Right {total > 0 ? rightPct.toFixed(0) : 0}%{" "}
             <span className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-[#37B89A]" />
           </span>
         </div>
       </div>
+
       <div className="mt-4 flex items-center justify-between border-t border-[#F0F0F0] pt-4">
-        <span className="text-[11px] text-[#888888]">Membership status</span>
+        <span className="text-[11px] text-[#888888]">
+          Membership status
+        </span>
+
         <span className="text-[11px] font-semibold text-[#2A2A2A]">
           {formatStatus(ignite?.membership_status)}
         </span>
@@ -728,8 +1385,14 @@ function AccountTable({
   onOpenBankedTc: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+
   const isActive = ignite?.membership_status?.toLowerCase() === "active";
-  const availableBankedTc = toNumber(ignite?.tc_bank_available);
+
+  const availableBankedTc = toNumber(
+    (ignite as (IgniteDashboard & { tc_bank_available?: number | string }) | null | undefined)
+      ?.tc_bank_available,
+  );
+
   const details = [
     { label: "Placement leg", value: ignite?.placement_leg ?? "N/A" },
     { label: "Total steps", value: ignite?.total_steps ?? 0 },
@@ -750,15 +1413,18 @@ function AccountTable({
     { label: "Qualified at", value: ignite?.qualified_at ?? "N/A" },
     { label: "Member ID", value: ignite?.member_id ?? "N/A" },
   ];
+
   return (
     <section className={`${CARD} dashboard-card h-full p-4 sm:p-5`}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <SectionTitle>Account details</SectionTitle>
+
           <p className="ml-11 mt-1 text-[11px] leading-5 text-[#888888]">
             Your distributor placement and account information
           </p>
         </div>
+
         {ignite?.is_placed && (
           <span className="inline-flex items-center gap-1.5 rounded-full border border-[#E6E6E6] bg-[#F7F7F7] px-2.5 py-1 text-[10px] font-semibold text-[#505050]">
             <Check size={12} />
@@ -766,6 +1432,7 @@ function AccountTable({
           </span>
         )}
       </div>
+
       <div className="mt-5 overflow-hidden rounded-[14px] border border-[#EBEBEB]">
         <div className="grid grid-cols-[minmax(0,1.25fr)_minmax(0,.6fr)_minmax(0,.85fr)_16px] items-center gap-2 bg-[#F7F7F7] px-3 py-3 text-[10px] font-semibold uppercase tracking-[.06em] text-[#868686] sm:px-4">
           <span>Account ID</span>
@@ -773,6 +1440,7 @@ function AccountTable({
           <span>Status</span>
           <span />
         </div>
+
         {ignite ? (
           <>
             <button
@@ -784,22 +1452,33 @@ function AccountTable({
               <span className="min-w-0 break-all text-[11px] font-bold text-[#252525] sm:text-[13px]">
                 {ignite.ba_id || "N/A"}
               </span>
+
               <span className="dashboard-number text-[13px] font-bold text-[#242424] sm:text-[15px]">
                 {ignite.rank_no ?? 0}
               </span>
+
               <span
-                className={`min-w-0 break-words text-[10px] font-semibold sm:text-[11px] ${isActive ? "text-[#25845F]" : "text-[#858585]"}`}
+                className={`min-w-0 break-words text-[10px] font-semibold sm:text-[11px] ${
+                  isActive ? "text-[#25845F]" : "text-[#858585]"
+                }`}
               >
                 <span
-                  className={`mr-1.5 inline-block h-1.5 w-1.5 rounded-full align-middle ${isActive ? "bg-[#25845F]" : "bg-[#AFAFAF]"}`}
+                  className={`mr-1.5 inline-block h-1.5 w-1.5 rounded-full align-middle ${
+                    isActive ? "bg-[#25845F]" : "bg-[#AFAFAF]"
+                  }`}
                 />
+
                 {formatStatus(ignite.membership_status)}
               </span>
+
               <ChevronDown
                 size={16}
-                className={`text-[#777777] transition-transform ${expanded ? "rotate-180" : ""}`}
+                className={`text-[#777777] transition-transform ${
+                  expanded ? "rotate-180" : ""
+                }`}
               />
             </button>
+
             <AnimatePresence initial={false}>
               {expanded && (
                 <motion.div
@@ -818,6 +1497,7 @@ function AccountTable({
                         <p className="text-[10px] leading-4 text-[#8A8A8A]">
                           {item.label}
                         </p>
+
                         <p className="dashboard-number mt-1 break-all text-[12px] font-bold text-[#252525] sm:text-[13px]">
                           {item.value}
                         </p>
@@ -834,22 +1514,27 @@ function AccountTable({
           </p>
         )}
       </div>
+
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-[13px] border border-[#ECECEC] bg-[#FBFBFB] p-3 sm:p-3.5">
         <div>
           <p className="text-[11px] font-semibold text-[#343434]">
             Banked TC available
           </p>
+
           <p className="dashboard-number mt-1 text-[21px] font-bold tracking-[-.04em] text-[#191919]">
             {formatNumber(availableBankedTc)}
           </p>
         </div>
+
         {availableBankedTc > 0 && Boolean(ignite?.ba_id) ? (
           <button
             type="button"
             onClick={onOpenBankedTc}
             className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-[11px] bg-[#171717] px-4 text-[12px] font-semibold text-white shadow-[0_6px_14px_rgba(0,0,0,.12)] transition-all hover:bg-[#333333] active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#333333]/30 focus-visible:ring-offset-2"
           >
-            <HandCoins size={15} /> Place Banked TC <ArrowRight size={14} />
+            <HandCoins size={15} />
+            Place Banked TC
+            <ArrowRight size={14} />
           </button>
         ) : (
           <span className="rounded-full border border-[#E8E8E8] bg-white px-3 py-1.5 text-[10px] font-medium text-[#888888]">
@@ -907,6 +1592,7 @@ function BankedTcModal({
                   <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px] bg-[#171717] text-white">
                     <HandCoins size={20} />
                   </span>
+
                   <div>
                     <h3
                       id="banked-tc-title"
@@ -914,11 +1600,13 @@ function BankedTcModal({
                     >
                       Place Banked TC
                     </h3>
+
                     <p className="mt-1 text-[11px] text-[#888888]">
                       Choose the placement side for your banked TC
                     </p>
                   </div>
                 </div>
+
                 <button
                   type="button"
                   onClick={onClose}
@@ -929,24 +1617,29 @@ function BankedTcModal({
                   <span className="text-[21px] leading-none">×</span>
                 </button>
               </div>
+
               <div className="mt-5 flex items-center justify-between rounded-[13px] border border-[#EBEBEB] bg-[#FAFAFA] px-4 py-3">
                 <div>
                   <p className="text-[10px] font-medium text-[#828282]">
                     Available balance
                   </p>
+
                   <p className="text-[12px] font-semibold text-[#262626]">
                     Banked TC available for placement
                   </p>
                 </div>
+
                 <span className="dashboard-number text-[25px] font-bold text-[#191919]">
                   {availableCount}
                 </span>
               </div>
             </div>
+
             <div className="p-5 sm:p-6">
               <p className="mb-3 text-[12px] font-semibold text-[#353535]">
                 Select a leg to place TC
               </p>
+
               <div className="grid grid-cols-2 gap-3">
                 {([1, 2] as const).map((side) => (
                   <button
@@ -965,22 +1658,27 @@ function BankedTcModal({
                         "R"
                       )}
                     </span>
+
                     <span className="mt-3 text-[13px] font-bold text-[#252525]">
                       {side === 1 ? "Left leg" : "Right leg"}
                     </span>
+
                     <span className="mt-1 text-[10px] text-[#888888]">
                       Place on {side === 1 ? "left" : "right"} side
                     </span>
                   </button>
                 ))}
               </div>
+
               <div className="mt-4 flex items-start gap-2 rounded-[11px] border border-[#EAEAEA] bg-[#FBFBFB] p-3">
                 <Info size={15} className="mt-0.5 shrink-0 text-[#888888]" />
+
                 <p className="text-[10.5px] leading-[18px] text-[#777777]">
                   Placement is submitted immediately. Please verify the correct
                   side before selecting.
                 </p>
               </div>
+
               {isLoading && (
                 <div className="mt-3 flex items-center justify-center gap-2 text-[11px] text-[#5F5F5F]">
                   <Loader2 size={14} className="animate-spin" />
@@ -1001,29 +1699,38 @@ function BankedTcModal({
 
 const MAX_VISIBLE_ACTIVITY = 4;
 const ACTIVITY_ITEM_HEIGHT = 70;
+
 function RecentActivity({ activity }: { activity: DashboardActivity[] }) {
   const hasOverflow = activity.length > MAX_VISIBLE_ACTIVITY;
+
   return (
     <section className={`${CARD} dashboard-card h-full p-4 sm:p-5`}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <SectionTitle>Recent activity</SectionTitle>
+
           <p className="ml-11 mt-1 text-[11px] text-[#929292]">
             A quick timeline of your account updates
           </p>
         </div>
+
         <span className="flex h-9 w-9 items-center justify-center rounded-[11px] bg-[#F7F7F7] text-[#737373]">
           <Activity size={17} />
         </span>
       </div>
+
       {activity.length > 0 ? (
         <div
-          className={`thin-scroll mt-4 ${hasOverflow ? "overflow-y-auto pr-1" : ""}`}
+          className={`thin-scroll mt-4 ${
+            hasOverflow ? "overflow-y-auto pr-1" : ""
+          }`}
           style={
             hasOverflow
               ? {
-                maxHeight: `${MAX_VISIBLE_ACTIVITY * ACTIVITY_ITEM_HEIGHT}px`,
-              }
+                  maxHeight: `${
+                    MAX_VISIBLE_ACTIVITY * ACTIVITY_ITEM_HEIGHT
+                  }px`,
+                }
               : undefined
           }
         >
@@ -1036,18 +1743,22 @@ function RecentActivity({ activity }: { activity: DashboardActivity[] }) {
                 <span className="z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] border border-[#E9E9E9] bg-[#FAFAFA] text-[#454545]">
                   <Activity size={15} />
                 </span>
+
                 {index !== activity.length - 1 && (
                   <span className="absolute bottom-0 top-10 w-px bg-[#EAEAEA]" />
                 )}
               </div>
+
               <div className="min-w-0 flex-1 border-b border-[#F0F0F0] pb-3 last:border-0">
                 <p className="break-words text-[12px] font-semibold leading-5 text-[#303030]">
                   {item.event}
                 </p>
+
                 <div className="mt-1.5 flex flex-wrap items-center gap-2">
                   <span className="rounded-[6px] bg-[#F5F5F5] px-2 py-0.5 text-[10px] font-medium text-[#737373]">
                     {formatStatus(item.type)}
                   </span>
+
                   <span className="text-[10px] text-[#9C9C9C]">
                     {item.created_at}
                   </span>
@@ -1061,9 +1772,11 @@ function RecentActivity({ activity }: { activity: DashboardActivity[] }) {
           <span className="flex h-11 w-11 items-center justify-center rounded-[13px] bg-white text-[#989898] ring-1 ring-[#EBEBEB]">
             <Activity size={19} />
           </span>
+
           <p className="mt-3 text-[12px] font-semibold text-[#454545]">
             No recent activity
           </p>
+
           <p className="mt-1 text-[11px] text-[#999999]">
             Your latest account updates will show here.
           </p>
@@ -1077,38 +1790,50 @@ function RecentActivity({ activity }: { activity: DashboardActivity[] }) {
 // Latest order
 // --------------------------------------------------
 
-function LatestOrderSection({ order }: { order: DashboardLatestOrder | null }) {
+function LatestOrderSection({
+  order,
+}: {
+  order: DashboardLatestOrder | null;
+}) {
   const reference =
     order?.order_reference || order?.order_number || order?.reference;
+
   const orderData = order as
     | (DashboardLatestOrder & {
-      total_payable?: number | string;
-      order_date?: string;
-    })
+        total_payable?: number | string;
+        order_date?: string;
+      })
     | null;
+
   const amount = order?.total_amount ?? orderData?.total_payable;
+
   const status = order?.status?.toLowerCase() ?? "";
+
   const statusStyle =
     status.includes("deliver") ||
-      status.includes("confirm") ||
-      status.includes("complete")
+    status.includes("confirm") ||
+    status.includes("complete")
       ? "border-[#D8EEE0] bg-[#F1FAF5] text-[#21815A]"
       : status.includes("fail") || status.includes("cancel")
         ? "border-[#F1D6D6] bg-[#FFF5F5] text-[#B45454]"
         : "border-[#E8E8E8] bg-[#F7F7F7] text-[#737373]";
+
   return (
     <section className={`${CARD} dashboard-card h-full p-4 sm:p-5`}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <SectionTitle>Latest order</SectionTitle>
+
           <p className="ml-11 mt-1 text-[11px] text-[#929292]">
             Your most recent purchase
           </p>
         </div>
+
         <span className="flex h-9 w-9 items-center justify-center rounded-[11px] bg-[#F7F7F7] text-[#737373]">
           <ShoppingBag size={17} />
         </span>
       </div>
+
       {order ? (
         <div className="mt-5">
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-[14px] border border-[#EDEDED] bg-[#FAFAFA] p-3.5 sm:p-4">
@@ -1116,23 +1841,28 @@ function LatestOrderSection({ order }: { order: DashboardLatestOrder | null }) {
               <p className="text-[10px] font-medium uppercase tracking-[.1em] text-[#909090]">
                 Order reference
               </p>
+
               <p className="dashboard-number mt-1 break-all text-[13px] font-bold text-[#262626] sm:text-[14px]">
                 {reference || "Order details available"}
               </p>
             </div>
+
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] bg-white text-[#555555] ring-1 ring-[#EAEAEA]">
               <PackageCheck size={17} />
             </span>
           </div>
+
           <div className="mt-5 flex flex-wrap items-end justify-between gap-3">
             <div>
               <p className="text-[11px] font-medium text-[#878787]">
                 Order value
               </p>
+
               <p className="dashboard-number mt-1.5 break-words text-[29px] font-bold tracking-[-.055em] text-[#181818] sm:text-[33px]">
                 {amount == null ? "—" : formatCurrency(amount, "INR")}
               </p>
             </div>
+
             {order.status && (
               <span
                 className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[10px] font-semibold ${statusStyle}`}
@@ -1142,9 +1872,11 @@ function LatestOrderSection({ order }: { order: DashboardLatestOrder | null }) {
               </span>
             )}
           </div>
+
           {(order.created_at || orderData?.order_date) && (
             <div className="mt-5 flex items-center gap-2 border-t border-[#F0F0F0] pt-3.5 text-[11px] text-[#8C8C8C]">
               <Clock3 size={13} />
+
               <span className="break-words">
                 {order.created_at || orderData?.order_date}
               </span>
@@ -1156,9 +1888,11 @@ function LatestOrderSection({ order }: { order: DashboardLatestOrder | null }) {
           <span className="flex h-11 w-11 items-center justify-center rounded-[13px] bg-white text-[#989898] ring-1 ring-[#EBEBEB]">
             <ShoppingBag size={19} />
           </span>
+
           <p className="mt-3 text-[12px] font-semibold text-[#454545]">
             No orders placed yet
           </p>
+
           <p className="mt-1 text-[11px] text-[#999999]">
             Your recent orders will appear here.
           </p>
@@ -1169,339 +1903,8 @@ function LatestOrderSection({ order }: { order: DashboardLatestOrder | null }) {
 }
 
 // --------------------------------------------------
-// CV filters + Sales calendar
+// Sales calendar poster + CV filters
 // --------------------------------------------------
-
-type SalesCalendarWeek = {
-  year?: number;
-  week_no?: number;
-  start?: string | null;
-  end?: string | null;
-  payout_date?: string | null;
-  is_current?: boolean;
-  is_settled?: boolean;
-};
-
-type SalesCalendarMonth = {
-  month_no: number;
-  label?: string;
-  is_current?: boolean;
-  weeks?: SalesCalendarWeek[];
-};
-
-type SalesCalendar = {
-  year?: number;
-  all_months?: SalesCalendarMonth[];
-  current_month?: {
-    year?: number;
-    month_no?: number;
-    label?: string;
-    start?: string | null;
-    end?: string | null;
-  };
-  current_week?: SalesCalendarWeek;
-};
-
-type CvSearchFilters = {
-  year: number;
-  week_no: number;
-};
-
-type PairingsQueryResult = {
-  data?: any;
-  isLoading?: boolean;
-  isFetching?: boolean;
-  isError?: boolean;
-  error?: unknown;
-  refetch?: () => Promise<unknown> | unknown;
-};
-
-// --------------------------------------------------
-// Calendar helpers (API is authoritative)
-// --------------------------------------------------
-
-function parseCalendarDate(value?: string | null): Date | null {
-  if (!value) return null;
-  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (!match) return null;
-  const date = new Date(
-    Number(match[1]),
-    Number(match[2]) - 1,
-    Number(match[3]),
-  );
-  return Number.isNaN(date.getTime()) ? null : date;
-}
-
-function formatCalendarDate(value?: string | null): string {
-  const date = parseCalendarDate(value);
-  if (!date) return value || "—";
-  return date.toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
-}
-
-function formatDateObject(date: Date): string {
-  return date.toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
-}
-
-function getCalendarYear(calendar?: SalesCalendar): number {
-  const year = Number(calendar?.current_week?.year ?? calendar?.year);
-  return Number.isFinite(year) && year > 0 ? year : new Date().getFullYear();
-}
-
-function getCurrentMonth(
-  calendar?: SalesCalendar,
-): SalesCalendarMonth | undefined {
-  return calendar?.all_months?.find(
-    (month) => month.is_current || month.weeks?.some((week) => week.is_current),
-  );
-}
-
-function getActiveCalendarWeek(
-  calendar?: SalesCalendar,
-): SalesCalendarWeek | undefined {
-  if (calendar?.current_week?.week_no) return calendar.current_week;
-  for (const month of calendar?.all_months ?? []) {
-    const found = month.weeks?.find((week) => week.is_current);
-    if (found) return { ...found, year: found.year ?? calendar?.year };
-  }
-  return undefined;
-}
-
-function getCurrentCalendarWeek(calendar?: SalesCalendar): number {
-  const week = Number(getActiveCalendarWeek(calendar)?.week_no);
-  return Number.isFinite(week) && week > 0 ? week : 1;
-}
-
-/** The supplied backend timestamps are without an explicit timezone.
- * For the poster we display their DATE COMPONENTS as-is: this avoids
- * silently converting a payout date into a different day.
- * The raw timestamp is kept in the title attribute for precise review.
- */
-function formatPosterApiDate(value?: string | null): string {
-  if (!value) return "—";
-  const date = parseCalendarDate(value);
-  if (!date) return "—";
-  return date
-    .toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    })
-    .toUpperCase();
-}
-
-/** Image's rank-basis rules, retained separately from the API schedule.
- * Only applied for the supplied 2026 poster. They are not returned by the API.
- */
-const POSTER_RANK_BASIS_2026: Record<
-  number,
-  { title: string; period: string }
-> = {
-  5: { title: "DEFAULT LAUNCH RANK", period: "" },
-  6: { title: "SALES FROM WEEK 17 TO 20", period: "25 APR TO 22 MAY" },
-  7: { title: "SALES FROM WEEK 21 TO 25", period: "23 MAY TO 26 JUN" },
-  8: { title: "SALES FROM WEEK 26 TO 29", period: "27 JUN TO 24 JUL" },
-  9: { title: "SALES FROM WEEK 30 TO 33", period: "25 JUL TO 21 AUG" },
-  10: { title: "SALES FROM WEEK 34 TO 38", period: "22 AUG TO 25 SEP" },
-  11: { title: "SALES FROM WEEK 39 TO 42", period: "26 SEP TO 23 OCT" },
-  12: { title: "SALES FROM WEEK 43 TO 46", period: "24 OCT TO 20 NOV" },
-};
-
-/** Actual weeks from sales_calendar.all_months have priority over generated options. */
-function buildCvWeekOptions(
-  year: number,
-  calendar?: SalesCalendar,
-): Array<{ value: number; label: string; description: string }> {
-  const calendarYear = getCalendarYear(calendar);
-  if (year === calendarYear && calendar?.all_months?.length) {
-    const allWeeks = calendar.all_months
-      .flatMap((month) => month.weeks ?? [])
-      .filter(
-        (week): week is SalesCalendarWeek & { week_no: number } =>
-          typeof week.week_no === "number" && week.week_no > 0,
-      )
-      .sort((a, b) => a.week_no - b.week_no);
-    if (allWeeks.length) {
-      return allWeeks.map((week) => ({
-        value: week.week_no,
-        label: `Week ${week.week_no}`,
-        description: `${formatCalendarDate(week.start)} – ${formatCalendarDate(week.end)} ${year}`,
-      }));
-    }
-  }
-
-  // Retain legacy fall-back for years not supplied in the dashboard API.
-  const apiWeekNo = getCurrentCalendarWeek(calendar);
-  const apiStart = parseCalendarDate(getActiveCalendarWeek(calendar)?.start);
-  let firstWeekStart: Date;
-  if (year === calendarYear && apiStart) {
-    firstWeekStart = new Date(apiStart);
-    firstWeekStart.setDate(firstWeekStart.getDate() - (apiWeekNo - 1) * 7);
-  } else {
-    firstWeekStart = new Date(year, 0, 1);
-    firstWeekStart.setDate(
-      firstWeekStart.getDate() + ((6 - firstWeekStart.getDay() + 7) % 7),
-    );
-  }
-  const options: Array<{ value: number; label: string; description: string }> =
-    [];
-  for (let weekNo = 1; weekNo <= 53; weekNo++) {
-    const date = new Date(firstWeekStart);
-    date.setDate(date.getDate() + (weekNo - 1) * 7);
-    if (date.getFullYear() !== year) break;
-    const end = new Date(date);
-    end.setDate(end.getDate() + 6);
-    options.push({
-      value: weekNo,
-      label: `Week ${weekNo}`,
-      description: `${formatDateObject(date)} – ${formatDateObject(end)} ${year}`,
-    });
-  }
-  return options;
-}
-
-function getCvYearOptions(calendar?: SalesCalendar): number[] {
-  const currentYear = getCalendarYear(calendar);
-  return Array.from({ length: 6 }, (_, index) => currentYear - index);
-}
-
-// --------------------------------------------------
-// Image-inspired 2026 sales calendar, dynamically populated from the API
-// --------------------------------------------------
-
-function PosterCalendarTable({
-  months,
-  year,
-  selectedWeek,
-  onSelectWeek,
-}: {
-  months: SalesCalendarMonth[];
-  year: number;
-  selectedWeek: number;
-  onSelectWeek: (weekNo: number) => void;
-}) {
-  const header =
-    "border border-[#c5d1e1] px-1 py-1.5 text-center text-[8px] font-bold uppercase leading-[1.2] sm:text-[9px]";
-  const cell =
-    "border border-[#c5d1e1] px-1 py-[5px] text-center text-[9px] leading-[1.2] sm:text-[9.5px]";
-  return (
-    <div className="min-w-0 overflow-x-auto rounded-lg border border-[#d8e2f0] bg-white shadow-[0_2px_8px_rgba(16,42,85,.06)]">
-      <table className="w-full min-w-[455px] table-fixed border-collapse bg-white">
-        <thead>
-          <tr className="bg-[#113a83] text-white">
-            <th className={`${header} w-[9%] border-[#29549c]`}>
-              Sales
-              <br />
-              month
-            </th>
-            <th className={`${header} border-[#29549c]`} colSpan={3}>
-              Sales week
-            </th>
-            <th className={`${header} w-[20%] border-[#29549c]`}>
-              Commission
-              <br />
-              payout
-            </th>
-            <th className={`${header} w-[19%] border-[#29549c]`}>Rank basis</th>
-          </tr>
-          <tr className="bg-[#f5cb53] text-[#173a70]">
-            <th className={header} aria-label="Month number" />
-            <th className={header}>Week</th>
-            <th className={header}>Start date</th>
-            <th className={header}>End date</th>
-            <th className={header}>Date</th>
-            <th className={header} aria-label="Rank basis detail" />
-          </tr>
-        </thead>
-        {months.map((month) => {
-          const weeks = [...(month.weeks ?? [])]
-            .filter((week) => typeof week.week_no === "number")
-            .sort((a, b) => (a.week_no ?? 0) - (b.week_no ?? 0));
-          const basis =
-            year === 2026 ? POSTER_RANK_BASIS_2026[month.month_no] : undefined;
-          if (!weeks.length) return null;
-          return (
-            <tbody key={`${year}-${month.month_no}`}>
-              {weeks.map((week, index) => {
-                const active = Boolean(week.is_current);
-                const selected = week.week_no === selectedWeek;
-                return (
-                  <tr
-                    key={`${month.month_no}-${week.week_no}`}
-                    className={`transition-colors ${selected ? "bg-[#edf4ff]" : "bg-white hover:bg-[#f5f8ff]"}`}
-                  >
-                    {index === 0 && (
-                      <td
-                        rowSpan={weeks.length}
-                        className="border border-[#c5d1e1] bg-[#f8dfa0] px-0.5 text-center align-middle"
-                      >
-                        <span className="text-[19px] font-extrabold leading-none text-[#123d84] sm:text-[22px]">
-                          {month.month_no}
-                        </span>
-                      </td>
-                    )}
-                    <td className={`${cell} w-[8%] font-black text-[#123d84]`}>
-                      <button
-                        type="button"
-                        title={`Week ${week.week_no} · ${week.is_settled ? "Settled" : "Pending"}${active ? " · Current week" : ""}`}
-                        onClick={() => onSelectWeek(week.week_no!)}
-                        aria-label={`Select week ${week.week_no} for CV search`}
-                        aria-pressed={selected}
-                        className={`mx-auto flex h-[22px] min-w-[24px] items-center justify-center rounded px-0.5 text-[10px] font-bold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[#f2a91b] ${selected ? "bg-[#123d84] text-white" : active ? "bg-[#ffe6a0] text-[#123d84] hover:bg-[#fbd473]" : "text-[#123d84] hover:bg-[#dceaff]"}`}
-                      >
-                        {week.week_no}
-                      </button>
-                    </td>
-                    <td
-                      className={`${cell} whitespace-nowrap text-[#364b67]`}
-                      title={week.start ?? ""}
-                    >
-                      {formatPosterApiDate(week.start)}
-                    </td>
-                    <td
-                      className={`${cell} whitespace-nowrap text-[#364b67]`}
-                      title={week.end ?? ""}
-                    >
-                      {formatPosterApiDate(week.end)}
-                    </td>
-                    <td
-                      className={`${cell} whitespace-nowrap bg-[#fff0b5]`}
-                      title={week.payout_date ?? ""}
-                    >
-                      <span className="rounded-sm bg-[#f8e6a9] px-0.5 py-0.5 font-bold text-[#143f82]">
-                        {formatPosterApiDate(week.payout_date)}
-                      </span>
-                    </td>
-                    {index === 0 && (
-                      <td
-                        rowSpan={weeks.length}
-                        className="border border-[#c5d1e1] bg-[#f9fafc] px-1 py-1.5 text-center align-middle"
-                      >
-                        {basis ? (
-                          <div className="mx-auto max-w-[125px] text-[9px] font-bold uppercase leading-[1.3] text-[#153c79]">
-                            {basis.title}
-                            {basis.period && (
-                              <div className="mt-0.5 text-[8px] font-medium text-[#68778c]">
-                                ({basis.period})
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-[10px] font-medium text-[#8290a3]">
-                            —
-                          </span>
-                        )}
-                      </td>
-                    )}
-                  </tr>
-                );
-              })}
-            </tbody>
-          );
-        })}
-      </table>
-    </div>
-  );
-}
 
 function SalesCalendarPoster({
   calendar,
@@ -1509,486 +1912,74 @@ function SalesCalendarPoster({
   onSelectWeek,
   children,
 }: {
-  calendar?: SalesCalendar;
+  calendar?: SalesCalendar | null;
   selectedWeek: number;
   onSelectWeek: (weekNo: number) => void;
   children?: React.ReactNode;
 }) {
+  const weeks = Array.isArray(calendar?.weeks) ? calendar!.weeks : [];
   const year = getCalendarYear(calendar);
-  const months = [...(calendar?.all_months ?? [])].sort(
-    (a, b) => a.month_no - b.month_no,
-  );
-  const half = Math.ceil(months.length / 2);
-  const activeWeek = getActiveCalendarWeek(calendar);
-  if (!months.length) {
-    return (
-      <section className="mt-5 rounded-[18px] border border-[#e3e8f0] bg-white p-5">
-        <div className="flex items-center gap-3">
-          <CalendarClock size={20} className="text-[#67758b]" />
-          <div>
-            <h3 className="text-[15px] font-bold text-[#1d2939]">
-              Sales Month Calendar
-            </h3>
-            <p className="mt-0.5 text-[12px] text-[#667085]">
-              Calendar data is not available from the dashboard API.
-            </p>
-          </div>
-        </div>
-        {children && <div className="mt-4 border-t border-[#e3e8f0] pt-3">{children}</div>}
-      </section>
-    );
-  }
 
   return (
-    <section className="relative isolate mt-3 overflow-hidden rounded-[16px] border border-[#d7e0eb] bg-gradient-to-br from-[#eaf1fb] via-[#f5f8fc] to-white p-3 shadow-[0_3px_14px_rgba(16,42,85,.04)] sm:p-4">
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 opacity-30"
-        style={{
-          backgroundImage:
-            "linear-gradient(90deg,rgba(54,95,157,.035),transparent)",
-        }}
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -right-12 -top-12 h-48 w-48 rounded-full border-[12px] border-[#d5e4f8]/20"
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -left-10 top-20 h-36 w-36 rounded-full bg-[#c7e1ff]/15 blur-2xl"
-      />
+    <div className={`${CARD} dashboard-card mt-4 overflow-hidden`}>
+      <div className="border-b border-[#EDEDED] bg-gradient-to-r from-[#F7F9FC] to-white px-4 py-4 sm:px-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-[#EFF3F9] text-[#607797]">
+              <CalendarDays size={18} />
+            </span>
 
-      <div className="relative mb-2 flex flex-wrap items-center justify-between gap-2">
-        <div className="inline-flex items-center gap-2 rounded-md border border-[#e9d8a0] bg-[#fff2c7] px-2 py-1">
-          <span className="text-[9px] font-black leading-[1.05] tracking-tight text-[#164286]">
-            INDIE
-            <br />
-            KONNECT
-          </span>
+            <div>
+              <p className="text-[13px] font-bold text-[#202A3D]">
+                Sales calendar {year}
+              </p>
+              <p className="mt-0.5 text-[10px] text-[#8992A2]">
+                Select a week to inspect CV and pairing performance
+              </p>
+            </div>
+          </div>
+
+          {calendar?.current_week && (
+            <span className="rounded-full border border-[#E6EAF0] bg-white px-3 py-1 text-[10px] font-semibold text-[#68758A]">
+              Current week: {calendar.current_week.week_no ?? "—"}
+            </span>
+          )}
         </div>
-        {activeWeek && (
-          <span className="inline-flex items-center gap-2 rounded-full border border-[#d7e2ee] bg-white px-2.5 py-1 text-[10px] font-semibold text-[#34547f]">
-            <span className="h-2 w-2 rounded-full bg-[#d09e36]" />
-            Current week {activeWeek.week_no}
-          </span>
-        )}
       </div>
 
-      {/* Find CV appears ABOVE the sales calendar, within the same card. */}
-      {children && (
-        <div className="relative mb-4 rounded-[12px] border border-[#dce5ef] bg-white/90 p-3 sm:p-4">
-          {children}
+      {weeks.length > 0 && (
+        <div className="thin-scroll flex gap-2 overflow-x-auto border-b border-[#EDEDED] bg-[#FCFCFD] px-4 py-3 sm:px-5">
+          {weeks.map((week) => {
+            const weekNo = Number(week.week_no);
+            const active = Number.isFinite(weekNo) && weekNo === selectedWeek;
+
+            return (
+              <button
+                key={`${weekNo}-${week.start ?? ""}`}
+                type="button"
+                onClick={() => Number.isFinite(weekNo) && onSelectWeek(weekNo)}
+                className={`flex min-w-[74px] shrink-0 flex-col items-center justify-center rounded-[11px] border px-2.5 py-2 transition-all ${
+                  active
+                    ? "border-[#171717] bg-[#171717] text-white"
+                    : "border-[#E6E9EF] bg-white text-[#30394A] hover:border-[#C8CFD9]"
+                }`}
+              >
+                <span className="text-[10px] font-bold uppercase tracking-[.08em] opacity-80">
+                  Wk {weekNo}
+                </span>
+                <span className="mt-1 text-[10px] opacity-70">
+                  {week.label ?? week.start ?? ""}
+                </span>
+              </button>
+            );
+          })}
         </div>
       )}
 
-      <div className="relative mb-3 text-center">
-        <div className="flex flex-wrap items-center justify-center gap-2">
-          <h2 className="text-[17px] font-extrabold uppercase leading-tight tracking-[-.025em] text-[#1c3d71] sm:text-[19px] lg:text-[21px]">
-            Sales Month Calendar
-          </h2>
-          <span className="rounded-md border border-[#e3d098] bg-[#fff0c3] px-2 py-0.5 text-[13px] font-extrabold text-[#234b85] sm:text-[14px]">
-            {year}
-          </span>
-        </div>
-        <p className="mt-1 text-[10px] leading-4 text-[#65758b]">
-          Click a week number to select it for CV performance search
-        </p>
-      </div>
-
-      <div className="relative grid min-w-0 grid-cols-1 items-start gap-2 xl:grid-cols-2">
-        <PosterCalendarTable
-          months={months.slice(0, half)}
-          year={year}
-          selectedWeek={selectedWeek}
-          onSelectWeek={onSelectWeek}
-        />
-        <PosterCalendarTable
-          months={months.slice(half)}
-          year={year}
-          selectedWeek={selectedWeek}
-          onSelectWeek={onSelectWeek}
-        />
-      </div>
-
-      <div className="relative mt-2 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[#e0e8f1] bg-white/80 px-2.5 py-2 text-[9px] leading-4 text-[#66758b] sm:text-[10px]">
-        <span>
-          Week dates and payout dates: dashboard API • Rank basis: supplied 2026
-          reference poster
-        </span>
-        <span className="font-bold text-[#284e85]">www.indiekonnect.com</span>
-      </div>
-    </section>
-  );
-}
-
-// --------------------------------------------------
-// Pairings metrics
-// --------------------------------------------------
-
-function getPairingsMetrics(response: any): Record<string, any> | null {
-  if (!response) return null;
-
-  const root = response?.data ?? response;
-
-  const candidates = [
-    root?.ignite,
-    root?.cv_counter,
-    root?.cv_summary,
-    root?.summary,
-    root?.stats,
-    root,
-  ];
-
-  const metricKeys = [
-    "cv_left",
-    "cv_right",
-    "total_cv_left",
-    "total_cv_right",
-    "floating_cv_left",
-    "floating_cv_right",
-    "left_cv",
-    "right_cv",
-    "left_total_cv",
-    "right_total_cv",
-  ];
-
-  for (const candidate of candidates) {
-    if (
-      candidate &&
-      typeof candidate === "object" &&
-      metricKeys.some((key) => candidate[key] !== undefined)
-    ) {
-      const normalized = { ...candidate };
-
-      if (
-        normalized.cv_left === undefined &&
-        normalized.left_cv !== undefined
-      ) {
-        normalized.cv_left = normalized.left_cv;
-      }
-
-      if (
-        normalized.cv_right === undefined &&
-        normalized.right_cv !== undefined
-      ) {
-        normalized.cv_right = normalized.right_cv;
-      }
-
-      if (
-        normalized.total_cv_left === undefined &&
-        (normalized.left_total_cv !== undefined ||
-          normalized.left_cv !== undefined)
-      ) {
-        normalized.total_cv_left =
-          normalized.left_total_cv ?? normalized.left_cv;
-      }
-
-      if (
-        normalized.total_cv_right === undefined &&
-        (normalized.right_total_cv !== undefined ||
-          normalized.right_cv !== undefined)
-      ) {
-        normalized.total_cv_right =
-          normalized.right_total_cv ?? normalized.right_cv;
-      }
-
-      return normalized;
-    }
-  }
-
-  return null;
-}
-
-// --------------------------------------------------
-// Dropdown types
-// --------------------------------------------------
-
-type DropdownOption<T extends string | number> = {
-  value: T;
-  label: string;
-  description?: string;
-};
-
-type SearchableDropdownProps<T extends string | number> = {
-  id: string;
-  label: string;
-  options: DropdownOption<T>[];
-  value: T;
-  onChange: (value: T) => void;
-  searchPlaceholder: string;
-  emptyMessage: string;
-  disabled?: boolean;
-  featuredOption?: DropdownOption<T>;
-  featuredLabel?: string;
-};
-
-// --------------------------------------------------
-// Searchable dropdown
-// --------------------------------------------------
-
-function SearchableDropdown<T extends string | number>({
-  id,
-  label,
-  options,
-  value,
-  onChange,
-  searchPlaceholder,
-  emptyMessage,
-  disabled = false,
-  featuredOption,
-  featuredLabel = "CURRENT WEEK",
-}: SearchableDropdownProps<T>) {
-  const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState("");
-
-  const rootRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (!open) return;
-
-    const handlePointerDown = (event: PointerEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) {
-        setOpen(false);
-        setQuery("");
-      }
-    };
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setOpen(false);
-        setQuery("");
-      }
-    };
-
-    document.addEventListener("pointerdown", handlePointerDown);
-    document.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.removeEventListener("pointerdown", handlePointerDown);
-
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [open]);
-
-  const selectedOption = options.find((option) => option.value === value);
-
-  const normalizedQuery = query.trim().toLowerCase();
-
-  const matchesQuery = (option: DropdownOption<T>) =>
-    `${option.label} ${option.description ?? ""}`
-      .toLowerCase()
-      .includes(normalizedQuery);
-
-  const showFeaturedOption = Boolean(
-    featuredOption && matchesQuery(featuredOption),
-  );
-
-  const filteredOptions = options.filter(
-    (option) =>
-      matchesQuery(option) &&
-      !(featuredOption && option.value === featuredOption.value),
-  );
-
-  const chooseOption = (option: DropdownOption<T>) => {
-    onChange(option.value);
-    setOpen(false);
-    setQuery("");
-  };
-
-  return (
-    <div ref={rootRef} className="relative min-w-0">
-      <label
-        id={`${id}-label`}
-        htmlFor={`${id}-trigger`}
-        className="mb-2 block text-[12px] font-semibold text-[#5a6276] sm:text-[13px]"
-      >
-        {label}
-      </label>
-
-      <button
-        id={`${id}-trigger`}
-        type="button"
-        aria-label={`${label}: ${selectedOption?.label ?? "Select an option"}`}
-        aria-labelledby={`${id}-label ${id}-value`}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        aria-controls={`${id}-listbox`}
-        disabled={disabled}
-        onClick={() => setOpen((previous) => !previous)}
-        className="group flex h-12 w-full min-w-0 items-center justify-between gap-3 rounded-[13px] border border-[#E4E4E4] bg-white px-3.5 text-left outline-none transition-all hover:border-[#ABABAB] hover:bg-[#FCFCFC] focus-visible:border-[#242424] focus-visible:ring-4 focus-visible:ring-[#242424]/10 disabled:cursor-not-allowed disabled:bg-[#f7f8fa] disabled:text-[#98a2b3] sm:px-4"
-      >
-        <span className="flex min-w-0 flex-1 flex-col">
-          <span
-            id={`${id}-value`}
-            className="truncate text-[13px] font-bold leading-5 text-[#101828]"
-          >
-            {selectedOption?.label ?? "Select an option"}
-          </span>
-
-          {selectedOption?.description && (
-            <span className="truncate text-[10px] leading-4 text-[#8a92a6] sm:text-[11px]">
-              {selectedOption.description}
-            </span>
-          )}
-        </span>
-
-        <ChevronDown
-          size={16}
-          className={`shrink-0 text-[#7c879b] transition-transform duration-200 group-hover:text-[#262626] ${open ? "rotate-180 text-[#262626]" : ""
-            }`}
-        />
-      </button>
-
-      <AnimatePresence>
-        {open && !disabled && (
-          <motion.div
-            initial={{ opacity: 0, y: -5, scale: 0.99 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -5, scale: 0.99 }}
-            transition={{ duration: 0.16, ease: "easeOut" }}
-            className="absolute left-0 top-[calc(100%+8px)] z-[80] w-full min-w-[220px] overflow-hidden rounded-[16px] border border-[#E4E4E4] bg-white shadow-[0_18px_45px_rgba(0,0,0,0.13)]"
-          >
-            <div className="border-b border-[#eef1f5] p-3">
-              <div className="flex h-10 items-center gap-2.5 rounded-[11px] border border-[#e6eaf0] bg-[#f8fafc] px-3 transition-colors focus-within:border-[#333333] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#333333]/10">
-                <Search size={15} className="shrink-0 text-[#8a92a6]" />
-
-                <input
-                  type="search"
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  placeholder={searchPlaceholder}
-                  aria-label={`Search ${label.toLowerCase()} options`}
-                  autoComplete="off"
-                  className="h-full min-w-0 flex-1 bg-transparent text-[12px] font-medium text-[#101828] outline-none placeholder:text-[#98a2b3]"
-                />
-
-                {query && (
-                  <button
-                    type="button"
-                    onClick={() => setQuery("")}
-                    aria-label="Clear search"
-                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[16px] leading-none text-[#8a92a6] hover:bg-[#e9edf4] hover:text-[#101828]"
-                  >
-                    ×
-                  </button>
-                )}
-              </div>
-
-              <p className="mt-2 px-1 text-[10px] font-semibold uppercase tracking-[0.09em] text-[#98a2b3]">
-                {filteredOptions.length + (showFeaturedOption ? 1 : 0)} options
-              </p>
-            </div>
-
-            <div
-              id={`${id}-listbox`}
-              role="listbox"
-              aria-label={`${label} options`}
-              className="thin-scroll max-h-[270px] overflow-y-auto p-2"
-            >
-              {showFeaturedOption && featuredOption && (
-                <div className="mb-2">
-                  <p className="px-2 pb-1.5 pt-1 text-[9px] font-black tracking-[0.12em] text-[#1f9d6b]">
-                    {featuredLabel}
-                  </p>
-
-                  <button
-                    type="button"
-                    role="option"
-                    aria-selected={featuredOption.value === value}
-                    onClick={() => chooseOption(featuredOption)}
-                    className={`flex w-full items-center gap-2.5 rounded-[11px] border px-3 py-2.5 text-left transition-colors ${featuredOption.value === value
-                        ? "border-[#D0D0D0] bg-[#F2F2F2]"
-                        : "border-[#E7E7E7] bg-[#FAFAFA] hover:bg-[#EFEFEF]"
-                      }`}
-                  >
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] bg-white text-[#1f9d6b] ring-1 ring-[#d9eee2]">
-                      <CalendarDays size={15} />
-                    </span>
-
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[12px] font-extrabold text-[#101828]">
-                        {featuredOption.label}
-                      </span>
-
-                      {featuredOption.description && (
-                        <span className="mt-0.5 block truncate text-[10px] text-[#667085]">
-                          {featuredOption.description}
-                        </span>
-                      )}
-                    </span>
-
-                    {featuredOption.value === value && (
-                      <Check size={15} className="shrink-0 text-[#1f9d6b]" />
-                    )}
-                  </button>
-                </div>
-              )}
-
-              {filteredOptions.length > 0 ? (
-                <div className="space-y-1">
-                  {filteredOptions.map((option) => {
-                    const isSelected = option.value === value;
-
-                    return (
-                      <button
-                        key={String(option.value)}
-                        type="button"
-                        role="option"
-                        aria-selected={isSelected}
-                        onClick={() => chooseOption(option)}
-                        className={`flex w-full items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-left transition-colors ${isSelected
-                            ? "bg-[#EFEFEF] text-[#202020]"
-                            : "text-[#344054] hover:bg-[#F7F7F7]"
-                          }`}
-                      >
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate text-[12px] font-bold">
-                            {option.label}
-                          </span>
-
-                          {option.description && (
-                            <span className="mt-0.5 block truncate text-[10px] text-[#8a92a6]">
-                              {option.description}
-                            </span>
-                          )}
-                        </span>
-
-                        {isSelected && (
-                          <Check
-                            size={15}
-                            className="shrink-0 text-[#262626]"
-                          />
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              ) : !showFeaturedOption ? (
-                <div className="px-3 py-7 text-center">
-                  <span className="mx-auto flex h-9 w-9 items-center justify-center rounded-full bg-[#f2f4f7] text-[#8a92a6]">
-                    <Search size={15} />
-                  </span>
-
-                  <p className="mt-2 text-[11px] font-bold text-[#475467]">
-                    No results found
-                  </p>
-
-                  <p className="mt-1 text-[10px] text-[#98a2b3]">
-                    {emptyMessage}
-                  </p>
-                </div>
-              ) : null}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {children && <div className="p-4 sm:p-5">{children}</div>}
     </div>
   );
 }
-
-// --------------------------------------------------
-// CV filters
-// --------------------------------------------------
 
 function CvFilters({
   calendar,
@@ -2003,7 +1994,7 @@ function CvFilters({
   searchedYear,
   searchedWeek,
 }: {
-  calendar?: SalesCalendar;
+  calendar?: SalesCalendar | null;
   selectedYear: number;
   selectedWeek: number;
   onYearChange: (year: number) => void;
@@ -2015,175 +2006,82 @@ function CvFilters({
   searchedYear?: number;
   searchedWeek?: number;
 }) {
-  const yearOptions = getCvYearOptions(calendar).map((year) => ({
-    value: year,
-    label: String(year),
-  }));
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
-  const weekOptions = buildCvWeekOptions(selectedYear, calendar);
-
-  const selectedWeekOption = weekOptions.find(
-    (option) => option.value === selectedWeek,
-  );
-
-  const calendarYear = getCalendarYear(calendar);
-  const currentWeekNo = getCurrentCalendarWeek(calendar);
-
-  const featuredWeekOption =
-    selectedYear === calendarYear
-      ? weekOptions.find((option) => option.value === currentWeekNo)
-      : undefined;
-
-  const currentWeek = getActiveCalendarWeek(calendar);
-  const apiCurrentMonth = calendar?.current_month;
-  const derivedCurrentMonth = getCurrentMonth(calendar);
-  const currentMonth: SalesCalendar["current_month"] =
-    apiCurrentMonth ??
-    (derivedCurrentMonth
-      ? {
-        year: calendar?.year,
-        month_no: derivedCurrentMonth.month_no,
-        label: derivedCurrentMonth.label,
-        start: derivedCurrentMonth.weeks?.[0]?.start,
-        end: (derivedCurrentMonth.weeks ?? []).slice(-1)[0]?.end,
-      }
-      : undefined);
-
-  const currentWeekLabel =
-    currentWeek?.start && currentWeek?.end
-      ? `Week ${currentWeek.week_no ?? "—"}: ${formatCalendarDate(
-        currentWeek.start,
-      )} – ${formatCalendarDate(currentWeek.end)} ${currentWeek.year ?? calendar?.year ?? ""
-        }`.trim()
-      : "Sales calendar from dashboard";
-
-  const currentMonthLabel =
-    currentMonth?.start && currentMonth?.end
-      ? `${formatCalendarDate(
-        currentMonth.start,
-      )} – ${formatCalendarDate(currentMonth.end)} ${currentMonth.year ?? calendar?.year ?? ""
-        }`.trim()
-      : currentMonth?.label || "—";
+  const weeks = Array.isArray(calendar?.weeks) && calendar!.weeks!.length > 0
+    ? calendar!.weeks!
+    : Array.from({ length: 52 }, (_, i) => ({ week_no: i + 1 }));
 
   return (
-    <div className="min-w-0">
-      <div className="mb-3 flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex min-w-0 items-start gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] border border-[#ECECEC] bg-[#F7F7F7] text-[#313131]">
-            <CalendarDays size={18} />
-          </span>
-
-          <div className="min-w-0">
-            <h3 className="text-[13px] font-black text-[#101828] sm:text-[14px]">
-              Find CV for a sales week
-            </h3>
-
-            <p className="mt-1 break-words text-[11px] leading-4 text-[#667085] sm:text-[12px]">
-              Current week: {currentWeekLabel}
-            </p>
-
-            <p className="mt-0.5 break-words text-[10px] leading-4 text-[#98a2b3] sm:text-[11px]">
-              Current month: {currentMonthLabel}
-              {currentMonth?.label ? ` · ${currentMonth.label}` : ""}
-            </p>
-          </div>
-        </div>
-
-        {currentWeek?.is_settled !== undefined && (
-          <span
-            className={`inline-flex w-fit shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold sm:text-[11px] ${currentWeek.is_settled
-                ? "bg-[#eaf7f0] text-[#1f9d6b]"
-                : "bg-[#fff4e5] text-[#a15c07]"
-              }`}
-          >
-            <span
-              className={`h-1.5 w-1.5 rounded-full ${currentWeek.is_settled ? "bg-[#1f9d6b]" : "bg-[#f79009]"
-                }`}
-            />
-
-            {currentWeek.is_settled ? "Settled" : "Pending settlement"}
-          </span>
-        )}
-      </div>
-
-      <div className="grid min-w-0 grid-cols-1 items-end gap-2 sm:grid-cols-[minmax(100px,.6fr)_minmax(190px,1.4fr)_auto]">
-        <SearchableDropdown
-          id="cv-calendar-year"
-          label="Year"
+    <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+      <div>
+        <label className="mb-1.5 block text-[11px] font-bold text-[#525D70]">
+          Year
+        </label>
+        <select
           value={selectedYear}
-          options={yearOptions}
-          onChange={onYearChange}
-          searchPlaceholder="Search year..."
-          emptyMessage="Try another year."
-        />
-
-        <SearchableDropdown
-          id="cv-calendar-week"
-          label="Week"
-          value={selectedWeek}
-          options={weekOptions}
-          onChange={onWeekChange}
-          searchPlaceholder="Search week or date..."
-          emptyMessage="Try a week number or date, e.g. Oct."
-          disabled={weekOptions.length === 0}
-          featuredOption={featuredWeekOption}
-          featuredLabel="CURRENT WEEK · QUICK SELECT"
-        />
-
-        <button
-          type="button"
-          onClick={onSearch}
-          disabled={isFetching || weekOptions.length === 0}
-          className="inline-flex h-12 w-full min-w-0 items-center justify-center gap-2 rounded-[12px] bg-[#171717] px-5 text-[13px] font-semibold text-white shadow-[0_6px_14px_rgba(0,0,0,0.10)] transition-all hover:bg-[#333333] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#171717]/30 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 sm:text-[13.5px] xl:w-auto xl:min-w-[128px]"
+          onChange={(e) => onYearChange(Number(e.target.value))}
+          className="h-[42px] w-full rounded-[11px] border border-[#E2E6ED] bg-white px-3 text-[12px] font-semibold text-[#30394A] outline-none focus:border-[#7183A3]"
         >
-          {isFetching ? (
-            <Loader2 size={15} className="animate-spin" />
-          ) : (
-            <Search size={15} />
-          )}
-
-          {isFetching ? "Searching..." : "Search"}
-        </button>
+          {years.map((year) => (
+            <option key={year} value={year}>
+              {year}
+            </option>
+          ))}
+        </select>
       </div>
 
-      {selectedWeekOption && (
-        <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-[#8a92a6] sm:text-[11px]">
-          <span className="inline-flex items-center gap-1 rounded-full bg-[#f6f8fb] px-2.5 py-1 font-bold text-[#475467]">
-            <CalendarDays size={12} />
-            Selected period
-          </span>
+      <div>
+        <label className="mb-1.5 block text-[11px] font-bold text-[#525D70]">
+          Week
+        </label>
+        <select
+          value={selectedWeek}
+          onChange={(e) => onWeekChange(Number(e.target.value))}
+          className="h-[42px] w-full rounded-[11px] border border-[#E2E6ED] bg-white px-3 text-[12px] font-semibold text-[#30394A] outline-none focus:border-[#7183A3]"
+        >
+          {weeks.map((week) => {
+            const weekNo = Number(week.week_no);
+            return (
+              <option key={weekNo} value={weekNo}>
+                Week {weekNo}
+              </option>
+            );
+          })}
+        </select>
+      </div>
 
-          <span className="font-semibold text-[#667085]">
-            {selectedWeekOption.label} · {selectedWeekOption.description}
-          </span>
-        </div>
+      <button
+        type="button"
+        onClick={onSearch}
+        disabled={isFetching}
+        className="inline-flex h-[42px] items-center justify-center gap-2 rounded-[11px] bg-[#171717] px-4 text-[12px] font-bold text-white transition-all hover:bg-[#333333] active:scale-[.98] disabled:cursor-not-allowed disabled:bg-[#C9CDD4]"
+      >
+        {isFetching ? (
+          <>
+            <Loader2 size={15} className="animate-spin" />
+            Loading...
+          </>
+        ) : (
+          <>
+            <Search size={15} />
+            Search
+          </>
+        )}
+      </button>
+
+      {isError && (
+        <p className="col-span-full text-[11px] font-semibold text-[#B45454]">
+          Failed to load pairing data for this period.
+        </p>
       )}
 
-      {hasSearched &&
-        searchedYear !== undefined &&
-        searchedWeek !== undefined && (
-          <div
-            role={isError ? "alert" : "status"}
-            className={`mt-4 flex min-w-0 items-start gap-2 rounded-[11px] px-3 py-2.5 text-[11px] leading-5 sm:text-[12px] ${isError
-                ? "border border-[#f2c6c3] bg-[#fff4f3] text-[#b42318]"
-                : isFetching
-                  ? "border border-[#E4E4E4] bg-[#FAFAFA] text-[#454545]"
-                  : "border border-[#DAEBDD] bg-[#F6FBF6] text-[#28724C]"
-              }`}
-          >
-            {isFetching && (
-              <Loader2 size={14} className="mt-0.5 shrink-0 animate-spin" />
-            )}
-
-            <span className="min-w-0 break-words">
-              {isError
-                ? `Unable to load CV data for Year ${searchedYear}, Week ${searchedWeek}. Click Search to try again.`
-                : isFetching
-                  ? `Loading CV data for Year ${searchedYear}, Week ${searchedWeek}...`
-                  : `CV search completed for Year ${searchedYear}, Week ${searchedWeek}.`}
-            </span>
-          </div>
-        )}
+      {!isError && hasSearched && !isFetching && (
+        <p className="col-span-full text-[11px] text-[#888888]">
+          Showing data for {searchedYear} · Week {searchedWeek}
+        </p>
+      )}
     </div>
   );
 }
@@ -2243,11 +2141,8 @@ export default function DistributorDashboardPage() {
     redirectLock.current = true;
 
     const distributorToken = localStorage.getItem("distributor_token");
-
     const authToken = localStorage.getItem("auth_token");
-
     const rawUserType = localStorage.getItem("user_type") || "";
-
     const isLoggedIn = localStorage.getItem("is_logged_in");
 
     const userType = rawUserType.trim().toLowerCase();
@@ -2293,7 +2188,8 @@ export default function DistributorDashboardPage() {
   const activity: DashboardActivity[] = dashboard?.recent_activity ?? [];
 
   const salesCalendar = (dashboard as any)?.sales_calendar as
-    SalesCalendar | undefined;
+    | SalesCalendar
+    | undefined;
 
   const calendarYear = getCalendarYear(salesCalendar);
   const calendarWeek = getCurrentCalendarWeek(salesCalendar);
@@ -2320,9 +2216,9 @@ export default function DistributorDashboardPage() {
   const pairingsQuery = useGetPairingsQuery(
     (submittedCvFilters
       ? {
-        year: submittedCvFilters.year,
-        week_no: submittedCvFilters.week_no,
-      }
+          year: submittedCvFilters.year,
+          week_no: submittedCvFilters.week_no,
+        }
       : undefined) as any,
     {
       skip: !submittedCvFilters,
@@ -2359,9 +2255,9 @@ export default function DistributorDashboardPage() {
 
   const cvCounterIgnite = periodIgniteMetrics
     ? ({
-      ...(ignite ?? {}),
-      ...periodIgniteMetrics,
-    } as IgniteDashboard)
+        ...(ignite ?? {}),
+        ...periodIgniteMetrics,
+      } as IgniteDashboard)
     : ignite;
 
   // --------------------------------------------------
@@ -2376,7 +2272,15 @@ export default function DistributorDashboardPage() {
       return;
     }
 
-    if (toNumber(ignite.tc_bank_available) <= 0) {
+    const availableBankedTc = toNumber(
+      (
+        ignite as IgniteDashboard & {
+          tc_bank_available?: number | string;
+        }
+      ).tc_bank_available,
+    );
+
+    if (availableBankedTc <= 0) {
       toast.error("No Banked TC available.");
       setIsBankedTcModalOpen(false);
       return;
@@ -2397,24 +2301,47 @@ export default function DistributorDashboardPage() {
 
       toast.success(
         response.message ||
-        `Banked TC placed on ${side === 1 ? "Left" : "Right"
-        } Side successfully.`,
+          `Banked TC placed on ${
+            side === 1 ? "Left" : "Right"
+          } Side successfully.`,
       );
 
       setIsBankedTcModalOpen(false);
 
-      // Refresh dashboard to get updated Banked TC count
       await refetch();
     } catch (error: any) {
       toast.error(
         error?.data?.message ||
-        error?.message ||
-        "Failed to place Banked TC. Please try again.",
+          error?.message ||
+          "Failed to place Banked TC. Please try again.",
       );
     } finally {
       setPendingBankedTcSide(null);
     }
   };
+
+  // --------------------------------------------------
+  // COIN REDEMPTION SUCCESS
+  // --------------------------------------------------
+
+  const handleCoinRedeemSuccess = () => {
+    void refetch();
+  };
+
+  // --------------------------------------------------
+  // BANKED TC AVAILABLE BALANCE
+  // --------------------------------------------------
+
+  const availableBankedTc = toNumber(
+    (
+      ignite as
+        | (IgniteDashboard & {
+            tc_bank_available?: number | string;
+          })
+        | null
+        | undefined
+    )?.tc_bank_available,
+  );
 
   // --------------------------------------------------
   // Loading
@@ -2443,11 +2370,10 @@ export default function DistributorDashboardPage() {
 
         <main className="thin-scroll min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain bg-[#F8F9FB] px-3 pb-7 pt-3 sm:px-4 sm:pb-9 sm:pt-4 lg:px-5 lg:pt-5 xl:px-6">
           <div className="mx-auto w-full min-w-0 max-w-[1390px]">
-            {/* Welcome hero */}
-
-            <WelcomeHero user={user} distributorId={ignite?.ba_id || "N/A"} />
-
-            {/* API error */}
+            <WelcomeHero
+              user={user}
+              distributorId={ignite?.ba_id || "N/A"}
+            />
 
             {isError && (
               <div
@@ -2468,8 +2394,6 @@ export default function DistributorDashboardPage() {
               </div>
             )}
 
-            {/* Cash wallet, floating retail profit and direct referral */}
-
             <QuickStatsCards
               cashWallet={
                 ignite?.cash_bal == null ? null : toNumber(ignite.cash_bal)
@@ -2486,13 +2410,14 @@ export default function DistributorDashboardPage() {
               }
             />
 
-            {/* Account assets and shopping overview */}
             <section className="mt-4 sm:mt-5">
-              <CoinsSection ignite={ignite} />
+              <CoinsSection
+                ignite={ignite}
+                onRedeemSuccess={handleCoinRedeemSuccess}
+              />
             </section>
-            <DashboardOverview stats={stats} />
 
-            {/* Latest order and recent activity */}
+            <DashboardOverview stats={stats} />
 
             <section className="mt-5 grid min-w-0 grid-cols-1 gap-3 sm:mt-6 sm:gap-4 xl:grid-cols-2">
               <LatestOrderSection order={dashboard?.latest_order ?? null} />
@@ -2500,24 +2425,23 @@ export default function DistributorDashboardPage() {
               <RecentActivity activity={activity} />
             </section>
 
-            {/* CV counter */}
-
             <section className="mt-5 min-w-0 sm:mt-6">
               <div className="flex flex-wrap items-end justify-between gap-3">
                 <div>
                   <SectionTitle large>
                     CV &amp; network performance
                   </SectionTitle>
+
                   <p className="ml-11 mt-1 text-[11px] leading-5 text-[#888888]">
                     Monitor your sales periods, placement and rank progression.
                   </p>
                 </div>
+
                 <span className="text-[10px] font-semibold uppercase tracking-[.13em] text-[#A6A6A6]">
                   Performance center
                 </span>
               </div>
 
-              {/* Poster-style calendar. Week dates and payouts come from sales_calendar.all_months. */}
               <SalesCalendarPoster
                 calendar={salesCalendar}
                 selectedWeek={
@@ -2559,8 +2483,6 @@ export default function DistributorDashboardPage() {
               </div>
             </section>
 
-            {/* Refresh indicator */}
-
             {isFetching && !isLoading && (
               <div className="mt-4 flex items-center justify-end gap-2 text-[11px] font-semibold text-[#777777]">
                 <Loader2 size={13} className="animate-spin" />
@@ -2572,13 +2494,9 @@ export default function DistributorDashboardPage() {
         </main>
       </div>
 
-      {/* -------------------------------------------------- */}
-      {/* BANKED TC PLACEMENT MODAL */}
-      {/* -------------------------------------------------- */}
-
       <BankedTcModal
         isOpen={isBankedTcModalOpen}
-        availableCount={toNumber(ignite?.tc_bank_available)}
+        availableCount={availableBankedTc}
         isLoading={isPlacingBankedTc}
         pendingSide={pendingBankedTcSide}
         onClose={() => setIsBankedTcModalOpen(false)}

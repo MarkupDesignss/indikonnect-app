@@ -467,6 +467,7 @@ export const baseApi = createApi({
     "Brand",
     "Testimonial",
     "FAQ",
+    "UserDashboard",
 
     // -----------------------------------------------------
     // DISTRIBUTOR AUTH / KYC FLOW

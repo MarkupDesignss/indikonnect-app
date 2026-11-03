@@ -176,6 +176,43 @@ export interface PlaceBankedTcResponse {
 }
 
 // =====================================================
+// REDEEM COINS
+// =====================================================
+
+export type RedeemPointType = "yellow_bal" | "blue_bal";
+
+export interface RedeemCoinsPayload {
+  coins_to_redeem: number;
+  point_type: RedeemPointType;
+}
+
+export interface RedeemCoinsResponse {
+  success?: boolean;
+  status?: boolean;
+  message?: string;
+  data?: unknown;
+  errors?: Record<string, string | string[]>;
+}
+
+// =====================================================
+// MY ACCOUNTS
+// =====================================================
+
+export interface MyAccount {
+  account_id: string;
+  member_id: number;
+  rank: string;
+  status: string;
+  type: string;
+}
+
+export interface MyAccountsResponse {
+  success: boolean;
+  data: MyAccount[];
+  total: number;
+}
+
+// =====================================================
 // USER DASHBOARD API
 // =====================================================
 
@@ -190,6 +227,7 @@ export const userDashboardApi = baseApi.injectEndpoints({
         url: "/user/dashboard",
         method: "GET",
       }),
+      providesTags: ["UserDashboard"],
     }),
 
     // -------------------------------------------------
@@ -221,6 +259,34 @@ export const userDashboardApi = baseApi.injectEndpoints({
         body,
       }),
     }),
+
+    // -------------------------------------------------
+    // REDEEM COINS
+    // -------------------------------------------------
+
+    redeemCoins: builder.mutation<
+      RedeemCoinsResponse,
+      RedeemCoinsPayload
+    >({
+      query: (body) => ({
+        url: "/distributor/coins/redeem",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["UserDashboard"],
+    }),
+
+    // -------------------------------------------------
+    // GET MY ACCOUNTS
+    // -------------------------------------------------
+
+    getMyAccounts: builder.query<MyAccountsResponse, void>({
+      query: () => ({
+        url: "/distributor/genealogy/my-accounts",
+        method: "GET",
+      }),
+      providesTags: ["UserDashboard"],
+    }),
   }),
 });
 
@@ -232,6 +298,8 @@ export const {
   useGetUserDashboardQuery,
   useCreateCorrectionRequestMutation,
   usePlaceBankedTcMutation,
+  useRedeemCoinsMutation,
+  useGetMyAccountsQuery,
 } = userDashboardApi;
 
 export default userDashboardApi;

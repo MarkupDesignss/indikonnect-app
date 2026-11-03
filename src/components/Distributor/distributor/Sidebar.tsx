@@ -8,18 +8,15 @@ import {
   CheckCircle2,
   ChevronDown,
   Clock,
-  FileText,
+  CreditCard,
   History,
   LayoutDashboard,
   Loader2,
   LogOut,
   Network,
-  Percent,
   ReceiptText,
-  Repeat2,
   Share2,
   ShieldCheck,
-  TrendingUp,
   UserRound,
   WalletCards,
   X,
@@ -45,6 +42,7 @@ const MOBILE_SIDEBAR_EVENT = "open-distributor-sidebar";
 const INK = "#101010";
 
 type NavChild = { label: string; icon: LucideIcon; href: string };
+
 type NavItem = {
   label: string;
   icon: LucideIcon;
@@ -53,7 +51,11 @@ type NavItem = {
   toggleOnly?: boolean;
   children?: NavChild[];
 };
-type NavGroup = { title: string; items: NavItem[] };
+
+type NavGroup = {
+  title: string;
+  items: NavItem[];
+};
 
 const menuGroups: NavGroup[] = [
   {
@@ -64,9 +66,14 @@ const menuGroups: NavGroup[] = [
         icon: LayoutDashboard,
         href: "/distributor/dashboard",
       },
-      { label: "Orders", icon: History, href: "/distributor/order-history" },
+      {
+        label: "Orders",
+        icon: History,
+        href: "/distributor/order-history",
+      },
     ],
   },
+
   {
     title: "Network",
     items: [
@@ -83,8 +90,8 @@ const menuGroups: NavGroup[] = [
             href: "/distributor/profile",
           },
           {
-            label: "Rank Information",
-            icon: TrendingUp,
+            label: "Rank information",
+            icon: Award,
             href: "/distributor/profile/weekly-commission/",
           },
           {
@@ -103,18 +110,17 @@ const menuGroups: NavGroup[] = [
             href: "/distributor/profile/pending-cv-breakdown",
           },
           {
-            label: "Rank information",
-            icon: Award,
-            href: "/distributor/profile/rank-information",
-          },
-          {
             label: "Sponsored",
             icon: Share2,
             href: "/distributor/profile/sponsor-tree",
           },
         ],
       },
-      { label: "My referral", icon: Share2, href: "/distributor/my-referral" },
+      {
+        label: "My referral",
+        icon: Share2,
+        href: "/distributor/my-referral",
+      },
       {
         label: "Downline",
         icon: BarChart2,
@@ -122,6 +128,7 @@ const menuGroups: NavGroup[] = [
       },
     ],
   },
+
   {
     title: "Placements",
     items: [
@@ -132,6 +139,30 @@ const menuGroups: NavGroup[] = [
       },
     ],
   },
+
+  // ACCOUNT SECTION - MOVED ABOVE FINANCE
+  {
+    title: "Account",
+    items: [
+      {
+        label: "TC Bank",
+        icon: CreditCard,
+        href: "/distributor/tc-bank",
+      },
+      {
+        label: "My Account",
+        icon: UserRound,
+        href: "/distributor/MyAccounts",
+      },
+      {
+        label: "KYC status",
+        icon: ShieldCheck,
+        href: "/distributor/kyc/status",
+      },
+    ],
+  },
+
+  // FINANCE SECTION - MOVED TO THE BOTTOM
   {
     title: "Finance",
     items: [
@@ -140,36 +171,10 @@ const menuGroups: NavGroup[] = [
         icon: ReceiptText,
         href: "/distributor/transactions",
       },
-    //   { label: "Commission", icon: Percent, href: "/distributor/commissions" },
-    //   { label: "Buy Back", icon: Repeat2, href: "/distributor/buy-back" },
-    ],
-  },
-  {
-    title: "Account",
-    items: [
       {
-        label: "KYC setting",
-        icon: ShieldCheck,
-        href: "/distributor/kyc",
-        dropdown: true,
-        toggleOnly: true,
-        children: [
-          {
-            label: "KYC status",
-            icon: CheckCircle2,
-            href: "/distributor/kyc/status",
-          },
-          {
-            label: "Bank details",
-            icon: WalletCards,
-            href: "/distributor/kyc/bank-details",
-          },
-        //   {
-        //     label: "Document upload",
-        //     icon: FileText,
-        //     href: "/distributor/kyc/document-upload",
-        //   },
-        ],
+        label: "Bank details",
+        icon: WalletCards,
+        href: "/distributor/kyc/bank-details",
       },
     ],
   },
@@ -182,14 +187,18 @@ function normalizePath(value: string): string {
 
 function matchesRoute(pathname: string, href: string): boolean {
   if (!href || href === "#") return false;
+
   const current = normalizePath(pathname);
   const target = normalizePath(href);
 
   if (target === "/distributor/dashboard") {
     return current === "/distributor" || current === target;
   }
+
   // A submenu's Profile overview should not be selected on all profile subpages.
-  if (target === "/distributor/profile") return current === target;
+  if (target === "/distributor/profile") {
+    return current === target;
+  }
 
   return current === target || current.startsWith(`${target}/`);
 }
@@ -207,10 +216,15 @@ function LogoutModal({
 }) {
   useEffect(() => {
     if (!open) return;
+
     const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !loading) onClose();
+      if (event.key === "Escape" && !loading) {
+        onClose();
+      }
     };
+
     window.addEventListener("keydown", handleEscape);
+
     return () => window.removeEventListener("keydown", handleEscape);
   }, [open, loading, onClose]);
 
@@ -229,6 +243,7 @@ function LogoutModal({
               if (!loading) onClose();
             }}
           />
+
           <motion.div
             className="pointer-events-none fixed inset-0 z-[101] flex items-center justify-center p-4"
             initial={{ opacity: 0, y: 14, scale: 0.97 }}
@@ -247,6 +262,7 @@ function LogoutModal({
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-neutral-100 text-neutral-900 ring-1 ring-neutral-200">
                   <LogOut size={21} strokeWidth={2} />
                 </div>
+
                 <button
                   type="button"
                   onClick={onClose}
@@ -257,6 +273,7 @@ function LogoutModal({
                   <X size={18} />
                 </button>
               </div>
+
               <div className="px-6 pt-4">
                 <h2
                   id="logout-dialog-title"
@@ -264,6 +281,7 @@ function LogoutModal({
                 >
                   Log out of your account?
                 </h2>
+
                 <p
                   id="logout-dialog-description"
                   className="mt-2 text-[13px] leading-[1.8] text-neutral-500"
@@ -271,16 +289,19 @@ function LogoutModal({
                   Your current session will end. You can sign in again whenever
                   you need to access your distributor workspace.
                 </p>
+
                 <div className="mt-5 flex items-start gap-2.5 rounded-xl border border-neutral-200 bg-neutral-50 p-3.5">
                   <AlertCircle
                     size={16}
                     className="mt-0.5 shrink-0 text-neutral-500"
                   />
+
                   <p className="text-xs leading-[1.65] text-neutral-600">
                     Please save any unsaved work before continuing.
                   </p>
                 </div>
               </div>
+
               <div className="mt-6 grid grid-cols-2 gap-3 border-t border-neutral-100 px-6 py-5">
                 <button
                   type="button"
@@ -290,6 +311,7 @@ function LogoutModal({
                 >
                   Stay logged in
                 </button>
+
                 <button
                   type="button"
                   onClick={onConfirm}
@@ -301,6 +323,7 @@ function LogoutModal({
                   ) : (
                     <LogOut size={16} />
                   )}
+
                   {loading ? "Logging out..." : "Log out"}
                 </button>
               </div>
@@ -342,8 +365,12 @@ export default function Sidebar() {
 
   useEffect(() => {
     const handleOpen = () => setIsMobileOpen(true);
+
     window.addEventListener(MOBILE_SIDEBAR_EVENT, handleOpen);
-    return () => window.removeEventListener(MOBILE_SIDEBAR_EVENT, handleOpen);
+
+    return () => {
+      window.removeEventListener(MOBILE_SIDEBAR_EVENT, handleOpen);
+    };
   }, []);
 
   useEffect(() => {
@@ -352,12 +379,18 @@ export default function Sidebar() {
 
   useEffect(() => {
     if (!isMobileOpen) return;
+
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+
     const onEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setIsMobileOpen(false);
+      if (event.key === "Escape") {
+        setIsMobileOpen(false);
+      }
     };
+
     window.addEventListener("keydown", onEscape);
+
     return () => {
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", onEscape);
@@ -376,12 +409,15 @@ export default function Sidebar() {
 
   const handleLogoutConfirm = async () => {
     if (isLoggingOut) return;
+
     setIsLoggingOut(true);
+
     try {
       await logout({
         callApi: true,
         clearReduxState: true,
         clearPersistedState: true,
+
         onSuccess: () => {
           dispatch(
             showToast({
@@ -389,11 +425,14 @@ export default function Sidebar() {
               type: "success",
             }),
           );
+
           setIsLoggingOut(false);
           setShowLogoutModal(false);
           setIsMobileOpen(false);
+
           router.push("/indiekonnect-web/login/");
         },
+
         onError: () => {
           dispatch(
             showToast({
@@ -401,6 +440,7 @@ export default function Sidebar() {
               type: "error",
             }),
           );
+
           setIsLoggingOut(false);
           setShowLogoutModal(false);
         },
@@ -412,6 +452,7 @@ export default function Sidebar() {
           type: "error",
         }),
       );
+
       setIsLoggingOut(false);
       setShowLogoutModal(false);
     }
@@ -419,11 +460,15 @@ export default function Sidebar() {
 
   const renderItem = (item: NavItem) => {
     const Icon = item.icon;
+
     const isDropdown = !!item.dropdown && !!item.children?.length;
+
     const activeChild =
       item.children?.some((child) => matchesRoute(pathname, child.href)) ??
       false;
+
     const active = matchesRoute(pathname, item.href) || activeChild;
+
     const expanded = openDropdowns.includes(item.label);
 
     const commonItem = `group relative flex min-h-[42px] w-full min-w-0 items-center gap-3 rounded-xl px-3 text-left transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-600 focus-visible:ring-offset-2 ${
@@ -431,6 +476,7 @@ export default function Sidebar() {
         ? "bg-black text-white"
         : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-950"
     }`;
+
     const content = (
       <>
         <span
@@ -448,15 +494,19 @@ export default function Sidebar() {
             }
           />
         </span>
+
         <span className="min-w-0 flex-1 truncate text-[13px] font-semibold tracking-[-0.005em]">
           {item.label}
         </span>
+
         {isDropdown && (
           <ChevronDown
             size={15}
             strokeWidth={2}
             aria-hidden="true"
-            className={`shrink-0 transition-transform duration-200 ${expanded ? "rotate-180" : ""} ${active ? "text-white/80" : "text-neutral-400"}`}
+            className={`shrink-0 transition-transform duration-200 ${
+              expanded ? "rotate-180" : ""
+            } ${active ? "text-white/80" : "text-neutral-400"}`}
           />
         )}
       </>
@@ -472,12 +522,14 @@ export default function Sidebar() {
               if (!item.toggleOnly && item.href && item.href !== "#") {
                 router.push(item.href);
               }
+
               toggleDropdown(item.label);
             }}
             className={commonItem}
           >
             {content}
           </button>
+
           <AnimatePresence initial={false}>
             {expanded && (
               <motion.div
@@ -491,6 +543,7 @@ export default function Sidebar() {
                   {item.children?.map((child) => {
                     const ChildIcon = child.icon;
                     const selected = matchesRoute(pathname, child.href);
+
                     return (
                       <Link
                         key={child.href}
@@ -506,11 +559,15 @@ export default function Sidebar() {
                         {selected && (
                           <span className="absolute -left-[18px] top-1/2 h-[7px] w-[7px] -translate-y-1/2 rounded-full border-2 border-white bg-black ring-1 ring-neutral-700" />
                         )}
+
                         <ChildIcon
                           size={14}
                           strokeWidth={1.8}
-                          className={`shrink-0 ${selected ? "text-neutral-900" : "text-neutral-400"}`}
+                          className={`shrink-0 ${
+                            selected ? "text-neutral-900" : "text-neutral-400"
+                          }`}
                         />
+
                         <span className="min-w-0 flex-1 break-words leading-[1.4]">
                           {child.label}
                         </span>
@@ -541,17 +598,39 @@ export default function Sidebar() {
   return (
     <>
       <style>{`
-        .ik-sidebar-scroll { scrollbar-width: thin; scrollbar-color: #e5e5e5 transparent; overscroll-behavior: contain; }
-        .ik-sidebar-scroll::-webkit-scrollbar { width: 5px; }
-        .ik-sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
-        .ik-sidebar-scroll::-webkit-scrollbar-thumb { border-radius: 999px; background: #e5e5e5; }
+        .ik-sidebar-scroll {
+          scrollbar-width: thin;
+          scrollbar-color: #e5e5e5 transparent;
+          overscroll-behavior: contain;
+        }
+
+        .ik-sidebar-scroll::-webkit-scrollbar {
+          width: 5px;
+        }
+
+        .ik-sidebar-scroll::-webkit-scrollbar-track {
+          background: transparent;
+        }
+
+        .ik-sidebar-scroll::-webkit-scrollbar-thumb {
+          border-radius: 999px;
+          background: #e5e5e5;
+        }
+
         @media (prefers-reduced-motion: reduce) {
-          #distributor-sidebar, #distributor-sidebar * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+          #distributor-sidebar,
+          #distributor-sidebar * {
+            transition-duration: 0.01ms !important;
+            animation-duration: 0.01ms !important;
+          }
         }
       `}</style>
 
       {/* Desktop spacer matches fixed sidebar width. */}
-      <div aria-hidden="true" className="hidden w-[280px] shrink-0 lg:block" />
+      <div
+        aria-hidden="true"
+        className="hidden w-[280px] shrink-0 lg:block"
+      />
 
       {/* Mobile drawer backdrop */}
       <AnimatePresence>
@@ -600,16 +679,19 @@ export default function Sidebar() {
                   className="object-contain p-1.5"
                 />
               </span>
+
               <span className="flex min-w-0 flex-col">
                 <span className="truncate text-[17px] font-extrabold tracking-[-0.045em] text-neutral-950">
                   IndieKonnect
                 </span>
+
                 <span className="mt-0.5 flex items-center gap-1.5 text-[10px] font-medium tracking-[0.04em] text-neutral-500">
                   <span className="h-[6px] w-[6px] rounded-full bg-emerald-500" />
                   DISTRIBUTOR PANEL
                 </span>
               </span>
             </Link>
+
             <button
               type="button"
               aria-label="Close sidebar"
@@ -630,9 +712,13 @@ export default function Sidebar() {
                   <h2 className="shrink-0 text-[10px] font-bold uppercase tracking-[0.11em] text-neutral-400">
                     {group.title}
                   </h2>
+
                   <span className="h-px flex-1 bg-neutral-100" />
                 </div>
-                <div className="space-y-1">{group.items.map(renderItem)}</div>
+
+                <div className="space-y-1">
+                  {group.items.map(renderItem)}
+                </div>
               </section>
             ))}
           </nav>
@@ -644,10 +730,12 @@ export default function Sidebar() {
             <span className="text-[11px] font-medium text-neutral-500">
               Account
             </span>
+
             <span className="rounded-full border border-neutral-200 bg-neutral-50 px-2 py-0.5 text-[10px] font-medium text-neutral-500">
               Secure session
             </span>
           </div>
+
           <button
             type="button"
             onClick={() => {
@@ -661,6 +749,7 @@ export default function Sidebar() {
               strokeWidth={2}
               className="transition group-hover:translate-x-0.5"
             />
+
             Log out
           </button>
         </div>
@@ -670,7 +759,9 @@ export default function Sidebar() {
         open={showLogoutModal}
         loading={isLoggingOut}
         onClose={() => {
-          if (!isLoggingOut) setShowLogoutModal(false);
+          if (!isLoggingOut) {
+            setShowLogoutModal(false);
+          }
         }}
         onConfirm={handleLogoutConfirm}
       />
