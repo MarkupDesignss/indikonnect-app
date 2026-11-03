@@ -3,6 +3,7 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
 import {
@@ -262,6 +263,7 @@ const transformOrderLines = (orderLines: any[]) => {
           line.product_reviews || orderGroup.product_reviews || [],
         line_id: line.line_id,
         product_id: line.product_id,
+        product_slug: line.product_slug,
         product_name: line.product_name,
         product_code: line.product_code,
         quantity: line.quantity,
@@ -2110,6 +2112,10 @@ export default function OrdersPage() {
                   const hasCreditNotes =
                     order.credit_notes && order.credit_notes.length > 0;
 
+                  const productHref = order.product_slug
+                    ? `/product/${encodeURIComponent(order.product_slug)}`
+                    : null;
+
                   return (
                     <motion.div
                       key={order.display_id}
@@ -2138,20 +2144,42 @@ export default function OrdersPage() {
                       >
                         <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
                           <div className="flex items-center gap-3.5">
-                            <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-[#F7F7F6]">
-                              {order.primary_image ? (
-                                <Image
-                                  src={order.primary_image}
-                                  alt={order.product_name || "Product"}
-                                  fill
-                                  className="object-cover"
-                                />
-                              ) : (
-                                <div className="flex h-full w-full items-center justify-center">
-                                  <Package className="h-5 w-5 text-[#999999]" />
-                                </div>
-                              )}
-                            </div>
+                            {productHref ? (
+                              <Link
+                                href={productHref}
+                                onClick={(event) => event.stopPropagation()}
+                                aria-label={`View ${order.product_name || "product"}`}
+                                className="relative block h-14 w-14 flex-shrink-0 overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-[#F7F7F6] transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#111111] focus-visible:ring-offset-2"
+                              >
+                                {order.primary_image ? (
+                                  <Image
+                                    src={order.primary_image}
+                                    alt={order.product_name || "Product"}
+                                    fill
+                                    className="object-cover"
+                                  />
+                                ) : (
+                                  <div className="flex h-full w-full items-center justify-center">
+                                    <Package className="h-5 w-5 text-[#999999]" />
+                                  </div>
+                                )}
+                              </Link>
+                            ) : (
+                              <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-[#F7F7F6]">
+                                {order.primary_image ? (
+                                  <Image
+                                    src={order.primary_image}
+                                    alt={order.product_name || "Product"}
+                                    fill
+                                    className="object-cover"
+                                  />
+                                ) : (
+                                  <div className="flex h-full w-full items-center justify-center">
+                                    <Package className="h-5 w-5 text-[#999999]" />
+                                  </div>
+                                )}
+                              </div>
+                            )}
 
                             <div>
                               <div className="flex flex-wrap items-center gap-2">
@@ -2596,6 +2624,9 @@ export default function OrdersPage() {
 
                       const itemImage =
                         item.primary_image || item.images?.[0]?.image_url;
+                      const itemProductHref = item.product_slug
+                        ? `/product/${encodeURIComponent(item.product_slug)}`
+                        : null;
 
                       return (
                         <div
@@ -2607,20 +2638,41 @@ export default function OrdersPage() {
                           }`}
                         >
                           <div className="flex items-center gap-3">
-                            <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-white">
-                              {itemImage ? (
-                                <Image
-                                  src={itemImage}
-                                  alt={item.product_name || "Product"}
-                                  fill
-                                  className="object-cover"
-                                />
-                              ) : (
-                                <div className="flex h-full items-center justify-center">
-                                  <Package className="h-4 w-4 text-[#999999]" />
-                                </div>
-                              )}
-                            </div>
+                            {itemProductHref ? (
+                              <Link
+                                href={itemProductHref}
+                                aria-label={`View ${item.product_name || "product"}`}
+                                className="relative block h-12 w-12 flex-shrink-0 overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#111111] focus-visible:ring-offset-2"
+                              >
+                                {itemImage ? (
+                                  <Image
+                                    src={itemImage}
+                                    alt={item.product_name || "Product"}
+                                    fill
+                                    className="object-cover"
+                                  />
+                                ) : (
+                                  <div className="flex h-full items-center justify-center">
+                                    <Package className="h-4 w-4 text-[#999999]" />
+                                  </div>
+                                )}
+                              </Link>
+                            ) : (
+                              <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-white">
+                                {itemImage ? (
+                                  <Image
+                                    src={itemImage}
+                                    alt={item.product_name || "Product"}
+                                    fill
+                                    className="object-cover"
+                                  />
+                                ) : (
+                                  <div className="flex h-full items-center justify-center">
+                                    <Package className="h-4 w-4 text-[#999999]" />
+                                  </div>
+                                )}
+                              </div>
+                            )}
 
                             <div>
                               <p className="text-[12px] font-medium text-[#171717]">
