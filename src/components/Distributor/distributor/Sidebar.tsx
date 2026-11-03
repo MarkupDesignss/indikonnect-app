@@ -121,6 +121,7 @@ const menuGroups: NavGroup[] = [
         icon: Share2,
         href: "/distributor/my-referral",
       },
+     
       {
         label: "Downline",
         icon: BarChart2,
@@ -147,7 +148,7 @@ const menuGroups: NavGroup[] = [
       {
         label: "TC Bank",
         icon: CreditCard,
-        href: "/distributor/tc-bank",
+        href: "/distributor/TC-Bank",
       },
       {
         label: "My Account",
@@ -170,6 +171,11 @@ const menuGroups: NavGroup[] = [
         label: "Balance History",
         icon: ReceiptText,
         href: "/distributor/transactions",
+      },
+      {
+        label: "Commission History",
+        icon: ReceiptText,
+        href: "/distributor/commissions",
       },
       {
         label: "Bank details",
