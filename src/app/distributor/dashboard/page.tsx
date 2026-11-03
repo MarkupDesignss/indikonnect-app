@@ -24,6 +24,7 @@ import {
   LayoutGrid,
   Clock3,
   Info,
+  CalendarClock,
 } from "lucide-react";
 
 import { useEffect, useRef, useState } from "react";
@@ -1176,11 +1177,21 @@ type SalesCalendarWeek = {
   week_no?: number;
   start?: string | null;
   end?: string | null;
+  payout_date?: string | null;
+  is_current?: boolean;
   is_settled?: boolean;
+};
+
+type SalesCalendarMonth = {
+  month_no: number;
+  label?: string;
+  is_current?: boolean;
+  weeks?: SalesCalendarWeek[];
 };
 
 type SalesCalendar = {
   year?: number;
+  all_months?: SalesCalendarMonth[];
   current_month?: {
     year?: number;
     month_no?: number;
@@ -1206,126 +1217,398 @@ type PairingsQueryResult = {
 };
 
 // --------------------------------------------------
-// Calendar helpers
+// Calendar helpers (API is authoritative)
 // --------------------------------------------------
 
 function parseCalendarDate(value?: string | null): Date | null {
   if (!value) return null;
-
   const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (!match) return null;
-
   const date = new Date(
     Number(match[1]),
     Number(match[2]) - 1,
     Number(match[3]),
   );
-
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
 function formatCalendarDate(value?: string | null): string {
   const date = parseCalendarDate(value);
   if (!date) return value || "—";
-
-  return date.toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-  });
+  return date.toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
 }
 
 function formatDateObject(date: Date): string {
-  return date.toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-  });
+  return date.toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
 }
 
 function getCalendarYear(calendar?: SalesCalendar): number {
-  const calendarYear = Number(calendar?.current_week?.year ?? calendar?.year);
+  const year = Number(calendar?.current_week?.year ?? calendar?.year);
+  return Number.isFinite(year) && year > 0 ? year : new Date().getFullYear();
+}
 
-  return Number.isFinite(calendarYear) && calendarYear > 0
-    ? calendarYear
-    : new Date().getFullYear();
+function getCurrentMonth(
+  calendar?: SalesCalendar,
+): SalesCalendarMonth | undefined {
+  return calendar?.all_months?.find(
+    (month) => month.is_current || month.weeks?.some((week) => week.is_current),
+  );
+}
+
+function getActiveCalendarWeek(
+  calendar?: SalesCalendar,
+): SalesCalendarWeek | undefined {
+  if (calendar?.current_week?.week_no) return calendar.current_week;
+  for (const month of calendar?.all_months ?? []) {
+    const found = month.weeks?.find((week) => week.is_current);
+    if (found) return { ...found, year: found.year ?? calendar?.year };
+  }
+  return undefined;
 }
 
 function getCurrentCalendarWeek(calendar?: SalesCalendar): number {
-  const weekNo = Number(calendar?.current_week?.week_no);
-
-  return Number.isFinite(weekNo) && weekNo > 0 ? weekNo : 1;
+  const week = Number(getActiveCalendarWeek(calendar)?.week_no);
+  return Number.isFinite(week) && week > 0 ? week : 1;
 }
 
-/**
- * The sales calendar uses Saturday-to-Friday settlement weeks.
+/** The supplied backend timestamps are without an explicit timezone.
+ * For the poster we display their DATE COMPONENTS as-is: this avoids
+ * silently converting a payout date into a different day.
+ * The raw timestamp is kept in the title attribute for precise review.
  */
+function formatPosterApiDate(value?: string | null): string {
+  if (!value) return "—";
+  const date = parseCalendarDate(value);
+  if (!date) return "—";
+  return date
+    .toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    })
+    .toUpperCase();
+}
+
+/** Image's rank-basis rules, retained separately from the API schedule.
+ * Only applied for the supplied 2026 poster. They are not returned by the API.
+ */
+const POSTER_RANK_BASIS_2026: Record<
+  number,
+  { title: string; period: string }
+> = {
+  5: { title: "DEFAULT LAUNCH RANK", period: "" },
+  6: { title: "SALES FROM WEEK 17 TO 20", period: "25 APR TO 22 MAY" },
+  7: { title: "SALES FROM WEEK 21 TO 25", period: "23 MAY TO 26 JUN" },
+  8: { title: "SALES FROM WEEK 26 TO 29", period: "27 JUN TO 24 JUL" },
+  9: { title: "SALES FROM WEEK 30 TO 33", period: "25 JUL TO 21 AUG" },
+  10: { title: "SALES FROM WEEK 34 TO 38", period: "22 AUG TO 25 SEP" },
+  11: { title: "SALES FROM WEEK 39 TO 42", period: "26 SEP TO 23 OCT" },
+  12: { title: "SALES FROM WEEK 43 TO 46", period: "24 OCT TO 20 NOV" },
+};
+
+/** Actual weeks from sales_calendar.all_months have priority over generated options. */
 function buildCvWeekOptions(
   year: number,
   calendar?: SalesCalendar,
-): Array<{
-  value: number;
-  label: string;
-  description: string;
-}> {
+): Array<{ value: number; label: string; description: string }> {
   const calendarYear = getCalendarYear(calendar);
+  if (year === calendarYear && calendar?.all_months?.length) {
+    const allWeeks = calendar.all_months
+      .flatMap((month) => month.weeks ?? [])
+      .filter(
+        (week): week is SalesCalendarWeek & { week_no: number } =>
+          typeof week.week_no === "number" && week.week_no > 0,
+      )
+      .sort((a, b) => a.week_no - b.week_no);
+    if (allWeeks.length) {
+      return allWeeks.map((week) => ({
+        value: week.week_no,
+        label: `Week ${week.week_no}`,
+        description: `${formatCalendarDate(week.start)} – ${formatCalendarDate(week.end)} ${year}`,
+      }));
+    }
+  }
+
+  // Retain legacy fall-back for years not supplied in the dashboard API.
   const apiWeekNo = getCurrentCalendarWeek(calendar);
-
-  const apiWeekStart = parseCalendarDate(calendar?.current_week?.start);
-
+  const apiStart = parseCalendarDate(getActiveCalendarWeek(calendar)?.start);
   let firstWeekStart: Date;
-
-  if (year === calendarYear && apiWeekStart) {
-    firstWeekStart = new Date(apiWeekStart);
-
+  if (year === calendarYear && apiStart) {
+    firstWeekStart = new Date(apiStart);
     firstWeekStart.setDate(firstWeekStart.getDate() - (apiWeekNo - 1) * 7);
   } else {
     firstWeekStart = new Date(year, 0, 1);
-
-    const daysUntilSaturday = (6 - firstWeekStart.getDay() + 7) % 7;
-
-    firstWeekStart.setDate(firstWeekStart.getDate() + daysUntilSaturday);
+    firstWeekStart.setDate(
+      firstWeekStart.getDate() + ((6 - firstWeekStart.getDay() + 7) % 7),
+    );
   }
-
-  const options: Array<{
-    value: number;
-    label: string;
-    description: string;
-  }> = [];
-
-  for (let weekNo = 1; weekNo <= 53; weekNo += 1) {
-    const startDate = new Date(firstWeekStart);
-
-    startDate.setDate(startDate.getDate() + (weekNo - 1) * 7);
-
-    if (startDate.getFullYear() !== year) break;
-
-    const endDate = new Date(startDate);
-    endDate.setDate(endDate.getDate() + 6);
-
-    const isApiCurrentWeek =
-      year === calendarYear && weekNo === apiWeekNo && Boolean(apiWeekStart);
-
-    const apiEndDate = isApiCurrentWeek
-      ? parseCalendarDate(calendar?.current_week?.end)
-      : null;
-
-    const finalEndDate = apiEndDate || endDate;
-
+  const options: Array<{ value: number; label: string; description: string }> =
+    [];
+  for (let weekNo = 1; weekNo <= 53; weekNo++) {
+    const date = new Date(firstWeekStart);
+    date.setDate(date.getDate() + (weekNo - 1) * 7);
+    if (date.getFullYear() !== year) break;
+    const end = new Date(date);
+    end.setDate(end.getDate() + 6);
     options.push({
       value: weekNo,
       label: `Week ${weekNo}`,
-      description: `${formatDateObject(startDate)} – ${formatDateObject(
-        finalEndDate,
-      )} ${year}`,
+      description: `${formatDateObject(date)} – ${formatDateObject(end)} ${year}`,
     });
   }
-
   return options;
 }
 
 function getCvYearOptions(calendar?: SalesCalendar): number[] {
   const currentYear = getCalendarYear(calendar);
-
   return Array.from({ length: 6 }, (_, index) => currentYear - index);
+}
+
+// --------------------------------------------------
+// Image-inspired 2026 sales calendar, dynamically populated from the API
+// --------------------------------------------------
+
+function PosterCalendarTable({
+  months,
+  year,
+  selectedWeek,
+  onSelectWeek,
+}: {
+  months: SalesCalendarMonth[];
+  year: number;
+  selectedWeek: number;
+  onSelectWeek: (weekNo: number) => void;
+}) {
+  const header =
+    "border border-[#b1c6e2] px-1.5 py-2 text-center text-[9px] font-extrabold uppercase leading-tight sm:text-[10px]";
+  const cell =
+    "border border-[#b1c6e2] px-1.5 py-[9px] text-center text-[10px] leading-4 sm:text-[11px]";
+  return (
+    <div className="min-w-0 overflow-x-auto rounded-xl border-[3px] border-[#0a3681] bg-[#0a3681] shadow-[0_8px_18px_rgba(4,28,90,.15)]">
+      <table className="w-full min-w-[575px] border-collapse bg-white">
+        <thead>
+          <tr className="bg-[#113a83] text-white">
+            <th className={`${header} w-[11%] border-[#29549c]`}>
+              Sales
+              <br />
+              month
+            </th>
+            <th className={`${header} border-[#29549c]`} colSpan={3}>
+              Sales week
+            </th>
+            <th className={`${header} w-[21%] border-[#29549c]`}>
+              Commission
+              <br />
+              payout
+            </th>
+            <th className={`${header} w-[22%] border-[#29549c]`}>Rank basis</th>
+          </tr>
+          <tr className="bg-[#f5cb53] text-[#173a70]">
+            <th className={header} aria-label="Month number" />
+            <th className={header}>Week</th>
+            <th className={header}>Start date</th>
+            <th className={header}>End date</th>
+            <th className={header}>Date</th>
+            <th className={header} aria-label="Rank basis detail" />
+          </tr>
+        </thead>
+        {months.map((month) => {
+          const weeks = [...(month.weeks ?? [])]
+            .filter((week) => typeof week.week_no === "number")
+            .sort((a, b) => (a.week_no ?? 0) - (b.week_no ?? 0));
+          const basis =
+            year === 2026 ? POSTER_RANK_BASIS_2026[month.month_no] : undefined;
+          if (!weeks.length) return null;
+          return (
+            <tbody key={`${year}-${month.month_no}`}>
+              {weeks.map((week, index) => {
+                const active = Boolean(week.is_current);
+                const selected = week.week_no === selectedWeek;
+                return (
+                  <tr
+                    key={`${month.month_no}-${week.week_no}`}
+                    className={`transition-colors ${selected ? "bg-[#edf4ff]" : "bg-white hover:bg-[#f5f8ff]"}`}
+                  >
+                    {index === 0 && (
+                      <td
+                        rowSpan={weeks.length}
+                        className="border-[2px] border-[#214a89] bg-[#f8d064] px-1 text-center align-middle"
+                      >
+                        <span className="text-[33px] font-black leading-none text-[#123d84]">
+                          {month.month_no}
+                        </span>
+                      </td>
+                    )}
+                    <td className={`${cell} w-[9%] font-black text-[#123d84]`}>
+                      <button
+                        type="button"
+                        title={`Week ${week.week_no} · ${week.is_settled ? "Settled" : "Pending"}${active ? " · Current week" : ""}`}
+                        onClick={() => onSelectWeek(week.week_no!)}
+                        aria-label={`Select week ${week.week_no} for CV search`}
+                        aria-pressed={selected}
+                        className={`mx-auto flex h-8 min-w-8 items-center justify-center rounded-md px-1 text-[15px] font-black outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[#f2a91b] ${selected ? "bg-[#123d84] text-white" : active ? "bg-[#ffe6a0] text-[#123d84] hover:bg-[#fbd473]" : "text-[#123d84] hover:bg-[#dceaff]"}`}
+                      >
+                        {week.week_no}
+                      </button>
+                    </td>
+                    <td
+                      className={`${cell} whitespace-nowrap text-[#364b67]`}
+                      title={week.start ?? ""}
+                    >
+                      {formatPosterApiDate(week.start)}
+                    </td>
+                    <td
+                      className={`${cell} whitespace-nowrap text-[#364b67]`}
+                      title={week.end ?? ""}
+                    >
+                      {formatPosterApiDate(week.end)}
+                    </td>
+                    <td
+                      className={`${cell} whitespace-nowrap bg-[#fff0b5]`}
+                      title={week.payout_date ?? ""}
+                    >
+                      <span className="rounded bg-[#f7d66f] px-1.5 py-1 font-extrabold text-[#143f82]">
+                        {formatPosterApiDate(week.payout_date)}
+                      </span>
+                    </td>
+                    {index === 0 && (
+                      <td
+                        rowSpan={weeks.length}
+                        className="border-[2px] border-[#214a89] bg-[#f7f9fd] px-1.5 py-2 text-center align-middle"
+                      >
+                        {basis ? (
+                          <div className="mx-auto max-w-[150px] text-[10px] font-extrabold uppercase leading-[1.45] text-[#153c79]">
+                            {basis.title}
+                            {basis.period && (
+                              <div className="mt-1 text-[8px] font-semibold text-[#68778c]">
+                                ({basis.period})
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-[10px] font-medium text-[#8290a3]">
+                            —
+                          </span>
+                        )}
+                      </td>
+                    )}
+                  </tr>
+                );
+              })}
+            </tbody>
+          );
+        })}
+      </table>
+    </div>
+  );
+}
+
+function SalesCalendarPoster({
+  calendar,
+  selectedWeek,
+  onSelectWeek,
+}: {
+  calendar?: SalesCalendar;
+  selectedWeek: number;
+  onSelectWeek: (weekNo: number) => void;
+}) {
+  const year = getCalendarYear(calendar);
+  const months = [...(calendar?.all_months ?? [])].sort(
+    (a, b) => a.month_no - b.month_no,
+  );
+  const half = Math.ceil(months.length / 2);
+  const activeWeek = getActiveCalendarWeek(calendar);
+  if (!months.length) {
+    return (
+      <section className="mt-5 rounded-[18px] border border-[#e3e8f0] bg-white p-5">
+        <div className="flex items-center gap-3">
+          <CalendarClock size={20} className="text-[#67758b]" />
+          <div>
+            <h3 className="text-[15px] font-bold text-[#1d2939]">
+              Sales Month Calendar
+            </h3>
+            <p className="mt-0.5 text-[12px] text-[#667085]">
+              Calendar data is not available from the dashboard API.
+            </p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="relative isolate mt-5 overflow-hidden rounded-[22px] border border-[#18448c] bg-[#0f4ca7] p-3 shadow-[0_16px_35px_rgba(8,51,126,.12)] sm:p-5 lg:p-6">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 opacity-30"
+        style={{
+          backgroundImage:
+            "repeating-conic-gradient(from 0deg at 50% 27%, rgba(255,255,255,.12) 0deg, rgba(255,255,255,.12) 7deg, transparent 7deg, transparent 17deg)",
+        }}
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -right-12 -top-12 h-48 w-48 rounded-full border-[20px] border-white/10"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -left-10 top-20 h-36 w-36 rounded-full bg-[#c7e1ff]/10 blur-2xl"
+      />
+
+      <div className="relative mb-5 flex flex-wrap items-start justify-between gap-3 sm:mb-6">
+        <div className="inline-flex items-center gap-2 rounded-xl border border-[#f4df92] bg-[#ffdf74] px-3 py-2 shadow-sm">
+          <span className="text-[12px] font-black leading-[1.05] tracking-tight text-[#164286]">
+            INDIE
+            <br />
+            KONNECT
+          </span>
+        </div>
+        {activeWeek && (
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1.5 text-[11px] font-semibold text-white backdrop-blur-sm">
+            <span className="h-2 w-2 rounded-full bg-[#ffd46a]" />
+            Current week {activeWeek.week_no}
+          </span>
+        )}
+      </div>
+
+      <div className="relative mb-6 text-center sm:mb-7">
+        <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-4">
+          <h2 className="text-[26px] font-black uppercase leading-[1.06] tracking-[-.035em] text-[#ffcd4d] [text-shadow:0_2px_0_#0b347c] sm:text-[38px] lg:text-[48px]">
+            Sales Month Calendar
+          </h2>
+          <span className="rounded-[12px] border-2 border-white/80 bg-[#ffd25d] px-3 py-1 text-[18px] font-black text-[#153d80] shadow-sm sm:text-[24px]">
+            {year}
+          </span>
+        </div>
+        <p className="mt-2 text-[11px] leading-5 text-white/80 sm:text-[12px]">
+          Click a week number to select it for CV performance search
+        </p>
+      </div>
+
+      <div className="relative grid min-w-0 grid-cols-1 items-start gap-4 2xl:grid-cols-2">
+        <PosterCalendarTable
+          months={months.slice(0, half)}
+          year={year}
+          selectedWeek={selectedWeek}
+          onSelectWeek={onSelectWeek}
+        />
+        <PosterCalendarTable
+          months={months.slice(half)}
+          year={year}
+          selectedWeek={selectedWeek}
+          onSelectWeek={onSelectWeek}
+        />
+      </div>
+
+      <div className="relative mt-5 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/20 bg-[#0c397f]/65 px-4 py-3 text-[10px] leading-4 text-white/90 sm:text-[11px]">
+        <span>
+          Week dates and payout dates: dashboard API • Rank basis: supplied 2026
+          reference poster
+        </span>
+        <span className="font-bold text-[#ffe291]">www.indiekonnect.com</span>
+      </div>
+    </section>
+  );
 }
 
 // --------------------------------------------------
@@ -1744,8 +2027,20 @@ function CvFilters({
       ? weekOptions.find((option) => option.value === currentWeekNo)
       : undefined;
 
-  const currentWeek = calendar?.current_week;
-  const currentMonth = calendar?.current_month;
+  const currentWeek = getActiveCalendarWeek(calendar);
+  const apiCurrentMonth = calendar?.current_month;
+  const derivedCurrentMonth = getCurrentMonth(calendar);
+  const currentMonth: SalesCalendar["current_month"] =
+    apiCurrentMonth ??
+    (derivedCurrentMonth
+      ? {
+          year: calendar?.year,
+          month_no: derivedCurrentMonth.month_no,
+          label: derivedCurrentMonth.label,
+          start: derivedCurrentMonth.weeks?.[0]?.start,
+          end: (derivedCurrentMonth.weeks ?? []).slice(-1)[0]?.end,
+        }
+      : undefined);
 
   const currentWeekLabel =
     currentWeek?.start && currentWeek?.end
@@ -2220,6 +2515,18 @@ export default function DistributorDashboardPage() {
                   Performance center
                 </span>
               </div>
+
+              {/* Poster-style calendar. Week dates and payouts come from sales_calendar.all_months. */}
+              <SalesCalendarPoster
+                calendar={salesCalendar}
+                selectedWeek={
+                  selectedCvYear === calendarYear ? selectedCvWeek : -1
+                }
+                onSelectWeek={(weekNo) => {
+                  setSelectedCvYear(calendarYear);
+                  setSelectedCvWeek(weekNo);
+                }}
+              />
 
               <CvFilters
                 calendar={salesCalendar}
