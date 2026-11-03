@@ -1,3 +1,4 @@
+
 import { baseApi } from "../baseApi";
 
 // --------------------------------------------------
@@ -33,6 +34,10 @@ export interface GenealogyMember {
   far_right_ba_id: string | null;
 }
 
+// --------------------------------------------------
+// Genealogy Tree Types
+// --------------------------------------------------
+
 export interface DistributorGenealogyData {
   root: GenealogyMember;
   rows: GenealogyMember[];
@@ -58,11 +63,49 @@ export interface DistributorGenealogyResponse {
 }
 
 // --------------------------------------------------
-// API
+// My Referrals Types
+// --------------------------------------------------
+
+export interface GenealogyReferral {
+  member_id: number;
+  ba_id: string;
+
+  unilevel_parent_id: number | null;
+  unilevel_parent_ba_id: string | null;
+
+  binary_parent_id: number | null;
+  binary_parent_ba_id: string | null;
+  binary_side: number | null;
+
+  cv_left: string;
+  cv_right: string;
+
+  floating_cv_left: string;
+  floating_cv_right: string;
+
+  total_cv_left: string;
+  total_cv_right: string;
+
+  level: number;
+
+  name: string | null;
+  joined_at: string | null;
+}
+
+export interface DistributorReferralsResponse {
+  success: boolean;
+  message?: string;
+  data: GenealogyReferral[];
+  total: number;
+}
+
+// --------------------------------------------------
+// APIs
 // --------------------------------------------------
 
 export const distributorGenealogyApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
+    // 1. Distributor Genealogy Tree
     getDistributorGenealogyTree: builder.query<
       DistributorGenealogyResponse,
       void
@@ -72,11 +115,27 @@ export const distributorGenealogyApi = baseApi.injectEndpoints({
         method: "GET",
       }),
     }),
+
+    // 2. Distributor My Referrals
+    getDistributorMyReferrals: builder.query<
+      DistributorReferralsResponse,
+      void
+    >({
+      query: () => ({
+        url: "/distributor/genealogy/my-referrals",
+        method: "GET",
+      }),
+    }),
   }),
 });
 
+// --------------------------------------------------
+// Hooks
+// --------------------------------------------------
+
 export const {
   useGetDistributorGenealogyTreeQuery,
+  useGetDistributorMyReferralsQuery,
 } = distributorGenealogyApi;
 
 export default distributorGenealogyApi;

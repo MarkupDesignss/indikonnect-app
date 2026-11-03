@@ -45,6 +45,9 @@ import { motion, AnimatePresence } from "framer-motion";
 
 import Image from "next/image";
 
+// ✅ NEW IMPORT
+import { useRouter } from "next/navigation";
+
 import { showToast } from "@/lib/slices/toastSlice";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { LuReceiptIndianRupee } from "react-icons/lu";
@@ -100,6 +103,8 @@ interface OrderLineItem {
 
   product_name: string;
   product_code: string;
+  // ✅ NEW: product_slug for navigation
+  product_slug?: string;
 
   quantity: number;
   unit_price: number;
@@ -3865,8 +3870,6 @@ const OrderDetails = ({
     .map((line) => getRefundDetails(line))
     .find((refund) => refund?.amount !== null && refund?.amount !== undefined);
 
-  console.log(refundDetails);
-
   return (
     <motion.div
       initial={{ opacity: 0, height: 0 }}
@@ -4058,7 +4061,8 @@ interface MobileOrderCardProps {
   allOrders: OrderLineItem[];
   isExpanded: boolean;
   onToggle: () => void;
-  onImageClick: () => void;
+  // ✅ NEW: onProductClick replaces onImageClick
+  onProductClick: () => void;
   onTrack: () => void;
   onViewBreakup: () => void;
   onReview: () => void;
@@ -4083,7 +4087,7 @@ const MobileOrderCard = ({
   allOrders,
   isExpanded,
   onToggle,
-  onImageClick,
+  onProductClick, // ✅ CHANGED
   onTrack,
   onViewBreakup,
   onReview,
@@ -4104,10 +4108,11 @@ const MobileOrderCard = ({
     <div className="border-b border-dashed border-[#e7e9ee] last:border-b-0">
       <div className="px-3 py-4">
         <div className="flex items-start gap-3">
+          {/* ✅ Product image → navigates to product page */}
           <button
-            onClick={onImageClick}
-            className="relative h-16 w-16 shrink-0 overflow-hidden rounded-[8px] border border-[#E4E4E2] bg-white"
-            title="View product images"
+            onClick={onProductClick}
+            className="relative h-16 w-16 shrink-0 cursor-pointer overflow-hidden rounded-[8px] border border-[#E4E4E2] bg-white transition-opacity hover:opacity-80"
+            title={`View ${order.product_name}`}
           >
             {order.primary_image ? (
               <Image
@@ -4127,7 +4132,12 @@ const MobileOrderCard = ({
           <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[12.5px] font-semibold text-[#101828]">
+                {/* ✅ Product name → navigates to product page */}
+                <p
+                  onClick={onProductClick}
+                  className="cursor-pointer truncate text-[12.5px] font-semibold text-[#101828] transition-colors hover:text-[#0E1B3D] hover:underline"
+                  title={`View ${order.product_name}`}
+                >
                   {order.product_name}
                 </p>
 
@@ -4321,6 +4331,8 @@ const MobileOrderCard = ({
 
 export default function OrderHistory() {
   const dispatch = useAppDispatch();
+  // ✅ NEW: router for product navigation
+  const router = useRouter();
   const [now, setNow] = useState(() => Date.now());
   const [retryingReference, setRetryingReference] = useState<string | null>(
     null,
@@ -4400,6 +4412,23 @@ export default function OrderHistory() {
 
     return [];
   }, [data]);
+
+  // ✅ NEW: Navigate to product detail page using product_slug
+  const navigateToProduct = (order: OrderLineItem) => {
+    const slug = order.product_slug;
+
+    if (!slug) {
+      dispatch(
+        showToast({
+          message: "Product link not available.",
+          type: "error",
+        }),
+      );
+      return;
+    }
+
+    router.push(`/product/${slug}`);
+  };
 
   const handleRetryPayment = async (order: OrderLineItem) => {
     if (retryingReference) return;
@@ -4996,6 +5025,7 @@ export default function OrderHistory() {
     }
   };
 
+  // ✅ Kept for future use, but no longer called from product click
   const openImageGallery = (order: OrderLineItem) => {
     setSelectedOrder(order);
     setImageGalleryOpen(true);
@@ -5243,7 +5273,8 @@ export default function OrderHistory() {
                   allOrders={orders}
                   isExpanded={isExpanded}
                   onToggle={() => toggleRow(rowKey)}
-                  onImageClick={() => openImageGallery(order)}
+                  // ✅ CHANGED: navigate to product page
+                  onProductClick={() => navigateToProduct(order)}
                   onTrack={() => openTracking(order)}
                   onViewBreakup={() => openBreakup(order)}
                   onReview={() => openReview(order)}
@@ -5348,15 +5379,15 @@ export default function OrderHistory() {
                             </p>
                           </div>
 
-                          {/* PRODUCT */}
+                          {/* ✅ PRODUCT — now navigates to product page */}
 
                           <button
                             type="button"
-                            onClick={() => openImageGallery(order)}
-                            className="flex min-w-0 items-center gap-2.5 text-left"
-                            title="View product images"
+                            onClick={() => navigateToProduct(order)}
+                            className="group flex min-w-0 cursor-pointer items-center gap-2.5 text-left"
+                            title={`View ${order.product_name}`}
                           >
-                            <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-white">
+                            <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-white transition-opacity group-hover:opacity-80">
                               {order.primary_image ? (
                                 <Image
                                   src={order.primary_image}
@@ -5373,7 +5404,7 @@ export default function OrderHistory() {
                             </span>
 
                             <span
-                              className="truncate font-semibold text-[#101828]"
+                              className="truncate font-semibold text-[#101828] transition-colors group-hover:text-[#0E1B3D]"
                               title={order.product_name}
                             >
                               {order.product_name}
@@ -5568,6 +5599,7 @@ export default function OrderHistory() {
 
       {/* ================= MODALS ================= */}
 
+      {/* ✅ Kept in DOM but no longer triggered by product click */}
       <OrderImageGallery
         isOpen={imageGalleryOpen}
         onClose={closeAllModals}
