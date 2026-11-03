@@ -11,6 +11,19 @@ import {
   Search,
   ShoppingBag,
   UsersRound,
+  ArrowUpRight,
+  ArrowRight,
+  Wallet,
+  TrendingUp,
+  Trophy,
+  ShieldCheck,
+  Sparkles,
+  PackageCheck,
+  Star,
+  Heart,
+  LayoutGrid,
+  Clock3,
+  Info,
 } from "lucide-react";
 
 import { useEffect, useRef, useState } from "react";
@@ -39,19 +52,14 @@ import { useGetPairingsQuery } from "@/lib/redux/api/distributor/pairingsApi";
 import Loding from "@/components/common/Loding";
 
 // --------------------------------------------------
-// Design tokens
+// Shared design primitives
 // --------------------------------------------------
 
-const NAVY = "#0E1B3D";
-const BRASS = "#B8935A";
-const EMERALD = "#1f9d6b";
-const INDIGO = "#3955A6";
-
 const CARD =
-  "min-w-0 rounded-[18px] border border-[#e7e9ee] bg-white";
+  "min-w-0 rounded-[20px] border border-[#E6ECF6] bg-white shadow-[0_4px_20px_rgba(43,72,130,0.035)]";
 
 const CARD_HOVER =
-  "transition-colors duration-200 hover:border-[#d1d5df] motion-reduce:transition-none";
+  "transition-all duration-200 hover:border-[#C5D3EC] hover:shadow-[0_12px_28px_rgba(49,84,154,0.07)] motion-reduce:transition-none";
 
 // --------------------------------------------------
 // Font
@@ -61,19 +69,16 @@ const FontImport = () => (
   <style>{`
     @import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,300;0,400;0,700;0,900;1,400&display=swap');
 
-    * {
-      box-sizing: border-box;
-    }
-
-    html,
-    body {
-      width: 100%;
-      max-width: 100%;
-      overflow-x: hidden;
-    }
-
-    button {
-      -webkit-tap-highlight-color: transparent;
+    .distributor-dashboard, .distributor-dashboard * { box-sizing: border-box; }
+    .distributor-dashboard button { -webkit-tap-highlight-color: transparent; }
+    .distributor-dashboard ::selection { background: #dadada; color: #101010; }
+    .distributor-dashboard .dashboard-number { font-variant-numeric: tabular-nums; }
+    .distributor-dashboard .dashboard-card { transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease; }
+    .distributor-dashboard .dashboard-card:hover { border-color: #d8d8d8; box-shadow: 0 14px 32px rgba(17,17,17,.045); }
+    @media (prefers-reduced-motion: reduce) {
+      .distributor-dashboard *, .distributor-dashboard *::before, .distributor-dashboard *::after {
+        scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important;
+      }
     }
 
     .thin-scroll::-webkit-scrollbar {
@@ -91,9 +96,7 @@ const FontImport = () => (
 // Helpers
 // --------------------------------------------------
 
-function toNumber(
-  value: number | string | null | undefined
-): number {
+function toNumber(value: number | string | null | undefined): number {
   if (value === null || value === undefined || value === "") {
     return 0;
   }
@@ -103,9 +106,7 @@ function toNumber(
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function formatNumber(
-  value: number | string | null | undefined
-): string {
+function formatNumber(value: number | string | null | undefined): string {
   return toNumber(value).toLocaleString("en-IN", {
     maximumFractionDigits: 2,
   });
@@ -121,13 +122,11 @@ function formatStatus(value?: string | null): string {
 
 function formatCurrency(
   value: number | string | null | undefined,
-  currency: "USD" | "INR"
+  currency: "USD" | "INR",
 ): string {
   const formattedValue = formatNumber(value);
 
-  return currency === "USD"
-    ? `$${formattedValue}`
-    : `₹${formattedValue}`;
+  return currency === "USD" ? `$${formattedValue}` : `₹${formattedValue}`;
 }
 
 // --------------------------------------------------
@@ -142,18 +141,15 @@ function SectionTitle({
   large?: boolean;
 }) {
   return (
-    <div className="flex items-center gap-2.5">
+    <div className="flex min-w-0 items-center gap-3">
       <span
-        className="h-5 w-1 shrink-0 rounded-full"
-        style={{ backgroundColor: BRASS }}
-      />
-
+        aria-hidden="true"
+        className="flex h-[31px] w-[31px] shrink-0 items-center justify-center rounded-[10px] border border-[#DAE6FD] bg-[#EEF4FF]"
+      >
+        <span className="h-2 w-2 rounded-[3px] bg-[#6683D6]" />
+      </span>
       <h2
-        className={`font-black tracking-[-0.01em] text-[#101828] ${
-          large
-            ? "text-[18px] sm:text-[20px]"
-            : "text-[16px] sm:text-[18px]"
-        }`}
+        className={`min-w-0 font-bold leading-tight tracking-[-0.035em] text-[#181818] ${large ? "text-[19px] sm:text-[22px]" : "text-[17px] sm:text-[19px]"}`}
       >
         {children}
       </h2>
@@ -192,57 +188,79 @@ function WelcomeHero({
   user?: DashboardUser;
   distributorId: string;
 }) {
+  const displayName = user?.name?.trim() || "Distributor";
+  const initials = displayName
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
   return (
     <motion.section
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
-      className="relative overflow-hidden rounded-[20px] border border-[#e7e9ee] bg-white p-5 sm:p-6"
+      transition={{ duration: 0.32, ease: "easeOut" }}
+      className="relative isolate overflow-hidden rounded-[24px] border border-[#DCE6FC] bg-gradient-to-[110deg] from-[#EFF5FF] via-[#F8F5FF] to-[#FFF6ED] shadow-[0_12px_36px_rgba(65,91,155,0.06)]"
     >
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -right-20 -top-24 h-56 w-56 rounded-full opacity-[0.06] blur-2xl"
-        style={{ backgroundColor: BRASS }}
+        className="pointer-events-none absolute -right-20 -top-32 h-80 w-80 rounded-full bg-[#B4C7FF]/25 blur-3xl"
       />
-
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -bottom-24 left-1/4 h-48 w-48 rounded-full opacity-[0.05] blur-2xl"
-        style={{ backgroundColor: INDIGO }}
+        className="pointer-events-none absolute bottom-[-150px] left-[35%] h-64 w-64 rounded-full bg-[#F4D6FF]/30 blur-3xl"
       />
-
-      <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0 flex-1">
-          <div className="inline-flex max-w-full flex-wrap items-center gap-1.5 rounded-full border border-[#e7e9ee] bg-[#fafbfc] px-3 py-1 text-[11px] font-bold leading-4 text-[#3955A6] sm:text-[12px]">
-            <span
-              className="h-1.5 w-1.5 rounded-full"
-              style={{ backgroundColor: INDIGO }}
-            />
-
-            <span>
-              {formatStatus(user?.account_type || "distributor")}
+      <div className="relative grid gap-5 p-5 sm:p-7 lg:grid-cols-[minmax(0,1fr)_minmax(240px,310px)] lg:items-center lg:px-9 lg:py-8">
+        <div className="min-w-0">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#D9E5FD] bg-white/80 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[.13em] text-[#4564B7] sm:text-[11px]">
+            <span className="h-2 w-2 rounded-full bg-[#6688E8]" /> Distributor
+            workspace
+          </div>
+          <div className="flex min-w-0 items-center gap-3.5">
+            <div className="hidden h-[54px] w-[54px] shrink-0 items-center justify-center rounded-[16px] bg-gradient-to-br from-[#617FE2] to-[#956AD6] text-[18px] font-bold text-white shadow-[0_8px_20px_rgba(92,115,212,.2)] sm:flex">
+              {initials || "D"}
+            </div>
+            <div className="min-w-0">
+              <h1 className="break-words text-[25px] font-bold leading-tight tracking-[-.045em] text-[#233254] sm:text-[31px]">
+                Welcome back, {displayName}
+              </h1>
+              <p className="mt-2 max-w-xl text-[12px] leading-5 text-[#6C7794] sm:text-[13px] sm:leading-6">
+                Your business at a glance. Track performance, manage your
+                network and stay on top of every update.
+              </p>
+            </div>
+          </div>
+          <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-[#DCE5F6] pt-4">
+            <span className="inline-flex items-center gap-2 text-[11px] font-semibold text-[#6475A0]">
+              <ShieldCheck size={14} className="text-[#5E83DA]" />
+              {formatStatus(user?.account_type || "distributor")} account
+            </span>
+            {user?.email && (
+              <span className="max-w-full truncate text-[11px] text-[#7A849C]">
+                {user.email}
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="min-w-0 rounded-[18px] border border-white bg-white/80 p-4 shadow-[0_8px_30px_rgba(73,95,167,.07)] backdrop-blur-sm sm:p-5">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] font-bold uppercase tracking-[.13em] text-[#8994AC]">
+              Member identification
+            </span>
+            <span className="flex h-9 w-9 items-center justify-center rounded-[11px] bg-[#EDF1FF] text-[#6B75CB]">
+              <Sparkles size={17} />
             </span>
           </div>
-
-          <h1 className="mt-3 break-words text-[20px] font-black leading-tight tracking-[-0.02em] text-[#101828] sm:text-[24px]">
-            {user?.name
-              ? `Welcome back, ${user.name}`
-              : "Welcome back"}
-          </h1>
-
-          <p className="mt-1.5 break-all text-[12px] leading-5 text-[#667085] sm:text-[13px]">
-            {user?.email || "Your distributor dashboard"}
-          </p>
-        </div>
-
-        <div className="flex shrink-0 flex-col items-start sm:items-end">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-[#8a92a6]">
+          <p className="mt-5 text-[11px] font-semibold text-[#7B869D]">
             Distributor ID
-          </span>
-
-          <span className="mt-0.5 break-all text-[16px] font-black text-[#101828] sm:text-[18px]">
+          </p>
+          <p className="dashboard-number mt-1 break-all text-[22px] font-bold tracking-[-.03em] text-[#293962] sm:text-[25px]">
             {distributorId}
-          </span>
+          </p>
+          <div className="mt-4 flex items-center gap-2 border-t border-[#E8ECF7] pt-3 text-[10px] text-[#8390AE]">
+            <span className="h-2 w-2 rounded-full bg-[#42B99A]" /> IndieKonnect
+            distributor portal
+          </div>
         </div>
       </div>
     </motion.section>
@@ -258,64 +276,84 @@ function QuickStatsCards({
   floatingRetailProfit,
   directReferral,
 }: {
-  cashWallet: number;
-  floatingRetailProfit: number;
-  directReferral: number;
+  cashWallet: number | null;
+  floatingRetailProfit: number | null;
+  directReferral: number | null;
 }) {
   const cards = [
     {
-      label: "Cash Wallet",
+      label: "Cash wallet",
       value: cashWallet,
-      icon: Coins,
-      iconColor: "#00B96B",
-      iconBg: "#E6F9EF",
+      icon: Wallet,
+      kind: "currency",
+      note: "Available wallet balance",
+      bg: "#EEF4FF",
+      border: "#DBE7FF",
+      iconBg: "#DEE9FF",
+      tone: "#496ECD",
     },
     {
-      label: "Floating Retail Profit",
+      label: "Floating retail profit",
       value: floatingRetailProfit,
-      icon: HandCoins,
-      iconColor: "#FF963C",
-      iconBg: "#FFF1DF",
+      icon: TrendingUp,
+      kind: "currency",
+      note: "Retail profit overview",
+      bg: "#ECFAF6",
+      border: "#D7F2E9",
+      iconBg: "#D2F3E7",
+      tone: "#208F73",
     },
     {
-      label: "Direct Referral",
+      label: "Direct referrals",
       value: directReferral,
       icon: UsersRound,
-      iconColor: "#4775FF",
-      iconBg: "#EDF1FF",
+      kind: "number",
+      note: "Direct network members",
+      bg: "#F6F0FF",
+      border: "#E9DDFF",
+      iconBg: "#EADDFF",
+      tone: "#8962C5",
     },
-  ];
-
+  ] as const;
   return (
-    <section className="mt-4 sm:mt-5">
-      <div className="grid grid-cols-1 gap-3 min-[380px]:grid-cols-2 lg:grid-cols-3 sm:gap-4">
+    <section aria-label="Key performance indicators" className="mt-4 sm:mt-5">
+      <div className="grid grid-cols-1 gap-3 min-[540px]:grid-cols-2 lg:grid-cols-3 sm:gap-4">
         {cards.map((item) => {
           const Icon = item.icon;
-
           return (
             <div
               key={item.label}
-              className={`${CARD} ${CARD_HOVER} group flex min-h-[92px] items-center gap-3 p-3.5 sm:min-h-[100px] sm:gap-4 sm:p-4`}
+              className="group relative flex min-h-[150px] min-w-0 flex-col justify-between overflow-hidden rounded-[20px] border p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_26px_rgba(64,84,133,.09)] sm:p-5"
+              style={{ background: item.bg, borderColor: item.border }}
             >
-              <div
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] transition-transform duration-200 group-hover:scale-105 motion-reduce:transform-none sm:h-[54px] sm:w-[54px]"
-                style={{ backgroundColor: item.iconBg }}
-              >
-                <Icon
-                  size={22}
-                  strokeWidth={1.8}
-                  style={{ color: item.iconColor }}
-                  className="sm:h-6 sm:w-6"
+              <div className="flex items-center justify-between gap-2">
+                <span
+                  className="flex h-11 w-11 items-center justify-center rounded-[14px]"
+                  style={{ backgroundColor: item.iconBg, color: item.tone }}
+                >
+                  <Icon size={21} strokeWidth={1.8} />
+                </span>
+                <ArrowUpRight
+                  size={18}
+                  className="opacity-45 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+                  style={{ color: item.tone }}
                 />
               </div>
-
-              <div className="min-w-0 flex-1">
-                <p className="break-words text-[12px] font-semibold leading-4 text-[#667085] sm:text-[13px] sm:leading-5">
+              <div className="mt-5 min-w-0">
+                <p className="text-[12px] font-semibold text-[#64718C]">
                   {item.label}
                 </p>
-
-                <p className="mt-1 break-words text-[21px] font-black leading-tight tracking-[-0.01em] text-[#101828] sm:text-[24px]">
-                  {formatNumber(item.value)}
+                <p className="dashboard-number mt-1 break-words text-[27px] font-bold leading-tight tracking-[-.045em] text-[#24334F] sm:text-[31px]">
+                  {item.value === null
+                    ? "—"
+                    : item.kind === "currency"
+                      ? formatCurrency(item.value, "INR")
+                      : formatNumber(item.value)}
+                </p>
+                <p className="mt-2 text-[10px] leading-4 text-[#8792A6]">
+                  {item.value === null
+                    ? "Not available from the API"
+                    : item.note}
                 </p>
               </div>
             </div>
@@ -330,83 +368,95 @@ function QuickStatsCards({
 // Dashboard overview
 // --------------------------------------------------
 
-function DashboardOverview({
-  stats,
-}: {
-  stats?: DashboardStats;
-}) {
+function DashboardOverview({ stats }: { stats?: DashboardStats }) {
   const cards = [
     {
       label: "Total orders",
-      value: stats?.total_orders ?? 0,
-      color: NAVY,
-      tint: "#eef0f6",
+      value: stats?.total_orders,
+      icon: ShoppingBag,
+      tone: "#4C75D4",
+      bg: "#EFF4FF",
     },
     {
       label: "Wishlist",
-      value: stats?.wishlist ?? 0,
-      color: BRASS,
-      tint: "#f8f1e4",
+      value: stats?.wishlist,
+      icon: Heart,
+      tone: "#D17E9A",
+      bg: "#FFF0F4",
     },
     {
       label: "Points earned",
-      value: formatNumber(stats?.points_earned),
-      color: EMERALD,
-      tint: "#eaf7f0",
+      value: stats?.points_earned,
+      icon: Coins,
+      tone: "#D49A38",
+      bg: "#FFF7E8",
     },
     {
       label: "Reviews",
-      value: stats?.reviews ?? 0,
-      color: INDIGO,
-      tint: "#eceffb",
+      value: stats?.reviews,
+      icon: Star,
+      tone: "#8E70D1",
+      bg: "#F4EFFF",
     },
     {
       label: "Cart items",
-      value: stats?.cart_items ?? 0,
-      color: NAVY,
-      tint: "#eef0f6",
+      value: stats?.cart_items,
+      icon: LayoutGrid,
+      tone: "#249D94",
+      bg: "#EAF9F6",
     },
     {
       label: "Average rating",
-      value: formatNumber(stats?.average_rating),
-      color: BRASS,
-      tint: "#f8f1e4",
+      value: stats?.average_rating,
+      icon: Trophy,
+      tone: "#DB865A",
+      bg: "#FFF2E8",
     },
   ];
-
   return (
-    <section className="mt-6 sm:mt-7">
-      <div className="mb-3 sm:mb-4">
-        <SectionTitle>My overview</SectionTitle>
+    <section className="mt-7 sm:mt-8">
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <SectionTitle>Business overview</SectionTitle>
+          <p className="ml-11 mt-1 text-[11px] leading-5 text-[#8591A8]">
+            Your latest account activity and shopping metrics
+          </p>
+        </div>
+        <span className="text-[10px] font-semibold uppercase tracking-[.12em] text-[#A3ADC0]">
+          Overview / 06 metrics
+        </span>
       </div>
-
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 xl:grid-cols-6">
-        {cards.map((item) => (
-          <div
-            key={item.label}
-            className={`${CARD} ${CARD_HOVER} relative overflow-hidden p-3.5 pl-4 sm:p-4 sm:pl-5`}
-          >
-            <span
-              aria-hidden="true"
-              className="absolute inset-y-3 left-0 w-[3px] rounded-r-md"
-              style={{ backgroundColor: item.color }}
-            />
-
-            <p className="break-words text-[12px] font-semibold leading-4 text-[#667085] sm:text-[13px] sm:leading-5">
-              {item.label}
-            </p>
-
-            <p
-              className="mt-3 inline-block max-w-full break-words rounded-[10px] px-2.5 py-1 text-[18px] font-black leading-tight sm:mt-4 sm:text-[22px]"
-              style={{
-                color: item.color,
-                backgroundColor: item.tint,
-              }}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6 sm:gap-4">
+        {cards.map((item) => {
+          const Icon = item.icon;
+          return (
+            <div
+              key={item.label}
+              className="group flex min-h-[139px] min-w-0 flex-col justify-between rounded-[18px] border border-[#E8EDF5] bg-white p-3.5 shadow-[0_3px_12px_rgba(52,72,120,.03)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_26px_rgba(52,72,120,.08)] sm:p-4"
             >
-              {item.value}
-            </p>
-          </div>
-        ))}
+              <div className="flex items-start justify-between">
+                <span
+                  className="flex h-9 w-9 items-center justify-center rounded-[11px]"
+                  style={{ background: item.bg, color: item.tone }}
+                >
+                  <Icon size={17} strokeWidth={1.9} />
+                </span>
+                <span
+                  className="h-1.5 w-1.5 rounded-full"
+                  style={{ backgroundColor: item.tone }}
+                />
+              </div>
+              <div className="pt-4">
+                <p className="dashboard-number break-words text-[25px] font-bold leading-none tracking-[-.045em] text-[#25334F] sm:text-[29px]">
+                  {item.value == null ? "—" : formatNumber(item.value)}
+                </p>
+                <p className="mt-2 text-[11px] font-medium leading-4 text-[#78859D] sm:text-[12px]">
+                  {item.label}
+                </p>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </section>
   );
@@ -442,74 +492,48 @@ function CoinCard({
   valueInr?: number | string | null;
   label: string;
 }) {
-  const styles = {
-    yellow: {
-      circle: "bg-[#FEF9C3]",
-      background: "from-[#fffef0]",
-      coin: "#EAB308",
-      text: "#A16207",
-      border: "border-[#FDE68A]",
-    },
-    green: {
-      circle: "bg-[#DCFCE7]",
-      background: "from-[#f1fcf5]",
-      coin: "#16A34A",
-      text: "#15803D",
-      border: "border-[#BBF7D0]",
-    },
-    blue: {
-      circle: "bg-[#DBEAFE]",
-      background: "from-[#f1f7ff]",
-      coin: "#2563EB",
-      text: "#1D4ED8",
-      border: "border-[#BFDBFE]",
-    },
-  };
-
-  const style = styles[color];
-
+  const style = {
+    yellow: { tone: "#B78B30", light: "#FFF9EA", ring: "#F1E4BF" },
+    green: { tone: "#25876B", light: "#EDF8F3", ring: "#D3EADD" },
+    blue: { tone: "#4F6AC0", light: "#F0F4FE", ring: "#DBE3FA" },
+  }[color];
   return (
     <div
-      className={`flex min-h-[130px] min-w-0 flex-1 flex-col items-center justify-center rounded-[12px] border ${style.border} bg-gradient-to-b ${style.background} to-white px-1.5 py-2 transition-colors duration-200 hover:border-[#d1d5df] sm:min-h-[140px] sm:px-2`}
+      className="group min-w-0 rounded-[15px] border p-3 transition-colors hover:shadow-[0_8px_22px_rgba(75,93,155,.06)] sm:p-4"
+      style={{ backgroundColor: style.light, borderColor: style.ring }}
     >
-      <div
-        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${style.circle} sm:h-9 sm:w-9`}
-      >
-        <div
-          className="h-[14px] w-[18px] rounded-full ring-2 ring-white sm:h-4 sm:w-5"
-          style={{ backgroundColor: style.coin }}
+      <div className="flex items-center justify-between gap-2">
+        <span
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px]"
+          style={{
+            backgroundColor: style.light,
+            border: `1px solid ${style.ring}`,
+          }}
+        >
+          <Coins size={20} strokeWidth={1.8} style={{ color: style.tone }} />
+        </span>
+        <span
+          className="h-2 w-2 rounded-full"
+          style={{ backgroundColor: style.tone }}
         />
       </div>
-
-      <p className="mt-1 text-center text-[17px] font-black leading-tight text-[#101828] sm:text-[19px]">
+      <p className="dashboard-number mt-4 break-words text-[23px] font-bold leading-tight tracking-[-.05em] text-[#1B1B1B] sm:text-[27px]">
         {formatNumber(value)}
       </p>
-
-      <p
-        className="mt-0.5 break-words text-center text-[10px] font-bold leading-3 sm:text-[11px]"
-        style={{ color: style.text }}
-      >
+      <p className="mt-1 text-[11px] font-medium leading-4 text-[#777777] sm:text-[12px]">
         {label}
       </p>
-
-      <div className="mt-2 w-full space-y-1 border-t border-[#e9edf2] pt-1.5">
-        <div className="flex items-center justify-between gap-1">
-          <span className="text-[9px] font-semibold text-[#8a92a6] sm:text-[10px]">
-            USD
-          </span>
-
-          <span className="break-all text-right text-[10px] font-extrabold text-[#344054] sm:text-[11px]">
-            {formatCurrency(valueUsd, "USD")}
+      <div className="mt-3 space-y-2 border-t border-[#F0F0F0] pt-3">
+        <div className="flex min-w-0 items-center justify-between gap-2">
+          <span className="text-[10px] text-[#999999]">Value in USD</span>
+          <span className="dashboard-number min-w-0 break-all text-right text-[11px] font-semibold text-[#353535]">
+            {valueUsd == null ? "—" : formatCurrency(valueUsd, "USD")}
           </span>
         </div>
-
-        <div className="flex items-center justify-between gap-1">
-          <span className="text-[9px] font-semibold text-[#8a92a6] sm:text-[10px]">
-            INR
-          </span>
-
-          <span className="break-all text-right text-[10px] font-extrabold text-[#344054] sm:text-[11px]">
-            {formatCurrency(valueInr, "INR")}
+        <div className="flex min-w-0 items-center justify-between gap-2">
+          <span className="text-[10px] text-[#999999]">Value in INR</span>
+          <span className="dashboard-number min-w-0 break-all text-right text-[11px] font-semibold text-[#353535]">
+            {valueInr == null ? "—" : formatCurrency(valueInr, "INR")}
           </span>
         </div>
       </div>
@@ -521,49 +545,43 @@ function CoinCard({
 // Coins section
 // --------------------------------------------------
 
-function CoinsSection({
-  ignite,
-}: {
-  ignite?: IgniteDashboard | null;
-}) {
+function CoinsSection({ ignite }: { ignite?: IgniteDashboard | null }) {
   const coinValues = ignite as
-    | (IgniteDashboard & IgniteCoinValues)
-    | null
-    | undefined;
-
+    (IgniteDashboard & IgniteCoinValues) | null | undefined;
   return (
-    <section className={`${CARD} p-3 sm:p-4`}>
-      <div className="flex items-center justify-between gap-2">
-        <SectionTitle>My coins</SectionTitle>
-
-        <span className="rounded-full border border-[#e7e9ee] bg-[#fafbfc] px-2 py-0.5 text-[9px] font-bold text-[#667085] sm:text-[10px]">
-          Coin balance
+    <section className={`${CARD} dashboard-card p-4 sm:p-5`}>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <SectionTitle>My coins</SectionTitle>
+          <p className="ml-11 mt-1 text-[11px] text-[#929292]">
+            Balances and estimated value by coin type
+          </p>
+        </div>
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-[#EAEAEA] bg-[#FAFAFA] px-3 py-1 text-[10px] font-semibold text-[#666666]">
+          <Coins size={13} /> Coin wallet
         </span>
       </div>
-
-      <div className="mt-3 grid grid-cols-3 gap-2 sm:gap-2.5">
+      <div className="mt-4 grid grid-cols-1 gap-3 min-[480px]:grid-cols-3 sm:gap-3">
         <CoinCard
           color="yellow"
           value={coinValues?.yellow_bal ?? 0}
-          valueUsd={coinValues?.yellow_value_usd ?? 0}
-          valueInr={coinValues?.yellow_value_inr ?? 0}
-          label="Yellow coin"
+          valueUsd={coinValues?.yellow_value_usd}
+          valueInr={coinValues?.yellow_value_inr}
+          label="Yellow coins"
         />
-
         <CoinCard
           color="green"
           value={coinValues?.green_bal ?? 0}
-          valueUsd={coinValues?.green_value_usd ?? 0}
-          valueInr={coinValues?.green_value_inr ?? 0}
-          label="Green coin"
+          valueUsd={coinValues?.green_value_usd}
+          valueInr={coinValues?.green_value_inr}
+          label="Green coins"
         />
-
         <CoinCard
           color="blue"
           value={coinValues?.blue_bal ?? 0}
-          valueUsd={coinValues?.blue_value_usd ?? 0}
-          valueInr={coinValues?.blue_value_inr ?? 0}
-          label="Blue coin"
+          valueUsd={coinValues?.blue_value_usd}
+          valueInr={coinValues?.blue_value_inr}
+          label="Blue coins"
         />
       </div>
     </section>
@@ -574,116 +592,120 @@ function CoinsSection({
 // Account summary
 // --------------------------------------------------
 
-function AccountSummary({
-  ignite,
-}: {
-  ignite?: IgniteDashboard | null;
-}) {
-  const stats = [
+function AccountSummary({ ignite }: { ignite?: IgniteDashboard | null }) {
+  const ranks = [
+    { label: "Current rank", value: ignite?.rank_no, icon: Trophy },
     {
-      value: ignite?.rank_no ?? 0,
-      label: "Current rank",
-      color: BRASS,
-      tint: "#f8f1e4",
-    },
-    {
-      value: ignite?.eligible_rank_no ?? 0,
       label: "Eligible rank",
-      color: EMERALD,
-      tint: "#eaf7f0",
+      value: ignite?.eligible_rank_no,
+      icon: TrendingUp,
     },
-    {
-      value: ignite?.base_rank_no ?? 0,
-      label: "Base rank",
-      color: INDIGO,
-      tint: "#eceffb",
-    },
+    { label: "Base rank", value: ignite?.base_rank_no, icon: ShieldCheck },
   ];
-
   const left = toNumber(ignite?.total_cv_left);
   const right = toNumber(ignite?.total_cv_right);
   const total = left + right;
-  const leftPct = total > 0 ? (left / total) * 100 : 50;
-
-  const isActive =
-    ignite?.membership_status?.toLowerCase() === "active";
-
+  const leftPct = total > 0 ? (left / total) * 100 : 0;
+  const rightPct = total > 0 ? (right / total) * 100 : 0;
+  const isActive = ignite?.membership_status?.toLowerCase() === "active";
   return (
-    <section className={`${CARD} p-4 sm:p-5`}>
-      <SectionTitle>My account status</SectionTitle>
-
-      <div className="mt-4 grid grid-cols-3 gap-2.5 sm:gap-3">
-        {stats.map((item) => (
-          <div
-            key={item.label}
-            className="flex min-h-[100px] min-w-0 flex-col items-center justify-center rounded-[14px] px-1.5 py-3 sm:min-h-[112px] sm:px-2"
-            style={{ backgroundColor: item.tint }}
-          >
-            <p
-              className="break-words text-center text-[24px] font-black leading-tight sm:text-[28px]"
-              style={{ color: item.color }}
-            >
-              {item.value}
-            </p>
-
-            <p className="mt-2 break-words text-center text-[10px] font-semibold leading-4 text-[#667085] sm:text-[12px]">
-              {item.label}
-            </p>
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-5">
-        <div className="flex items-center justify-between gap-2 text-[11px] font-semibold sm:text-[12px]">
-          <span
-            className="min-w-0 break-words"
-            style={{ color: EMERALD }}
-          >
-            Left CV · {formatNumber(left)}
-          </span>
-
-          <span
-            className="min-w-0 break-words text-right"
-            style={{ color: BRASS }}
-          >
-            Right CV · {formatNumber(right)}
-          </span>
+    <section className={`${CARD} dashboard-card h-full p-4 sm:p-5`}>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <SectionTitle>Network performance</SectionTitle>
+          <p className="ml-11 mt-1 text-[11px] leading-5 text-[#888888]">
+            Rank progress and CV distribution
+          </p>
         </div>
-
-        <div className="mt-2 flex h-2 w-full overflow-hidden rounded-full bg-[#f0f2f5]">
-          <div
-            className="h-full transition-all duration-700 motion-reduce:transition-none"
-            style={{
-              width: `${leftPct}%`,
-              backgroundColor: EMERALD,
-            }}
-          />
-
-          <div
-            className="h-full flex-1"
-            style={{ backgroundColor: BRASS }}
-          />
-        </div>
-      </div>
-
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-[#f0f2f5] pt-4">
-        <span className="text-[12px] font-semibold text-[#667085] sm:text-[12.5px]">
-          Membership status
-        </span>
-
         <span
-          className={`inline-flex max-w-full items-center gap-1.5 break-words rounded-full px-3 py-1 text-[11px] font-bold ${
-            isActive
-              ? "bg-[#eaf7f0] text-[#1f9d6b]"
-              : "bg-[#f2f4f7] text-[#667085]"
-          }`}
+          className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold ${isActive ? "border-[#D9EDE2] bg-[#F0FAF4] text-[#21845F]" : "border-[#EBEBEB] bg-[#F8F8F8] text-[#777777]"}`}
         >
           <span
-            className={`h-1.5 w-1.5 rounded-full ${
-              isActive ? "bg-[#1f9d6b]" : "bg-[#98a2b3]"
-            }`}
+            className={`h-1.5 w-1.5 rounded-full ${isActive ? "bg-[#21845F]" : "bg-[#BDBDBD]"}`}
           />
-
+          {formatStatus(ignite?.membership_status)}
+        </span>
+      </div>
+      <div className="mt-5 grid grid-cols-3 gap-2.5">
+        {ranks.map((item, index) => {
+          const Icon = item.icon;
+          return (
+            <div
+              key={item.label}
+              className={`min-w-0 rounded-[14px] border p-3 sm:p-4 ${index === 0 ? "border-[#F0DEB9] bg-[#FFF8EA]" : index === 1 ? "border-[#D4EFE6] bg-[#EFFAF5]" : "border-[#DDDFFA] bg-[#F3F3FF]"}`}
+            >
+              <Icon
+                size={16}
+                className={
+                  index === 0
+                    ? "text-[#C18D3D]"
+                    : index === 1
+                      ? "text-[#269C79]"
+                      : "text-[#7C78CE]"
+                }
+                strokeWidth={1.7}
+              />
+              <p className="dashboard-number mt-4 break-words text-[23px] font-bold leading-none tracking-[-.05em] text-[#191919] sm:text-[28px]">
+                {item.value ?? "—"}
+              </p>
+              <p className="mt-2 text-[10px] font-medium leading-4 text-[#777777] sm:text-[11px]">
+                {item.label}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+      <div className="mt-5 rounded-[14px] border border-[#EAEAEA] bg-[#FCFCFC] p-3.5 sm:p-4">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[12px] font-semibold text-[#303030]">
+            CV distribution
+          </span>
+          <span className="dashboard-number text-[11px] font-bold text-[#8A8A8A]">
+            {formatNumber(total)} total
+          </span>
+        </div>
+        <div className="mt-4 flex min-w-0 items-end justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[10px] text-[#8A8A8A]">Left leg</p>
+            <p className="dashboard-number mt-1 break-words text-[19px] font-bold leading-none text-[#202020]">
+              {formatNumber(left)}
+            </p>
+          </div>
+          <div className="min-w-0 text-right">
+            <p className="text-[10px] text-[#8A8A8A]">Right leg</p>
+            <p className="dashboard-number mt-1 break-words text-[19px] font-bold leading-none text-[#202020]">
+              {formatNumber(right)}
+            </p>
+          </div>
+        </div>
+        <div className="mt-4 flex h-[9px] w-full gap-[3px] overflow-hidden rounded-full bg-[#E9E9E9]">
+          {leftPct > 0 && (
+            <div
+              className="h-full rounded-l-full bg-[#5B83D8] transition-all"
+              style={{ width: `${leftPct}%` }}
+            />
+          )}
+          {rightPct > 0 && (
+            <div
+              className="h-full rounded-r-full bg-[#37B89A] transition-all"
+              style={{ width: `${rightPct}%` }}
+            />
+          )}
+        </div>
+        <div className="mt-2.5 flex justify-between gap-2 text-[10px] font-semibold text-[#888888]">
+          <span>
+            <span className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full bg-[#5B83D8]" />
+            Left {total > 0 ? leftPct.toFixed(0) : 0}%
+          </span>
+          <span>
+            Right {total > 0 ? rightPct.toFixed(0) : 0}%{" "}
+            <span className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-[#37B89A]" />
+          </span>
+        </div>
+      </div>
+      <div className="mt-4 flex items-center justify-between border-t border-[#F0F0F0] pt-4">
+        <span className="text-[11px] text-[#888888]">Membership status</span>
+        <span className="text-[11px] font-semibold text-[#2A2A2A]">
           {formatStatus(ignite?.membership_status)}
         </span>
       </div>
@@ -705,207 +727,133 @@ function AccountTable({
   onOpenBankedTc: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
-
-  const isActive =
-    ignite?.membership_status?.toLowerCase() === "active";
-
-  const availableBankedTc = toNumber(
-    ignite?.tc_bank_available
-  );
-
+  const isActive = ignite?.membership_status?.toLowerCase() === "active";
+  const availableBankedTc = toNumber(ignite?.tc_bank_available);
   const details = [
-    {
-      label: "Placement leg",
-      value: ignite?.placement_leg ?? "N/A",
-      color: NAVY,
-    },
-    {
-      label: "Total steps",
-      value: ignite?.total_steps ?? 0,
-      color: INDIGO,
-    },
-    {
-      label: "Left CV",
-      value: formatNumber(ignite?.total_cv_left),
-      color: EMERALD,
-    },
-    {
-      label: "Right CV",
-      value: formatNumber(ignite?.total_cv_right),
-      color: BRASS,
-    },
+    { label: "Placement leg", value: ignite?.placement_leg ?? "N/A" },
+    { label: "Total steps", value: ignite?.total_steps ?? 0 },
+    { label: "Left CV", value: formatNumber(ignite?.total_cv_left) },
+    { label: "Right CV", value: formatNumber(ignite?.total_cv_right) },
     {
       label: "Floating CV left",
       value: formatNumber(ignite?.floating_cv_left),
-      color: INDIGO,
     },
     {
       label: "Floating CV right",
       value: formatNumber(ignite?.floating_cv_right),
-      color: BRASS,
     },
-    {
-      label: "CV left",
-      value: formatNumber(ignite?.cv_left),
-      color: EMERALD,
-    },
-    {
-      label: "CV right",
-      value: formatNumber(ignite?.cv_right),
-      color: NAVY,
-    },
-    {
-      label: "Base rank",
-      value: ignite?.base_rank_no ?? 0,
-      color: INDIGO,
-    },
-    {
-      label: "Eligible rank",
-      value: ignite?.eligible_rank_no ?? 0,
-      color: EMERALD,
-    },
-    {
-      label: "Qualified at",
-      value: ignite?.qualified_at ?? "N/A",
-      color: NAVY,
-    },
-    {
-      label: "Member ID",
-      value: ignite?.member_id ?? "N/A",
-      color: BRASS,
-    },
+    { label: "CV left", value: formatNumber(ignite?.cv_left) },
+    { label: "CV right", value: formatNumber(ignite?.cv_right) },
+    { label: "Base rank", value: ignite?.base_rank_no ?? 0 },
+    { label: "Eligible rank", value: ignite?.eligible_rank_no ?? 0 },
+    { label: "Qualified at", value: ignite?.qualified_at ?? "N/A" },
+    { label: "Member ID", value: ignite?.member_id ?? "N/A" },
   ];
-
   return (
-    <section className={`${CARD} self-start p-4 sm:p-5`}>
-      <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
-        <SectionTitle>My account</SectionTitle>
-
-        <div className="flex flex-wrap items-center gap-2">
-          {availableBankedTc > 0 && ignite?.ba_id && (
-            <button
-              type="button"
-              onClick={onOpenBankedTc}
-              className="inline-flex h-9 items-center justify-center gap-2 rounded-[10px] bg-[#0E1B3D] px-3 text-[11px] font-bold text-white shadow-sm transition-all hover:bg-[#1d315f] active:scale-[0.97] sm:h-10 sm:px-3.5 sm:text-[12px]"
-            >
-              <HandCoins size={15} />
-
-              <span>Place Banked TC</span>
-
-              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-white px-1 text-[10px] font-black text-[#0E1B3D]">
-                {availableBankedTc}
-              </span>
-            </button>
-          )}
-
-          <span className="shrink-0 rounded-full bg-[#EAF3FF] px-2.5 py-1 text-[10px] font-bold text-[#3955A6] sm:px-3 sm:text-[11px]">
-            {ignite?.is_placed ? "Placed" : "Account details"}
-          </span>
+    <section className={`${CARD} dashboard-card h-full p-4 sm:p-5`}>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <SectionTitle>Account details</SectionTitle>
+          <p className="ml-11 mt-1 text-[11px] leading-5 text-[#888888]">
+            Your distributor placement and account information
+          </p>
         </div>
+        {ignite?.is_placed && (
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-[#E6E6E6] bg-[#F7F7F7] px-2.5 py-1 text-[10px] font-semibold text-[#505050]">
+            <Check size={12} />
+            Placed
+          </span>
+        )}
       </div>
-
-      <div className="mt-4">
-        <div className="grid grid-cols-[minmax(0,1.25fr)_minmax(28px,0.55fr)_minmax(0,1fr)_24px] items-center gap-1 rounded-[10px] bg-[#f7f8fa] px-2 py-2.5 sm:gap-2 sm:px-3">
-          <span className="min-w-0 break-words text-[10px] font-bold text-[#8a92a6] sm:text-[11.5px]">
-            Account ID
-          </span>
-
-          <span className="min-w-0 break-words text-[10px] font-bold text-[#8a92a6] sm:text-[11.5px]">
-            Rank
-          </span>
-
-          <span className="min-w-0 break-words text-[10px] font-bold text-[#8a92a6] sm:text-[11.5px]">
-            Status
-          </span>
-
-          <span aria-hidden="true" />
+      <div className="mt-5 overflow-hidden rounded-[14px] border border-[#EBEBEB]">
+        <div className="grid grid-cols-[minmax(0,1.25fr)_minmax(0,.6fr)_minmax(0,.85fr)_16px] items-center gap-2 bg-[#F7F7F7] px-3 py-3 text-[10px] font-semibold uppercase tracking-[.06em] text-[#868686] sm:px-4">
+          <span>Account ID</span>
+          <span>Rank</span>
+          <span>Status</span>
+          <span />
         </div>
-
         {ignite ? (
-          <div className="mt-1 flex min-w-0 flex-col">
+          <>
             <button
               type="button"
               aria-expanded={expanded}
-              onClick={() => setExpanded((prev) => !prev)}
-              className="group grid min-h-14 w-full min-w-0 grid-cols-[minmax(0,1.25fr)_minmax(28px,0.55fr)_minmax(0,1fr)_24px] items-center gap-1 rounded-[10px] px-2 text-left transition-colors hover:bg-[#f7f8fa] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3955A6]/30 sm:gap-2 sm:px-3"
+              onClick={() => setExpanded((v) => !v)}
+              className="group grid min-h-[72px] w-full grid-cols-[minmax(0,1.25fr)_minmax(0,.6fr)_minmax(0,.85fr)_16px] items-center gap-2 bg-white px-3 text-left transition-colors hover:bg-[#FBFBFB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#333333] sm:px-4"
             >
-              <span className="min-w-0 break-all pr-1 text-[11px] font-bold text-[#101828] sm:text-[12.5px]">
+              <span className="min-w-0 break-all text-[11px] font-bold text-[#252525] sm:text-[13px]">
                 {ignite.ba_id || "N/A"}
               </span>
-
-              <span className="min-w-0 break-words text-[12px] font-bold text-[#3955A6] sm:text-[13px]">
+              <span className="dashboard-number text-[13px] font-bold text-[#242424] sm:text-[15px]">
                 {ignite.rank_no ?? 0}
               </span>
-
               <span
-                className={`flex min-w-0 items-center gap-1 text-[10px] font-semibold sm:gap-2 sm:text-[12px] ${
-                  isActive ? "text-[#1f9d6b]" : "text-[#667085]"
-                }`}
+                className={`min-w-0 break-words text-[10px] font-semibold sm:text-[11px] ${isActive ? "text-[#25845F]" : "text-[#858585]"}`}
               >
                 <span
-                  className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-                    isActive ? "bg-[#1f9d6b]" : "bg-[#98a2b3]"
-                  }`}
+                  className={`mr-1.5 inline-block h-1.5 w-1.5 rounded-full align-middle ${isActive ? "bg-[#25845F]" : "bg-[#AFAFAF]"}`}
                 />
-
-                <span className="min-w-0 break-words">
-                  {formatStatus(ignite.membership_status)}
-                </span>
+                {formatStatus(ignite.membership_status)}
               </span>
-
-              <span className="flex w-6 items-center justify-center text-[#8a92a6]">
-                <ChevronDown
-                  size={16}
-                  className={`transition-transform duration-300 motion-reduce:transition-none ${
-                    expanded
-                      ? "rotate-180 text-[#0E1B3D]"
-                      : "group-hover:text-[#0E1B3D]"
-                  }`}
-                />
-              </span>
+              <ChevronDown
+                size={16}
+                className={`text-[#777777] transition-transform ${expanded ? "rotate-180" : ""}`}
+              />
             </button>
-
             <AnimatePresence initial={false}>
               {expanded && (
                 <motion.div
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: "auto", opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
-                  transition={{
-                    duration: 0.3,
-                    ease: "easeInOut",
-                  }}
-                  className="overflow-hidden"
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden border-t border-[#EBEBEB]"
                 >
-                  <div className="mt-2 rounded-[14px] border border-[#eef0f4] bg-[#f9fafb] p-3 sm:p-4">
-                    <div className="grid grid-cols-2 gap-x-3 gap-y-3 sm:grid-cols-3 sm:gap-x-4">
-                      {details.map((item) => (
-                        <div
-                          key={item.label}
-                          className="min-w-0 rounded-[10px] border border-[#eef0f4] bg-white px-3 py-2.5"
-                        >
-                          <p className="break-words text-[10px] font-semibold leading-4 text-[#8a92a6] sm:text-[11px]">
-                            {item.label}
-                          </p>
-
-                          <p
-                            className="mt-1 break-words text-[12.5px] font-bold sm:text-[13.5px]"
-                            style={{ color: item.color }}
-                          >
-                            {item.value}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
+                  <div className="grid grid-cols-2 gap-2.5 bg-[#FAFAFA] p-3 sm:grid-cols-3 sm:p-4">
+                    {details.map((item) => (
+                      <div
+                        key={item.label}
+                        className="min-w-0 rounded-[11px] border border-[#EAEAEA] bg-white p-3"
+                      >
+                        <p className="text-[10px] leading-4 text-[#8A8A8A]">
+                          {item.label}
+                        </p>
+                        <p className="dashboard-number mt-1 break-all text-[12px] font-bold text-[#252525] sm:text-[13px]">
+                          {item.value}
+                        </p>
+                      </div>
+                    ))}
                   </div>
                 </motion.div>
               )}
             </AnimatePresence>
-          </div>
+          </>
         ) : (
-          <p className="py-6 text-center text-[13px] text-[#667085]">
+          <p className="p-6 text-center text-[12px] text-[#929292]">
             Account information is not available.
           </p>
+        )}
+      </div>
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-[13px] border border-[#ECECEC] bg-[#FBFBFB] p-3 sm:p-3.5">
+        <div>
+          <p className="text-[11px] font-semibold text-[#343434]">
+            Banked TC available
+          </p>
+          <p className="dashboard-number mt-1 text-[21px] font-bold tracking-[-.04em] text-[#191919]">
+            {formatNumber(availableBankedTc)}
+          </p>
+        </div>
+        {availableBankedTc > 0 && Boolean(ignite?.ba_id) ? (
+          <button
+            type="button"
+            onClick={onOpenBankedTc}
+            className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-[11px] bg-[#4569C8] px-4 text-[12px] font-semibold text-white shadow-[0_6px_14px_rgba(0,0,0,.12)] transition-all hover:bg-[#3455B4] active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#333333]/30 focus-visible:ring-offset-2"
+          >
+            <HandCoins size={15} /> Place Banked TC <ArrowRight size={14} />
+          </button>
+        ) : (
+          <span className="rounded-full border border-[#E8E8E8] bg-white px-3 py-1.5 text-[10px] font-medium text-[#888888]">
+            No TC to place
+          </span>
         )}
       </div>
     </section>
@@ -938,157 +886,106 @@ function BankedTcModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#0E1B3D]/55 px-4 py-6 backdrop-blur-[3px]"
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4 backdrop-blur-[4px]"
           onClick={() => !isLoading && onClose()}
         >
           <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.96 }}
+            initial={{ opacity: 0, y: 16, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.96 }}
-            transition={{ duration: 0.22, ease: "easeOut" }}
+            exit={{ opacity: 0, y: 12, scale: 0.98 }}
+            transition={{ duration: 0.2 }}
             role="dialog"
             aria-modal="true"
             aria-labelledby="banked-tc-title"
-            onClick={(event) => event.stopPropagation()}
-            className="w-full max-w-[440px] overflow-hidden rounded-[20px] border border-[#e7e9ee] bg-white shadow-[0_25px_70px_rgba(0,0,0,0.2)]"
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-[460px] overflow-hidden rounded-[22px] border border-[#E8E8E8] bg-white shadow-[0_30px_100px_rgba(0,0,0,.25)]"
           >
-            {/* Header */}
-
-            <div className="relative overflow-hidden border-b border-[#eef0f4] px-5 py-5 sm:px-6">
-              <div
-                className="pointer-events-none absolute -right-10 -top-12 h-36 w-36 rounded-full opacity-[0.08] blur-2xl"
-                style={{ backgroundColor: BRASS }}
-              />
-
-              <div className="relative flex items-start justify-between gap-3">
-                <div className="flex min-w-0 items-center gap-3">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] bg-[#f8f1e4] text-[#B8935A]">
-                    <HandCoins size={23} />
-                  </div>
-
-                  <div className="min-w-0">
+            <div className="border-b border-[#EBEBEB] px-5 py-5 sm:px-6">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px] bg-[#607CDA] text-white">
+                    <HandCoins size={20} />
+                  </span>
+                  <div>
                     <h3
                       id="banked-tc-title"
-                      className="text-[17px] font-black text-[#101828] sm:text-[19px]"
+                      className="text-[18px] font-bold tracking-[-.035em] text-[#191919]"
                     >
                       Place Banked TC
                     </h3>
-
-                    <p className="mt-1 text-[11px] text-[#667085] sm:text-[12px]">
-                      Choose your preferred placement side
+                    <p className="mt-1 text-[11px] text-[#888888]">
+                      Choose the placement side for your banked TC
                     </p>
                   </div>
                 </div>
-
                 <button
                   type="button"
                   onClick={onClose}
                   disabled={isLoading}
-                  aria-label="Close popup"
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#f2f4f7] text-[#667085] transition-colors hover:bg-[#e4e7ec] disabled:opacity-50"
+                  aria-label="Close placement dialog"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] border border-[#E9E9E9] text-[#666666] hover:bg-[#F5F5F5] disabled:opacity-50"
                 >
-                  <span className="text-[20px] leading-none">
-                    ×
-                  </span>
+                  <span className="text-[21px] leading-none">×</span>
                 </button>
               </div>
-
-              <div className="relative mt-4 flex items-center justify-between rounded-[11px] border border-[#dbe6fb] bg-[#f4f8ff] px-3.5 py-3">
+              <div className="mt-5 flex items-center justify-between rounded-[13px] border border-[#EBEBEB] bg-[#FAFAFA] px-4 py-3">
                 <div>
-                  <p className="text-[11px] font-semibold text-[#667085]">
-                    Available Banked TC
+                  <p className="text-[10px] font-medium text-[#828282]">
+                    Available balance
                   </p>
-
-                  <p className="mt-0.5 text-[12px] font-bold text-[#3955A6]">
-                    Select a side to place your TC
+                  <p className="text-[12px] font-semibold text-[#262626]">
+                    Banked TC available for placement
                   </p>
                 </div>
-
-                <span className="flex h-9 min-w-9 items-center justify-center rounded-[10px] bg-white px-2 text-[17px] font-black text-[#3955A6] shadow-sm">
+                <span className="dashboard-number text-[25px] font-bold text-[#191919]">
                   {availableCount}
                 </span>
               </div>
             </div>
-
-            {/* Side selection */}
-
             <div className="p-5 sm:p-6">
-              <p className="mb-3 text-[12px] font-bold text-[#475467]">
-                Select placement side
+              <p className="mb-3 text-[12px] font-semibold text-[#353535]">
+                Select a leg to place TC
               </p>
-
               <div className="grid grid-cols-2 gap-3">
-                {/* LEFT SIDE - 1 */}
-
-                <button
-                  type="button"
-                  disabled={isLoading}
-                  onClick={() => onSelectSide(1)}
-                  className="group flex min-h-[125px] flex-col items-center justify-center rounded-[15px] border border-[#ccebdc] bg-[#f3fbf6] px-3 py-4 transition-all hover:border-[#1f9d6b] hover:bg-[#eaf7f0] hover:shadow-[0_5px_18px_rgba(31,157,107,0.10)] disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-[#1f9d6b] shadow-sm ring-1 ring-[#d6eee1]">
-                    {isLoading && pendingSide === 1 ? (
-                      <Loader2
-                        size={19}
-                        className="animate-spin"
-                      />
-                    ) : (
-                      <span className="text-[17px] font-black">
-                        1
-                      </span>
-                    )}
-                  </span>
-
-                  <span className="mt-3 text-[14px] font-black text-[#18794e]">
-                    Left Side
-                  </span>
-
-                
-                </button>
-
-                {/* RIGHT SIDE - 2 */}
-
-                <button
-                  type="button"
-                  disabled={isLoading}
-                  onClick={() => onSelectSide(2)}
-                  className="group flex min-h-[125px] flex-col items-center justify-center rounded-[15px] border border-[#dbe6fb] bg-[#f4f8ff] px-3 py-4 transition-all hover:border-[#3955A6] hover:bg-[#eaf3ff] hover:shadow-[0_5px_18px_rgba(57,85,166,0.10)] disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-[#3955A6] shadow-sm ring-1 ring-[#dbe6fb]">
-                    {isLoading && pendingSide === 2 ? (
-                      <Loader2
-                        size={19}
-                        className="animate-spin"
-                      />
-                    ) : (
-                      <span className="text-[17px] font-black">
-                        2
-                      </span>
-                    )}
-                  </span>
-
-                  <span className="mt-3 text-[14px] font-black text-[#3955A6]">
-                    Right Side
-                  </span>
-
-                 
-                </button>
+                {([1, 2] as const).map((side) => (
+                  <button
+                    key={side}
+                    type="button"
+                    disabled={isLoading}
+                    onClick={() => onSelectSide(side)}
+                    className="group flex min-h-[134px] flex-col items-center justify-center rounded-[15px] border border-[#DDE6F7] bg-[#F4F7FF] px-3 py-4 transition-all hover:border-[#6589E4] hover:bg-[#EAF1FF] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <span className="flex h-11 w-11 items-center justify-center rounded-[12px] bg-[#607CDA] text-[16px] font-bold text-white">
+                      {isLoading && pendingSide === side ? (
+                        <Loader2 size={18} className="animate-spin" />
+                      ) : side === 1 ? (
+                        "L"
+                      ) : (
+                        "R"
+                      )}
+                    </span>
+                    <span className="mt-3 text-[13px] font-bold text-[#252525]">
+                      {side === 1 ? "Left leg" : "Right leg"}
+                    </span>
+                    <span className="mt-1 text-[10px] text-[#888888]">
+                      Place on {side === 1 ? "left" : "right"} side
+                    </span>
+                  </button>
+                ))}
               </div>
-
+              <div className="mt-4 flex items-start gap-2 rounded-[11px] border border-[#EAEAEA] bg-[#FBFBFB] p-3">
+                <Info size={15} className="mt-0.5 shrink-0 text-[#888888]" />
+                <p className="text-[10.5px] leading-[18px] text-[#777777]">
+                  Placement is submitted immediately. Please verify the correct
+                  side before selecting.
+                </p>
+              </div>
               {isLoading && (
-                <div className="mt-4 flex items-center justify-center gap-2 rounded-[10px] bg-[#f7f8fa] px-3 py-3">
-                  <Loader2
-                    size={14}
-                    className="animate-spin text-[#3955A6]"
-                  />
-
-                  <p className="text-[11px] font-semibold text-[#667085]">
-                    Placing your Banked TC...
-                  </p>
+                <div className="mt-3 flex items-center justify-center gap-2 text-[11px] text-[#5F5F5F]">
+                  <Loader2 size={14} className="animate-spin" />
+                  Placing your TC...
                 </div>
               )}
-
-            
             </div>
           </motion.div>
         </motion.div>
@@ -1101,48 +998,30 @@ function BankedTcModal({
 // Recent activity
 // --------------------------------------------------
 
-const MAX_VISIBLE_ACTIVITY = 2;
-const ACTIVITY_ITEM_HEIGHT = 76;
-
-function RecentActivity({
-  activity,
-}: {
-  activity: DashboardActivity[];
-}) {
+const MAX_VISIBLE_ACTIVITY = 4;
+const ACTIVITY_ITEM_HEIGHT = 70;
+function RecentActivity({ activity }: { activity: DashboardActivity[] }) {
   const hasOverflow = activity.length > MAX_VISIBLE_ACTIVITY;
-
   return (
-    <section className={`${CARD} p-4 sm:p-5`}>
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2.5">
-          <span
-            className="h-5 w-1 shrink-0 rounded-full"
-            style={{ backgroundColor: BRASS }}
-          />
-
-          <h3 className="text-[15px] font-black text-[#101828] sm:text-[16px]">
-            Recent activity
-          </h3>
+    <section className={`${CARD} dashboard-card h-full p-4 sm:p-5`}>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <SectionTitle>Recent activity</SectionTitle>
+          <p className="ml-11 mt-1 text-[11px] text-[#929292]">
+            A quick timeline of your account updates
+          </p>
         </div>
-
-        <Activity
-          size={17}
-          className="shrink-0"
-          style={{ color: NAVY }}
-        />
+        <span className="flex h-9 w-9 items-center justify-center rounded-[11px] bg-[#F7F7F7] text-[#737373]">
+          <Activity size={17} />
+        </span>
       </div>
-
       {activity.length > 0 ? (
         <div
-          className={`thin-scroll mt-3 ${
-            hasOverflow ? "overflow-y-auto pr-1" : ""
-          }`}
+          className={`thin-scroll mt-4 ${hasOverflow ? "overflow-y-auto pr-1" : ""}`}
           style={
             hasOverflow
               ? {
-                  maxHeight: `${
-                    MAX_VISIBLE_ACTIVITY * ACTIVITY_ITEM_HEIGHT
-                  }px`,
+                  maxHeight: `${MAX_VISIBLE_ACTIVITY * ACTIVITY_ITEM_HEIGHT}px`,
                 }
               : undefined
           }
@@ -1150,27 +1029,25 @@ function RecentActivity({
           {activity.map((item, index) => (
             <div
               key={`${item.type}-${item.created_timestamp}-${index}`}
-              className={`flex min-w-0 gap-3 py-3 ${
-                index !== activity.length - 1
-                  ? "border-b border-[#f0f2f5]"
-                  : ""
-              }`}
+              className="relative flex gap-3 pb-4 last:pb-0"
             >
-              <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] bg-[#EAF3FF] text-[#3955A6]">
-                <Activity size={15} />
+              <div className="relative flex shrink-0 flex-col items-center">
+                <span className="z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] border border-[#E9E9E9] bg-[#FAFAFA] text-[#454545]">
+                  <Activity size={15} />
+                </span>
+                {index !== activity.length - 1 && (
+                  <span className="absolute bottom-0 top-10 w-px bg-[#EAEAEA]" />
+                )}
               </div>
-
-              <div className="min-w-0 flex-1">
-                <p className="break-words text-[12px] font-semibold leading-5 text-[#101828] sm:text-[12.5px]">
+              <div className="min-w-0 flex-1 border-b border-[#F0F0F0] pb-3 last:border-0">
+                <p className="break-words text-[12px] font-semibold leading-5 text-[#303030]">
                   {item.event}
                 </p>
-
-                <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <span className="max-w-full break-words rounded-full bg-[#f2f4f7] px-2 py-0.5 text-[10px] font-bold text-[#667085]">
+                <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                  <span className="rounded-[6px] bg-[#F5F5F5] px-2 py-0.5 text-[10px] font-medium text-[#737373]">
                     {formatStatus(item.type)}
                   </span>
-
-                  <span className="break-words text-[10px] text-[#8a92a6] sm:text-[11px]">
+                  <span className="text-[10px] text-[#9C9C9C]">
                     {item.created_at}
                   </span>
                 </div>
@@ -1179,9 +1056,15 @@ function RecentActivity({
           ))}
         </div>
       ) : (
-        <div className="mt-4 rounded-[14px] bg-[#f7f8fa] px-3 py-6 text-center">
-          <p className="text-[13px] font-semibold text-[#667085]">
-            No recent activity found.
+        <div className="mt-4 flex min-h-[185px] flex-col items-center justify-center rounded-[14px] border border-dashed border-[#E8E8E8] bg-[#FBFBFB] p-5 text-center">
+          <span className="flex h-11 w-11 items-center justify-center rounded-[13px] bg-white text-[#989898] ring-1 ring-[#EBEBEB]">
+            <Activity size={19} />
+          </span>
+          <p className="mt-3 text-[12px] font-semibold text-[#454545]">
+            No recent activity
+          </p>
+          <p className="mt-1 text-[11px] text-[#999999]">
+            Your latest account updates will show here.
           </p>
         </div>
       )}
@@ -1193,103 +1076,90 @@ function RecentActivity({
 // Latest order
 // --------------------------------------------------
 
-function LatestOrderSection({
-  order,
-}: {
-  order: DashboardLatestOrder | null;
-}) {
+function LatestOrderSection({ order }: { order: DashboardLatestOrder | null }) {
   const reference =
-    order?.order_reference ||
-    order?.order_number ||
-    order?.reference;
-
+    order?.order_reference || order?.order_number || order?.reference;
+  const orderData = order as
+    | (DashboardLatestOrder & {
+        total_payable?: number | string;
+        order_date?: string;
+      })
+    | null;
+  const amount = order?.total_amount ?? orderData?.total_payable;
+  const status = order?.status?.toLowerCase() ?? "";
+  const statusStyle =
+    status.includes("deliver") ||
+    status.includes("confirm") ||
+    status.includes("complete")
+      ? "border-[#D8EEE0] bg-[#F1FAF5] text-[#21815A]"
+      : status.includes("fail") || status.includes("cancel")
+        ? "border-[#F1D6D6] bg-[#FFF5F5] text-[#B45454]"
+        : "border-[#E8E8E8] bg-[#F7F7F7] text-[#737373]";
   return (
-    <section className={`${CARD} p-4 sm:p-5`}>
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2.5">
-          <span
-            className="h-5 w-1 shrink-0 rounded-full"
-            style={{ backgroundColor: BRASS }}
-          />
-
-          <h3 className="text-[15px] font-black text-[#101828] sm:text-[16px]">
-            Latest order
-          </h3>
+    <section className={`${CARD} dashboard-card h-full p-4 sm:p-5`}>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <SectionTitle>Latest order</SectionTitle>
+          <p className="ml-11 mt-1 text-[11px] text-[#929292]">
+            Your most recent purchase
+          </p>
         </div>
-
-        <ShoppingBag
-          size={17}
-          className="shrink-0"
-          style={{ color: NAVY }}
-        />
+        <span className="flex h-9 w-9 items-center justify-center rounded-[11px] bg-[#F7F7F7] text-[#737373]">
+          <ShoppingBag size={17} />
+        </span>
       </div>
-
       {order ? (
-        <div className="mt-4 space-y-4">
-          <div className="min-w-0 rounded-[14px] bg-[#f7f8fa] p-3.5">
-            <p className="text-[11px] font-semibold text-[#8a92a6]">
-              Order reference
-            </p>
-
-            <p className="mt-1 break-all text-[13px] font-bold text-[#101828] sm:text-[14px]">
-              {reference || "Order details available"}
-            </p>
+        <div className="mt-5">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-[14px] border border-[#EDEDED] bg-[#FAFAFA] p-3.5 sm:p-4">
+            <div className="min-w-0">
+              <p className="text-[10px] font-medium uppercase tracking-[.1em] text-[#909090]">
+                Order reference
+              </p>
+              <p className="dashboard-number mt-1 break-all text-[13px] font-bold text-[#262626] sm:text-[14px]">
+                {reference || "Order details available"}
+              </p>
+            </div>
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] bg-white text-[#555555] ring-1 ring-[#EAEAEA]">
+              <PackageCheck size={17} />
+            </span>
           </div>
-
-          {(() => {
-            const orderData = order as DashboardLatestOrder & {
-              total_payable?: number | string;
-              order_date?: string;
-            };
-
-            const amount =
-              order.total_amount ?? orderData.total_payable;
-
-            return (
-              <>
-                <div className="flex min-w-0 flex-wrap items-end justify-between gap-3">
-                  {amount !== undefined && (
-                    <div className="min-w-0">
-                      <p className="text-[11px] font-semibold text-[#8a92a6]">
-                        Order amount
-                      </p>
-
-                      <p className="mt-1 break-words text-[22px] font-black leading-none text-[#101828]">
-                        ₹{formatNumber(amount)}
-                      </p>
-                    </div>
-                  )}
-
-                  {order.status && (
-                    <span className="inline-flex max-w-full items-center gap-1.5 break-words rounded-full bg-[#eaf7f0] px-3 py-1 text-[11px] font-bold text-[#1f9d6b]">
-                      <span className="h-1.5 w-1.5 rounded-full bg-[#1f9d6b]" />
-
-                      {formatStatus(order.status)}
-                    </span>
-                  )}
-                </div>
-
-                {(order.created_at || orderData.order_date) && (
-                  <p className="break-words border-t border-[#f0f2f5] pt-3 text-[11px] text-[#8a92a6]">
-                    {order.created_at || orderData.order_date}
-                  </p>
-                )}
-              </>
-            );
-          })()}
+          <div className="mt-5 flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-medium text-[#878787]">
+                Order value
+              </p>
+              <p className="dashboard-number mt-1.5 break-words text-[29px] font-bold tracking-[-.055em] text-[#181818] sm:text-[33px]">
+                {amount == null ? "—" : formatCurrency(amount, "INR")}
+              </p>
+            </div>
+            {order.status && (
+              <span
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[10px] font-semibold ${statusStyle}`}
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-current opacity-65" />
+                {formatStatus(order.status)}
+              </span>
+            )}
+          </div>
+          {(order.created_at || orderData?.order_date) && (
+            <div className="mt-5 flex items-center gap-2 border-t border-[#F0F0F0] pt-3.5 text-[11px] text-[#8C8C8C]">
+              <Clock3 size={13} />
+              <span className="break-words">
+                {order.created_at || orderData?.order_date}
+              </span>
+            </div>
+          )}
         </div>
       ) : (
-        <div className="mt-4 rounded-[14px] bg-[#f7f8fa] px-3 py-7 text-center sm:px-4">
-          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-white">
-            <ShoppingBag size={18} className="text-[#98a2b3]" />
-          </div>
-
-          <p className="mt-3 text-[13px] font-semibold text-[#667085]">
-            No orders placed yet.
+        <div className="mt-4 flex min-h-[185px] flex-col items-center justify-center rounded-[14px] border border-dashed border-[#E8E8E8] bg-[#FBFBFB] p-5 text-center">
+          <span className="flex h-11 w-11 items-center justify-center rounded-[13px] bg-white text-[#989898] ring-1 ring-[#EBEBEB]">
+            <ShoppingBag size={19} />
+          </span>
+          <p className="mt-3 text-[12px] font-semibold text-[#454545]">
+            No orders placed yet
           </p>
-
-          <p className="mt-1 text-[11px] text-[#98a2b3]">
-            Your latest order will appear here.
+          <p className="mt-1 text-[11px] text-[#999999]">
+            Your recent orders will appear here.
           </p>
         </div>
       )}
@@ -1348,7 +1218,7 @@ function parseCalendarDate(value?: string | null): Date | null {
   const date = new Date(
     Number(match[1]),
     Number(match[2]) - 1,
-    Number(match[3])
+    Number(match[3]),
   );
 
   return Number.isNaN(date.getTime()) ? null : date;
@@ -1372,9 +1242,7 @@ function formatDateObject(date: Date): string {
 }
 
 function getCalendarYear(calendar?: SalesCalendar): number {
-  const calendarYear = Number(
-    calendar?.current_week?.year ?? calendar?.year
-  );
+  const calendarYear = Number(calendar?.current_week?.year ?? calendar?.year);
 
   return Number.isFinite(calendarYear) && calendarYear > 0
     ? calendarYear
@@ -1392,7 +1260,7 @@ function getCurrentCalendarWeek(calendar?: SalesCalendar): number {
  */
 function buildCvWeekOptions(
   year: number,
-  calendar?: SalesCalendar
+  calendar?: SalesCalendar,
 ): Array<{
   value: number;
   label: string;
@@ -1401,27 +1269,20 @@ function buildCvWeekOptions(
   const calendarYear = getCalendarYear(calendar);
   const apiWeekNo = getCurrentCalendarWeek(calendar);
 
-  const apiWeekStart = parseCalendarDate(
-    calendar?.current_week?.start
-  );
+  const apiWeekStart = parseCalendarDate(calendar?.current_week?.start);
 
   let firstWeekStart: Date;
 
   if (year === calendarYear && apiWeekStart) {
     firstWeekStart = new Date(apiWeekStart);
 
-    firstWeekStart.setDate(
-      firstWeekStart.getDate() - (apiWeekNo - 1) * 7
-    );
+    firstWeekStart.setDate(firstWeekStart.getDate() - (apiWeekNo - 1) * 7);
   } else {
     firstWeekStart = new Date(year, 0, 1);
 
-    const daysUntilSaturday =
-      (6 - firstWeekStart.getDay() + 7) % 7;
+    const daysUntilSaturday = (6 - firstWeekStart.getDay() + 7) % 7;
 
-    firstWeekStart.setDate(
-      firstWeekStart.getDate() + daysUntilSaturday
-    );
+    firstWeekStart.setDate(firstWeekStart.getDate() + daysUntilSaturday);
   }
 
   const options: Array<{
@@ -1433,9 +1294,7 @@ function buildCvWeekOptions(
   for (let weekNo = 1; weekNo <= 53; weekNo += 1) {
     const startDate = new Date(firstWeekStart);
 
-    startDate.setDate(
-      startDate.getDate() + (weekNo - 1) * 7
-    );
+    startDate.setDate(startDate.getDate() + (weekNo - 1) * 7);
 
     if (startDate.getFullYear() !== year) break;
 
@@ -1443,9 +1302,7 @@ function buildCvWeekOptions(
     endDate.setDate(endDate.getDate() + 6);
 
     const isApiCurrentWeek =
-      year === calendarYear &&
-      weekNo === apiWeekNo &&
-      Boolean(apiWeekStart);
+      year === calendarYear && weekNo === apiWeekNo && Boolean(apiWeekStart);
 
     const apiEndDate = isApiCurrentWeek
       ? parseCalendarDate(calendar?.current_week?.end)
@@ -1457,7 +1314,7 @@ function buildCvWeekOptions(
       value: weekNo,
       label: `Week ${weekNo}`,
       description: `${formatDateObject(startDate)} – ${formatDateObject(
-        finalEndDate
+        finalEndDate,
       )} ${year}`,
     });
   }
@@ -1468,19 +1325,14 @@ function buildCvWeekOptions(
 function getCvYearOptions(calendar?: SalesCalendar): number[] {
   const currentYear = getCalendarYear(calendar);
 
-  return Array.from(
-    { length: 6 },
-    (_, index) => currentYear - index
-  );
+  return Array.from({ length: 6 }, (_, index) => currentYear - index);
 }
 
 // --------------------------------------------------
 // Pairings metrics
 // --------------------------------------------------
 
-function getPairingsMetrics(
-  response: any
-): Record<string, any> | null {
+function getPairingsMetrics(response: any): Record<string, any> | null {
   if (!response) return null;
 
   const root = response?.data ?? response;
@@ -1619,21 +1471,13 @@ function SearchableDropdown<T extends string | number>({
     document.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      document.removeEventListener(
-        "pointerdown",
-        handlePointerDown
-      );
+      document.removeEventListener("pointerdown", handlePointerDown);
 
-      document.removeEventListener(
-        "keydown",
-        handleKeyDown
-      );
+      document.removeEventListener("keydown", handleKeyDown);
     };
   }, [open]);
 
-  const selectedOption = options.find(
-    (option) => option.value === value
-  );
+  const selectedOption = options.find((option) => option.value === value);
 
   const normalizedQuery = query.trim().toLowerCase();
 
@@ -1643,13 +1487,13 @@ function SearchableDropdown<T extends string | number>({
       .includes(normalizedQuery);
 
   const showFeaturedOption = Boolean(
-    featuredOption && matchesQuery(featuredOption)
+    featuredOption && matchesQuery(featuredOption),
   );
 
   const filteredOptions = options.filter(
     (option) =>
       matchesQuery(option) &&
-      !(featuredOption && option.value === featuredOption.value)
+      !(featuredOption && option.value === featuredOption.value),
   );
 
   const chooseOption = (option: DropdownOption<T>) => {
@@ -1671,16 +1515,14 @@ function SearchableDropdown<T extends string | number>({
       <button
         id={`${id}-trigger`}
         type="button"
-        aria-label={`${label}: ${
-          selectedOption?.label ?? "Select an option"
-        }`}
+        aria-label={`${label}: ${selectedOption?.label ?? "Select an option"}`}
         aria-labelledby={`${id}-label ${id}-value`}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={`${id}-listbox`}
         disabled={disabled}
         onClick={() => setOpen((previous) => !previous)}
-        className="group flex h-12 w-full min-w-0 items-center justify-between gap-3 rounded-[13px] border border-[#e3e8f0] bg-white px-3.5 text-left outline-none transition-all hover:border-[#aebbd0] hover:bg-[#fcfdff] focus-visible:border-[#3955A6] focus-visible:ring-4 focus-visible:ring-[#3955A6]/10 disabled:cursor-not-allowed disabled:bg-[#f7f8fa] disabled:text-[#98a2b3] sm:px-4"
+        className="group flex h-12 w-full min-w-0 items-center justify-between gap-3 rounded-[13px] border border-[#E4E4E4] bg-white px-3.5 text-left outline-none transition-all hover:border-[#ABABAB] hover:bg-[#FCFCFC] focus-visible:border-[#242424] focus-visible:ring-4 focus-visible:ring-[#242424]/10 disabled:cursor-not-allowed disabled:bg-[#f7f8fa] disabled:text-[#98a2b3] sm:px-4"
       >
         <span className="flex min-w-0 flex-1 flex-col">
           <span
@@ -1699,8 +1541,8 @@ function SearchableDropdown<T extends string | number>({
 
         <ChevronDown
           size={16}
-          className={`shrink-0 text-[#7c879b] transition-transform duration-200 group-hover:text-[#0E1B3D] ${
-            open ? "rotate-180 text-[#0E1B3D]" : ""
+          className={`shrink-0 text-[#7c879b] transition-transform duration-200 group-hover:text-[#262626] ${
+            open ? "rotate-180 text-[#262626]" : ""
           }`}
         />
       </button>
@@ -1712,14 +1554,11 @@ function SearchableDropdown<T extends string | number>({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -5, scale: 0.99 }}
             transition={{ duration: 0.16, ease: "easeOut" }}
-            className="absolute left-0 top-[calc(100%+8px)] z-[80] w-full min-w-[220px] overflow-hidden rounded-[16px] border border-[#e3e8f0] bg-white shadow-[0_16px_44px_rgba(14,27,61,0.16)]"
+            className="absolute left-0 top-[calc(100%+8px)] z-[80] w-full min-w-[220px] overflow-hidden rounded-[16px] border border-[#E4E4E4] bg-white shadow-[0_18px_45px_rgba(0,0,0,0.13)]"
           >
             <div className="border-b border-[#eef1f5] p-3">
-              <div className="flex h-10 items-center gap-2.5 rounded-[11px] border border-[#e6eaf0] bg-[#f8fafc] px-3 transition-colors focus-within:border-[#3955A6] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#3955A6]/10">
-                <Search
-                  size={15}
-                  className="shrink-0 text-[#8a92a6]"
-                />
+              <div className="flex h-10 items-center gap-2.5 rounded-[11px] border border-[#e6eaf0] bg-[#f8fafc] px-3 transition-colors focus-within:border-[#333333] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#333333]/10">
+                <Search size={15} className="shrink-0 text-[#8a92a6]" />
 
                 <input
                   type="search"
@@ -1744,9 +1583,7 @@ function SearchableDropdown<T extends string | number>({
               </div>
 
               <p className="mt-2 px-1 text-[10px] font-semibold uppercase tracking-[0.09em] text-[#98a2b3]">
-                {filteredOptions.length +
-                  (showFeaturedOption ? 1 : 0)}{" "}
-                options
+                {filteredOptions.length + (showFeaturedOption ? 1 : 0)} options
               </p>
             </div>
 
@@ -1769,8 +1606,8 @@ function SearchableDropdown<T extends string | number>({
                     onClick={() => chooseOption(featuredOption)}
                     className={`flex w-full items-center gap-2.5 rounded-[11px] border px-3 py-2.5 text-left transition-colors ${
                       featuredOption.value === value
-                        ? "border-[#ccebdc] bg-[#f0fbf5]"
-                        : "border-[#e0f2e8] bg-[#f8fdf9] hover:bg-[#eefaf3]"
+                        ? "border-[#D0D0D0] bg-[#F2F2F2]"
+                        : "border-[#E7E7E7] bg-[#FAFAFA] hover:bg-[#EFEFEF]"
                     }`}
                   >
                     <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] bg-white text-[#1f9d6b] ring-1 ring-[#d9eee2]">
@@ -1790,10 +1627,7 @@ function SearchableDropdown<T extends string | number>({
                     </span>
 
                     {featuredOption.value === value && (
-                      <Check
-                        size={15}
-                        className="shrink-0 text-[#1f9d6b]"
-                      />
+                      <Check size={15} className="shrink-0 text-[#1f9d6b]" />
                     )}
                   </button>
                 </div>
@@ -1813,8 +1647,8 @@ function SearchableDropdown<T extends string | number>({
                         onClick={() => chooseOption(option)}
                         className={`flex w-full items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-left transition-colors ${
                           isSelected
-                            ? "bg-[#eef3ff] text-[#243e80]"
-                            : "text-[#344054] hover:bg-[#f6f8fb]"
+                            ? "bg-[#EFEFEF] text-[#202020]"
+                            : "text-[#344054] hover:bg-[#F7F7F7]"
                         }`}
                       >
                         <span className="min-w-0 flex-1">
@@ -1832,7 +1666,7 @@ function SearchableDropdown<T extends string | number>({
                         {isSelected && (
                           <Check
                             size={15}
-                            className="shrink-0 text-[#3955A6]"
+                            className="shrink-0 text-[#262626]"
                           />
                         )}
                       </button>
@@ -1896,13 +1730,10 @@ function CvFilters({
     label: String(year),
   }));
 
-  const weekOptions = buildCvWeekOptions(
-    selectedYear,
-    calendar
-  );
+  const weekOptions = buildCvWeekOptions(selectedYear, calendar);
 
   const selectedWeekOption = weekOptions.find(
-    (option) => option.value === selectedWeek
+    (option) => option.value === selectedWeek,
   );
 
   const calendarYear = getCalendarYear(calendar);
@@ -1910,9 +1741,7 @@ function CvFilters({
 
   const featuredWeekOption =
     selectedYear === calendarYear
-      ? weekOptions.find(
-          (option) => option.value === currentWeekNo
-        )
+      ? weekOptions.find((option) => option.value === currentWeekNo)
       : undefined;
 
   const currentWeek = calendar?.current_week;
@@ -1921,7 +1750,7 @@ function CvFilters({
   const currentWeekLabel =
     currentWeek?.start && currentWeek?.end
       ? `Week ${currentWeek.week_no ?? "—"}: ${formatCalendarDate(
-          currentWeek.start
+          currentWeek.start,
         )} – ${formatCalendarDate(currentWeek.end)} ${
           currentWeek.year ?? calendar?.year ?? ""
         }`.trim()
@@ -1930,17 +1759,17 @@ function CvFilters({
   const currentMonthLabel =
     currentMonth?.start && currentMonth?.end
       ? `${formatCalendarDate(
-          currentMonth.start
+          currentMonth.start,
         )} – ${formatCalendarDate(currentMonth.end)} ${
           currentMonth.year ?? calendar?.year ?? ""
         }`.trim()
       : currentMonth?.label || "—";
 
   return (
-    <div className={`${CARD} mt-4 p-4 sm:p-5`}>
+    <div className={`${CARD} dashboard-card mt-4 p-4 sm:p-5 lg:p-6`}>
       <div className="mb-4 flex min-w-0 flex-col gap-3 border-b border-[#f0f2f5] pb-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-start gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#EAF3FF] text-[#3955A6]">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] border border-[#ECECEC] bg-[#F7F7F7] text-[#313131]">
             <CalendarDays size={18} />
           </span>
 
@@ -1955,9 +1784,7 @@ function CvFilters({
 
             <p className="mt-0.5 break-words text-[10px] leading-4 text-[#98a2b3] sm:text-[11px]">
               Current month: {currentMonthLabel}
-              {currentMonth?.label
-                ? ` · ${currentMonth.label}`
-                : ""}
+              {currentMonth?.label ? ` · ${currentMonth.label}` : ""}
             </p>
           </div>
         </div>
@@ -1972,15 +1799,11 @@ function CvFilters({
           >
             <span
               className={`h-1.5 w-1.5 rounded-full ${
-                currentWeek.is_settled
-                  ? "bg-[#1f9d6b]"
-                  : "bg-[#f79009]"
+                currentWeek.is_settled ? "bg-[#1f9d6b]" : "bg-[#f79009]"
               }`}
             />
 
-            {currentWeek.is_settled
-              ? "Settled"
-              : "Pending settlement"}
+            {currentWeek.is_settled ? "Settled" : "Pending settlement"}
           </span>
         )}
       </div>
@@ -2013,8 +1836,7 @@ function CvFilters({
           type="button"
           onClick={onSearch}
           disabled={isFetching || weekOptions.length === 0}
-          className="inline-flex h-12 w-full min-w-0 items-center justify-center gap-2 rounded-[13px] px-5 text-[13px] font-bold text-white transition-all hover:opacity-90 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E1B3D]/30 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 sm:text-[13.5px] xl:w-auto xl:min-w-[118px]"
-          style={{ backgroundColor: NAVY }}
+          className="inline-flex h-12 w-full min-w-0 items-center justify-center gap-2 rounded-[12px] bg-[#4569C8] px-5 text-[13px] font-semibold text-white shadow-[0_6px_14px_rgba(0,0,0,0.10)] transition-all hover:bg-[#3455B4] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#171717]/30 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 sm:text-[13.5px] xl:w-auto xl:min-w-[128px]"
         >
           {isFetching ? (
             <Loader2 size={15} className="animate-spin" />
@@ -2034,8 +1856,7 @@ function CvFilters({
           </span>
 
           <span className="font-semibold text-[#667085]">
-            {selectedWeekOption.label} ·{" "}
-            {selectedWeekOption.description}
+            {selectedWeekOption.label} · {selectedWeekOption.description}
           </span>
         </div>
       )}
@@ -2049,15 +1870,12 @@ function CvFilters({
               isError
                 ? "border border-[#f2c6c3] bg-[#fff4f3] text-[#b42318]"
                 : isFetching
-                  ? "border border-[#dbe6fb] bg-[#f4f8ff] text-[#3955A6]"
-                  : "border border-[#ccebdc] bg-[#f1fbf5] text-[#18794e]"
+                  ? "border border-[#E4E4E4] bg-[#FAFAFA] text-[#454545]"
+                  : "border border-[#DAEBDD] bg-[#F6FBF6] text-[#28724C]"
             }`}
           >
             {isFetching && (
-              <Loader2
-                size={14}
-                className="mt-0.5 shrink-0 animate-spin"
-              />
+              <Loader2 size={14} className="mt-0.5 shrink-0 animate-spin" />
             )}
 
             <span className="min-w-0 break-words">
@@ -2088,7 +1906,7 @@ export default function DistributorDashboardPage() {
   const [mounted, setMounted] = useState(false);
 
   const [selectedCvYear, setSelectedCvYear] = useState<number>(
-    new Date().getFullYear()
+    new Date().getFullYear(),
   );
 
   const [selectedCvWeek, setSelectedCvWeek] = useState<number>(1);
@@ -2100,8 +1918,7 @@ export default function DistributorDashboardPage() {
   // BANKED TC MODAL STATES
   // --------------------------------------------------
 
-  const [isBankedTcModalOpen, setIsBankedTcModalOpen] =
-    useState(false);
+  const [isBankedTcModalOpen, setIsBankedTcModalOpen] = useState(false);
 
   const [pendingBankedTcSide, setPendingBankedTcSide] =
     useState<BankedTcSide | null>(null);
@@ -2110,10 +1927,8 @@ export default function DistributorDashboardPage() {
   // BANKED TC MUTATION
   // --------------------------------------------------
 
-  const [
-    placeBankedTc,
-    { isLoading: isPlacingBankedTc },
-  ] = usePlaceBankedTcMutation();
+  const [placeBankedTc, { isLoading: isPlacingBankedTc }] =
+    usePlaceBankedTcMutation();
 
   useEffect(() => {
     setMounted(true);
@@ -2130,16 +1945,13 @@ export default function DistributorDashboardPage() {
 
     redirectLock.current = true;
 
-    const distributorToken =
-      localStorage.getItem("distributor_token");
+    const distributorToken = localStorage.getItem("distributor_token");
 
     const authToken = localStorage.getItem("auth_token");
 
-    const rawUserType =
-      localStorage.getItem("user_type") || "";
+    const rawUserType = localStorage.getItem("user_type") || "";
 
-    const isLoggedIn =
-      localStorage.getItem("is_logged_in");
+    const isLoggedIn = localStorage.getItem("is_logged_in");
 
     const userType = rawUserType.trim().toLowerCase();
 
@@ -2179,21 +1991,17 @@ export default function DistributorDashboardPage() {
 
   const stats = dashboard?.stats;
 
-  const ignite: IgniteDashboard | null | undefined =
-    dashboard?.ignite;
+  const ignite: IgniteDashboard | null | undefined = dashboard?.ignite;
 
-  const activity: DashboardActivity[] =
-    dashboard?.recent_activity ?? [];
+  const activity: DashboardActivity[] = dashboard?.recent_activity ?? [];
 
   const salesCalendar = (dashboard as any)?.sales_calendar as
-    | SalesCalendar
-    | undefined;
+    SalesCalendar | undefined;
 
   const calendarYear = getCalendarYear(salesCalendar);
   const calendarWeek = getCurrentCalendarWeek(salesCalendar);
 
-  const calendarWeekStart =
-    salesCalendar?.current_week?.start ?? "";
+  const calendarWeekStart = salesCalendar?.current_week?.start ?? "";
 
   const hasSalesCalendar = Boolean(salesCalendar);
 
@@ -2206,12 +2014,7 @@ export default function DistributorDashboardPage() {
 
     setSelectedCvYear(calendarYear);
     setSelectedCvWeek(calendarWeek);
-  }, [
-    calendarYear,
-    calendarWeek,
-    calendarWeekStart,
-    hasSalesCalendar,
-  ]);
+  }, [calendarYear, calendarWeek, calendarWeekStart, hasSalesCalendar]);
 
   // --------------------------------------------------
   // Pairings API
@@ -2227,7 +2030,7 @@ export default function DistributorDashboardPage() {
     {
       skip: !submittedCvFilters,
       refetchOnMountOrArgChange: true,
-    }
+    },
   ) as unknown as PairingsQueryResult;
 
   // --------------------------------------------------
@@ -2255,9 +2058,7 @@ export default function DistributorDashboardPage() {
   // Pairings metrics
   // --------------------------------------------------
 
-  const periodIgniteMetrics = getPairingsMetrics(
-    pairingsQuery.data
-  );
+  const periodIgniteMetrics = getPairingsMetrics(pairingsQuery.data);
 
   const cvCounterIgnite = periodIgniteMetrics
     ? ({
@@ -2270,9 +2071,7 @@ export default function DistributorDashboardPage() {
   // HANDLE BANKED TC PLACEMENT
   // --------------------------------------------------
 
-  const handleBankedTcPlacement = async (
-    side: BankedTcSide
-  ) => {
+  const handleBankedTcPlacement = async (side: BankedTcSide) => {
     if (isPlacingBankedTc) return;
 
     if (!ignite?.ba_id) {
@@ -2294,13 +2093,8 @@ export default function DistributorDashboardPage() {
         side,
       }).unwrap();
 
-      if (
-        response.success === false ||
-        response.status === false
-      ) {
-        toast.error(
-          response.message || "Unable to place Banked TC."
-        );
+      if (response.success === false || response.status === false) {
+        toast.error(response.message || "Unable to place Banked TC.");
         return;
       }
 
@@ -2308,7 +2102,7 @@ export default function DistributorDashboardPage() {
         response.message ||
           `Banked TC placed on ${
             side === 1 ? "Left" : "Right"
-          } Side successfully.`
+          } Side successfully.`,
       );
 
       setIsBankedTcModalOpen(false);
@@ -2319,7 +2113,7 @@ export default function DistributorDashboardPage() {
       toast.error(
         error?.data?.message ||
           error?.message ||
-          "Failed to place Banked TC. Please try again."
+          "Failed to place Banked TC. Please try again.",
       );
     } finally {
       setPendingBankedTcSide(null);
@@ -2342,7 +2136,7 @@ export default function DistributorDashboardPage() {
     <div
       suppressHydrationWarning
       style={{ fontFamily: "'Lato', sans-serif" }}
-      className="flex h-dvh min-h-0 w-full flex-col overflow-hidden bg-white"
+      className="distributor-dashboard flex h-dvh min-h-0 w-full flex-col overflow-hidden bg-white"
     >
       <FontImport />
 
@@ -2351,14 +2145,11 @@ export default function DistributorDashboardPage() {
       <div className="relative flex min-h-0 min-w-0 flex-1 overflow-hidden">
         <Sidebar />
 
-        <main className="thin-scroll min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain bg-[#f5f6fa] px-3 pb-8 pt-4 sm:px-3 sm:pb-10 sm:pt-4 lg:px-4">
-          <div className="mx-auto w-full min-w-0 max-w-[1600px]">
+        <main className="thin-scroll min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain bg-[#F7F9FD] px-3 pb-9 pt-4 sm:px-5 sm:pb-12 sm:pt-5 lg:px-7 lg:pt-7 xl:px-8">
+          <div className="mx-auto w-full min-w-0 max-w-[1500px]">
             {/* Welcome hero */}
 
-            <WelcomeHero
-              user={user}
-              distributorId={ignite?.ba_id || "N/A"}
-            />
+            <WelcomeHero user={user} distributorId={ignite?.ba_id || "N/A"} />
 
             {/* API error */}
 
@@ -2368,14 +2159,13 @@ export default function DistributorDashboardPage() {
                 className="mt-5 flex min-w-0 flex-col items-start gap-3 rounded-[14px] border border-[#f2c6c3] bg-[#fff4f3] px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4"
               >
                 <p className="break-words text-[12px] font-semibold leading-5 text-[#b42318] sm:text-[13px]">
-                  Unable to load the dashboard data. Please try
-                  again.
+                  Unable to load the dashboard data. Please try again.
                 </p>
 
                 <button
                   type="button"
                   onClick={() => refetch()}
-                  className="shrink-0 rounded-lg bg-white px-3 py-2 text-[12px] font-bold text-[#b42318] ring-1 ring-[#f2c6c3] transition-colors hover:bg-[#fff8f7]"
+                  className="shrink-0 rounded-[9px] bg-[#4569C8] px-4 py-2.5 text-[12px] font-semibold text-white transition-colors hover:bg-[#3455B4]"
                 >
                   Retry
                 </button>
@@ -2385,37 +2175,51 @@ export default function DistributorDashboardPage() {
             {/* Cash wallet, floating retail profit and direct referral */}
 
             <QuickStatsCards
-              cashWallet={toNumber(ignite?.cash_bal)}
-              floatingRetailProfit={0}
-              directReferral={0}
+              cashWallet={
+                ignite?.cash_bal == null ? null : toNumber(ignite.cash_bal)
+              }
+              floatingRetailProfit={
+                (dashboard as any)?.floating_retail_profit == null
+                  ? null
+                  : toNumber((dashboard as any).floating_retail_profit)
+              }
+              directReferral={
+                (dashboard as any)?.direct_referrals == null
+                  ? null
+                  : toNumber((dashboard as any).direct_referrals)
+              }
             />
 
-            {/* My coins */}
-
+            {/* Account assets and shopping overview */}
             <section className="mt-4 sm:mt-5">
               <CoinsSection ignite={ignite} />
             </section>
-
-            {/* User overview statistics */}
-
             <DashboardOverview stats={stats} />
 
             {/* Latest order and recent activity */}
 
-            <section className="mt-6 grid min-w-0 grid-cols-1 gap-4 sm:mt-7 sm:gap-5 xl:grid-cols-2">
-              <LatestOrderSection
-                order={dashboard?.latest_order ?? null}
-              />
+            <section className="mt-7 grid min-w-0 grid-cols-1 gap-4 sm:mt-8 sm:gap-5 xl:grid-cols-2">
+              <LatestOrderSection order={dashboard?.latest_order ?? null} />
 
               <RecentActivity activity={activity} />
             </section>
 
             {/* CV counter */}
 
-            <section className="mt-5 min-w-0 sm:mt-5">
-              <SectionTitle large>
-                Sales calendar
-              </SectionTitle>
+            <section className="mt-8 min-w-0 sm:mt-9">
+              <div className="flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <SectionTitle large>
+                    CV &amp; network performance
+                  </SectionTitle>
+                  <p className="ml-11 mt-1 text-[11px] leading-5 text-[#888888]">
+                    Monitor your sales periods, placement and rank progression.
+                  </p>
+                </div>
+                <span className="text-[10px] font-semibold uppercase tracking-[.13em] text-[#A6A6A6]">
+                  Performance center
+                </span>
+              </div>
 
               <CvFilters
                 calendar={salesCalendar}
@@ -2424,15 +2228,12 @@ export default function DistributorDashboardPage() {
                 onYearChange={(year) => {
                   setSelectedCvYear(year);
 
-                  setSelectedCvWeek(
-                    year === calendarYear ? calendarWeek : 1
-                  );
+                  setSelectedCvWeek(year === calendarYear ? calendarWeek : 1);
                 }}
                 onWeekChange={setSelectedCvWeek}
                 onSearch={handleCvSearch}
                 isFetching={Boolean(
-                  pairingsQuery.isFetching ||
-                    pairingsQuery.isLoading
+                  pairingsQuery.isFetching || pairingsQuery.isLoading,
                 )}
                 isError={Boolean(pairingsQuery.isError)}
                 hasSearched={Boolean(submittedCvFilters)}
@@ -2440,14 +2241,12 @@ export default function DistributorDashboardPage() {
                 searchedWeek={submittedCvFilters?.week_no}
               />
 
-              <div className="mt-4 grid min-w-0 grid-cols-1 gap-4 sm:mt-5 sm:gap-5 xl:grid-cols-2">
+              <div className="mt-4 grid min-w-0 grid-cols-1 items-stretch gap-4 sm:mt-5 sm:gap-5 xl:grid-cols-2">
                 <AccountSummary ignite={cvCounterIgnite} />
 
                 <AccountTable
                   ignite={cvCounterIgnite}
-                  onOpenBankedTc={() =>
-                    setIsBankedTcModalOpen(true)
-                  }
+                  onOpenBankedTc={() => setIsBankedTcModalOpen(true)}
                 />
               </div>
             </section>
@@ -2455,7 +2254,7 @@ export default function DistributorDashboardPage() {
             {/* Refresh indicator */}
 
             {isFetching && !isLoading && (
-              <div className="mt-4 flex items-center justify-end gap-2 text-[11px] font-semibold text-[#667085]">
+              <div className="mt-4 flex items-center justify-end gap-2 text-[11px] font-semibold text-[#777777]">
                 <Loader2 size={13} className="animate-spin" />
 
                 <span>Updating dashboard...</span>

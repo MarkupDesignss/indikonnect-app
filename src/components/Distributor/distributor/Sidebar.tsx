@@ -1,957 +1,679 @@
 "use client";
 
 import {
-    BarChart2,
-    Calendar,
-    Award,
-    CheckCircle2,
-    ChevronDown,
-    FileText,
-    History,
-    LayoutDashboard,
-    Loader2,
-    LogOut,
-    AlertCircle,
-    Network,
-    Percent,
-    ReceiptText,
-    Repeat2,
-    Share2,
-    ShieldCheck,
-    TrendingUp,
-    UserRound,
-    WalletCards,
-    IndianRupeeIcon,
-    X,
-    Clock
+  AlertCircle,
+  Award,
+  BarChart2,
+  Calendar,
+  CheckCircle2,
+  ChevronDown,
+  Clock,
+  FileText,
+  History,
+  LayoutDashboard,
+  Loader2,
+  LogOut,
+  Network,
+  Percent,
+  ReceiptText,
+  Repeat2,
+  Share2,
+  ShieldCheck,
+  TrendingUp,
+  UserRound,
+  WalletCards,
+  X,
+  type LucideIcon,
 } from "lucide-react";
-
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { useDispatch } from "react-redux";
 import { useLogout } from "@/lib/hooks/useLogout";
 import { showToast } from "@/lib/slices/toastSlice";
 
 import Logo from "../../../../public/indiekonnect-web/images/logo.png";
 
-// =====================================================
-// DESIGN TOKENS
-// =====================================================
-
-const NAVY = "#0E1B3D";
-const NAVY_LIGHT = "#1B2E63";
-const BRAND_YELLOW = "#F6B800";
-
+/**
+ * Premium monochrome distributor sidebar.
+ * Primary actions, the selected navigation row and confirmation CTA are black.
+ * Existing paths, dropdowns, mobile event and logout integration are preserved.
+ */
 const MOBILE_SIDEBAR_EVENT = "open-distributor-sidebar";
+const INK = "#101010";
 
-type IconType = React.ComponentType<{
-    size?: number;
-    strokeWidth?: number;
-    className?: string;
-}>;
-
-type MenuItem = {
-    label: string;
-    icon: IconType;
-    href: string;
-    dropdown?: boolean;
-    toggleOnly?: boolean;
-    children?: {
-        label: string;
-        icon: IconType;
-        href: string;
-    }[];
+type NavChild = { label: string; icon: LucideIcon; href: string };
+type NavItem = {
+  label: string;
+  icon: LucideIcon;
+  href: string;
+  dropdown?: boolean;
+  toggleOnly?: boolean;
+  children?: NavChild[];
 };
+type NavGroup = { title: string; items: NavItem[] };
 
-type MenuGroup = {
-    title: string;
-    items: MenuItem[];
-};
-
-// =====================================================
-// MENU ITEMS
-// =====================================================
-
-const menuGroups: MenuGroup[] = [
-    {
-        title: "Overview",
-        items: [
-            {
-                label: "Dashboard",
-                icon: LayoutDashboard,
-                href: "/distributor/dashboard",
-            },
-            {
-                label: "Orders",
-                icon: History,
-                href: "/distributor/order-history",
-            },
+const menuGroups: NavGroup[] = [
+  {
+    title: "Overview",
+    items: [
+      {
+        label: "Dashboard",
+        icon: LayoutDashboard,
+        href: "/distributor/dashboard",
+      },
+      { label: "Orders", icon: History, href: "/distributor/order-history" },
+    ],
+  },
+  {
+    title: "Network",
+    items: [
+      {
+        label: "Profile",
+        icon: UserRound,
+        href: "/distributor/profile",
+        dropdown: true,
+        toggleOnly: true,
+        children: [
+          {
+            label: "Profile overview",
+            icon: UserRound,
+            href: "/distributor/profile",
+          },
+          {
+            label: "CV tracking stats",
+            icon: TrendingUp,
+            href: "/distributor/profile/weekly-commission/",
+          },
+          {
+            label: "Weekly CV date",
+            icon: Calendar,
+            href: "/distributor/profile/weekly-cv-date",
+          },
+          {
+            label: "Binary tree",
+            icon: Network,
+            href: "/distributor/profile/binary-tree",
+          },
+          {
+            label: "Pending CV Breakdown",
+            icon: AlertCircle,
+            href: "/distributor/profile/pending-cv-breakdown",
+          },
+          {
+            label: "Rank information",
+            icon: Award,
+            href: "/distributor/profile/rank-information",
+          },
+          {
+            label: "Sponsored",
+            icon: Share2,
+            href: "/distributor/profile/sponsor-tree",
+          },
         ],
-    },
-    {
-        title: "Network",
-        items: [
-            {
-                label: "Profile",
-                icon: UserRound,
-                dropdown: true,
-                href: "/distributor/profile",
-                toggleOnly: true,
-                children: [
-                    {
-                        label: "Profile overview",
-                        icon: UserRound,
-                        href: "/distributor/profile",
-                    },
-                    {
-                        label: "CV tracking stats",
-                        icon: TrendingUp,
-                        href: "/distributor/profile/weekly-commission/",
-                    },
-                    {
-                        label: "Weekly CV date",
-                        icon: Calendar,
-                        href: "/distributor/profile/weekly-cv-date",
-                    },
-                    {
-                        label: "Binary tree",
-                        icon: Network,
-                        href: "/distributor/profile/binary-tree",
-                    },
-                    {
-                        label: "Pending CV Breakdown",
-                        icon: AlertCircle,
-                        href: "/distributor/profile/pending-cv-breakdown",
-                    },
-                    {
-                        label: "Rank information",
-                        icon: Award,
-                        href: "/distributor/profile/rank-information",
-                    },
-                    // {
-                    //     label: "CV allocation",
-                    //     icon: IndianRupeeIcon,
-                    //     href: "/distributor/profile/cv-allocation",
-                    // },
-                    {
-                        label: "Sponsored",
-                        icon: Share2,
-                        href: "/distributor/profile/sponsor-tree",
-                    },
-                ],
-            },
-            {
-                label: "My referral",
-                icon: Share2,
-                href: "/distributor/my-referral",
-            },
-            {
-                label: "Downline",
-                icon: BarChart2,
-                href: "/distributor/downline-cv-report",
-            },
+      },
+      { label: "My referral", icon: Share2, href: "/distributor/my-referral" },
+      {
+        label: "Downline",
+        icon: BarChart2,
+        href: "/distributor/downline-cv-report",
+      },
+    ],
+  },
+  {
+    title: "Placements",
+    items: [
+      {
+        label: "Pending Placements",
+        icon: Clock,
+        href: "/distributor/pending-placements",
+      },
+    ],
+  },
+  {
+    title: "Finance",
+    items: [
+      {
+        label: "Balance History",
+        icon: ReceiptText,
+        href: "/distributor/transactions",
+      },
+      { label: "Commission", icon: Percent, href: "/distributor/commissions" },
+      { label: "Buy Back", icon: Repeat2, href: "/distributor/buy-back" },
+    ],
+  },
+  {
+    title: "Account",
+    items: [
+      {
+        label: "KYC setting",
+        icon: ShieldCheck,
+        href: "/distributor/kyc",
+        dropdown: true,
+        toggleOnly: true,
+        children: [
+          {
+            label: "KYC status",
+            icon: CheckCircle2,
+            href: "/distributor/kyc/status",
+          },
+          {
+            label: "Bank details",
+            icon: WalletCards,
+            href: "/distributor/kyc/bank-details",
+          },
+          {
+            label: "Document upload",
+            icon: FileText,
+            href: "/distributor/kyc/document-upload",
+          },
         ],
-    },
-    //  NAYA BLOCK: Placements (Pending items ke liye)
-    {
-        title: "Placements",
-        items: [
-            {
-                label: "Pending Placements",
-                icon: Clock, 
-                href: "/distributor/pending-placements",
-            },
-           
-        ],
-    },
-    {
-        title: "Finance",
-        items: [
-            // {
-            //     label: "Wallet",
-            //     icon: WalletCards,
-            //     href: "/distributor/wallet",
-            // },
-            {
-                label: "Balance History",
-                icon: ReceiptText,
-                href: "/distributor/transactions",
-            },
-            {
-                label: "Commission",
-                icon: Percent,
-                href: "/distributor/commissions",
-            },
-            {
-                label: "Buy Back",
-                icon: Repeat2,
-                href: "/distributor/buy-back",
-            },
-        ],
-    },
-    {
-        title: "Account",
-        items: [
-            {
-                label: "KYC setting",
-                icon: ShieldCheck,
-                dropdown: true,
-                href: "/distributor/kyc",
-                toggleOnly: true,
-                children: [
-                    {
-                        label: "KYC status",
-                        icon: CheckCircle2,
-                        href: "/distributor/kyc/status",
-                    },
-                    {
-                        label: "Bank details",
-                        icon: WalletCards,
-                        href: "/distributor/kyc/bank-details",
-                    },
-                    {
-                        label: "Document upload",
-                        icon: FileText,
-                        href: "/distributor/kyc/document-upload",
-                    },
-                ],
-            },
-           
-        ],
-    },
+      },
+    ],
+  },
 ];
 
-// =====================================================
-// LOGOUT MODAL
-// =====================================================
+function normalizePath(value: string): string {
+  const clean = value.replace(/\/{2,}/g, "/").replace(/\/+$/, "");
+  return clean || "/";
+}
 
-const LogoutModal = ({
-    isOpen,
-    onClose,
-    onConfirm,
-    isLoading,
+function matchesRoute(pathname: string, href: string): boolean {
+  if (!href || href === "#") return false;
+  const current = normalizePath(pathname);
+  const target = normalizePath(href);
+
+  if (target === "/distributor/dashboard") {
+    return current === "/distributor" || current === target;
+  }
+  // A submenu's Profile overview should not be selected on all profile subpages.
+  if (target === "/distributor/profile") return current === target;
+
+  return current === target || current.startsWith(`${target}/`);
+}
+
+function LogoutModal({
+  open,
+  loading,
+  onClose,
+  onConfirm,
 }: {
-    isOpen: boolean;
-    onClose: () => void;
-    onConfirm: () => void;
-    isLoading: boolean;
-}) => {
-    return (
-        <AnimatePresence>
-            {isOpen && (
-                <>
-                    <motion.button
-                        type="button"
-                        aria-label="Close logout confirmation"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[100] cursor-default bg-[#071126]/50 backdrop-blur-[3px]"
-                        onClick={onClose}
-                    />
+  open: boolean;
+  loading: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  useEffect(() => {
+    if (!open) return;
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !loading) onClose();
+    };
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [open, loading, onClose]);
 
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.96, y: 14 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.96, y: 14 }}
-                        transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                        className="pointer-events-none fixed inset-0 z-[101] flex items-center justify-center overflow-y-auto p-4"
-                    >
-                        <div
-                            role="dialog"
-                            aria-modal="true"
-                            aria-labelledby="logout-title"
-                            className="pointer-events-auto relative my-auto w-full max-w-[400px] overflow-hidden rounded-3xl bg-white shadow-[0_30px_80px_-20px_rgba(14,27,61,0.45)]"
-                            onClick={(event) => event.stopPropagation()}
-                        >
-                            {/* top accent strip */}
-                            <div
-                                className="h-1.5 w-full"
-                                style={{
-                                    background: `linear-gradient(90deg, ${NAVY} 0%, ${NAVY_LIGHT} 60%, ${BRAND_YELLOW} 100%)`,
-                                }}
-                            />
-
-                            <div className="px-6 pb-4 pt-7 text-center">
-                                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FDF2F2] ring-8 ring-[#FDF2F2]/50">
-                                    <LogOut className="h-6 w-6 text-[#B24C4C]" />
-                                </div>
-
-                                <h3
-                                    id="logout-title"
-                                    className="mb-2 text-lg font-bold text-[#0E1B3D]"
-                                >
-                                    Log out of your account?
-                                </h3>
-
-                                <p className="text-sm leading-6 text-[#667085]">
-                                    You&apos;ll need to log in again to access
-                                    your distributor panel.
-                                </p>
-                            </div>
-
-                            <div className="mx-6 flex items-start gap-2.5 rounded-xl bg-[#F6F8FB] p-3">
-                                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-[#98A2B3]" />
-
-                                <p className="text-xs leading-5 text-[#667085]">
-                                    Your session will end and you&apos;ll be
-                                    redirected to the login page.
-                                </p>
-                            </div>
-
-                            <div className="mt-6 flex gap-3 px-6 pb-6">
-                                <button
-                                    type="button"
-                                    onClick={onClose}
-                                    disabled={isLoading}
-                                    className="flex-1 rounded-xl border border-[#E4E7EC] bg-white px-3 py-3 text-sm font-semibold text-[#475066] transition-colors hover:bg-[#F6F8FB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1B2E63]/40 disabled:cursor-not-allowed disabled:opacity-50"
-                                >
-                                    Stay logged in
-                                </button>
-
-                                <button
-                                    type="button"
-                                    onClick={onConfirm}
-                                    disabled={isLoading}
-                                    className="flex flex-1 items-center justify-center gap-2 rounded-xl px-3 py-3 text-sm font-semibold text-white shadow-lg shadow-[#0E1B3D]/20 transition-all hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1B2E63]/40 disabled:cursor-not-allowed disabled:opacity-70"
-                                    style={{
-                                        background: `linear-gradient(135deg, ${NAVY} 0%, ${NAVY_LIGHT} 100%)`,
-                                    }}
-                                >
-                                    {isLoading ? (
-                                        <>
-                                            <Loader2 className="h-4 w-4 animate-spin" />
-                                            <span>Logging out...</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <LogOut className="h-4 w-4" />
-                                            <span>Log out</span>
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-                        </div>
-                    </motion.div>
-                </>
-            )}
-        </AnimatePresence>
-    );
-};
-
-// =====================================================
-// SIDEBAR
-// =====================================================
+  return (
+    <AnimatePresence>
+      {open && (
+        <>
+          <motion.button
+            type="button"
+            aria-label="Close logout confirmation"
+            className="fixed inset-0 z-[100] cursor-default bg-black/55 backdrop-blur-[3px]"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => {
+              if (!loading) onClose();
+            }}
+          />
+          <motion.div
+            className="pointer-events-none fixed inset-0 z-[101] flex items-center justify-center p-4"
+            initial={{ opacity: 0, y: 14, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 12, scale: 0.98 }}
+            transition={{ duration: 0.19, ease: "easeOut" }}
+          >
+            <section
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="logout-dialog-title"
+              aria-describedby="logout-dialog-description"
+              className="pointer-events-auto w-full max-w-[420px] overflow-hidden rounded-[22px] border border-neutral-200 bg-white shadow-[0_24px_90px_rgba(0,0,0,0.22)]"
+            >
+              <div className="flex items-start justify-between px-6 pt-6">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-neutral-100 text-neutral-900 ring-1 ring-neutral-200">
+                  <LogOut size={21} strokeWidth={2} />
+                </div>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  disabled={loading}
+                  aria-label="Close dialog"
+                  className="flex h-9 w-9 items-center justify-center rounded-xl text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-800 disabled:opacity-50"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              <div className="px-6 pt-4">
+                <h2
+                  id="logout-dialog-title"
+                  className="text-[20px] font-bold tracking-[-0.025em] text-neutral-950"
+                >
+                  Log out of your account?
+                </h2>
+                <p
+                  id="logout-dialog-description"
+                  className="mt-2 text-[13px] leading-[1.8] text-neutral-500"
+                >
+                  Your current session will end. You can sign in again whenever
+                  you need to access your distributor workspace.
+                </p>
+                <div className="mt-5 flex items-start gap-2.5 rounded-xl border border-neutral-200 bg-neutral-50 p-3.5">
+                  <AlertCircle
+                    size={16}
+                    className="mt-0.5 shrink-0 text-neutral-500"
+                  />
+                  <p className="text-xs leading-[1.65] text-neutral-600">
+                    Please save any unsaved work before continuing.
+                  </p>
+                </div>
+              </div>
+              <div className="mt-6 grid grid-cols-2 gap-3 border-t border-neutral-100 px-6 py-5">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  disabled={loading}
+                  className="inline-flex min-h-11 items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-[13px] font-semibold text-neutral-700 transition hover:border-neutral-300 hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-600 disabled:opacity-50"
+                >
+                  Stay logged in
+                </button>
+                <button
+                  type="button"
+                  onClick={onConfirm}
+                  disabled={loading}
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-black px-4 text-[13px] font-semibold text-white shadow-[0_4px_12px_rgba(0,0,0,0.12)] transition hover:bg-neutral-800 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-800 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {loading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <LogOut size={16} />
+                  )}
+                  {loading ? "Logging out..." : "Log out"}
+                </button>
+              </div>
+            </section>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+}
 
 export default function Sidebar() {
-    const pathname = usePathname();
-    const router = useRouter();
-    const dispatch = useDispatch();
-    const { logout } = useLogout();
+  const pathname = usePathname() || "";
+  const router = useRouter();
+  const dispatch = useDispatch();
+  const { logout } = useLogout();
 
-    const [openDropdowns, setOpenDropdowns] = useState<string[]>([]);
-    const [showLogoutModal, setShowLogoutModal] = useState(false);
-    const [isLoggingOut, setIsLoggingOut] = useState(false);
-    const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [openDropdowns, setOpenDropdowns] = useState<string[]>([]);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-    const allItems = menuGroups.flatMap((group) => group.items);
+  const dropdownsForRoute = useMemo(() => {
+    return menuGroups
+      .flatMap((group) => group.items)
+      .filter((item) =>
+        item.children?.some((child) => matchesRoute(pathname, child.href)),
+      )
+      .map((item) => item.label);
+  }, [pathname]);
 
-    const normalizePath = (path: string) => {
-        const normalized = path.replace(/\/+/g, "/").replace(/\/+$/, "");
-        return normalized || "/";
+  useEffect(() => {
+    if (dropdownsForRoute.length) {
+      setOpenDropdowns((current) => [
+        ...new Set([...current, ...dropdownsForRoute]),
+      ]);
+    }
+  }, [dropdownsForRoute]);
+
+  useEffect(() => {
+    const handleOpen = () => setIsMobileOpen(true);
+    window.addEventListener(MOBILE_SIDEBAR_EVENT, handleOpen);
+    return () => window.removeEventListener(MOBILE_SIDEBAR_EVENT, handleOpen);
+  }, []);
+
+  useEffect(() => {
+    setIsMobileOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!isMobileOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsMobileOpen(false);
     };
-
-    // -------------------------------------------------
-    // ROUTE ACTIVE STATE
-    // -------------------------------------------------
-
-    const isActive = (href: string) => {
-        if (!href || href === "#") return false;
-
-        const currentPath = normalizePath(pathname || "");
-        const targetPath = normalizePath(href);
-
-        if (targetPath === "/distributor/dashboard") {
-            return (
-                currentPath === "/distributor" ||
-                currentPath === "/distributor/dashboard"
-            );
-        }
-
-        if (targetPath === "/distributor/profile") {
-            return currentPath === "/distributor/profile";
-        }
-
-        return (
-            currentPath === targetPath ||
-            currentPath.startsWith(`${targetPath}/`)
-        );
+    window.addEventListener("keydown", onEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onEscape);
     };
+  }, [isMobileOpen]);
 
-    const isParentActive = (item: MenuItem) => {
-        if (item.href && item.href !== "#" && isActive(item.href)) {
-            return true;
-        }
+  const closeMobile = () => setIsMobileOpen(false);
 
-        if (item.children) {
-            return item.children.some((child) => isActive(child.href));
-        }
+  const toggleDropdown = (label: string) => {
+    setOpenDropdowns((current) =>
+      current.includes(label)
+        ? current.filter((item) => item !== label)
+        : [...current, label],
+    );
+  };
 
-        return false;
-    };
+  const handleLogoutConfirm = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    try {
+      await logout({
+        callApi: true,
+        clearReduxState: true,
+        clearPersistedState: true,
+        onSuccess: () => {
+          dispatch(
+            showToast({
+              message: "Successfully logged out! See you soon",
+              type: "success",
+            }),
+          );
+          setIsLoggingOut(false);
+          setShowLogoutModal(false);
+          setIsMobileOpen(false);
+          router.push("/indiekonnect-web/login/");
+        },
+        onError: () => {
+          dispatch(
+            showToast({
+              message: "Logout failed. Please try again.",
+              type: "error",
+            }),
+          );
+          setIsLoggingOut(false);
+          setShowLogoutModal(false);
+        },
+      });
+    } catch {
+      dispatch(
+        showToast({
+          message: "Something went wrong. Please try again.",
+          type: "error",
+        }),
+      );
+      setIsLoggingOut(false);
+      setShowLogoutModal(false);
+    }
+  };
 
-    // -------------------------------------------------
-    // MOBILE DRAWER CONTROLS
-    // -------------------------------------------------
+  const renderItem = (item: NavItem) => {
+    const Icon = item.icon;
+    const isDropdown = !!item.dropdown && !!item.children?.length;
+    const activeChild =
+      item.children?.some((child) => matchesRoute(pathname, child.href)) ??
+      false;
+    const active = matchesRoute(pathname, item.href) || activeChild;
+    const expanded = openDropdowns.includes(item.label);
 
-    const closeMobileSidebar = () => {
-        setIsMobileOpen(false);
-    };
-
-    useEffect(() => {
-        const handleOpenSidebar = () => {
-            setIsMobileOpen(true);
-        };
-
-        window.addEventListener(MOBILE_SIDEBAR_EVENT, handleOpenSidebar);
-
-        return () => {
-            window.removeEventListener(MOBILE_SIDEBAR_EVENT, handleOpenSidebar);
-        };
-    }, []);
-
-    // Close the mobile sidebar after navigating to another page.
-    useEffect(() => {
-        setIsMobileOpen(false);
-    }, [pathname]);
-
-    // Prevent background scrolling while mobile sidebar is open.
-    useEffect(() => {
-        if (!isMobileOpen) return;
-
-        const previousOverflow = document.body.style.overflow;
-        document.body.style.overflow = "hidden";
-
-        const handleEscape = (event: KeyboardEvent) => {
-            if (event.key === "Escape") {
-                setIsMobileOpen(false);
+    const commonItem = `group relative flex min-h-[42px] w-full min-w-0 items-center gap-3 rounded-xl px-3 text-left transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-600 focus-visible:ring-offset-2 ${
+      active
+        ? "bg-black text-white"
+        : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-950"
+    }`;
+    const content = (
+      <>
+        <span
+          className={`flex h-[27px] w-[27px] shrink-0 items-center justify-center rounded-[9px] transition-colors ${
+            active ? "bg-white/15" : "bg-neutral-100 group-hover:bg-white"
+          }`}
+        >
+          <Icon
+            size={16}
+            strokeWidth={1.9}
+            className={
+              active
+                ? "text-white"
+                : "text-neutral-500 group-hover:text-neutral-900"
             }
-        };
+          />
+        </span>
+        <span className="min-w-0 flex-1 truncate text-[13px] font-semibold tracking-[-0.005em]">
+          {item.label}
+        </span>
+        {isDropdown && (
+          <ChevronDown
+            size={15}
+            strokeWidth={2}
+            aria-hidden="true"
+            className={`shrink-0 transition-transform duration-200 ${expanded ? "rotate-180" : ""} ${active ? "text-white/80" : "text-neutral-400"}`}
+          />
+        )}
+      </>
+    );
 
-        window.addEventListener("keydown", handleEscape);
-
-        return () => {
-            document.body.style.overflow = previousOverflow;
-            window.removeEventListener("keydown", handleEscape);
-        };
-    }, [isMobileOpen]);
-
-    // -------------------------------------------------
-    // AUTO-OPEN ACTIVE DROPDOWN
-    // -------------------------------------------------
-
-    useEffect(() => {
-        const currentPath = normalizePath(pathname || "");
-        const toOpen: string[] = [];
-
-        allItems.forEach((item) => {
-            if (!item.children) return;
-
-            const childIsActive = item.children.some((child) => {
-                const childPath = normalizePath(child.href);
-
-                return (
-                    currentPath === childPath ||
-                    currentPath.startsWith(`${childPath}/`)
-                );
-            });
-
-            const parentIsActive =
-                !!item.href &&
-                item.href !== "#" &&
-                (currentPath === normalizePath(item.href) ||
-                    currentPath.startsWith(`${normalizePath(item.href)}/`));
-
-            if (childIsActive || parentIsActive) {
-                toOpen.push(item.label);
-            }
-        });
-
-        if (toOpen.length > 0) {
-            setOpenDropdowns((previous) =>
-                Array.from(new Set([...previous, ...toOpen]))
-            );
-        }
-
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [pathname]);
-
-    const toggleDropdown = (label: string) => {
-        setOpenDropdowns((previous) =>
-            previous.includes(label)
-                ? previous.filter((item) => item !== label)
-                : [...previous, label]
-        );
-    };
-
-    // -------------------------------------------------
-    // LOGOUT
-    // -------------------------------------------------
-
-    const handleLogoutConfirm = async () => {
-        if (isLoggingOut) return;
-
-        setIsLoggingOut(true);
-
-        try {
-            await logout({
-                callApi: true,
-                clearReduxState: true,
-                clearPersistedState: true,
-
-                onSuccess: () => {
-                    dispatch(
-                        showToast({
-                            message: "Successfully logged out! See you soon",
-                            type: "success",
-                        })
-                    );
-
-                    setIsLoggingOut(false);
-                    setShowLogoutModal(false);
-                    setIsMobileOpen(false);
-
-                    router.push("/indiekonnect-web/login/");
-                },
-
-                onError: () => {
-                    dispatch(
-                        showToast({
-                            message: "Logout failed. Please try again.",
-                            type: "error",
-                        })
-                    );
-
-                    setIsLoggingOut(false);
-                    setShowLogoutModal(false);
-                },
-            });
-        } catch {
-            dispatch(
-                showToast({
-                    message: "Something went wrong. Please try again.",
-                    type: "error",
-                })
-            );
-
-            setIsLoggingOut(false);
-            setShowLogoutModal(false);
-        }
-    };
-
-    // -------------------------------------------------
-    // ACTIVE ITEM STYLE (Shadow removed, slightly compact)
-    // -------------------------------------------------
-
-    const activeStyle: React.CSSProperties = {
-        background: `linear-gradient(135deg, ${NAVY} 0%, ${NAVY_LIGHT} 100%)`,
-        color: "#ffffff",
-        // boxShadow removed as requested
-    };
-
-    const rowBase =
-        "group relative flex h-10 w-full min-w-0 items-center rounded-xl px-2.5 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1B2E63]/40";
-
-    // -------------------------------------------------
-    // RENDER MENU ITEM
-    // -------------------------------------------------
-
-    const renderItem = (item: MenuItem) => {
-        const Icon = item.icon;
-
-        // DROPDOWN ITEM
-        if (item.dropdown && item.children) {
-            const parentActive = isParentActive(item);
-            const isOpen = openDropdowns.includes(item.label);
-
-            return (
-                <div key={item.label} className="min-w-0">
-                    <button
-                        type="button"
-                        aria-expanded={isOpen}
-                        onClick={() => {
-                            if (
-                                !item.toggleOnly &&
-                                item.href &&
-                                item.href !== "#"
-                            ) {
-                                router.push(item.href);
-                            }
-
-                            toggleDropdown(item.label);
-                        }}
-                        className={`${rowBase} ${
-                            parentActive ? "" : "hover:bg-[#F3F5F9]"
+    if (isDropdown) {
+      return (
+        <div key={item.label} className="min-w-0">
+          <button
+            type="button"
+            aria-expanded={expanded}
+            onClick={() => {
+              if (!item.toggleOnly && item.href && item.href !== "#") {
+                router.push(item.href);
+              }
+              toggleDropdown(item.label);
+            }}
+            className={commonItem}
+          >
+            {content}
+          </button>
+          <AnimatePresence initial={false}>
+            {expanded && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2, ease: "easeInOut" }}
+                className="overflow-hidden"
+              >
+                <div className="relative ml-[25px] mt-1 space-y-0.5 border-l border-neutral-200 pb-1 pl-4">
+                  {item.children?.map((child) => {
+                    const ChildIcon = child.icon;
+                    const selected = matchesRoute(pathname, child.href);
+                    return (
+                      <Link
+                        key={child.href}
+                        href={child.href}
+                        onClick={closeMobile}
+                        aria-current={selected ? "page" : undefined}
+                        className={`group/child relative flex min-h-[36px] w-full min-w-0 items-center gap-2 rounded-lg px-2.5 py-1.5 text-[12px] transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-500 ${
+                          selected
+                            ? "bg-neutral-100 font-semibold text-neutral-950"
+                            : "font-medium text-neutral-500 hover:bg-neutral-50 hover:text-neutral-950"
                         }`}
-                        style={parentActive ? activeStyle : undefined}
-                    >
-                        {parentActive && (
-                            <span
-                                className="absolute -left-4 top-1/2 h-4 w-1 -translate-y-1/2 rounded-r-full"
-                                style={{ background: BRAND_YELLOW }}
-                            />
+                      >
+                        {selected && (
+                          <span className="absolute -left-[18px] top-1/2 h-[7px] w-[7px] -translate-y-1/2 rounded-full border-2 border-white bg-black ring-1 ring-neutral-700" />
                         )}
-
-                        <span
-                            className={`relative mr-2.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors ${
-                                parentActive
-                                    ? "bg-white/12"
-                                    : "bg-[#F1F4F9] group-hover:bg-white"
-                            }`}
-                        >
-                            <Icon
-                                size={15}
-                                strokeWidth={1.9}
-                                className={
-                                    parentActive
-                                        ? "text-[#F6B800]"
-                                        : "text-[#667085] group-hover:text-[#0E1B3D]"
-                                }
-                            />
+                        <ChildIcon
+                          size={14}
+                          strokeWidth={1.8}
+                          className={`shrink-0 ${selected ? "text-neutral-900" : "text-neutral-400"}`}
+                        />
+                        <span className="min-w-0 flex-1 break-words leading-[1.4]">
+                          {child.label}
                         </span>
-
-                        <span
-                            className={`relative min-w-0 flex-1 truncate text-[13px] font-semibold ${
-                                parentActive
-                                    ? "text-white"
-                                    : "text-[#475066] group-hover:text-[#0E1B3D]"
-                            }`}
-                        >
-                            {item.label}
-                        </span>
-
-                        <span
-                            className={`relative ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full transition-colors ${
-                                parentActive ? "bg-white/10" : "group-hover:bg-white"
-                            }`}
-                        >
-                            <ChevronDown
-                                size={13}
-                                strokeWidth={2.4}
-                                className={`transition-transform duration-300 ${
-                                    isOpen ? "rotate-180" : ""
-                                } ${
-                                    parentActive ? "text-white/80" : "text-[#98A2B3]"
-                                }`}
-                            />
-                        </span>
-                    </button>
-
-                    <AnimatePresence initial={false}>
-                        {isOpen && (
-                            <motion.div
-                                initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: "auto", opacity: 1 }}
-                                exit={{ height: 0, opacity: 0 }}
-                                transition={{ duration: 0.22, ease: "easeInOut" }}
-                                className="overflow-hidden"
-                            >
-                                <div className="relative ml-[24px] mt-1 space-y-0.5 pb-1 pl-4">
-                                    {/* vertical tree line */}
-                                    <span className="absolute bottom-3 left-0 top-0 w-px bg-gradient-to-b from-[#DDE3EC] to-[#DDE3EC]/30" />
-
-                                    {item.children.map((child) => {
-                                        const ChildIcon = child.icon;
-                                        const childActive = isActive(child.href);
-
-                                        return (
-                                            <Link
-                                                key={child.label}
-                                                href={child.href}
-                                                onClick={closeMobileSidebar}
-                                                className={`relative flex min-h-[32px] w-full min-w-0 items-center gap-2 rounded-lg px-2.5 py-1.5 text-[12px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1B2E63]/40 ${
-                                                    childActive
-                                                        ? "bg-[#EEF1FA] font-semibold text-[#0E1B3D]"
-                                                        : "font-medium text-[#667085] hover:bg-[#F6F8FB] hover:text-[#0E1B3D]"
-                                                }`}
-                                            >
-                                                {/* elbow connector */}
-                                                <span className="absolute -left-4 top-1/2 h-px w-3 bg-[#DDE3EC]" />
-
-                                                {childActive && (
-                                                    <span
-                                                        className="absolute -left-[19px] top-1/2 h-[6px] w-[6px] -translate-y-1/2 rounded-full ring-[3px] ring-white"
-                                                        style={{ background: BRAND_YELLOW }}
-                                                    />
-                                                )}
-
-                                                <ChildIcon
-                                                    size={13}
-                                                    strokeWidth={1.8}
-                                                    className={`shrink-0 ${
-                                                        childActive
-                                                            ? "text-[#1B2E63]"
-                                                            : "text-[#98A2B3]"
-                                                    }`}
-                                                />
-
-                                                <span className="min-w-0 flex-1 break-words">
-                                                    {child.label}
-                                                </span>
-                                            </Link>
-                                        );
-                                    })}
-                                </div>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
+                      </Link>
+                    );
+                  })}
                 </div>
-            );
-        }
-
-        // NORMAL LINK
-        const active = isActive(item.href);
-
-        return (
-            <Link
-                key={item.label}
-                href={item.href}
-                onClick={closeMobileSidebar}
-                className={`${rowBase} ${active ? "" : "hover:bg-[#F3F5F9]"}`}
-                style={active ? activeStyle : undefined}
-            >
-                {active && (
-                    <span
-                        className="absolute -left-4 top-1/2 h-4 w-1 -translate-y-1/2 rounded-r-full"
-                        style={{ background: BRAND_YELLOW }}
-                    />
-                )}
-
-                <span
-                    className={`relative mr-2.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors ${
-                        active
-                            ? "bg-white/12"
-                            : "bg-[#F1F4F9] group-hover:bg-white"
-                    }`}
-                >
-                    <Icon
-                        size={15}
-                        strokeWidth={1.9}
-                        className={
-                            active
-                                ? "text-[#F6B800]"
-                                : "text-[#667085] group-hover:text-[#0E1B3D]"
-                        }
-                    />
-                </span>
-
-                <span
-                    className={`relative min-w-0 flex-1 truncate text-[13px] font-semibold transition-colors ${
-                        active
-                            ? "text-white"
-                            : "text-[#475066] group-hover:text-[#0E1B3D]"
-                    }`}
-                >
-                    {item.label}
-                </span>
-            </Link>
-        );
-    };
-
-    // -------------------------------------------------
-    // SIDEBAR UI
-    // -------------------------------------------------
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      );
+    }
 
     return (
-        <>
-            <style>{`
-                @import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,300;0,400;0,700;0,900;1,400&display=swap');
-
-                .sb-scroll {
-                    scrollbar-width: thin;
-                    scrollbar-color: transparent transparent;
-                    overscroll-behavior: contain;
-                    -webkit-overflow-scrolling: touch;
-                    /* soft fade at top and bottom so items never look cut off */
-                    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 12px, #000 calc(100% - 28px), transparent 100%);
-                    mask-image: linear-gradient(to bottom, transparent 0, #000 12px, #000 calc(100% - 28px), transparent 100%);
-                }
-
-                .sb-scroll:hover {
-                    scrollbar-color: #dfe4ec transparent;
-                }
-
-                .sb-scroll::-webkit-scrollbar {
-                    width: 5px;
-                }
-
-                .sb-scroll::-webkit-scrollbar-track {
-                    background: transparent;
-                }
-
-                .sb-scroll::-webkit-scrollbar-thumb {
-                    background: transparent;
-                    border-radius: 999px;
-                }
-
-                .sb-scroll:hover::-webkit-scrollbar-thumb {
-                    background: #dfe4ec;
-                }
-
-                @media (prefers-reduced-motion: reduce) {
-                    #distributor-sidebar,
-                    #distributor-sidebar * {
-                        transition-duration: 0.01ms !important;
-                    }
-                }
-            `}</style>
-
-            {/* Desktop spacer — keeps page content clear of the fixed sidebar */}
-            <div
-                aria-hidden="true"
-                className="hidden w-[280px] shrink-0 lg:block"
-            />
-
-            {/* Mobile drawer backdrop */}
-            <AnimatePresence>
-                {isMobileOpen && (
-                    <motion.button
-                        type="button"
-                        aria-label="Close navigation menu"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                        onClick={closeMobileSidebar}
-                        className="fixed inset-0 z-40 cursor-default bg-[#071126]/50 backdrop-blur-[2px] lg:hidden"
-                    />
-                )}
-            </AnimatePresence>
-
-            {/* Sidebar — fixed top to bottom on every screen size */}
-            <aside
-                id="distributor-sidebar"
-                aria-label="Distributor navigation"
-                style={{ fontFamily: "'Lato', sans-serif" }}
-                className={`fixed inset-y-0 left-0 z-50 flex w-[min(84vw,300px)] max-w-[300px] flex-col overflow-hidden border-r border-[#E9EDF2] bg-white transition-transform duration-300 ease-in-out lg:z-30 lg:w-[280px] lg:max-w-none lg:translate-x-0 lg:shadow-none ${
-                    isMobileOpen
-                        ? "translate-x-0 shadow-2xl"
-                        : "-translate-x-full shadow-none"
-                }`}
-            >
-                {/* Brand (Top) */}
-                <div className="relative shrink-0 px-4 pt-4 lg:pt-5">
-                    <div className="relative flex min-w-0 items-center justify-between overflow-hidden rounded-2xl bg-gradient-to-br from-[#F6F8FC] to-[#EEF2F9] p-3 ring-1 ring-[#E9EDF2]">
-                        {/* decorative corner glow */}
-                        <span
-                            aria-hidden="true"
-                            className="pointer-events-none absolute -right-6 -top-6 h-20 w-20 rounded-full opacity-25 blur-2xl"
-                            style={{ background: BRAND_YELLOW }}
-                        />
-
-                        <Link
-                            href="/"
-                            onClick={closeMobileSidebar}
-                            className="relative flex min-w-0 items-center gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1B2E63]/40 rounded-xl"
-                        >
-                            <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-[#E9EDF2]">
-                                <div className="relative h-8 w-8">
-                                    <Image
-                                        src={Logo}
-                                        alt="IndieKonnect"
-                                        fill
-                                        priority
-                                        sizes="32px"
-                                        className="object-contain"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="flex min-w-0 flex-col leading-none">
-                                <span className="truncate text-[17px] font-bold tracking-[-0.01em] text-[#0E1B3D]">
-                                    IndieKonnect
-                                </span>
-
-                                <span className="mt-1.5 inline-flex w-fit items-center gap-1.5 rounded-full bg-white px-2 py-[3px] text-[10.5px] font-semibold text-[#667085] ring-1 ring-[#E4E7EC]">
-                                    <span className="h-1.5 w-1.5 rounded-full bg-[#1F9D6B]" />
-                                    Distributor panel
-                                </span>
-                            </div>
-                        </Link>
-
-                        {/* Close button (Mobile only) */}
-                        <button
-                            type="button"
-                            aria-label="Close sidebar"
-                            onClick={closeMobileSidebar}
-                            className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[#475066] transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1B2E63]/40 lg:hidden"
-                        >
-                            <X size={20} />
-                        </button>
-                    </div>
-                </div>
-
-                {/* Scrollable Menu — only this part scrolls */}
-                <div className="sb-scroll mt-3 min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 pt-2">
-                    <nav className="space-y-5 pb-10">
-                        {menuGroups.map((group) => (
-                            <div key={group.title} className="min-w-0">
-                                <div className="mb-2 flex items-center gap-2 px-2.5">
-                                    <p className="text-[11px] font-bold tracking-[0.02em] text-[#98A2B3]">
-                                        {group.title}
-                                    </p>
-                                    <span className="h-px flex-1 bg-[#EEF1F5]" />
-                                </div>
-
-                                <div className="space-y-0.5">
-                                    {group.items.map(renderItem)}
-                                </div>
-                            </div>
-                        ))}
-                    </nav>
-                </div>
-
-                {/* Sticky Logout — always pinned at the very bottom */}
-                <div className="relative shrink-0 bg-white px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
-                    <div className="mb-3 h-px bg-[#EEF1F5]" />
-
-                    <button
-                        type="button"
-                        onClick={() => {
-                            setShowLogoutModal(true);
-                            closeMobileSidebar();
-                        }}
-                        className="group flex h-10 w-full min-w-0 items-center rounded-xl bg-[#FDF5F5] px-2.5 text-left ring-1 ring-[#F8E1E1] transition-all duration-200 hover:bg-[#FBE9E9] hover:ring-[#F3CDCD] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B24C4C]/40"
-                    >
-                        <span className="mr-2.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white shadow-sm">
-                            <LogOut
-                                size={15}
-                                strokeWidth={1.9}
-                                className="text-[#B24C4C] transition-transform duration-200 group-hover:translate-x-0.5"
-                            />
-                        </span>
-
-                        <span className="text-[13px] font-semibold text-[#B24C4C]">
-                            Logout
-                        </span>
-                    </button>
-                </div>
-            </aside>
-
-            {/* Logout confirmation */}
-            <LogoutModal
-                isOpen={showLogoutModal}
-                onClose={() => {
-                    if (!isLoggingOut) {
-                        setShowLogoutModal(false);
-                    }
-                }}
-                onConfirm={handleLogoutConfirm}
-                isLoading={isLoggingOut}
-            />
-        </>
+      <Link
+        key={item.href}
+        href={item.href}
+        onClick={closeMobile}
+        aria-current={active ? "page" : undefined}
+        className={commonItem}
+      >
+        {content}
+      </Link>
     );
+  };
+
+  return (
+    <>
+      <style>{`
+        .ik-sidebar-scroll { scrollbar-width: thin; scrollbar-color: #e5e5e5 transparent; overscroll-behavior: contain; }
+        .ik-sidebar-scroll::-webkit-scrollbar { width: 5px; }
+        .ik-sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
+        .ik-sidebar-scroll::-webkit-scrollbar-thumb { border-radius: 999px; background: #e5e5e5; }
+        @media (prefers-reduced-motion: reduce) {
+          #distributor-sidebar, #distributor-sidebar * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+        }
+      `}</style>
+
+      {/* Desktop spacer matches fixed sidebar width. */}
+      <div aria-hidden="true" className="hidden w-[280px] shrink-0 lg:block" />
+
+      {/* Mobile drawer backdrop */}
+      <AnimatePresence>
+        {isMobileOpen && (
+          <motion.button
+            type="button"
+            aria-label="Close navigation menu"
+            className="fixed inset-0 z-40 cursor-default bg-black/50 backdrop-blur-[2px] lg:hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            onClick={closeMobile}
+          />
+        )}
+      </AnimatePresence>
+
+      <aside
+        id="distributor-sidebar"
+        aria-label="Distributor navigation"
+        style={{
+          fontFamily: "'Lato', ui-sans-serif, system-ui, sans-serif",
+          color: INK,
+        }}
+        className={`fixed inset-y-0 left-0 z-50 flex w-[min(88vw,300px)] max-w-[300px] flex-col overflow-hidden border-r border-neutral-200 bg-white transition-transform duration-300 ease-out lg:z-30 lg:w-[280px] lg:max-w-none lg:translate-x-0 lg:shadow-none ${
+          isMobileOpen
+            ? "translate-x-0 shadow-[12px_0_50px_rgba(0,0,0,0.18)]"
+            : "-translate-x-full shadow-none"
+        }`}
+      >
+        {/* Brand header */}
+        <div className="shrink-0 px-4 pb-4 pt-5">
+          <div className="flex items-center justify-between gap-2 border-b border-neutral-100 pb-5">
+            <Link
+              href="/distributor/dashboard"
+              onClick={closeMobile}
+              className="group flex min-w-0 flex-1 items-center gap-3 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900"
+            >
+              <span className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-[13px] border border-neutral-200 bg-neutral-50 p-2">
+                <Image
+                  src={Logo}
+                  alt="IndieKonnect"
+                  fill
+                  sizes="44px"
+                  priority
+                  className="object-contain p-1.5"
+                />
+              </span>
+              <span className="flex min-w-0 flex-col">
+                <span className="truncate text-[17px] font-extrabold tracking-[-0.045em] text-neutral-950">
+                  IndieKonnect
+                </span>
+                <span className="mt-0.5 flex items-center gap-1.5 text-[10px] font-medium tracking-[0.04em] text-neutral-500">
+                  <span className="h-[6px] w-[6px] rounded-full bg-emerald-500" />
+                  DISTRIBUTOR PANEL
+                </span>
+              </span>
+            </Link>
+            <button
+              type="button"
+              aria-label="Close sidebar"
+              onClick={closeMobile}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-neutral-200 text-neutral-500 transition hover:bg-neutral-100 hover:text-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-700 lg:hidden"
+            >
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+
+        {/* Navigation: independently scrollable */}
+        <div className="ik-sidebar-scroll min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 pb-6">
+          <nav aria-label="Main menu" className="space-y-5">
+            {menuGroups.map((group) => (
+              <section key={group.title} className="min-w-0">
+                <div className="mb-2 flex items-center gap-2 px-3">
+                  <h2 className="shrink-0 text-[10px] font-bold uppercase tracking-[0.11em] text-neutral-400">
+                    {group.title}
+                  </h2>
+                  <span className="h-px flex-1 bg-neutral-100" />
+                </div>
+                <div className="space-y-1">{group.items.map(renderItem)}</div>
+              </section>
+            ))}
+          </nav>
+        </div>
+
+        {/* Black primary CTA: always visible */}
+        <div className="shrink-0 border-t border-neutral-100 bg-white px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-4">
+          <div className="mb-3 flex items-center justify-between px-1">
+            <span className="text-[11px] font-medium text-neutral-500">
+              Account
+            </span>
+            <span className="rounded-full border border-neutral-200 bg-neutral-50 px-2 py-0.5 text-[10px] font-medium text-neutral-500">
+              Secure session
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setShowLogoutModal(true);
+              closeMobile();
+            }}
+            className="group flex min-h-[44px] w-full items-center justify-center gap-2.5 rounded-xl bg-black px-4 text-[13px] font-semibold text-white shadow-[0_4px_12px_rgba(0,0,0,0.13)] transition hover:bg-neutral-800 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-800 focus-visible:ring-offset-2"
+          >
+            <LogOut
+              size={16}
+              strokeWidth={2}
+              className="transition group-hover:translate-x-0.5"
+            />
+            Log out
+          </button>
+        </div>
+      </aside>
+
+      <LogoutModal
+        open={showLogoutModal}
+        loading={isLoggingOut}
+        onClose={() => {
+          if (!isLoggingOut) setShowLogoutModal(false);
+        }}
+        onConfirm={handleLogoutConfirm}
+      />
+    </>
+  );
 }
