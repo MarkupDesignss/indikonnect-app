@@ -1,7 +1,11 @@
+
 "use client";
 
 import { useMemo, useState } from "react";
-import { useGetDistributorGenealogyTreeQuery } from "@/lib/redux/api/distributor/distributorGenealogyApi";
+import {
+    useGetDistributorMyReferralsQuery,
+} from "@/lib/redux/api/distributor/distributorGenealogyApi";
+
 import {
     Users,
     UserPlus,
@@ -19,33 +23,9 @@ const BRASS = "#B8935A";
 const EMERALD = "#1f9d6b";
 const INDIGO = "#3955A6";
 
-interface GenealogyRow {
-    member_id: number;
-    ba_id: string;
-    unilevel_parent_id: number | null;
-    unilevel_parent_ba_id: string | null;
-    binary_parent_id: number | null;
-    binary_parent_ba_id: string | null;
-    binary_side: number | null;
-    cv_left: string;
-    cv_right: string;
-    floating_cv_left: string;
-    floating_cv_right: string;
-    total_cv_left: string;
-    total_cv_right: string;
-    level: number;
-}
-
-interface GenealogyPayload {
-    root?: GenealogyRow | null;
-    rows: GenealogyRow[];
-    depth?: number;
-    total_nodes?: number;
-    left_volume?: string;
-    right_volume?: string;
-    cv_floating_left?: string;
-    cv_floating_right?: string;
-}
+// --------------------------------------------------
+// Helpers
+// --------------------------------------------------
 
 const formatNumber = (value: string | number | null | undefined) => {
     const number = Number(value ?? 0);
@@ -57,15 +37,40 @@ const formatNumber = (value: string | number | null | undefined) => {
         : "0";
 };
 
-const getFloatingCV = (member: GenealogyRow) => {
+const getFloatingCV = (member: {
+    floating_cv_left: string;
+    floating_cv_right: string;
+}) => {
     return (
         Number(member.floating_cv_left || 0) +
         Number(member.floating_cv_right || 0)
     );
 };
 
+const formatDate = (value: string | null) => {
+    if (!value) return "—";
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) return "—";
+
+    return date.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+    });
+};
+
+// --------------------------------------------------
+// Component
+// --------------------------------------------------
+
 const Referral = () => {
     const [searchQuery, setSearchQuery] = useState("");
+
+    // --------------------------------------------------
+    // My Referrals API
+    // --------------------------------------------------
 
     const {
         data: response,
@@ -73,131 +78,101 @@ const Referral = () => {
         isFetching,
         isError,
         refetch,
-    } = useGetDistributorGenealogyTreeQuery();
+    } = useGetDistributorMyReferralsQuery();
 
-    /*
-     * Handles both common response formats:
-     * { success: true, data: { root, rows } }
-     * { root, rows }
-     */
-    const payload = useMemo<GenealogyPayload | undefined>(() => {
-        const apiResponse = response as any;
+    // API response:
+    // {
+    //   success: true,
+    //   data: [...referrals],
+    //   total: 2
+    // }
 
-        const result =
-            apiResponse?.data?.data ??
-            apiResponse?.data ??
-            apiResponse;
+    const referrals = response?.data ?? [];
 
-        if (!result || !Array.isArray(result.rows)) {
-            return undefined;
-        }
+    const totalReferrals = response?.total ?? referrals.length;
 
-        return result as GenealogyPayload;
-    }, [response]);
+    // --------------------------------------------------
+    // Search / Filter
+    // --------------------------------------------------
 
-    const allRows = payload?.rows ?? [];
-    const root = payload?.root;
-
-    /*
-     * Direct referrals are identified by unilevel parent.
-     * The logged-in member/root itself is excluded.
-     */
-    const directReferrals = useMemo(() => {
-        if (!root) return [];
-
-        return allRows.filter(
-            (member) =>
-                member.member_id !== root.member_id &&
-                (
-                    member.unilevel_parent_id === root.member_id ||
-                    (
-                        member.unilevel_parent_id == null &&
-                        member.unilevel_parent_ba_id === root.ba_id
-                    )
-                )
-        );
-    }, [allRows, root]);
-
-    /*
-     * Search now matches BA ID (primary) and parent BA ID.
-     * Member ID search is also kept as a fallback.
-     */
     const filteredReferrals = useMemo(() => {
         const query = searchQuery.trim().toLowerCase();
 
-        if (!query) return directReferrals;
+        if (!query) return referrals;
 
-        return directReferrals.filter((member) => {
+        return referrals.filter((member) => {
             return (
-                member.ba_id.toLowerCase().includes(query) ||
-                String(member.unilevel_parent_ba_id ?? "")
+                (member.ba_id ?? "").toLowerCase().includes(query) ||
+                (member.name ?? "").toLowerCase().includes(query) ||
+                String(member.member_id).includes(query) ||
+                (member.binary_parent_ba_id ?? "")
                     .toLowerCase()
-                    .includes(query) ||
-                String(member.member_id).toLowerCase().includes(query)
+                    .includes(query)
             );
         });
-    }, [directReferrals, searchQuery]);
+    }, [referrals, searchQuery]);
+
+    // --------------------------------------------------
+    // Stats
+    // --------------------------------------------------
+
+    const leftPositionCount = referrals.filter(
+        (member) => member.binary_side === 1
+    ).length;
+
+    const rightPositionCount = referrals.filter(
+        (member) => member.binary_side === 2
+    ).length;
+
+    const totalFloatingCV = referrals.reduce(
+        (total, member) => total + getFloatingCV(member),
+        0
+    );
 
     const stats = [
         {
             label: "Direct Referrals",
-            value: directReferrals.length,
+            value: totalReferrals,
             color: NAVY,
             bg: "#eceefb",
             icon: Users,
         },
         {
-            label: "Network Members",
-            value: allRows.filter(
-                (member) => member.member_id !== root?.member_id
-            ).length,
+            label: "Left Position",
+            value: leftPositionCount,
             color: BRASS,
             bg: "#f8f1e4",
             icon: UserPlus,
         },
         {
-            label: "Network Depth",
-            value: payload?.depth ?? 0,
+            label: "Right Position",
+            value: rightPositionCount,
             color: INDIGO,
             bg: "#eceffb",
             icon: Network,
         },
         {
             label: "Floating CV",
-            value: formatNumber(
-                Number(
-                    payload?.cv_floating_left ??
-                        root?.floating_cv_left ??
-                        0
-                ) +
-                    Number(
-                        payload?.cv_floating_right ??
-                            root?.floating_cv_right ??
-                            0
-                    )
-            ),
+            value: formatNumber(totalFloatingCV),
             color: EMERALD,
             bg: "#eaf7f0",
             icon: Wallet,
         },
     ];
 
-    const getDownlineCount = (member: GenealogyRow) => {
-        return allRows.filter(
-            (item) =>
-                item.unilevel_parent_id === member.member_id ||
-                (
-                    item.unilevel_parent_id == null &&
-                    item.unilevel_parent_ba_id === member.ba_id
-                )
-        ).length;
-    };
+    // --------------------------------------------------
+    // Helpers
+    // --------------------------------------------------
 
     const getPosition = (side: number | null) => {
         if (side === 1) return "Left";
         if (side === 2) return "Right";
         return "—";
     };
+
+    // --------------------------------------------------
+    // UI
+    // --------------------------------------------------
 
     return (
         <div
@@ -223,6 +198,7 @@ const Referral = () => {
             `}</style>
 
             {/* Header */}
+
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                     <h1 className="text-[17px] font-bold text-[#101828]">
@@ -249,6 +225,7 @@ const Referral = () => {
             </div>
 
             {/* Stats */}
+
             <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 {stats.map(
                     ({ label, value, color, bg, icon: Icon }) => (
@@ -284,6 +261,7 @@ const Referral = () => {
             </div>
 
             {/* Search */}
+
             <div className="mt-6">
                 <div className="relative w-full sm:max-w-[420px]">
                     <Search
@@ -293,7 +271,7 @@ const Referral = () => {
 
                     <input
                         type="text"
-                        placeholder="Search by BA ID"
+                        placeholder="Search by BA ID or name"
                         value={searchQuery}
                         onChange={(event) =>
                             setSearchQuery(event.target.value)
@@ -310,7 +288,7 @@ const Referral = () => {
                         </span>{" "}
                         of{" "}
                         <span className="font-bold text-[#101828]">
-                            {directReferrals.length}
+                            {totalReferrals}
                         </span>{" "}
                         direct referrals
                     </p>
@@ -318,19 +296,24 @@ const Referral = () => {
             </div>
 
             {/* Referral List */}
+
             <div className="referral-scrollbar mt-4 overflow-x-auto rounded-[10px] border border-[#e7e9ee]">
-                <div className="min-w-[900px]">
-                    {/* Table Header — BA ID is now the primary column */}
-                    <div className="grid grid-cols-[1.6fr_0.55fr_0.7fr_1.6fr_1fr_0.65fr] gap-3 border-b border-[#e7e9ee] bg-[#f9fafb] px-4 py-3 text-[11px] font-bold uppercase tracking-wide text-[#8a92a6]">
+                <div className="min-w-[1050px]">
+
+                    {/* Table Header */}
+
+                    <div className="grid grid-cols-[1.4fr_1fr_0.5fr_0.7fr_1.4fr_0.8fr_1fr] gap-3 border-b border-[#e7e9ee] bg-[#f9fafb] px-4 py-3 text-[11px] font-bold uppercase tracking-wide text-[#8a92a6]">
                         <span>BA ID</span>
+                        <span>Name</span>
                         <span>Level</span>
                         <span>Position</span>
                         <span>Parent BA ID</span>
                         <span>Floating CV</span>
-                        <span>Downline</span>
+                        <span>Joined At</span>
                     </div>
 
                     {/* Loading */}
+
                     {isLoading && (
                         <div className="flex min-h-[220px] flex-col items-center justify-center gap-3">
                             <Loader2
@@ -346,6 +329,7 @@ const Referral = () => {
                     )}
 
                     {/* Error */}
+
                     {!isLoading && isError && (
                         <div className="flex min-h-[220px] flex-col items-center justify-center gap-3 px-4">
                             <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#fef3f2]">
@@ -375,6 +359,7 @@ const Referral = () => {
                     )}
 
                     {/* Empty / No Results */}
+
                     {!isLoading &&
                         !isError &&
                         filteredReferrals.length === 0 && (
@@ -392,21 +377,24 @@ const Referral = () => {
 
                                     <p className="mt-1 text-[12.5px] text-[#8a92a6]">
                                         {searchQuery.trim()
-                                            ? "Try searching with another BA ID."
+                                            ? "Try searching with another BA ID or name."
                                             : "Your direct referrals will appear here once available."}
                                     </p>
                                 </div>
                             </div>
                         )}
 
-                    {/* Referral Rows — BA ID shown as primary */}
+                    {/* Referral Rows */}
+
                     {!isLoading &&
                         !isError &&
                         filteredReferrals.map((member) => (
                             <div
                                 key={member.member_id}
-                                className="grid grid-cols-[1.6fr_0.55fr_0.7fr_1.6fr_1fr_0.65fr] items-center gap-3 border-b border-[#f0f1f4] px-4 py-4 text-[12px] last:border-b-0 hover:bg-[#fafbfc]"
+                                className="grid grid-cols-[1.4fr_1fr_0.5fr_0.7fr_1.4fr_0.8fr_1fr] items-center gap-3 border-b border-[#f0f1f4] px-4 py-4 text-[12px] last:border-b-0 hover:bg-[#fafbfc]"
                             >
+                                {/* BA ID */}
+
                                 <span
                                     className="break-all font-bold text-[#101828]"
                                     title={member.ba_id}
@@ -414,9 +402,19 @@ const Referral = () => {
                                     {member.ba_id || "—"}
                                 </span>
 
+                                {/* Name */}
+
+                                <span className="break-words text-[#475467]">
+                                    {member.name || "—"}
+                                </span>
+
+                                {/* Level */}
+
                                 <span className="text-[#475467]">
                                     {member.level ?? "—"}
                                 </span>
+
+                                {/* Position */}
 
                                 <span>
                                     <span
@@ -432,19 +430,25 @@ const Referral = () => {
                                     </span>
                                 </span>
 
+                                {/* Parent BA ID */}
+
                                 <span
                                     className="break-all text-[#475467]"
-                                    title={member.unilevel_parent_ba_id ?? ""}
+                                    title={member.binary_parent_ba_id ?? ""}
                                 >
-                                    {member.unilevel_parent_ba_id || "—"}
+                                    {member.binary_parent_ba_id || "—"}
                                 </span>
+
+                                {/* Floating CV */}
 
                                 <span className="font-bold text-[#1f9d6b]">
                                     {formatNumber(getFloatingCV(member))}
                                 </span>
 
-                                <span className="font-semibold text-[#344054]">
-                                    {getDownlineCount(member)}
+                                {/* Joined At */}
+
+                                <span className="text-[#475467]">
+                                    {formatDate(member.joined_at)}
                                 </span>
                             </div>
                         ))}
