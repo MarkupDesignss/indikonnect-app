@@ -2261,7 +2261,7 @@ function HeaderInner({
                       Festive finds. Sparkling celebrations. Only at IndieKonnect.
                     </span>
                   </div>
-                  <button
+                  {/* <button
                     type="button"
                     className="ik-festive-shop"
                     onClick={() => {
@@ -2271,7 +2271,7 @@ function HeaderInner({
                     tabIndex={isScrolled ? -1 : 0}
                   >
                     Shop the edit <ArrowRight size={14} aria-hidden="true" />
-                  </button>
+                  </button> */}
                 </div>
               ) : (
                 <div className="premium-benefits-marquee" aria-label="Store benefits">
