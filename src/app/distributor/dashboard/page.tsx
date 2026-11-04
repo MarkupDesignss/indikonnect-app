@@ -708,19 +708,17 @@ function RedeemCoinsModal({
                     onClick={() => onSelectPoint("yellow_bal")}
                     disabled={isRedeeming}
                     aria-pressed={selectedRedeemPoint === "yellow_bal"}
-                    className={`flex min-w-0 items-center justify-between gap-2 rounded-[12px] border px-3 py-3 text-left transition-all disabled:cursor-not-allowed disabled:opacity-60 ${
-                      selectedRedeemPoint === "yellow_bal"
+                    className={`flex min-w-0 items-center justify-between gap-2 rounded-[12px] border px-3 py-3 text-left transition-all disabled:cursor-not-allowed disabled:opacity-60 ${selectedRedeemPoint === "yellow_bal"
                         ? "border-[#DCC58F] bg-[#FFF9EA] shadow-[0_3px_10px_rgba(183,139,48,.07)]"
                         : "border-[#E6E9EF] bg-white hover:border-[#D5D9E1]"
-                    }`}
+                      }`}
                   >
                     <span className="flex min-w-0 items-center gap-2.5">
                       <span
-                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] ${
-                          selectedRedeemPoint === "yellow_bal"
+                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] ${selectedRedeemPoint === "yellow_bal"
                             ? "bg-[#F4E8C9] text-[#A77B22]"
                             : "bg-[#F4F5F7] text-[#858B96]"
-                        }`}
+                          }`}
                       >
                         <Coins size={16} />
                       </span>
@@ -736,11 +734,10 @@ function RedeemCoinsModal({
                     </span>
 
                     <span
-                      className={`flex h-[17px] w-[17px] shrink-0 items-center justify-center rounded-full border ${
-                        selectedRedeemPoint === "yellow_bal"
+                      className={`flex h-[17px] w-[17px] shrink-0 items-center justify-center rounded-full border ${selectedRedeemPoint === "yellow_bal"
                           ? "border-[#B78B30] bg-[#B78B30] text-white"
                           : "border-[#CCD2DC] bg-white"
-                      }`}
+                        }`}
                     >
                       {selectedRedeemPoint === "yellow_bal" && (
                         <Check size={11} strokeWidth={3} />
@@ -753,19 +750,17 @@ function RedeemCoinsModal({
                     onClick={() => onSelectPoint("blue_bal")}
                     disabled={isRedeeming}
                     aria-pressed={selectedRedeemPoint === "blue_bal"}
-                    className={`flex min-w-0 items-center justify-between gap-2 rounded-[12px] border px-3 py-3 text-left transition-all disabled:cursor-not-allowed disabled:opacity-60 ${
-                      selectedRedeemPoint === "blue_bal"
+                    className={`flex min-w-0 items-center justify-between gap-2 rounded-[12px] border px-3 py-3 text-left transition-all disabled:cursor-not-allowed disabled:opacity-60 ${selectedRedeemPoint === "blue_bal"
                         ? "border-[#BFCBF0] bg-[#F0F4FE] shadow-[0_3px_10px_rgba(79,106,192,.07)]"
                         : "border-[#E6E9EF] bg-white hover:border-[#D5D9E1]"
-                    }`}
+                      }`}
                   >
                     <span className="flex min-w-0 items-center gap-2.5">
                       <span
-                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] ${
-                          selectedRedeemPoint === "blue_bal"
+                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] ${selectedRedeemPoint === "blue_bal"
                             ? "bg-[#DDE5FA] text-[#4F6AC0]"
                             : "bg-[#F4F5F7] text-[#858B96]"
-                        }`}
+                          }`}
                       >
                         <Coins size={16} />
                       </span>
@@ -781,11 +776,10 @@ function RedeemCoinsModal({
                     </span>
 
                     <span
-                      className={`flex h-[17px] w-[17px] shrink-0 items-center justify-center rounded-full border ${
-                        selectedRedeemPoint === "blue_bal"
+                      className={`flex h-[17px] w-[17px] shrink-0 items-center justify-center rounded-full border ${selectedRedeemPoint === "blue_bal"
                           ? "border-[#4F6AC0] bg-[#4F6AC0] text-white"
                           : "border-[#CCD2DC] bg-white"
-                      }`}
+                        }`}
                     >
                       {selectedRedeemPoint === "blue_bal" && (
                         <Check size={11} strokeWidth={3} />
@@ -810,11 +804,10 @@ function RedeemCoinsModal({
                 </div>
 
                 <div
-                  className={`flex h-[47px] items-center gap-2.5 rounded-[12px] border bg-white px-3.5 transition-all focus-within:ring-4 ${
-                    exceedsBalance
+                  className={`flex h-[47px] items-center gap-2.5 rounded-[12px] border bg-white px-3.5 transition-all focus-within:ring-4 ${exceedsBalance
                       ? "border-[#E7B5B5] focus-within:border-[#CE6464] focus-within:ring-[#CE6464]/10"
                       : "border-[#E2E6ED] focus-within:border-[#7183A3] focus-within:ring-[#7183A3]/10"
-                  }`}
+                    }`}
                 >
                   <Coins
                     size={17}
@@ -872,9 +865,8 @@ function RedeemCoinsModal({
                 </div>
 
                 <span
-                  className={`shrink-0 text-[10px] font-bold ${
-                    selectedBalance > 0 ? "text-[#28866B]" : "text-[#B85D5D]"
-                  }`}
+                  className={`shrink-0 text-[10px] font-bold ${selectedBalance > 0 ? "text-[#28866B]" : "text-[#B85D5D]"
+                    }`}
                 >
                   {selectedBalance > 0
                     ? "Balance available"
@@ -1017,8 +1009,8 @@ function CoinsSection({
 
       toast.error(
         apiError?.data?.message ||
-          apiError?.message ||
-          "Failed to redeem coins. Please try again.",
+        apiError?.message ||
+        "Failed to redeem coins. Please try again.",
       );
     }
   };
@@ -1105,11 +1097,10 @@ function AccountSummary({ ignite }: { ignite?: IgniteDashboard | null }) {
           </p>
         </div>
         <span
-          className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold ${
-            isActive
+          className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold ${isActive
               ? "border-[#D9EDE2] bg-[#F0FAF4] text-[#21845F]"
               : "border-[#EBEBEB] bg-[#F8F8F8] text-[#777777]"
-          }`}
+            }`}
         >
           <span
             className={`h-1.5 w-1.5 rounded-full ${isActive ? "bg-[#21845F]" : "bg-[#BDBDBD]"}`}
@@ -1123,13 +1114,12 @@ function AccountSummary({ ignite }: { ignite?: IgniteDashboard | null }) {
           return (
             <div
               key={item.label}
-              className={`min-w-0 rounded-[14px] border p-3 sm:p-4 ${
-                index === 0
+              className={`min-w-0 rounded-[14px] border p-3 sm:p-4 ${index === 0
                   ? "border-[#EAE5D9] bg-[#FBFAF7]"
                   : index === 1
                     ? "border-[#E9ECEF] bg-[#F9FAFB]"
                     : "border-[#E9ECEF] bg-[#F9FAFB]"
-              }`}
+                }`}
             >
               <Icon
                 size={16}
@@ -1518,8 +1508,8 @@ function RecentActivity({ activity }: { activity: DashboardActivity[] }) {
           style={
             hasOverflow
               ? {
-                  maxHeight: `${MAX_VISIBLE_ACTIVITY * ACTIVITY_ITEM_HEIGHT}px`,
-                }
+                maxHeight: `${MAX_VISIBLE_ACTIVITY * ACTIVITY_ITEM_HEIGHT}px`,
+              }
               : undefined
           }
         >
@@ -1578,16 +1568,16 @@ function LatestOrderSection({ order }: { order: DashboardLatestOrder | null }) {
     order?.order_reference || order?.order_number || order?.reference;
   const orderData = order as
     | (DashboardLatestOrder & {
-        total_payable?: number | string;
-        order_date?: string;
-      })
+      total_payable?: number | string;
+      order_date?: string;
+    })
     | null;
   const amount = order?.total_amount ?? orderData?.total_payable;
   const status = order?.status?.toLowerCase() ?? "";
   const statusStyle =
     status.includes("deliver") ||
-    status.includes("confirm") ||
-    status.includes("complete")
+      status.includes("confirm") ||
+      status.includes("complete")
       ? "border-[#D8EEE0] bg-[#F1FAF5] text-[#21815A]"
       : status.includes("fail") || status.includes("cancel")
         ? "border-[#F1D6D6] bg-[#FFF5F5] text-[#B45454]"
@@ -2321,9 +2311,8 @@ function SearchableDropdown<T extends string | number>({
 
         <ChevronDown
           size={16}
-          className={`shrink-0 text-[#7c879b] transition-transform duration-200 group-hover:text-[#262626] ${
-            open ? "rotate-180 text-[#262626]" : ""
-          }`}
+          className={`shrink-0 text-[#7c879b] transition-transform duration-200 group-hover:text-[#262626] ${open ? "rotate-180 text-[#262626]" : ""
+            }`}
         />
       </button>
 
@@ -2384,11 +2373,10 @@ function SearchableDropdown<T extends string | number>({
                     role="option"
                     aria-selected={featuredOption.value === value}
                     onClick={() => chooseOption(featuredOption)}
-                    className={`flex w-full items-center gap-2.5 rounded-[11px] border px-3 py-2.5 text-left transition-colors ${
-                      featuredOption.value === value
+                    className={`flex w-full items-center gap-2.5 rounded-[11px] border px-3 py-2.5 text-left transition-colors ${featuredOption.value === value
                         ? "border-[#D0D0D0] bg-[#F2F2F2]"
                         : "border-[#E7E7E7] bg-[#FAFAFA] hover:bg-[#EFEFEF]"
-                    }`}
+                      }`}
                   >
                     <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] bg-white text-[#1f9d6b] ring-1 ring-[#d9eee2]">
                       <CalendarDays size={15} />
@@ -2425,11 +2413,10 @@ function SearchableDropdown<T extends string | number>({
                         role="option"
                         aria-selected={isSelected}
                         onClick={() => chooseOption(option)}
-                        className={`flex w-full items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-left transition-colors ${
-                          isSelected
+                        className={`flex w-full items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-left transition-colors ${isSelected
                             ? "bg-[#EFEFEF] text-[#202020]"
                             : "text-[#344054] hover:bg-[#F7F7F7]"
-                        }`}
+                          }`}
                       >
                         <span className="min-w-0 flex-1">
                           <span className="block truncate text-[12px] font-bold">
@@ -2531,29 +2518,27 @@ function CvFilters({
     apiCurrentMonth ??
     (derivedCurrentMonth
       ? {
-          year: calendar?.year,
-          month_no: derivedCurrentMonth.month_no,
-          label: derivedCurrentMonth.label,
-          start: derivedCurrentMonth.weeks?.[0]?.start,
-          end: (derivedCurrentMonth.weeks ?? []).slice(-1)[0]?.end,
-        }
+        year: calendar?.year,
+        month_no: derivedCurrentMonth.month_no,
+        label: derivedCurrentMonth.label,
+        start: derivedCurrentMonth.weeks?.[0]?.start,
+        end: (derivedCurrentMonth.weeks ?? []).slice(-1)[0]?.end,
+      }
       : undefined);
 
   const currentWeekLabel =
     currentWeek?.start && currentWeek?.end
       ? `Week ${currentWeek.week_no ?? "—"}: ${formatCalendarDate(
-          currentWeek.start,
-        )} – ${formatCalendarDate(currentWeek.end)} ${
-          currentWeek.year ?? calendar?.year ?? ""
+        currentWeek.start,
+      )} – ${formatCalendarDate(currentWeek.end)} ${currentWeek.year ?? calendar?.year ?? ""
         }`.trim()
       : "Sales calendar from dashboard";
 
   const currentMonthLabel =
     currentMonth?.start && currentMonth?.end
       ? `${formatCalendarDate(
-          currentMonth.start,
-        )} – ${formatCalendarDate(currentMonth.end)} ${
-          currentMonth.year ?? calendar?.year ?? ""
+        currentMonth.start,
+      )} – ${formatCalendarDate(currentMonth.end)} ${currentMonth.year ?? calendar?.year ?? ""
         }`.trim()
       : currentMonth?.label || "—";
 
@@ -2583,16 +2568,14 @@ function CvFilters({
 
         {currentWeek?.is_settled !== undefined && (
           <span
-            className={`inline-flex w-fit shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold sm:text-[11px] ${
-              currentWeek.is_settled
+            className={`inline-flex w-fit shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold sm:text-[11px] ${currentWeek.is_settled
                 ? "bg-[#eaf7f0] text-[#1f9d6b]"
                 : "bg-[#fff4e5] text-[#a15c07]"
-            }`}
+              }`}
           >
             <span
-              className={`h-1.5 w-1.5 rounded-full ${
-                currentWeek.is_settled ? "bg-[#1f9d6b]" : "bg-[#f79009]"
-              }`}
+              className={`h-1.5 w-1.5 rounded-full ${currentWeek.is_settled ? "bg-[#1f9d6b]" : "bg-[#f79009]"
+                }`}
             />
 
             {currentWeek.is_settled ? "Settled" : "Pending settlement"}
@@ -2658,13 +2641,12 @@ function CvFilters({
         searchedWeek !== undefined && (
           <div
             role={isError ? "alert" : "status"}
-            className={`mt-4 flex min-w-0 items-start gap-2 rounded-[11px] px-3 py-2.5 text-[11px] leading-5 sm:text-[12px] ${
-              isError
+            className={`mt-4 flex min-w-0 items-start gap-2 rounded-[11px] px-3 py-2.5 text-[11px] leading-5 sm:text-[12px] ${isError
                 ? "border border-[#f2c6c3] bg-[#fff4f3] text-[#b42318]"
                 : isFetching
                   ? "border border-[#E4E4E4] bg-[#FAFAFA] text-[#454545]"
                   : "border border-[#DAEBDD] bg-[#F6FBF6] text-[#28724C]"
-            }`}
+              }`}
           >
             {isFetching && (
               <Loader2 size={14} className="mt-0.5 shrink-0 animate-spin" />
@@ -2786,18 +2768,18 @@ function FinancialSummary({ ignite }: { ignite?: ExtendedIgnite | null }) {
           : formatNumber(ignite.exchange_rate),
     },
     {
-      label: "Retail profit (USD)",
+      label: "Retail profit ",
       value:
         ignite?.retail_profit_usd == null
           ? "—"
-          : `$${formatNumber(ignite.retail_profit_usd)}`,
+          : `₹${formatNumber(ignite.retail_profit_usd)}`,
     },
     {
-      label: "Weekly pairing (USD)",
+      label: "Weekly pairing (INR)",
       value:
         ignite?.weekly_pairing_usd == null
           ? "—"
-          : `$${formatNumber(ignite.weekly_pairing_usd)}`,
+          : `₹${formatNumber(ignite.weekly_pairing_usd)}`,
     },
     {
       label: "Unilevel green coins",
@@ -3098,12 +3080,12 @@ function DashboardTrackingCenter({
       const baId = String(a.ba_id ?? a.account_id ?? "").trim();
       return baId
         ? [
-            {
-              baId,
-              rank: String(a.rank_name ?? a.rank ?? "—"),
-              status: String(a.status ?? a.membership_status ?? "—"),
-            },
-          ]
+          {
+            baId,
+            rank: String(a.rank_name ?? a.rank ?? "—"),
+            status: String(a.status ?? a.membership_status ?? "—"),
+          },
+        ]
         : [];
     })
     .filter((a, i, arr) => arr.findIndex((b) => b.baId === a.baId) === i);
@@ -3117,15 +3099,15 @@ function DashboardTrackingCenter({
         const wkYear = Number(w.year ?? calendar.year);
         return Number.isFinite(number) && number > 0 && Number.isFinite(wkYear)
           ? [
-              {
-                year: wkYear,
-                weekNo: number,
-                start: String(w.start ?? ""),
-                end: String(w.end ?? ""),
-                isCurrent: w.is_current === true,
-                isSettled: w.is_settled === true,
-              },
-            ]
+            {
+              year: wkYear,
+              weekNo: number,
+              start: String(w.start ?? ""),
+              end: String(w.end ?? ""),
+              isCurrent: w.is_current === true,
+              isSettled: w.is_settled === true,
+            },
+          ]
           : [];
       }),
     )
@@ -3156,7 +3138,7 @@ function DashboardTrackingCenter({
       setWeekNo(
         String(
           weeksOfYear.find((w) => w.isCurrent)?.weekNo ??
-            weeksOfYear[weeksOfYear.length - 1].weekNo,
+          weeksOfYear[weeksOfYear.length - 1].weekNo,
         ),
       );
     }
@@ -3196,9 +3178,9 @@ function DashboardTrackingCenter({
       setRequestError(
         String(
           trackObj(obj.data).message ??
-            obj.message ??
-            obj.error ??
-            "Unable to load CV data.",
+          obj.message ??
+          obj.error ??
+          "Unable to load CV data.",
         ),
       );
     }
@@ -3301,14 +3283,14 @@ function DashboardTrackingCenter({
     : 0;
   const allGroups = otherBreakdownCount
     ? [
-        ...breakdownGroups,
-        {
-          category: "other",
-          label: "Other",
-          color: "#9ca3af",
-          count: otherBreakdownCount,
-        },
-      ]
+      ...breakdownGroups,
+      {
+        category: "other",
+        label: "Other",
+        color: "#9ca3af",
+        count: otherBreakdownCount,
+      },
+    ]
     : breakdownGroups;
   const sumCount = allGroups.reduce((n, g) => n + g.count, 0);
   let donutOffset = 0;
@@ -3644,27 +3626,28 @@ function DashboardTrackingCenter({
               )}
             </div>
             <div className={panel}>
-              <h3 className="text-[14px] font-bold text-[#253449]">My Tree</h3>
+              <h3 className="text-[14px] font-bold text-[#253449]">
+                My Tree{" "}
+                <span className="inline-flex items-center align-middle ml-1">
+                  <Network size={18} className="text-[#7185a4]" />
+                </span>
+              </h3>
               <div className="mt-4 flex items-center gap-3 rounded-xl bg-[#f7f9fc] p-3">
-                <Network size={22} className="text-[#7185a4]" />
                 <div className="min-w-0">
                   <p className="text-[10px] text-[#8390a1]">Far Left BA</p>
                   <p className="break-all text-[12px] font-bold text-[#2c3950]">
-                    {(ignite as ExtendedIgnite | undefined)?.far_left_ba_id ||
-                      "—"}
+                    {(ignite as ExtendedIgnite | undefined)?.far_left_ba_id || "—"}
                   </p>
                 </div>
               </div>
               <div className="mt-2 rounded-xl bg-[#f7f9fc] p-3">
                 <p className="text-[10px] text-[#8390a1]">Far Right BA</p>
                 <p className="mt-1 break-all text-[12px] font-bold text-[#2c3950]">
-                  {(ignite as ExtendedIgnite | undefined)?.far_right_ba_id ||
-                    "—"}
+                  {(ignite as ExtendedIgnite | undefined)?.far_right_ba_id || "—"}
                 </p>
               </div>
               <p className="mt-3 text-[10px] text-[#8d98a7]">
-                Direct/downline counts are not included in the supplied
-                Dashboard response.
+                Direct/downline counts are not included in the supplied Dashboard response.
               </p>
             </div>
           </div>
@@ -3721,7 +3704,7 @@ function DashboardTrackingCenter({
               <span>{sumCount}</span>
             </div>
           </div>
-      
+
         </div>
       </div>
       {validResponse && (
@@ -3998,9 +3981,9 @@ export default function DistributorDashboardPage() {
   const pairingsQuery = useGetPairingsQuery(
     (submittedCvFilters
       ? {
-          year: submittedCvFilters.year,
-          week_no: submittedCvFilters.week_no,
-        }
+        year: submittedCvFilters.year,
+        week_no: submittedCvFilters.week_no,
+      }
       : undefined) as any,
     {
       skip: !submittedCvFilters,
@@ -4029,9 +4012,9 @@ export default function DistributorDashboardPage() {
 
   const cvCounterIgnite = periodIgniteMetrics
     ? ({
-        ...(ignite ?? {}),
-        ...periodIgniteMetrics,
-      } as IgniteDashboard)
+      ...(ignite ?? {}),
+      ...periodIgniteMetrics,
+    } as IgniteDashboard)
     : ignite;
 
   const handleBankedTcPlacement = async (side: BankedTcSide) => {
@@ -4063,7 +4046,7 @@ export default function DistributorDashboardPage() {
 
       toast.success(
         response.message ||
-          `Banked TC placed on ${side === 1 ? "Left" : "Right"} Side successfully.`,
+        `Banked TC placed on ${side === 1 ? "Left" : "Right"} Side successfully.`,
       );
 
       setIsBankedTcModalOpen(false);
@@ -4072,8 +4055,8 @@ export default function DistributorDashboardPage() {
     } catch (error: any) {
       toast.error(
         error?.data?.message ||
-          error?.message ||
-          "Failed to place Banked TC. Please try again.",
+        error?.message ||
+        "Failed to place Banked TC. Please try again.",
       );
     } finally {
       setPendingBankedTcSide(null);

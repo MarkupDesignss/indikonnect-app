@@ -296,7 +296,7 @@ const poppins = Poppins({
 const formatPrice = (value: any): string => {
   const amount = Number(value || 0);
 
-  return `₹${amount.toLocaleString("en-IN", {
+  return `${amount.toLocaleString("en-IN", {
     maximumFractionDigits: 0,
   })}`;
 };
@@ -1816,7 +1816,7 @@ function CartSummary({
                   {showCommission && (
                     <div className="mt-1.5 inline-flex items-center gap-1 rounded-md bg-[#ECF9F1] px-1.5 py-0.5 text-[9.5px] font-semibold text-[#16845B]">
                       <BadgePercent className="h-3 w-3" />
-                      You earn {formatPrice(lineCommission)}
+                       CV {formatPrice(lineCommission)}
                     </div>
                   )}
 
@@ -2042,7 +2042,7 @@ function CartSummary({
           <div className="mt-1 flex items-center justify-between rounded-lg bg-[#ECF9F1] px-2 py-1.5">
             <span className="flex items-center gap-1 text-[11.5px] font-semibold text-[#16845B]">
               <BadgePercent className="h-3 w-3" />
-              Your total commission
+              Your total commission Value
             </span>
             <span className="text-[12px] font-bold text-[#16845B]">
               {formatPrice(totalCommission)}
@@ -4703,29 +4703,6 @@ export default function CheckoutPage() {
                     </button>
                   </div>
                 ))}
-
-              {/* Mandatory product banner — only for non-customer roles */}
-              {!isCustomer && !canBuy && !isRetryPaymentFlow && (
-                <div className="flex items-start gap-3 rounded-xl border border-[#F1C8C4] bg-[#FFF2F1] px-4 py-3">
-                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[#B64339]" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[12px] font-semibold text-[#B64339]">
-                      Mandatory product required
-                    </p>
-                    <p className="mt-0.5 text-[11px] leading-4 text-[#8A4A44]">
-                      Please purchase our mandatory product first. This is not
-                      optional — you cannot place an order without buying it.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setIsMandatoryModalOpen(true)}
-                    className="shrink-0 rounded-lg bg-[#B64339] px-3 py-1.5 text-[10.5px] font-semibold text-white transition hover:bg-[#9F332B]"
-                  >
-                    Add product
-                  </button>
-                </div>
-              )}
 
               {/* Payment methods */}
               <section className="overflow-hidden rounded-2xl border border-[#E4EBE6] bg-white shadow-[0_14px_40px_-32px_rgba(15,45,30,0.25)]">

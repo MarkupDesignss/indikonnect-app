@@ -1,7 +1,6 @@
 "use client";
 
 import "./premium-header.css";
-
 import { Suspense, useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";

@@ -11,8 +11,6 @@ import DashboardHeader from "@/components/Distributor/distributor/DashboardHeade
 import {
   Activity,
   ArrowRight,
-  CalendarDays,
-  CheckCircle2,
   ChevronDown,
   CircleDollarSign,
   Coins,
@@ -24,7 +22,6 @@ import {
   Search,
   ShoppingBag,
   TrendingUp,
-  Users,
   Wallet,
   AlertCircle,
   BarChart3,
@@ -98,6 +95,17 @@ export type HistoryEntry = {
   amount?: number | string;
   date_created?: string;
 };
+
+/** Optional pre-computed counts for the Commission History breakdown.
+ *  When provided, these override the counts derived from `history`. */
+export type CommissionHistoryCounts = {
+  cash_count?: number;
+  yellow_count?: number;
+  green_count?: number;
+  blue_count?: number;
+  other_count?: number;
+};
+
 export interface TrackingCenterPremiumProps {
   summary?: TrackingSummary | null;
   accounts?: TrackingAccount[];
@@ -106,6 +114,7 @@ export interface TrackingCenterPremiumProps {
   cv?: TrackingCv | null;
   commission?: TrackingCommission | null;
   commissionHistory?: HistoryEntry[];
+  commissionCounts?: CommissionHistoryCounts | null;
   trend?: TrackingTrendPoint[];
   tree?: TrackingTree | null;
   initialAccountId?: string;
@@ -136,12 +145,25 @@ function numeric(value: Metric): number | null {
   const n = Number(value);
   return Number.isFinite(n) ? n : null;
 }
+
+/** Formats a number using Indian rupee grouping (₹1,23,456.78). */
 function fmt(value: Metric) {
   const n = numeric(value);
   return n === null
     ? "—"
-    : new Intl.NumberFormat("en-IN", { maximumFractionDigits: 2 }).format(n);
+    : `₹${new Intl.NumberFormat("en-IN", {
+        maximumFractionDigits: 2,
+      }).format(n)}`;
 }
+
+/** Formats a plain count (no currency symbol). */
+function fmtCount(value: Metric) {
+  const n = numeric(value);
+  return n === null
+    ? "—"
+    : new Intl.NumberFormat("en-IN").format(n);
+}
+
 function dateShort(value: string) {
   const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (match) {
@@ -154,6 +176,7 @@ function dateShort(value: string) {
   }
   return value || "—";
 }
+
 function MetricCard({
   label,
   value,
@@ -188,6 +211,7 @@ function MetricCard({
     </div>
   );
 }
+
 function SelectField({
   label,
   value,
@@ -223,6 +247,7 @@ function SelectField({
     </label>
   );
 }
+
 function ValueCell({
   label,
   value,
@@ -244,6 +269,7 @@ function ValueCell({
     </div>
   );
 }
+
 function CvOverview({
   cv,
   isFetching,
@@ -307,31 +333,6 @@ function CvOverview({
                 : "Weekly result available"}
             </div>
           </div>
-          {/* <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px]">
-            <span className="text-[#768090]">Carry forward</span>
-            <span className="font-semibold text-[#2D3540]">
-              Left: {fmt(cv.carryForwardLeft)}
-            </span>
-            <span className="font-semibold text-[#2D3540]">
-              Right: {fmt(cv.carryForwardRight)}
-            </span>
-          </div> */}
-          {/* <div className="mt-4 grid grid-cols-2 gap-x-3 gap-y-4 rounded-[11px] border border-[#EDF0F3] bg-[#FAFBFC] p-3.5 sm:grid-cols-3 lg:grid-cols-5">
-            {[
-              { label: "Paired CV", value: cv.pairedCv },
-              { label: "Pairing commission", value: cv.pairingCommission },
-              { label: "Green coins", value: cv.greenCoins },
-              { label: "Yellow coins", value: cv.yellowCoins },
-              { label: "Blue coins", value: cv.blueCoins },
-            ].map((item) => (
-              <div key={item.label} className="min-w-0">
-                <p className="text-[10px] text-[#7D8794]">{item.label}</p>
-                <p className="mt-1.5 text-[15px] font-bold text-[#253041]">
-                  {fmt(item.value)}
-                </p>
-              </div>
-            ))}
-          </div> */}
         </>
       ) : (
         <div className="flex min-h-[205px] flex-col items-center justify-center gap-2 text-center">
@@ -353,37 +354,56 @@ function CvOverview({
     </section>
   );
 }
-function CommissionChart({ history }: { history?: HistoryEntry[] }) {
-  // The history contains both dollar transactions and coin quantities.
-  // Never sum them as if they shared a currency: visualize transaction COUNTS.
+
+/* ------------------------------------------------------------------ */
+/*  Commission History Breakdown                                      */
+/*  - counts come from `counts` prop when provided, otherwise derived  */
+/*    from `history`                                                   */
+/*  - "Points" column shows the raw count (no ₹)                       */
+/*  - amounts are formatted with ₹ (INR)                               */
+/* ------------------------------------------------------------------ */
+function CommissionChart({
+  history,
+  counts,
+}: {
+  history?: HistoryEntry[];
+  counts?: CommissionHistoryCounts | null;
+}) {
   const groups = [
     {
+      key: "cash_count" as const,
       category: "cash_bal",
       label: "Cash wallet",
       color: "#4C70B1",
       unit: "USD",
     },
     {
+      key: "yellow_count" as const,
       category: "yellow_bal",
       label: "Yellow coins",
       color: "#E8B34F",
       unit: "coins",
     },
     {
+      key: "green_count" as const,
       category: "green_bal",
       label: "Green coins",
       color: "#42A985",
       unit: "coins",
     },
     {
+      key: "blue_count" as const,
       category: "blue_bal",
       label: "Blue coins",
       color: "#91B2E8",
       unit: "coins",
     },
   ];
+
   const rows = groups.map((g) => {
     const entries = (history ?? []).filter((h) => h.category === g.category);
+    const derivedCount = entries.length;
+    const explicit = counts?.[g.key];
     const credited = entries.reduce(
       (total, h) => total + Math.max(0, numeric(h.amount) ?? 0),
       0,
@@ -392,13 +412,22 @@ function CommissionChart({ history }: { history?: HistoryEntry[] }) {
       (total, h) => total + Math.max(0, -(numeric(h.amount) ?? 0)),
       0,
     );
-    return { ...g, count: entries.length, credited, debited };
+    return {
+      ...g,
+      count: typeof explicit === "number" ? explicit : derivedCount,
+      credited,
+      debited,
+    };
   });
-  const otherCount = (history ?? []).filter(
+
+  const derivedOther = (history ?? []).filter(
     (h) => !groups.some((g) => g.category === h.category),
   ).length;
+  const otherCount =
+    typeof counts?.other_count === "number" ? counts.other_count : derivedOther;
   if (otherCount)
     rows.push({
+      key: "other_count",
       category: "other",
       label: "Other entries",
       color: "#A3AAB8",
@@ -407,7 +436,9 @@ function CommissionChart({ history }: { history?: HistoryEntry[] }) {
       credited: 0,
       debited: 0,
     });
+
   const total = rows.reduce((sum, r) => sum + r.count, 0);
+
   let offset = 0;
   const stops = rows.flatMap((row) => {
     const part = total > 0 ? (row.count / total) * 100 : 0;
@@ -416,6 +447,12 @@ function CommissionChart({ history }: { history?: HistoryEntry[] }) {
     offset += part;
     return [result];
   });
+
+  const hasAnyCountData =
+    typeof counts === "object" && counts !== null
+      ? true
+      : Array.isArray(history);
+
   return (
     <section className={`${card} h-full p-4 sm:p-5`}>
       <div className="flex items-start gap-2">
@@ -429,6 +466,7 @@ function CommissionChart({ history }: { history?: HistoryEntry[] }) {
           </p>
         </div>
       </div>
+
       <div
         className="mx-auto my-5 flex h-[176px] w-[176px] items-center justify-center rounded-full sm:h-[190px] sm:w-[190px]"
         style={{
@@ -439,17 +477,18 @@ function CommissionChart({ history }: { history?: HistoryEntry[] }) {
       >
         <div className="flex h-[124px] w-[124px] flex-col items-center justify-center rounded-full bg-white sm:h-[134px] sm:w-[134px]">
           <span className="text-[28px] font-bold tracking-tight text-[#202B3C]">
-            {history ? fmt(total) : "—"}
+            {hasAnyCountData ? fmtCount(total) : "—"}
           </span>
           <span className="text-[11px] font-medium text-[#86909B]">
             Transactions
           </span>
         </div>
       </div>
+
       <div className="overflow-hidden rounded-[10px] border border-[#EDF0F3]">
         <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 bg-[#FAFBFC] px-3 py-2 text-[10px] font-semibold uppercase tracking-wide text-[#7A8493]">
           <span>Wallet category</span>
-          <span>Entries</span>
+          <span>Points</span>
         </div>
         {rows.map((row) => (
           <div
@@ -465,25 +504,21 @@ function CommissionChart({ history }: { history?: HistoryEntry[] }) {
                 {row.label}
               </span>
               <span className="font-bold text-[#283241]">
-                {history ? row.count : "—"}
+                {hasAnyCountData ? fmtCount(row.count) : "—"}
               </span>
             </div>
-            {row.count > 0 && row.unit !== "mixed" && (
-              <p className="mt-1 pl-[18px] text-[10px] text-[#8993A2]">
-                In: {fmt(row.credited)} · Out: {fmt(row.debited)} {row.unit}
-              </p>
-            )}
+           
           </div>
         ))}
         <div className="grid grid-cols-[1fr_auto] gap-2 border-t border-[#E4E8EF] bg-[#F4F6FA] px-3 py-3 text-[12px] font-bold text-[#222C3A]">
-          <span>Total transactions</span>
-          <span>{history ? total : "—"}</span>
+          <span>Total points</span>
+          <span>{hasAnyCountData ? fmtCount(total) : "—"}</span>
         </div>
       </div>
- 
     </section>
   );
 }
+
 function WeeklyTrend({ trend }: { trend?: TrackingTrendPoint[] }) {
   const entries = (trend ?? []).filter((p) => Number.isFinite(p.value));
   const maxValue = Math.max(
@@ -502,7 +537,7 @@ function WeeklyTrend({ trend }: { trend?: TrackingTrendPoint[] }) {
     <section className={`${card} h-full p-4 sm:p-5`}>
       <h3 className={heading}>Weekly Cash Activity</h3>
       <p className={`mt-1 ${sub}`}>
-        Dashboard history mapped to actual sales-calendar weeks · USD
+        Dashboard history mapped to actual sales-calendar weeks · INR
       </p>
       <div className="mt-3 flex flex-wrap gap-3 text-[10px] font-medium text-[#657386]">
         <span className="inline-flex items-center gap-1.5">
@@ -519,7 +554,7 @@ function WeeklyTrend({ trend }: { trend?: TrackingTrendPoint[] }) {
           className="mt-4 h-auto w-full overflow-visible"
           viewBox="0 0 410 204"
           role="img"
-          aria-label="Weekly actual cash credits and debits in USD"
+          aria-label="Weekly actual cash credits and debits in INR"
         >
           {[37, 76, 115, 153].map((y, i) => (
             <g key={y}>
@@ -561,10 +596,10 @@ function WeeklyTrend({ trend }: { trend?: TrackingTrendPoint[] }) {
           {plotted.map((p, i) => (
             <g key={`${p.label}-${i}`}>
               <circle cx={p.x} cy={p.yIn} r="3.5" fill="#5279B7">
-                <title>{`Week ${p.label} · Cash credits $${fmt(p.value)}`}</title>
+                <title>{`Week ${p.label} · Cash credits ${fmt(p.value)}`}</title>
               </circle>
               <circle cx={p.x} cy={p.yOut} r="3" fill="#DCA06F">
-                <title>{`Week ${p.label} · Cash debits $${fmt(p.outflow ?? 0)}`}</title>
+                <title>{`Week ${p.label} · Cash debits ${fmt(p.outflow ?? 0)}`}</title>
               </circle>
               <text
                 x={p.x}
@@ -602,6 +637,7 @@ function WeeklyTrend({ trend }: { trend?: TrackingTrendPoint[] }) {
     </section>
   );
 }
+
 function MyTree({
   tree,
   onViewGenealogy,
@@ -620,13 +656,13 @@ function MyTree({
           <div className="pr-3">
             <p className="text-[11px] text-[#7E8896]">Total Directs</p>
             <p className="mt-1 text-[23px] font-bold text-[#253142]">
-              {fmt(tree?.totalDirects)}
+              {fmtCount(tree?.totalDirects)}
             </p>
           </div>
           <div className="pl-4">
             <p className="text-[11px] text-[#7E8896]">Total Downline</p>
             <p className="mt-1 text-[23px] font-bold text-[#253142]">
-              {fmt(tree?.totalDownline)}
+              {fmtCount(tree?.totalDownline)}
             </p>
           </div>
         </div>
@@ -658,6 +694,7 @@ export function IndieKonnectTrackingCenterPremium({
   cv,
   commission,
   commissionHistory,
+  commissionCounts,
   trend,
   tree,
   initialAccountId,
@@ -926,7 +963,10 @@ export function IndieKonnectTrackingCenterPremium({
                 <MyTree tree={tree} onViewGenealogy={onViewGenealogy} />
               </div>
             </div>
-            <CommissionChart history={commissionHistory} />
+            <CommissionChart
+              history={commissionHistory}
+              counts={commissionCounts}
+            />
           </div>
         </section>
       </div>
@@ -1169,6 +1209,37 @@ export default function TrackingCenterLivePage() {
     );
   }, [dashboard.data, ignite]);
 
+  /**
+   * Wallet transaction counts coming from your backend.
+   * The API returns these inside `ignite.commission_breakdown`:
+   *   { cash_count, yellow_count, green_count, blue_count, other_count }
+   */
+  const commissionCounts = useMemo((): CommissionHistoryCounts | null => {
+    if (!ignite) return null;
+    const breakdown = asObject(ignite.commission_breakdown);
+    const cash = numeric(pickValue(breakdown, "cash_count"));
+    const yellow = numeric(pickValue(breakdown, "yellow_count"));
+    const green = numeric(pickValue(breakdown, "green_count"));
+    const blue = numeric(pickValue(breakdown, "blue_count"));
+    const other = numeric(pickValue(breakdown, "other_count"));
+    if (
+      cash === null &&
+      yellow === null &&
+      green === null &&
+      blue === null &&
+      other === null
+    ) {
+      return null;
+    }
+    return {
+      cash_count: cash ?? 0,
+      yellow_count: yellow ?? 0,
+      green_count: green ?? 0,
+      blue_count: blue ?? 0,
+      other_count: other ?? 0,
+    };
+  }, [ignite]);
+
   const weeklyCashTrend = useMemo((): TrackingTrendPoint[] => {
     if (!commissionHistory?.length || !weeks.length) return [];
     const cashRows = commissionHistory.filter(
@@ -1304,6 +1375,7 @@ export default function TrackingCenterLivePage() {
             cv={displayed}
             commission={commission}
             commissionHistory={commissionHistory}
+            commissionCounts={commissionCounts}
             trend={weeklyCashTrend}
             isLoading={myAccounts.isLoading || dashboard.isLoading}
             isFetching={cvQuery.isFetching}
@@ -1320,7 +1392,6 @@ export default function TrackingCenterLivePage() {
               await Promise.all([myAccounts.refetch(), dashboard.refetch()]);
             }}
           />
-         
         </main>
       </div>
     </div>

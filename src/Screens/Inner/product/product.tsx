@@ -11,6 +11,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   ArrowRight,
+  Check,
   ChevronDown,
   ChevronRight,
   Search,
@@ -49,6 +50,7 @@ interface FilterState {
   availability: {
     inStock: boolean;
     outOfStock: boolean;
+    lowStock: boolean;
   };
 }
 
@@ -76,6 +78,159 @@ const SORT_LABELS: Record<SortOption, string> = {
   "price-high": "Price: High to Low",
   newest: "Newest First",
 };
+
+/* -------------------------------------------------------------------------- */
+/* Custom Sort Dropdown                                                       */
+/* -------------------------------------------------------------------------- */
+
+function SortDropdown({
+  value,
+  onChange,
+}: {
+  value: SortOption;
+  onChange: (value: SortOption) => void;
+}) {
+  const options = Object.keys(SORT_LABELS) as SortOption[];
+
+  const [open, setOpen] = useState(false);
+  const [active, setActive] = useState(-1);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  const selectedIndex = Math.max(0, options.indexOf(value));
+
+  // Bahar click karne par band.
+  useEffect(() => {
+    const handler = (event: MouseEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handler);
+
+    return () =>
+      document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const choose = (option: SortOption) => {
+    onChange(option);
+    setOpen(false);
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === "Escape") {
+      setOpen(false);
+      return;
+    }
+
+    if (
+      !open &&
+      (event.key === "ArrowDown" ||
+        event.key === "Enter" ||
+        event.key === " ")
+    ) {
+      event.preventDefault();
+      setActive(selectedIndex);
+      setOpen(true);
+      return;
+    }
+
+    if (!open) return;
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setActive((i) => (i + 1) % options.length);
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setActive((i) => (i - 1 + options.length) % options.length);
+    } else if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+
+      if (active >= 0) choose(options[active]);
+    }
+  };
+
+  return (
+    <div
+      ref={rootRef}
+      className="relative w-full"
+      onKeyDown={handleKeyDown}
+    >
+      <button
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label="Sort products"
+        onClick={() => {
+          setActive(selectedIndex);
+          setOpen((v) => !v);
+        }}
+        className={`flex w-full items-center justify-between gap-3 rounded-xl border bg-white px-4 py-3 text-left transition-all focus-visible:outline-none ${
+          open
+            ? "border-[#111111] shadow-[0_0_0_3px_rgba(0,0,0,0.06)]"
+            : "border-[#e5e1dc] hover:border-[#111111]"
+        }`}
+      >
+        <span className="flex min-w-0 items-baseline gap-2">
+          <span className="text-[11px] font-medium uppercase tracking-[.08em] text-[#8a8f98]">
+            Sort by
+          </span>
+
+          <span className="truncate text-[14px] font-semibold text-[#111111]">
+            {SORT_LABELS[value]}
+          </span>
+        </span>
+
+        <motion.span
+          animate={{ rotate: open ? 180 : 0 }}
+          transition={{ duration: 0.18 }}
+          className="shrink-0 text-[#111111]"
+        >
+          <ChevronDown size={18} />
+        </motion.span>
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.ul
+            role="listbox"
+            initial={{ opacity: 0, y: -6, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -6, scale: 0.98 }}
+            transition={{ duration: 0.15 }}
+            className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 origin-top overflow-hidden rounded-xl border border-[#eae7e1] bg-white p-1.5 shadow-[0_12px_32px_rgba(0,0,0,0.12)]"
+          >
+            {options.map((option, index) => {
+              const isSelected = option === value;
+              const isActive = index === active;
+
+              return (
+                <li
+                  key={option}
+                  role="option"
+                  aria-selected={isSelected}
+                  onMouseEnter={() => setActive(index)}
+                  onClick={() => choose(option)}
+                  className={`flex cursor-pointer items-center justify-between rounded-lg px-3 py-2.5 text-[14px] transition-colors ${
+                    isActive ? "bg-[#f4f2ee]" : ""
+                  } ${
+                    isSelected
+                      ? "font-semibold text-black"
+                      : "text-[#454545]"
+                  }`}
+                >
+                  {SORT_LABELS[option]}
+
+                  {isSelected && <Check size={16} />}
+                </li>
+              );
+            })}
+          </motion.ul>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 
 /* -------------------------------------------------------------------------- */
 /* Price helpers                                                              */
@@ -288,6 +443,7 @@ export default function ProductsPage() {
   const getInitialAvailability = () => ({
     inStock: searchParams.get("in_stock") === "true",
     outOfStock: searchParams.get("out_of_stock") === "true",
+    lowStock: searchParams.get("low_stock") === "true",
   });
 
   const getInitialPage = (): number => {
@@ -436,18 +592,6 @@ export default function ProductsPage() {
   /* BRAND - CATEGORY RELATIONSHIP MAPS                                      */
   /* ------------------------------------------------------------------------ */
 
-  /*
-   * brandCategoryMap:
-   *
-   * Brand ID -> Category ID
-   *
-   * Example:
-   * 1 -> 6  (FABIUS -> All Watches)
-   * 2 -> 22 (KINTSUGI -> Dinnerware)
-   *
-   * This map is created using the API's category_id field.
-   */
-
   const brandCategoryMap = useMemo(() => {
     const map = new Map<string, string>();
 
@@ -479,18 +623,6 @@ export default function ProductsPage() {
 
     return map;
   }, [categoriesData]);
-
-  /*
-   * categoryBrandMap:
-   *
-   * Category ID -> Brand IDs
-   *
-   * Example:
-   * 6 -> ["1"]  (All Watches -> FABIUS)
-   * 22 -> ["2"] (Dinnerware -> KINTSUGI)
-   *
-   * One category can have multiple brands, so we store an array.
-   */
 
   const categoryBrandMap = useMemo(() => {
     const map = new Map<string, string[]>();
@@ -637,6 +769,7 @@ export default function ProductsPage() {
       availability: {
         inStock: searchParams.get("in_stock") === "true",
         outOfStock: searchParams.get("out_of_stock") === "true",
+        lowStock: searchParams.get("low_stock") === "true",
       },
     };
 
@@ -716,6 +849,11 @@ export default function ProductsPage() {
         params.set("out_of_stock", "true");
       }
 
+      // FIX: low_stock ab URL mein save hota hai.
+      if (nextFilters.availability.lowStock) {
+        params.set("low_stock", "true");
+      }
+
       if (nextSearch.trim()) {
         params.set("search", nextSearch.trim());
       }
@@ -793,16 +931,30 @@ export default function ProductsPage() {
       params.max_price = filters.priceRange[1];
     }
 
-    if (
-      filters.availability.inStock &&
-      !filters.availability.outOfStock
-    ) {
-      params.stock_status = "in_stock";
-    } else if (
-      !filters.availability.inStock &&
-      filters.availability.outOfStock
-    ) {
-      params.stock_status = "out_of_stock";
+    /*
+     * FIX: Availability ke teeno options ab API ko jaate hain.
+     *
+     * Sirf ek option select ho to stock_status wahi jaata hai.
+     * Low stock select ho to `low_stock=true` bhi alag se jaata hai.
+     *
+     * NOTE: Agar backend ka param naam alag hai (jaise stock_status=low_stock
+     * hi expect karta ho), to yahan naam badal lena.
+     */
+
+    const { inStock, outOfStock, lowStock } = filters.availability;
+
+    const selectedStatuses: string[] = [];
+
+    if (inStock) selectedStatuses.push("in_stock");
+    if (outOfStock) selectedStatuses.push("out_of_stock");
+    if (lowStock) selectedStatuses.push("low_stock");
+
+    if (selectedStatuses.length === 1) {
+      params.stock_status = selectedStatuses[0];
+    }
+
+    if (lowStock) {
+      params.low_stock = true;
     }
 
     if (searchQuery.trim()) {
@@ -1326,10 +1478,6 @@ export default function ProductsPage() {
     (newFilters: FilterState) => {
       const previousFilters = filtersRef.current;
 
-      /*
-       * Detect which filter was changed by the user.
-       */
-
       const categoryChanged =
         JSON.stringify(previousFilters.categories) !==
         JSON.stringify(newFilters.categories);
@@ -1338,10 +1486,6 @@ export default function ProductsPage() {
         JSON.stringify(previousFilters.brands) !==
         JSON.stringify(newFilters.brands);
 
-      /*
-       * Create a fresh filter object.
-       */
-
       const syncedFilters: FilterState = {
         ...newFilters,
         brands: [...newFilters.brands],
@@ -1349,17 +1493,11 @@ export default function ProductsPage() {
         subCategories: [...newFilters.subCategories],
         priceRange: [...newFilters.priceRange] as [number, number],
         availability: {
-          ...newFilters.availability,
+          inStock: Boolean(newFilters.availability?.inStock),
+          outOfStock: Boolean(newFilters.availability?.outOfStock),
+          lowStock: Boolean(newFilters.availability?.lowStock),
         },
       };
-
-      /*
-       * Convert category ID into category title.
-       *
-       * Example:
-       * 6 -> All Watches
-       * 22 -> Dinnerware
-       */
 
       const categoryTitleById = new Map<string, string>();
 
@@ -1370,16 +1508,7 @@ export default function ProductsPage() {
         );
       });
 
-      /*
-       * CASE 1:
-       * User selects or removes a CATEGORY.
-       *
-       * Selecting a category:
-       * Automatically selects its related brands.
-       *
-       * Removing a category:
-       * Automatically removes its related brands.
-       */
+      /* CASE 1: category changed */
 
       if (categoryChanged && !brandChanged) {
         const previousCategorySet = new Set(
@@ -1390,7 +1519,6 @@ export default function ProductsPage() {
           newFilters.categories,
         );
 
-        // Find categories that were removed.
         const removedCategoryIds = new Set<string>();
 
         previousCategorySet.forEach((categoryTitle) => {
@@ -1402,11 +1530,6 @@ export default function ProductsPage() {
             }
           }
         });
-
-        /*
-         * Remove brands that belong to removed categories.
-         * Keep brands from all other categories.
-         */
 
         const nextBrands = new Set(
           newFilters.brands.filter((brandId) => {
@@ -1420,10 +1543,6 @@ export default function ProductsPage() {
             );
           }),
         );
-
-        /*
-         * Automatically add brands for every selected category.
-         */
 
         newFilters.categories.forEach((categoryTitle) => {
           const categoryId = categoryIdMap.get(categoryTitle);
@@ -1441,22 +1560,9 @@ export default function ProductsPage() {
         syncedFilters.brands = Array.from(nextBrands);
       }
 
-      /*
-       * CASE 2:
-       * User selects or removes a BRAND.
-       *
-       * Selecting a brand:
-       * Automatically selects its parent category.
-       *
-       * Removing the last selected brand of a category:
-       * Automatically removes that category.
-       */
+      /* CASE 2: brand changed */
 
       else if (brandChanged && !categoryChanged) {
-        /*
-         * Get category IDs of previously selected brands.
-         */
-
         const previousBrandCategoryIds = new Set<string>();
 
         previousFilters.brands.forEach((brandId) => {
@@ -1469,10 +1575,6 @@ export default function ProductsPage() {
           }
         });
 
-        /*
-         * Get category IDs of currently selected brands.
-         */
-
         const nextBrandCategoryIds = new Set<string>();
 
         newFilters.brands.forEach((brandId) => {
@@ -1484,11 +1586,6 @@ export default function ProductsPage() {
             nextBrandCategoryIds.add(categoryId);
           }
         });
-
-        /*
-         * Find categories whose previously selected brands
-         * are no longer selected.
-         */
 
         const categoriesToRemove = new Set<string>();
 
@@ -1513,21 +1610,12 @@ export default function ProductsPage() {
           }
         });
 
-        /*
-         * Keep categories that still have selected brands
-         * or were not linked to the removed brands.
-         */
-
         const nextCategories = new Set(
           newFilters.categories.filter(
             (categoryTitle) =>
               !categoriesToRemove.has(categoryTitle),
           ),
         );
-
-        /*
-         * Automatically add the category of each selected brand.
-         */
 
         newFilters.brands.forEach((brandId) => {
           const categoryId = brandCategoryMap.get(
@@ -1547,19 +1635,12 @@ export default function ProductsPage() {
         syncedFilters.categories = Array.from(nextCategories);
       }
 
-      /*
-       * CASE 3:
-       * Both categories and brands changed together.
-       *
-       * Keep both selections synchronized.
-       * This also handles clearing all filters.
-       */
+      /* CASE 3: both changed */
 
       else if (categoryChanged && brandChanged) {
         const nextBrands = new Set(newFilters.brands);
         const nextCategories = new Set(newFilters.categories);
 
-        // Add brands belonging to selected categories.
         newFilters.categories.forEach((categoryTitle) => {
           const categoryId = categoryIdMap.get(categoryTitle);
 
@@ -1573,7 +1654,6 @@ export default function ProductsPage() {
           });
         });
 
-        // Add categories belonging to selected brands.
         nextBrands.forEach((brandId) => {
           const categoryId = brandCategoryMap.get(
             String(brandId),
@@ -1593,10 +1673,6 @@ export default function ProductsPage() {
         syncedFilters.categories = Array.from(nextCategories);
       }
 
-      /*
-       * Update filters with synchronized values.
-       */
-
       setFilters(syncedFilters);
 
       setCurrentPage(1);
@@ -1604,10 +1680,6 @@ export default function ProductsPage() {
       hasTriggeredRef.current = false;
 
       setShowEndMessage(false);
-
-      /*
-       * Update URL with BOTH selected brands and categories.
-       */
 
       updateBrowserUrl({
         nextFilters: syncedFilters,
@@ -1668,35 +1740,6 @@ export default function ProductsPage() {
         : "/products/",
     );
   }, [isNewArrivals, router]);
-
-  /* ----------------------------- Sort selector --------------------------- */
-
-  const renderSortSelect = () => (
-    <div className="relative flex w-full items-center rounded-xl border border-[#c9ccd1] bg-white px-4 py-3 transition-colors focus-within:border-[#111111]">
-      <span className="pointer-events-none whitespace-nowrap text-[14px] uppercase text-[#8a8f98]">
-        Sort by:
-      </span>
-
-      <select
-        value={sortBy}
-        onChange={(event) =>
-          handleSortChange(event.target.value as SortOption)
-        }
-        className="ml-2 w-full cursor-pointer appearance-none bg-transparent pr-6 text-[15px] font-medium text-[#111111] outline-none"
-        aria-label="Sort products"
-      >
-        {(Object.keys(SORT_LABELS) as SortOption[]).map(
-          (option) => (
-            <option key={option} value={option}>
-              {SORT_LABELS[option]}
-            </option>
-          ),
-        )}
-      </select>
-
-      <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#111111]" />
-    </div>
-  );
 
   /* ---------------------------- Initial skeleton ------------------------- */
 
@@ -1839,8 +1882,12 @@ export default function ProductsPage() {
           {/* DESKTOP SIDEBAR */}
 
           <aside className="hidden md:block">
-            <div className="sticky top-24 h-[calc(100vh-120px)] overflow-y-auto overscroll-auto pr-2 [-webkit-overflow-scrolling:touch] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#d4d4d4] [&::-webkit-scrollbar-track]:bg-transparent">
-              <div className="mb-5 bg-white">
+            {/*
+             * Sort wala hissa scroll container ke BAHAR hai,
+             * taaki dropdown menu clip na ho.
+             */}
+            <div className="sticky top-24 flex h-[calc(100vh-120px)] flex-col">
+              <div className="relative z-20 mb-4 shrink-0 bg-white pr-2">
                 <div className="mb-5 flex items-center gap-2 text-[14px]">
                   <span className="text-[#8a8f98]">
                     Home
@@ -1853,18 +1900,23 @@ export default function ProductsPage() {
                   </span>
                 </div>
 
-                {renderSortSelect()}
+                <SortDropdown
+                  value={sortBy}
+                  onChange={handleSortChange}
+                />
               </div>
 
-              <div className="h-auto pb-10">
-                <FilterSidebar
-                  onFilterChange={handleFilterChange}
-                  maxPrice={MAX_PRICE_LIMIT}
-                  products={allProducts}
-                  productsComplete={
-                    currentPage >= lastPage && !isFetching
-                  }
-                />
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-auto pr-2 [-webkit-overflow-scrolling:touch] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#d4d4d4] [&::-webkit-scrollbar-track]:bg-transparent">
+                <div className="h-auto pb-10">
+                  <FilterSidebar
+                    onFilterChange={handleFilterChange}
+                    maxPrice={MAX_PRICE_LIMIT}
+                    products={allProducts}
+                    productsComplete={
+                      currentPage >= lastPage && !isFetching
+                    }
+                  />
+                </div>
               </div>
             </div>
           </aside>
@@ -1908,7 +1960,10 @@ export default function ProductsPage() {
             {/* MOBILE SORT */}
 
             <div className="mb-4 md:hidden">
-              {renderSortSelect()}
+              <SortDropdown
+                value={sortBy}
+                onChange={handleSortChange}
+              />
             </div>
 
             {/* BRAND BANNER */}
