@@ -1007,7 +1007,7 @@ export default function DistributorSalesCalendarPage() {
                     <div className="mx-auto w-full max-w-[1390px]">
                         <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
                             <div className="flex min-w-0 items-start gap-3">
-                                <button type="button" aria-label="Back to dashboard" onClick={() => router.push("/indiekonnect-distributor")} className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-[#E4E8EF] bg-white text-[#344054] hover:bg-[#F4F6F8]"><ArrowLeft size={17} /></button>
+                                <button type="button" aria-label="Back to dashboard" onClick={() => router.push("/distributor/dashboard/")} className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-[#E4E8EF] bg-white text-[#344054] hover:bg-[#F4F6F8]"><ArrowLeft size={17} /></button>
                                 <div><p className="text-[10px] font-semibold text-[#8993A4]">Distributor / Sales Calendar</p><h1 className="mt-0.5 text-[21px] font-bold tracking-tight text-[#1E293B] sm:text-[24px]">Sales Calendar</h1><p className="mt-1 text-[11px] text-[#7D8799]">Explore sales weeks, payout dates and CV performance.</p></div>
                             </div>
                             <button type="button" onClick={() => void dashboardQuery.refetch()} disabled={dashboardQuery.isFetching} className="inline-flex h-9 items-center gap-2 rounded-[10px] border border-[#E4E8EF] bg-white px-3 text-[11px] font-semibold text-[#344054] hover:bg-[#F5F6F8] disabled:opacity-50"><RefreshCw size={14} className={dashboardQuery.isFetching ? "animate-spin" : ""} /> Refresh Calendar</button>

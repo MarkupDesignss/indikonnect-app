@@ -480,10 +480,7 @@ function CommissionChart({ history }: { history?: HistoryEntry[] }) {
           <span>{history ? total : "—"}</span>
         </div>
       </div>
-      <p className="mt-3 text-[10px] leading-4 text-[#8993A2]">
-        The doughnut represents transaction counts, not combined monetary value.
-        Cash is in USD; coin entries are coin units.
-      </p>
+ 
     </section>
   );
 }

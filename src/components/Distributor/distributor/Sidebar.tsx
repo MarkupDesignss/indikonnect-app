@@ -105,7 +105,7 @@ const menuGroups: NavGroup[] = [
                         href: "/distributor/profile/weekly-commission/",
                     },
                     {
-                        label: "Weekly CV date",
+                        label: "Weekly CV data",
                         icon: Calendar,
                         href: "/distributor/profile/weekly-cv-date",
                     },

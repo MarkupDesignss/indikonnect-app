@@ -334,7 +334,7 @@ function QuickStatsCards({ ignite }: { ignite?: IgniteDashboard | null }) {
       bg: "#e9f7f0",
     },
     {
-      label: "Retail profit (USD)",
+      label: "Retail profit (INR)",
       value: info?.retail_profit_usd,
       prefix: "₹",
       icon: ShoppingBag,
@@ -343,7 +343,7 @@ function QuickStatsCards({ ignite }: { ignite?: IgniteDashboard | null }) {
       bg: "#edf2fa",
     },
     {
-      label: "Weekly pairing (USD)",
+      label: "Weekly pairing (INR)",
       value: info?.weekly_pairing_usd,
       prefix: "₹",
       icon: TrendingUp,
@@ -2866,109 +2866,109 @@ function LedgerHistory({ entries }: { entries?: LedgerEntry[] | null }) {
     currentPage * pageSize,
   );
 
-  return (
-    <section className={`${CARD} dashboard-card mt-5 p-4 sm:p-5`}>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <SectionTitle>Wallet ledger</SectionTitle>
-          <p className="ml-11 mt-1 text-[11px] text-[#929292]">
-            Full history of credits and debits
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <input
-            type="search"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
-            }}
-            placeholder="Search ledger..."
-            className="h-9 min-w-0 rounded-[9px] border border-[#E4E7EC] bg-white px-3 text-[12px] text-[#344054] outline-none placeholder:text-[#98a2b3] focus:border-[#7183A3]"
-          />
-        </div>
-      </div>
-      <div className="mt-3 flex flex-wrap gap-1.5">
-        {ledgerCategories.map((cat) => (
-          <button
-            key={cat}
-            type="button"
-            onClick={() => {
-              setFilter(cat);
-              setPage(1);
-            }}
-            className={`rounded-full border px-3 py-1 text-[10px] font-semibold transition-colors ${
-              filter === cat
-                ? "border-[#171717] bg-[#171717] text-white"
-                : "border-[#E4E7EC] bg-white text-[#475467] hover:bg-[#F5F6F8]"
-            }`}
-          >
-            {cat === "all" ? "All" : formatStatus(cat)}
-          </button>
-        ))}
-      </div>
-      {shown.length > 0 ? (
-        <div className="mt-3 overflow-x-auto rounded-[12px] border border-[#EBEBEB]">
-          <table className="w-full min-w-[520px] border-collapse text-left text-[11px]">
-            <thead>
-              <tr className="bg-[#F7F7F7] text-[10px] uppercase tracking-[.06em] text-[#868686]">
-                <th className="px-3 py-2 font-semibold">Date</th>
-                <th className="px-3 py-2 font-semibold">Category</th>
-                <th className="px-3 py-2 font-semibold">Type</th>
-                <th className="px-3 py-2 font-semibold">Description</th>
-                <th className="px-3 py-2 text-right font-semibold">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {shown.map((entry, i) => (
-                <tr
-                  key={`${entry.id}-${i}`}
-                  className="border-t border-[#EFEFEF] text-[#303030] hover:bg-[#FBFBFB]"
-                >
-                  <td className="px-3 py-2">{formatLedgerDate(entry.date_created)}</td>
-                  <td className="px-3 py-2">{formatStatus(entry.category)}</td>
-                  <td className="px-3 py-2">{formatStatus(entry.tx_type)}</td>
-                  <td className="px-3 py-2 break-words">
-                    {entry.description || "—"}
-                  </td>
-                  <td className="px-3 py-2 text-right font-bold">
-                    {entry.amount ?? "—"}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        <p className="mt-3 rounded-[12px] border border-dashed border-[#E8E8E8] bg-[#FBFBFB] p-5 text-center text-[11px] text-[#929292]">
-          No ledger entries match the current filter.
-        </p>
-      )}
-      {pages > 1 && (
-        <div className="mt-3 flex items-center justify-end gap-2 text-[11px] text-[#667085]">
-          <button
-            type="button"
-            disabled={currentPage === 1}
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            className="rounded-md border border-[#E4E7EC] bg-white px-2 py-1 font-semibold disabled:opacity-50"
-          >
-            Prev
-          </button>
-          <span>
-            Page {currentPage} / {pages}
-          </span>
-          <button
-            type="button"
-            disabled={currentPage === pages}
-            onClick={() => setPage((p) => Math.min(pages, p + 1))}
-            className="rounded-md border border-[#E4E7EC] bg-white px-2 py-1 font-semibold disabled:opacity-50"
-          >
-            Next
-          </button>
-        </div>
-      )}
-    </section>
-  );
+  // return (
+  //   <section className={`${CARD} dashboard-card mt-5 p-4 sm:p-5`}>
+  //     <div className="flex flex-wrap items-center justify-between gap-2">
+  //       <div>
+  //         <SectionTitle>Wallet ledger</SectionTitle>
+  //         <p className="ml-11 mt-1 text-[11px] text-[#929292]">
+  //           Full history of credits and debits
+  //         </p>
+  //       </div>
+  //       <div className="flex flex-wrap items-center gap-2">
+  //         <input
+  //           type="search"
+  //           value={search}
+  //           onChange={(e) => {
+  //             setSearch(e.target.value);
+  //             setPage(1);
+  //           }}
+  //           placeholder="Search ledger..."
+  //           className="h-9 min-w-0 rounded-[9px] border border-[#E4E7EC] bg-white px-3 text-[12px] text-[#344054] outline-none placeholder:text-[#98a2b3] focus:border-[#7183A3]"
+  //         />
+  //       </div>
+  //     </div>
+  //     <div className="mt-3 flex flex-wrap gap-1.5">
+  //       {ledgerCategories.map((cat) => (
+  //         <button
+  //           key={cat}
+  //           type="button"
+  //           onClick={() => {
+  //             setFilter(cat);
+  //             setPage(1);
+  //           }}
+  //           className={`rounded-full border px-3 py-1 text-[10px] font-semibold transition-colors ${
+  //             filter === cat
+  //               ? "border-[#171717] bg-[#171717] text-white"
+  //               : "border-[#E4E7EC] bg-white text-[#475467] hover:bg-[#F5F6F8]"
+  //           }`}
+  //         >
+  //           {cat === "all" ? "All" : formatStatus(cat)}
+  //         </button>
+  //       ))}
+  //     </div>
+  //     {shown.length > 0 ? (
+  //       <div className="mt-3 overflow-x-auto rounded-[12px] border border-[#EBEBEB]">
+  //         <table className="w-full min-w-[520px] border-collapse text-left text-[11px]">
+  //           <thead>
+  //             <tr className="bg-[#F7F7F7] text-[10px] uppercase tracking-[.06em] text-[#868686]">
+  //               <th className="px-3 py-2 font-semibold">Date</th>
+  //               <th className="px-3 py-2 font-semibold">Category</th>
+  //               <th className="px-3 py-2 font-semibold">Type</th>
+  //               <th className="px-3 py-2 font-semibold">Description</th>
+  //               <th className="px-3 py-2 text-right font-semibold">Amount</th>
+  //             </tr>
+  //           </thead>
+  //           <tbody>
+  //             {shown.map((entry, i) => (
+  //               <tr
+  //                 key={`${entry.id}-${i}`}
+  //                 className="border-t border-[#EFEFEF] text-[#303030] hover:bg-[#FBFBFB]"
+  //               >
+  //                 <td className="px-3 py-2">{formatLedgerDate(entry.date_created)}</td>
+  //                 <td className="px-3 py-2">{formatStatus(entry.category)}</td>
+  //                 <td className="px-3 py-2">{formatStatus(entry.tx_type)}</td>
+  //                 <td className="px-3 py-2 break-words">
+  //                   {entry.description || "—"}
+  //                 </td>
+  //                 <td className="px-3 py-2 text-right font-bold">
+  //                   {entry.amount ?? "—"}
+  //                 </td>
+  //               </tr>
+  //             ))}
+  //           </tbody>
+  //         </table>
+  //       </div>
+  //     ) : (
+  //       <p className="mt-3 rounded-[12px] border border-dashed border-[#E8E8E8] bg-[#FBFBFB] p-5 text-center text-[11px] text-[#929292]">
+  //         No ledger entries match the current filter.
+  //       </p>
+  //     )}
+  //     {pages > 1 && (
+  //       <div className="mt-3 flex items-center justify-end gap-2 text-[11px] text-[#667085]">
+  //         <button
+  //           type="button"
+  //           disabled={currentPage === 1}
+  //           onClick={() => setPage((p) => Math.max(1, p - 1))}
+  //           className="rounded-md border border-[#E4E7EC] bg-white px-2 py-1 font-semibold disabled:opacity-50"
+  //         >
+  //           Prev
+  //         </button>
+  //         <span>
+  //           Page {currentPage} / {pages}
+  //         </span>
+  //         <button
+  //           type="button"
+  //           disabled={currentPage === pages}
+  //           onClick={() => setPage((p) => Math.min(pages, p + 1))}
+  //           className="rounded-md border border-[#E4E7EC] bg-white px-2 py-1 font-semibold disabled:opacity-50"
+  //         >
+  //           Next
+  //         </button>
+  //       </div>
+  //     )}
+  //   </section>
+  // );
 }
 
 function ApiDetailsExplorer({
@@ -2988,38 +2988,38 @@ function ApiDetailsExplorer({
     "sales_calendar",
   ];
 
-  return (
-    <section className={`${CARD} dashboard-card mt-5 p-4 sm:p-5`}>
-      <button
-        type="button"
-        onClick={() => setExpanded((v) => !v)}
-        className="flex w-full items-center justify-between gap-3 text-left"
-      >
-        <SectionTitle>Raw API details</SectionTitle>
-        <ChevronDown
-          size={18}
-          className={`text-[#777] transition-transform ${expanded ? "rotate-180" : ""}`}
-        />
-      </button>
-      {expanded && dashboard && (
-        <div className="mt-4 space-y-3">
-          {sections.map((key) => (
-            <details
-              key={key}
-              className="rounded-[11px] border border-[#EAEAEA] bg-[#FBFBFB] px-3 py-2"
-            >
-              <summary className="cursor-pointer text-[11px] font-bold text-[#2B2B2B]">
-                {formatStatus(key)}
-              </summary>
-              <pre className="mt-2 max-h-56 overflow-auto rounded-md bg-white p-2 text-[10px] leading-5 text-[#444]">
-                {JSON.stringify(dashboard[key], null, 2)}
-              </pre>
-            </details>
-          ))}
-        </div>
-      )}
-    </section>
-  );
+  // return (
+  //   <section className={`${CARD} dashboard-card mt-5 p-4 sm:p-5`}>
+  //     <button
+  //       type="button"
+  //       onClick={() => setExpanded((v) => !v)}
+  //       className="flex w-full items-center justify-between gap-3 text-left"
+  //     >
+  //       <SectionTitle>Raw API details</SectionTitle>
+  //       <ChevronDown
+  //         size={18}
+  //         className={`text-[#777] transition-transform ${expanded ? "rotate-180" : ""}`}
+  //       />
+  //     </button>
+  //     {expanded && dashboard && (
+  //       <div className="mt-4 space-y-3">
+  //         {sections.map((key) => (
+  //           <details
+  //             key={key}
+  //             className="rounded-[11px] border border-[#EAEAEA] bg-[#FBFBFB] px-3 py-2"
+  //           >
+  //             <summary className="cursor-pointer text-[11px] font-bold text-[#2B2B2B]">
+  //               {formatStatus(key)}
+  //             </summary>
+  //             <pre className="mt-2 max-h-56 overflow-auto rounded-md bg-white p-2 text-[10px] leading-5 text-[#444]">
+  //               {JSON.stringify(dashboard[key], null, 2)}
+  //             </pre>
+  //           </details>
+  //         ))}
+  //       </div>
+  //     )}
+  //   </section>
+  // );
 }
 
 // ============================================================================
@@ -3721,10 +3721,7 @@ function DashboardTrackingCenter({
               <span>{sumCount}</span>
             </div>
           </div>
-          <p className="mt-3 text-[10px] leading-4 text-[#919bad]">
-            Transaction counts are used because cash values (USD) and coin
-            quantities cannot be combined into one monetary total.
-          </p>
+      
         </div>
       </div>
       {validResponse && (
