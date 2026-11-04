@@ -1,4 +1,3 @@
-
 import { baseApi } from "./baseApi";
 
 // =========================================================
@@ -417,6 +416,119 @@ export interface ConfirmedOrderResponse {
 }
 
 // =========================================================
+// MANDATORY PRODUCT TYPES
+// =========================================================
+export interface MandatoryProductImage {
+  id: number;
+  product_id: number;
+  image: string;
+  sort_order: number;
+  is_primary: boolean;
+  created_at: string;
+  updated_at: string;
+  image_url: string;
+}
+
+export interface MandatoryProductCategory {
+  id: number;
+  title: string;
+  slug: string;
+  description: string;
+  image: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MandatoryProductSubcategory {
+  id: number;
+  category_id: number;
+  name: string;
+  slug: string;
+  image: string;
+  status: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MandatoryProductBrand {
+  id: number;
+  category_id: number;
+  title: string;
+  status: number;
+  discount_percentage: number;
+  logo: string;
+  banner: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MandatoryProductTaxCategory {
+  id: number;
+  name: string;
+  rate: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MandatoryProduct {
+  id: number;
+  ignite_product_id: number | null;
+  is_primary: number;
+  product_code: string;
+  parent_combo_id: number[];
+  hsn_code: string | null;
+  uom: string;
+  name: string;
+  slug: string;
+  commission_value: string;
+  description: string;
+  specification: string;
+  category_id: number;
+  subcategory_id: number;
+  brand_id: number;
+  tax_category_id: number;
+  retail_price: string;
+  retail_mrp: string;
+  retail_discount_type: string;
+  retail_discount_value: string;
+  distributor_price: string;
+  distributor_mrp: string;
+  distributor_discount_type: string;
+  distributor_discount_value: string;
+  stock_quantity: number;
+  reserved_inventory: number;
+  initial_stock: number;
+  manual_stock_adjustment: number;
+  reason_for_stock_adjustment: string | null;
+  total_added_quantity: number;
+  shipping_charge: string;
+  low_stock_threshold: number;
+  is_published: boolean;
+  sale_type: string;
+  is_trending: boolean;
+  trending_sort_order: number;
+  is_deal_of_the_day: boolean;
+  is_best_seller: number;
+  deal_of_the_day_starts_at: string | null;
+  deal_of_the_day_ends_at: string | null;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+  images: MandatoryProductImage[];
+  category: MandatoryProductCategory;
+  subcategory: MandatoryProductSubcategory;
+  brand: MandatoryProductBrand;
+  tax_category: MandatoryProductTaxCategory;
+}
+
+export interface MandatoryProductResponse {
+  success: boolean;
+  message: string;
+  data: MandatoryProduct[];
+}
+
+// =========================================================
 // HDFC PAYMENT API TYPES
 // =========================================================
 export type HdfcPaymentStatus =
@@ -507,6 +619,18 @@ export const checkoutApi = baseApi.injectEndpoints({
           params: queryParams,
         };
       },
+      providesTags: ["Cart"],
+    }),
+
+    // =====================================================
+    // GET MANDATORY PRODUCT
+    // GET: /api/mandatoryProduct
+    // =====================================================
+    getMandatoryProducts: builder.query<MandatoryProductResponse, void>({
+      query: () => ({
+        url: "/mandatoryProduct",
+        method: "GET",
+      }),
       providesTags: ["Cart"],
     }),
 
@@ -621,6 +745,7 @@ export const checkoutApi = baseApi.injectEndpoints({
 // =========================================================
 export const {
   useGetCheckoutSummaryQuery,
+  useGetMandatoryProductsQuery,
   useApplyCoinsMutation,
   usePlaceOrderMutation,
   useGetConfirmedOrderQuery,

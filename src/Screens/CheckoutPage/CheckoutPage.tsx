@@ -20,6 +20,7 @@ import {
   Pencil,
   Plus,
   ShieldCheck,
+  ShoppingCart,
   Tag,
   X,
 } from "lucide-react";
@@ -39,7 +40,9 @@ import {
   usePlaceOrderMutation,
   useInitiateHdfcPaymentMutation,
   useApplyCoinsMutation,
+  useGetMandatoryProductsQuery,
   type HdfcApiResult,
+  type MandatoryProduct,
 } from "@/lib/redux/api/checkoutApi";
 
 import {
@@ -48,6 +51,7 @@ import {
   useCheckCartStockMutation,
   useRemoveFromCartMutation,
   useUpdateCartItemMutation,
+  useAddToCartMutation,
 } from "@/lib/redux/api/cartApi";
 
 import { useCheckProductStockMutation } from "@/lib/redux/api/productApi";
@@ -59,10 +63,7 @@ import AddressFormModal from "./AddressFormModal";
 
 import { useRetryOrderMutation } from "@/lib/redux/api/order/orderApi";
 import { useGetUserDashboardQuery } from "@/lib/redux/api/distributor/userDashboardApi";
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Types
-// ─────────────────────────────────────────────────────────────────────────────
+import { useGetUserProfileQuery } from "@/lib/redux/api/authApi";
 
 export interface Address {
   id: number;
@@ -109,6 +110,7 @@ interface CheckoutSummaryItem {
   product?: {
     stock_quantity?: number | null;
     available_stock?: number | null;
+    commission_value?: string | number | null;
   } | null;
   stock_quantity?: number | null;
   available_stock?: number | null;
@@ -126,6 +128,11 @@ interface CheckoutSummaryItem {
   igst: number;
   total_tax: number;
   line_total: number;
+
+  // Distributor commission (per-product) — optional, from API
+  commission_value?: string | number | null;
+  commission_total?: string | number | null;
+
   primary_image?: string;
   images?: {
     id: number;
@@ -161,6 +168,10 @@ interface CheckoutSummaryData {
   amount_redeemed: number;
   grand_total: number;
   items: CheckoutSummaryItem[];
+
+  // Optional total commission for distributor
+  total_commission?: string | number | null;
+
   product_tax_breakdown?: Record<string, any>;
   tax_by_category?: {
     category: string;
@@ -299,46 +310,149 @@ const getErrorMessage = (error: any, fallback: string): string =>
   error?.message ||
   fallback;
 
+/**
+ * Detects backend "mandatory product" errors coming from Place Order.
+ */
+const isMandatoryBackendError = (error: any): boolean => {
+  const message = String(
+    error?.data?.message ||
+      error?.error?.data?.message ||
+      error?.data?.error ||
+      error?.message ||
+      ""
+  ).toLowerCase();
+
+  if (!message) return false;
+
+  return (
+    message.includes("mandatory for your first purchase") ||
+    (message.includes("mandatory") && message.includes("add it to your order"))
+  );
+};
+
+/**
+ * Robust commission extraction from any object.
+ * Tries many possible field names, so if backend sends
+ * `commission`, `commission_amount`, `commission_value`,
+ * `product.commission_value` — all will work.
+ */
+const pickCommissionValue = (source: any): number | null => {
+  if (!source || typeof source !== "object") return null;
+
+  const candidates = [
+    source.commission_value,
+    source.commission_total,
+    source.commission,
+    source.commission_amount,
+    source.product?.commission_value,
+    source.product?.commission,
+    source.product?.commission_amount,
+    source.variant?.commission_value,
+    source.variant?.commission,
+  ];
+
+  for (const c of candidates) {
+    if (c === null || c === undefined || c === "") continue;
+    const n = Number(c);
+    if (Number.isFinite(n) && n > 0) return n;
+  }
+
+  return null;
+};
+
 const normalizeSummaryItems = (
-  summaryData?: CheckoutSummaryData
+  summaryData?: CheckoutSummaryData,
+  cartLines?: any[]
 ): CheckoutSummaryItem[] => {
   if (!summaryData) return [];
 
-  if (Array.isArray(summaryData.items) && summaryData.items.length > 0) {
-    return summaryData.items;
-  }
-
   const breakdown = summaryData.product_tax_breakdown || {};
 
-  return Object.values(breakdown).map((product: any) => ({
-    product_id: product.product_id ?? 0,
-    cart_item_id: product.cart_item_id ?? product.cart_item?.id ?? null,
-    cartItemId: product.cartItemId ?? null,
-    cart_item: product.cart_item ?? null,
-    variant_id: product.variant_id ?? product.variant?.id ?? null,
-    variant: product.variant ?? null,
-    product: product.product ?? null,
-    stock_quantity: product.stock_quantity ?? null,
-    available_stock: product.available_stock ?? null,
-    variant_stock_quantity: product.variant_stock_quantity ?? null,
-    max_stock: product.max_stock ?? null,
-    product_name: product.product_name,
-    product_code: product.product_code,
-    quantity: product.quantity || 1,
-    unit_price: product.unit_price || 0,
-    tax_category: product.tax_category,
-    tax_rate: product.tax_rate,
-    taxable_value: product.taxable_value || 0,
-    cgst: 0,
-    sgst: 0,
-    igst: 0,
-    total_tax: product.tax_amount || 0,
-    line_total:
-      product.line_total_after_tax ||
-      product.unit_price * (product.quantity || 1),
-    primary_image: product.primary_image,
-    images: product.images || [],
-  }));
+  const findBreakdownForProduct = (productId: number) => {
+    return Object.values(breakdown).find(
+      (b: any) => Number(b?.product_id) === Number(productId)
+    ) as any;
+  };
+
+  const findCartLineForProduct = (productId: number) => {
+    if (!Array.isArray(cartLines)) return undefined;
+    return cartLines.find(
+      (l) => Number(l?.product_id) === Number(productId)
+    );
+  };
+
+  if (Array.isArray(summaryData.items) && summaryData.items.length > 0) {
+    return summaryData.items.map((raw: any) => {
+      const productId = Number(raw?.product_id);
+
+      const breakdownItem = findBreakdownForProduct(productId);
+      const cartLine = findCartLineForProduct(productId);
+
+      // Try every possible source
+      const commissionValue =
+        pickCommissionValue(raw) ??
+        pickCommissionValue(breakdownItem) ??
+        pickCommissionValue(cartLine);
+
+      const quantity = Number(raw?.quantity || 1);
+
+      const commissionTotal =
+        commissionValue !== null
+          ? commissionValue * quantity
+          : null;
+
+      return {
+        ...raw,
+        commission_value: commissionValue,
+        commission_total: commissionTotal,
+      };
+    });
+  }
+
+  return Object.values(breakdown).map((product: any) => {
+    const productId = Number(product?.product_id);
+    const cartLine = findCartLineForProduct(productId);
+
+    const commissionValue =
+      pickCommissionValue(product) ?? pickCommissionValue(cartLine);
+
+    const quantity = Number(product.quantity || 1);
+
+    const commissionTotal =
+      commissionValue !== null ? commissionValue * quantity : null;
+
+    return {
+      product_id: product.product_id ?? 0,
+      cart_item_id: product.cart_item_id ?? product.cart_item?.id ?? null,
+      cartItemId: product.cartItemId ?? null,
+      cart_item: product.cart_item ?? null,
+      variant_id: product.variant_id ?? product.variant?.id ?? null,
+      variant: product.variant ?? null,
+      product: product.product ?? null,
+      stock_quantity: product.stock_quantity ?? null,
+      available_stock: product.available_stock ?? null,
+      variant_stock_quantity: product.variant_stock_quantity ?? null,
+      max_stock: product.max_stock ?? null,
+      product_name: product.product_name,
+      product_code: product.product_code,
+      quantity,
+      unit_price: product.unit_price || 0,
+      tax_category: product.tax_category,
+      tax_rate: product.tax_rate,
+      taxable_value: product.taxable_value || 0,
+      cgst: 0,
+      sgst: 0,
+      igst: 0,
+      total_tax: product.tax_amount || 0,
+      line_total:
+        product.line_total_after_tax ||
+        product.unit_price * quantity,
+      commission_value: commissionValue,
+      commission_total: commissionTotal,
+      primary_image: product.primary_image,
+      images: product.images || [],
+    };
+  });
 };
 
 const getItemImage = (item: {
@@ -895,6 +1009,176 @@ function TaxBreakdownPopup({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Mandatory product popup
+// ─────────────────────────────────────────────────────────────────────────────
+
+function MandatoryProductModal({
+  isOpen,
+  products,
+  isLoading,
+  onAddToCart,
+  cartProductIds,
+  addingProductId,
+  onClose,
+}: {
+  isOpen: boolean;
+  products: MandatoryProduct[];
+  isLoading: boolean;
+  onAddToCart: (product: MandatoryProduct) => void;
+  cartProductIds: Set<number>;
+  addingProductId: number | null;
+  onClose: () => void;
+}) {
+  if (!isOpen) return null;
+
+  const allInCart =
+    products.length > 0 &&
+    products.every((p) => cartProductIds.has(p.id));
+
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+      <div className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+        <div className="border-b border-[#F0E2CC] bg-gradient-to-r from-[#FFF8ED] to-white px-5 py-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex min-w-0 items-start gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FFF0D9] text-[#A65A11]">
+                <AlertTriangle className="h-5 w-5" />
+              </span>
+
+              <div className="min-w-0">
+                <h2 className="text-[16px] font-semibold text-[#392B1C]">
+                  Mandatory product required
+                </h2>
+                <p className="mt-1 text-[12px] leading-5 text-[#806B55]">
+                  Please purchase our mandatory product first. This is not
+                  optional — you cannot place an order without buying it.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close"
+              title="Close"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#806B55] transition hover:bg-white hover:text-[#111] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A65A11]/40"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+
+        <div className="flex-1 space-y-3 overflow-y-auto p-5">
+          {isLoading ? (
+            <div className="space-y-3">
+              <div className="h-32 animate-pulse rounded-xl bg-[#EEEEEC]" />
+              <div className="h-32 animate-pulse rounded-xl bg-[#EEEEEC]" />
+            </div>
+          ) : products.length === 0 ? (
+            <p className="py-6 text-center text-[12px] text-[#777777]">
+              No mandatory products available right now.
+            </p>
+          ) : (
+            products.map((product) => {
+              const primaryImage =
+                product.images?.find((img) => img.is_primary)?.image_url ||
+                product.images?.[0]?.image_url ||
+                null;
+
+              const inCart = cartProductIds.has(product.id);
+              const isAdding = addingProductId === product.id;
+              const outOfStock = product.stock_quantity <= 0;
+
+              return (
+                <div
+                  key={product.id}
+                  className="overflow-hidden rounded-xl border border-[#E5ECF6] bg-white"
+                >
+                  <div className="flex items-start gap-3 p-3">
+                    <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg border border-[#EDF1EE] bg-[#F8FAF8]">
+                      {primaryImage ? (
+                        <Image
+                          src={primaryImage}
+                          alt={product.name}
+                          fill
+                          sizes="80px"
+                          className="object-contain p-1"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center">
+                          <Package className="h-6 w-6 text-[#999]" />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <p className="line-clamp-2 text-[13px] font-semibold text-[#1B2C20]">
+                        {product.name}
+                      </p>
+
+                      <p className="mt-1 text-[10.5px] text-[#7B877F]">
+                        Code: {product.product_code} · GST{" "}
+                        {product.tax_category?.rate || "0"}%
+                      </p>
+
+                      <div className="mt-2 flex items-center justify-between gap-2">
+                        <span className="text-[14px] font-bold text-[#17251B]">
+                          {formatPrice(product.retail_price)}
+                        </span>
+
+                        <span className="text-[10px] text-[#7B877F]">
+                          Stock: {product.stock_quantity}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-[#EDF1EE] bg-[#F8FBF8] px-3 py-2.5">
+                    <button
+                      type="button"
+                      onClick={() => onAddToCart(product)}
+                      disabled={inCart || outOfStock || isAdding}
+                      className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#173E2B] to-[#16845B] px-3 py-2 text-[12px] font-semibold text-white transition hover:brightness-105 disabled:cursor-not-allowed disabled:from-[#AAB9AE] disabled:to-[#AAB9AE]"
+                    >
+                      {isAdding ? (
+                        <>
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          Adding to cart...
+                        </>
+                      ) : inCart ? (
+                        <>
+                          <Check className="h-3.5 w-3.5" />
+                          Added to cart
+                        </>
+                      ) : outOfStock ? (
+                        "Out of stock"
+                      ) : (
+                        <>
+                          <ShoppingCart className="h-3.5 w-3.5" />
+                          Add to Cart
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        <div className="border-t border-[#EDF1EE] bg-[#FFFCF7] px-5 py-3">
+          <p className="text-center text-[10.5px] leading-4 text-[#8A6B44]">
+            {allInCart
+              ? "All mandatory products added. Close this popup and place your order."
+              : "You can complete checkout only after purchasing the mandatory product."}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Coin redemption UI
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -1331,7 +1615,59 @@ function CartSummary({
     );
   }
 
-  const items = normalizeSummaryItems(summaryData);
+  // Pass cartLines to normalizer so commission can also come from cart API
+  const items = normalizeSummaryItems(summaryData, cartLines);
+
+  const isDistributor = coinRole === "distributor";
+
+  // ── DEBUG LOGS (open browser console) ──────────────────────────────────
+  console.log("=== CHECKOUT COMMISSION DEBUG ===");
+  console.log("coinRole:", coinRole);
+  console.log("isDistributor:", isDistributor);
+  console.log("summaryData.items (raw):", summaryData.items);
+  console.log("summaryData.product_tax_breakdown:", summaryData.product_tax_breakdown);
+  console.log("cartLines:", cartLines);
+  console.log("normalized items:", items);
+  console.log(
+    "per-item commission_value:",
+    items.map((i) => ({
+      product_id: i.product_id,
+      name: i.product_name,
+      commission_value: i.commission_value,
+      commission_total: i.commission_total,
+      quantity: i.quantity,
+    }))
+  );
+  console.log("summaryData.total_commission:", summaryData.total_commission);
+  console.log("=== END CHECKOUT COMMISSION DEBUG ===");
+
+  // Total commission — prefer API-provided, else sum of per-item commissions
+  const itemsCommissionSum = items.reduce((acc, item) => {
+    const perItem = Number(
+      item.commission_total ??
+        (item.commission_value !== null &&
+        item.commission_value !== undefined
+          ? Number(item.commission_value) * Number(item.quantity || 1)
+          : 0)
+    );
+
+    return acc + (Number.isFinite(perItem) ? perItem : 0);
+  }, 0);
+
+  const apiTotalCommissionRaw =
+    summaryData.total_commission ??
+    (summaryData as any).total_commission_value ??
+    (summaryData as any).commission_total ??
+    (summaryData as any).total_commission_amount;
+
+  const apiTotalCommission = Number(apiTotalCommissionRaw ?? NaN);
+
+  const totalCommission = Number.isFinite(apiTotalCommission)
+    ? apiTotalCommission
+    : itemsCommissionSum;
+
+  const hasCommission =
+    isDistributor && Number.isFinite(totalCommission) && totalCommission > 0;
 
   const hasCoupon =
     !!summaryData.coupon || Number(summaryData.coupon_discount || 0) > 0;
@@ -1427,6 +1763,23 @@ function CartSummary({
               isUpdatingThisQuantity ||
               (checkoutType === "cart" && !matchingCartItem);
 
+            // Commission per product (distributor only)
+            const perUnitCommission = Number(
+              item.commission_value ?? 0
+            );
+            const lineCommission = Number(
+              item.commission_total ??
+                (Number.isFinite(perUnitCommission)
+                  ? perUnitCommission * Number(item.quantity || 1)
+                  : 0)
+            );
+
+            const showCommission =
+              isDistributor &&
+              !retryMode &&
+              Number.isFinite(lineCommission) &&
+              lineCommission > 0;
+
             return (
               <div
                 key={`${item.product_id}-${item.variant_id ?? "none"}-${index}`}
@@ -1495,6 +1848,14 @@ function CartSummary({
                       </label>
                     )}
                   </div>
+
+                  {/* Distributor commission — per product */}
+                  {showCommission && (
+                    <div className="mt-1.5 inline-flex items-center gap-1 rounded-md bg-[#ECF9F1] px-1.5 py-0.5 text-[9.5px] font-semibold text-[#16845B]">
+                      <BadgePercent className="h-3 w-3" />
+                      You earn {formatPrice(lineCommission)}
+                    </div>
+                  )}
 
                   {isUnavailable && (
                     <p className="mt-1 text-[10px] font-semibold text-[#B64339]">
@@ -1713,6 +2074,19 @@ function CartSummary({
             <span className="text-[12px] text-[#667168]">Coins</span>
             <span className="text-[12px] font-semibold text-[#16845B]">
               - {formatPrice(summaryData.amount_redeemed)}
+            </span>
+          </div>
+        )}
+
+        {/* Distributor commission (total) */}
+        {hasCommission && (
+          <div className="mt-1 flex items-center justify-between rounded-lg bg-[#ECF9F1] px-2 py-1.5">
+            <span className="flex items-center gap-1 text-[11.5px] font-semibold text-[#16845B]">
+              <BadgePercent className="h-3 w-3" />
+              Your total commission
+            </span>
+            <span className="text-[12px] font-bold text-[#16845B]">
+              {formatPrice(totalCommission)}
             </span>
           </div>
         )}
@@ -2058,6 +2432,10 @@ export default function CheckoutPage() {
   const [hasManuallySelectedGateway, setHasManuallySelectedGateway] =
     useState(false);
 
+  // Mandatory product popup state
+  const [isMandatoryModalOpen, setIsMandatoryModalOpen] = useState(false);
+  const [addingMandatoryProductId, setAddingMandatoryProductId] =
+    useState<number | null>(null);
 
   const paymentActionInProgress = useRef(false);
   const orderCreatedRef = useRef(false);
@@ -2086,6 +2464,7 @@ export default function CheckoutPage() {
 
   const [removeFromCart] = useRemoveFromCartMutation();
   const [updateCartItem] = useUpdateCartItemMutation();
+  const [addToCart] = useAddToCartMutation();
 
   const [initiateHdfcPayment] = useInitiateHdfcPaymentMutation();
   const [retryOrder] = useRetryOrderMutation();
@@ -2099,6 +2478,20 @@ export default function CheckoutPage() {
   } = useGetPaymentGatewaySettingsQuery();
 
   const { data: dashboardResponse } = useGetUserDashboardQuery();
+
+  // ── Profile (can_buy flag) ───────────────────────────────────────────────
+  const {
+    data: profileResponse,
+    isLoading: isLoadingProfile,
+    refetch: refetchProfile,
+  } = useGetUserProfileQuery();
+
+  // ── Mandatory products ──────────────────────────────────────────────────
+  const {
+    data: mandatoryProductsResponse,
+    isLoading: isLoadingMandatoryProducts,
+    refetch: refetchMandatoryProducts,
+  } = useGetMandatoryProductsQuery();
 
   const [triggerGetCart] = useLazyGetCartQuery();
   const [checkCartStock] = useCheckCartStockMutation();
@@ -2132,6 +2525,134 @@ export default function CheckoutPage() {
       Number(dashboardInfo?.ignite?.yellow_bal ?? 0)
     ),
     blue: Math.max(0, Number(dashboardInfo?.ignite?.blue_bal ?? 0)),
+  };
+
+  // ── can_buy + mandatory products ────────────────────────────────────────
+  const canBuyRaw = (profileResponse as any)?.can_buy;
+
+  // 1 = allowed, 0 = blocked, undefined = treat as allowed (backward compatible)
+  const canBuy =
+    canBuyRaw === undefined || canBuyRaw === null
+      ? true
+      : Number(canBuyRaw) === 1;
+
+  const mandatoryProducts: MandatoryProduct[] = useMemo(() => {
+    const list = (mandatoryProductsResponse as any)?.data;
+    return Array.isArray(list) ? list : [];
+  }, [mandatoryProductsResponse]);
+
+  const cartProductIds = useMemo(() => {
+    const ids = new Set<number>();
+    cartLines.forEach((line) => {
+      const id = Number(line?.product_id);
+      if (Number.isFinite(id) && id > 0) ids.add(id);
+    });
+    return ids;
+  }, [cartLines]);
+
+  const isMandatorySatisfied = useMemo(() => {
+    if (canBuy) return true;
+    if (mandatoryProducts.length === 0) return true;
+    return mandatoryProducts.some((p) => cartProductIds.has(p.id));
+  }, [canBuy, mandatoryProducts, cartProductIds]);
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Add mandatory product to cart, then:
+  //   - re-hit profile API (refetchProfile)
+  //   - refresh cart + summary
+  //   - close popup
+  // ─────────────────────────────────────────────────────────────────────────
+  const handleAddMandatoryToCart = async (product: MandatoryProduct) => {
+    if (!product?.id) return;
+
+    if (cartProductIds.has(product.id)) {
+      dispatch(
+        showToast({
+          message: "This mandatory product is already in your cart.",
+          type: "info",
+        })
+      );
+      return;
+    }
+
+    if (product.stock_quantity <= 0) {
+      dispatch(
+        showToast({
+          message: "This mandatory product is out of stock.",
+          type: "error",
+        })
+      );
+      return;
+    }
+
+    setAddingMandatoryProductId(product.id);
+
+    try {
+      await addToCart({
+        product_id: product.id,
+        quantity: 1,
+      }).unwrap();
+
+      dispatch(
+        showToast({
+          message: `${product.name} added to cart.`,
+          type: "success",
+        })
+      );
+
+      await Promise.all([
+        refetchMandatoryProducts(),
+        refetchProfile(),
+      ]);
+
+      try {
+        const refreshedCart = await triggerGetCart().unwrap();
+        const refreshedItems: any[] = Array.isArray(
+          (refreshedCart as any)?.data?.items
+        )
+          ? (refreshedCart as any).data.items
+          : [];
+        setCartLines(refreshedItems);
+      } catch (cartErr) {
+        console.error("Cart refresh after mandatory add failed:", cartErr);
+      }
+
+      window.dispatchEvent(new CustomEvent("cart:refresh"));
+
+      try {
+        await refetchCheckoutSummary();
+      } catch (summaryErr) {
+        console.error(
+          "Checkout summary refresh after mandatory add failed:",
+          summaryErr
+        );
+      }
+
+      try {
+        await refetchProfile();
+      } catch (profileErr) {
+        console.error(
+          "Profile refresh after mandatory add failed:",
+          profileErr
+        );
+      }
+
+      setIsMandatoryModalOpen(false);
+    } catch (error: any) {
+      console.error("Add mandatory product error:", error);
+
+      dispatch(
+        showToast({
+          message: getErrorMessage(
+            error,
+            "Unable to add the mandatory product to cart."
+          ),
+          type: "error",
+        })
+      );
+    } finally {
+      setAddingMandatoryProductId(null);
+    }
   };
 
   useEffect(() => {
@@ -2269,11 +2790,10 @@ export default function CheckoutPage() {
         ? { coins: appliedCoinAmount }
         : {}),
 
-        ...(redemptionId !== null && redemptionId !== ""
-          ? { redemption_id: redemptionId }
-          : {}),
+      ...(redemptionId !== null && redemptionId !== ""
+        ? { redemption_id: redemptionId }
+        : {}),
 
-          
       ...(isDirectCheckout
         ? {
             product_id: productId,
@@ -2286,7 +2806,7 @@ export default function CheckoutPage() {
       selectedDeliveryAddress?.id,
       appliedCoupon,
       appliedCoinAmount,
-      redemptionId, 
+      redemptionId,
       isDirectCheckout,
       productId,
       quantity,
@@ -2305,6 +2825,16 @@ export default function CheckoutPage() {
   const summaryData: CheckoutSummaryData | undefined = (
     checkoutSummaryResponse as any
   )?.data;
+
+  // ✅ DEBUG LOG — raw summary response
+  useEffect(() => {
+    if (checkoutSummaryResponse) {
+      console.log(
+        "[CheckoutSummary RAW RESPONSE]",
+        JSON.parse(JSON.stringify(checkoutSummaryResponse))
+      );
+    }
+  }, [checkoutSummaryResponse]);
 
   const displayCheckoutType: "cart" | "buy_now" =
     summaryData?.checkout_type === "buy_now" ||
@@ -2836,11 +3366,10 @@ export default function CheckoutPage() {
     setCoinAmount(digitsOnly);
   };
 
-  // Remove applied coins
   const handleRemoveCoins = () => {
     if (isSubmitting || isApplyingCoins) return;
 
-    setRedemptionId(null); 
+    setRedemptionId(null);
     setAppliedCoinAmount(0);
     setSelectedCoin(null);
     setCoinAmount("");
@@ -3150,7 +3679,6 @@ export default function CheckoutPage() {
       return;
     }
 
-    // Keep the permanent order lock active.
     orderCreatedRef.current = true;
     setOrderCreatedForCheckout(true);
 
@@ -3470,7 +3998,6 @@ export default function CheckoutPage() {
       return;
     }
 
-    // Separate synchronous lock for retry payment.
     paymentActionInProgress.current = true;
     setIsSubmitting(true);
 
@@ -3616,12 +4143,10 @@ export default function CheckoutPage() {
   // ───────────────────────────────────────────────────────────────────────────
 
   const handlePlaceOrder = async () => {
-    // 1. Prevent rapid double clicks synchronously.
     if (paymentActionInProgress.current) {
       return;
     }
 
-    // 2. Prevent creating another order after successful order creation.
     if (
       orderCreatedRef.current ||
       orderCreatedForCheckout
@@ -3637,7 +4162,21 @@ export default function CheckoutPage() {
       return;
     }
 
-    // 3. Address validation.
+    // Mandatory product gate (can_buy === 0)
+    if (!canBuy && !isMandatorySatisfied) {
+      dispatch(
+        showToast({
+          message:
+            "Please purchase the mandatory product first. This is not optional.",
+          type: "error",
+        })
+      );
+
+      setIsMandatoryModalOpen(true);
+
+      return;
+    }
+
     if (!selectedDeliveryAddress?.id) {
       dispatch(
         showToast({
@@ -3649,7 +4188,6 @@ export default function CheckoutPage() {
       return;
     }
 
-    // 4. Summary validation.
     if (
       !summaryData ||
       Number(summaryData.grand_total) <= 0
@@ -3664,7 +4202,6 @@ export default function CheckoutPage() {
       return;
     }
 
-    // 5. Coin validation.
     if (selectedCoin && !redemptionId) {
       dispatch(
         showToast({
@@ -3677,7 +4214,6 @@ export default function CheckoutPage() {
       return;
     }
 
-    // 6. Payment gateway validation.
     if (isLoadingGatewaySettings) {
       dispatch(
         showToast({
@@ -3700,8 +4236,6 @@ export default function CheckoutPage() {
       return;
     }
 
-    // IMPORTANT:
-    // Lock immediately before executing any asynchronous code.
     paymentActionInProgress.current = true;
 
     setIsSubmitting(true);
@@ -3711,7 +4245,6 @@ export default function CheckoutPage() {
     let createdOrderId = 0;
 
     try {
-      // Refresh and verify latest checkout total.
       const latestSummary = await refreshAndValidateTotal(
         Number(summaryData.grand_total)
       );
@@ -3726,7 +4259,6 @@ export default function CheckoutPage() {
         data: latestSummary,
       });
 
-      // Verify stock before creating an order.
       await validateCheckoutStock(verifiedType);
 
       if (
@@ -3743,10 +4275,9 @@ export default function CheckoutPage() {
 
       const buyNowItems =
         verifiedType === "buy_now"
-          ? normalizeSummaryItems(latestSummary)
+          ? normalizeSummaryItems(latestSummary, cartLines)
           : [];
 
-      // Prepare order payload.
       const orderPayload: any = {
         checkout_type: verifiedType,
         address_id: selectedDeliveryAddress.id,
@@ -3798,10 +4329,6 @@ export default function CheckoutPage() {
         orderPayload
       );
 
-      // ───────────────────────────────────────────────────────────────────────
-      // Create the order only once.
-      // ───────────────────────────────────────────────────────────────────────
-
       const response = await placeOrder(orderPayload).unwrap();
 
       const rawResponse = response as any;
@@ -3822,30 +4349,17 @@ export default function CheckoutPage() {
         );
       }
 
-      /*
-       * IMPORTANT:
-       * Place Order API has succeeded.
-       *
-       * Permanently lock order creation immediately.
-       * Do not allow another order if payment initialization fails.
-       */
-
       orderWasCreated = true;
 
       orderCreatedRef.current = true;
 
       setOrderCreatedForCheckout(true);
 
-      // Refresh cart after order creation.
       void triggerGetCart();
 
       window.dispatchEvent(
         new CustomEvent("cart:refresh")
       );
-
-      // ───────────────────────────────────────────────────────────────────────
-      // Read order details from API response.
-      // ───────────────────────────────────────────────────────────────────────
 
       const anyData = responseData as any;
 
@@ -3893,13 +4407,8 @@ export default function CheckoutPage() {
           grandTotal
       );
 
-      // Save order details immediately for recovery.
       createdOrderId = orderId;
       createdOrderReference = orderReference;
-
-      // ───────────────────────────────────────────────────────────────────────
-      // HDFC payment flow.
-      // ───────────────────────────────────────────────────────────────────────
 
       if (selectedGateway.kind === "hdfc") {
         const uniqueIds = [
@@ -3955,17 +4464,12 @@ export default function CheckoutPage() {
           );
         }
 
-        // Redirect to secure HDFC payment.
         window.location.assign(
           getSafeHdfcUrl(initiation.payment_url)
         );
 
         return;
       }
-
-      // ───────────────────────────────────────────────────────────────────────
-      // Razorpay payment flow.
-      // ───────────────────────────────────────────────────────────────────────
 
       if (!orderReference) {
         throw new Error(
@@ -4001,11 +4505,6 @@ export default function CheckoutPage() {
       });
     } catch (error: any) {
       console.error("Checkout error:", error);
-
-      // ───────────────────────────────────────────────────────────────────────
-      // Order was created, but payment failed.
-      // Retry the existing order instead of creating a new order.
-      // ───────────────────────────────────────────────────────────────────────
 
       if (orderWasCreated) {
         if (createdOrderReference) {
@@ -4047,7 +4546,34 @@ export default function CheckoutPage() {
         return;
       }
 
-      // Normal validation/API error before order creation.
+      // Detect backend "mandatory product" error and reopen the popup
+      if (isMandatoryBackendError(error)) {
+        dispatch(
+          showToast({
+            message:
+              error?.data?.message ||
+              "The product is mandatory for your first purchase. Please add it to your order to continue.",
+            type: "error",
+          })
+        );
+
+        setIsMandatoryModalOpen(true);
+
+        try {
+          await Promise.all([
+            refetchMandatoryProducts(),
+            refetchProfile(),
+          ]);
+        } catch (refreshErr) {
+          console.error(
+            "Refresh after mandatory backend error failed:",
+            refreshErr
+          );
+        }
+
+        return;
+      }
+
       dispatch(
         showToast({
           message: getErrorMessage(
@@ -4058,12 +4584,6 @@ export default function CheckoutPage() {
         })
       );
     } finally {
-      /*
-       * Release temporary request lock.
-       *
-       * Permanent orderCreatedRef remains true after
-       * successful order creation.
-       */
       paymentActionInProgress.current = false;
 
       setIsSubmitting(false);
@@ -4091,17 +4611,15 @@ export default function CheckoutPage() {
       isLoadingGatewaySettings ||
       isApplyingCoins ||
       isFetchingCheckoutSummary ||
+      (!canBuy && !isMandatorySatisfied) ||
       (selectedCoin !== null && redemptionId === null);
 
-  // Exit payment retry — resets order lock so user can place a NEW order.
   const handleExitPayment = () => {
-    // Clear all locks (synchronous refs + React state).
     orderCreatedRef.current = false;
     paymentActionInProgress.current = false;
     setOrderCreatedForCheckout(false);
     setIsSubmitting(false);
 
-    // Remove every retry-flow query param from the URL.
     const params = new URLSearchParams(searchParams.toString());
     params.delete("order_reference");
     params.delete("gateway");
@@ -4115,7 +4633,6 @@ export default function CheckoutPage() {
       scroll: false,
     });
 
-    // Re-fetch latest summary for a fresh order attempt.
     setTimeout(() => {
       void refetchCheckoutSummary();
     }, 100);
@@ -4258,6 +4775,29 @@ export default function CheckoutPage() {
                     </button>
                   </div>
                 ))}
+
+              {/* Mandatory product banner */}
+              {!canBuy && !isRetryPaymentFlow && (
+                <div className="flex items-start gap-3 rounded-xl border border-[#F1C8C4] bg-[#FFF2F1] px-4 py-3">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[#B64339]" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[12px] font-semibold text-[#B64339]">
+                      Mandatory product required
+                    </p>
+                    <p className="mt-0.5 text-[11px] leading-4 text-[#8A4A44]">
+                      Please purchase our mandatory product first. This is not
+                      optional — you cannot place an order without buying it.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsMandatoryModalOpen(true)}
+                    className="shrink-0 rounded-lg bg-[#B64339] px-3 py-1.5 text-[10.5px] font-semibold text-white transition hover:bg-[#9F332B]"
+                  >
+                    Add product
+                  </button>
+                </div>
+              )}
 
               {/* Payment methods */}
               <section className="overflow-hidden rounded-2xl border border-[#E4EBE6] bg-white shadow-[0_14px_40px_-32px_rgba(15,45,30,0.25)]">
@@ -4474,6 +5014,17 @@ export default function CheckoutPage() {
             )}
           </div>
         )}
+
+        {/* Mandatory product popup */}
+        <MandatoryProductModal
+          isOpen={isMandatoryModalOpen && !isMandatorySatisfied}
+          products={mandatoryProducts}
+          isLoading={isLoadingMandatoryProducts}
+          onAddToCart={handleAddMandatoryToCart}
+          cartProductIds={cartProductIds}
+          addingProductId={addingMandatoryProductId}
+          onClose={() => setIsMandatoryModalOpen(false)}
+        />
 
         {/* Address form modal */}
         <AddressFormModal

@@ -6,7 +6,7 @@ export const contactApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     submitContact: builder.mutation<ContactResponse, ContactRequest>({
       query: (data) => ({
-        url: "/contact/send-request",
+        url: "/send-request",
         method: "POST",
         body: data,
       }),

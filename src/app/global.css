@@ -30,6 +30,40 @@ body {
 }
 
 
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #c9ccd1 #ffffff;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    width: 100%;
+    max-width: 100%;
+    -webkit-text-size-adjust: 100%;
+    overflow-x: hidden;
+    overscroll-behavior-x: none;
+  }
+
+  body {
+    width: 100%;
+    max-width: 100%;
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+    overscroll-behavior-x: none;
+    touch-action: pan-y;
+    /* sirf upar-neeche scroll */
+
+    font-family: var(--ff-ui, var(--font-sans));
+    font-size: 16px;
+    line-height: 1.6;
+    background: var(--navy-deep, #ffffff);
+    color: var(--ivory, #06101e);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
 
 @theme {
   /* Fonts - Correct naming for Tailwind v4 */
@@ -60,6 +94,7 @@ body {
 }
 
 @layer base {
+
   *,
   *::before,
   *::after {
@@ -144,11 +179,9 @@ body {
 
     padding: 3rem 1rem;
 
-    background: linear-gradient(
-      135deg,
-      #ffffff 0%,
-      #fff8e1 100%
-    );
+    background: linear-gradient(135deg,
+        #ffffff 0%,
+        #fff8e1 100%);
   }
 
   .content-container {
@@ -242,10 +275,8 @@ body {
   }
 
   [data-surface="light"] a:hover {
-    color: var(
-      --gold-deep,
-      var(--color-brand-gold-dark)
-    );
+    color: var(--gold-deep,
+        var(--color-brand-gold-dark));
   }
 }
 
@@ -301,6 +332,7 @@ body {
      ================================ */
 
   @keyframes pulseSlow {
+
     0%,
     100% {
       opacity: 1;
@@ -317,6 +349,7 @@ body {
    ================================ */
 
 @media (prefers-reduced-motion: reduce) {
+
   *,
   *::before,
   *::after {
@@ -340,8 +373,7 @@ body {
   display: grid !important;
 
   grid-template-columns:
-    52px
-    minmax(0, 1fr) !important;
+    52px minmax(0, 1fr) !important;
 }
 
 /* ================================
@@ -353,80 +385,73 @@ body {
    NO TOP / BOTTOM ARROWS
    ================================ */
 
-   html {
-    color-scheme: light;
-  }
-  
-  /* Chrome / Edge / Safari */
-  
-  ::-webkit-scrollbar {
-    width: 2px !important;
-    height: 2px !important;
-  }
-  
-  /* White track */
-  
-  ::-webkit-scrollbar-track {
-    background: #ffffff !important;
-  }
-  
-  ::-webkit-scrollbar-track-piece {
-    background: #ffffff !important;
-  }
-  
-  /* Very thin scroll thumb */
-  
-  ::-webkit-scrollbar-thumb {
-    background: #c9ccd1 !important;
-    border: 0 !important;
-    border-radius: 9999px !important;
-    min-height: 20px !important;
-  }
-  
-  ::-webkit-scrollbar-thumb:hover {
-    background: #aeb3ba !important;
-  }
-  
-  /* =================================
+html {
+  color-scheme: light;
+}
+
+/* Chrome / Edge / Safari */
+
+::-webkit-scrollbar {
+  width: 2px !important;
+  height: 2px !important;
+}
+
+/* White track */
+
+::-webkit-scrollbar-track {
+  background: #ffffff !important;
+}
+
+::-webkit-scrollbar-track-piece {
+  background: #ffffff !important;
+}
+
+/* Very thin scroll thumb */
+
+::-webkit-scrollbar-thumb {
+  background: #c9ccd1 !important;
+  border: 0 !important;
+  border-radius: 9999px !important;
+  min-height: 20px !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #aeb3ba !important;
+}
+
+/* =================================
      FORCE REMOVE SCROLLBAR ARROWS
      ================================= */
-  
-  ::-webkit-scrollbar-button,
-  ::-webkit-scrollbar-button:single-button,
-  ::-webkit-scrollbar-button:start,
-  ::-webkit-scrollbar-button:end,
-  ::-webkit-scrollbar-button:vertical,
-  ::-webkit-scrollbar-button:horizontal,
-  ::-webkit-scrollbar-button:vertical:start:decrement,
-  ::-webkit-scrollbar-button:vertical:end:increment,
-  ::-webkit-scrollbar-button:horizontal:start:decrement,
-  ::-webkit-scrollbar-button:horizontal:end:increment {
-    display: none !important;
-    visibility: hidden !important;
-    width: 0 !important;
-    height: 0 !important;
-    min-width: 0 !important;
-    min-height: 0 !important;
-    max-width: 0 !important;
-    max-height: 0 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    border: 0 !important;
-    background: transparent !important;
-    background-image: none !important;
-  }
-  
-  /* Remove scrollbar corner */
-  
-  ::-webkit-scrollbar-corner {
-    background: #ffffff !important;
-    width: 0 !important;
-    height: 0 !important;
-  }
-  
-  /* Firefox */
-  
-  * {
-    scrollbar-width: thin;
-    scrollbar-color: #c9ccd1 #ffffff;
-  }
+
+::-webkit-scrollbar-button,
+::-webkit-scrollbar-button:single-button,
+::-webkit-scrollbar-button:start,
+::-webkit-scrollbar-button:end,
+::-webkit-scrollbar-button:vertical,
+::-webkit-scrollbar-button:horizontal,
+::-webkit-scrollbar-button:vertical:start:decrement,
+::-webkit-scrollbar-button:vertical:end:increment,
+::-webkit-scrollbar-button:horizontal:start:decrement,
+::-webkit-scrollbar-button:horizontal:end:increment {
+  display: none !important;
+  visibility: hidden !important;
+  width: 0 !important;
+  height: 0 !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: 0 !important;
+  max-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  background-image: none !important;
+}
+
+/* Remove scrollbar corner */
+
+::-webkit-scrollbar-corner {
+  background: #ffffff !important;
+  width: 0 !important;
+  height: 0 !important;
+}

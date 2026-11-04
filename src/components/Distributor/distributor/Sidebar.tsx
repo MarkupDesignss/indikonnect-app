@@ -2,23 +2,29 @@
 
 import {
     AlertCircle,
-    Award,
-    BarChart2,
+    ArrowLeftRight,
+    BadgeCheck,
+    BadgePercent,
+    Building2,
     Calendar,
-    CheckCircle2,
+    CalendarDays,
     ChevronDown,
     Clock,
-    CreditCard,
-    History,
+    GitFork,
+    IdCard,
+    Landmark,
     LayoutDashboard,
+    LayoutGrid,
+    ListChecks,
     Loader2,
     LogOut,
     Network,
-    ReceiptText,
-    Share2,
-    ShieldCheck,
+    Settings2,
+    ShoppingBag,
+    Trophy,
+    UserPlus,
     UserRound,
-    WalletCards,
+    Wallet,
     X,
     type LucideIcon,
 } from "lucide-react";
@@ -30,7 +36,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useDispatch } from "react-redux";
 import { useLogout } from "@/lib/hooks/useLogout";
 import { showToast } from "@/lib/slices/toastSlice";
-
 import Logo from "../../../../public/indiekonnect-web/images/logo.png";
 
 /**
@@ -68,7 +73,7 @@ const menuGroups: NavGroup[] = [
             },
             {
                 label: "Orders",
-                icon: History,
+                icon: ShoppingBag,
                 href: "/distributor/order-history",
             },
         ],
@@ -86,17 +91,17 @@ const menuGroups: NavGroup[] = [
                 children: [
                     {
                         label: "Profile overview",
-                        icon: UserRound,
+                        icon: IdCard,
                         href: "/distributor/profile",
                     },
                     {
                         label: "BA Board",
-                        icon: UserRound,
+                        icon: LayoutGrid,
                         href: "/distributor/profile/ba-board",
                     },
                     {
                         label: "Rank information",
-                        icon: Award,
+                        icon: Trophy,
                         href: "/distributor/profile/weekly-commission/",
                     },
                     {
@@ -106,40 +111,39 @@ const menuGroups: NavGroup[] = [
                     },
                     {
                         label: "Binary tree",
-                        icon: Network,
+                        icon: GitFork,
                         href: "/distributor/profile/binary-tree",
                     },
                     {
                         label: "Pending CV Breakdown",
-                        icon: AlertCircle,
+                        icon: ListChecks,
                         href: "/distributor/profile/pending-cv-breakdown",
                     },
                     {
                         label: "Sponsored",
-                        icon: Share2,
+                        icon: Network,
                         href: "/distributor/profile/sponsor-tree",
                     },
                 ],
             },
             {
                 label: "My referral",
-                icon: Share2,
+                icon: UserPlus,
                 href: "/distributor/my-referral",
             },
-
             {
                 label: "Downline",
-                icon: BarChart2,
+                icon: Network,
                 href: "/distributor/downline-cv-report",
             },
             {
                 label: "My Wallet",
-                icon: BarChart2,
+                icon: Wallet,
                 href: "/distributor/wallet",
             },
             {
                 label: "Sales Calendar",
-                icon: BarChart2,
+                icon: CalendarDays,
                 href: "/distributor/sales-calendar",
             },
         ],
@@ -162,17 +166,17 @@ const menuGroups: NavGroup[] = [
         items: [
             {
                 label: "TC Bank",
-                icon: CreditCard,
+                icon: Landmark,
                 href: "/distributor/TC-Bank",
             },
             {
                 label: "My Account",
-                icon: UserRound,
+                icon: Settings2,
                 href: "/distributor/MyAccounts",
             },
             {
                 label: "KYC status",
-                icon: ShieldCheck,
+                icon: BadgeCheck,
                 href: "/distributor/kyc/status",
             },
         ],
@@ -184,17 +188,17 @@ const menuGroups: NavGroup[] = [
         items: [
             {
                 label: "Balance History",
-                icon: ReceiptText,
+                icon: ArrowLeftRight,
                 href: "/distributor/transactions",
             },
             {
                 label: "Commission History",
-                icon: ReceiptText,
+                icon: BadgePercent,
                 href: "/distributor/commissions",
             },
             {
                 label: "Bank details",
-                icon: WalletCards,
+                icon: Building2,
                 href: "/distributor/kyc/bank-details",
             },
         ],
@@ -500,7 +504,9 @@ export default function Sidebar() {
         const content = (
             <>
                 <span
-                    className={`flex h-[27px] w-[27px] shrink-0 items-center justify-center rounded-[9px] transition-colors ${active ? "bg-white/15" : "bg-neutral-100 group-hover:bg-white"
+                    className={`flex h-[27px] w-[27px] shrink-0 items-center justify-center rounded-[9px] transition-colors ${active
+                            ? "bg-white/15"
+                            : "bg-neutral-100 group-hover:bg-white"
                         }`}
                 >
                     <Icon
@@ -580,7 +586,9 @@ export default function Sidebar() {
                                                 <ChildIcon
                                                     size={14}
                                                     strokeWidth={1.8}
-                                                    className={`shrink-0 ${selected ? "text-neutral-900" : "text-neutral-400"
+                                                    className={`shrink-0 ${selected
+                                                            ? "text-neutral-900"
+                                                            : "text-neutral-400"
                                                         }`}
                                                 />
 
@@ -679,10 +687,14 @@ export default function Sidebar() {
                 {/* Brand header */}
                 <div className="shrink-0 px-4 pb-4 pt-5">
                     <div className="flex items-center justify-between gap-2 border-b border-neutral-100 pb-5">
-                        <Link
-                            href="/distributor/dashboard"
-                            onClick={closeMobile}
-                            className="group flex min-w-0 flex-1 items-center gap-3 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900"
+                        <div
+                            onClick={() => {
+                                closeMobile();
+                                router.push("/");
+                            }}
+                            role="button"
+                            tabIndex={0}
+                            className="group flex min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900"
                         >
                             <span className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-[13px] border border-neutral-200 bg-neutral-50 p-2">
                                 <Image
@@ -705,7 +717,7 @@ export default function Sidebar() {
                                     DISTRIBUTOR PANEL
                                 </span>
                             </span>
-                        </Link>
+                        </div>
 
                         <button
                             type="button"

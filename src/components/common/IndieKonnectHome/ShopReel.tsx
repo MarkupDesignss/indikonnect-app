@@ -350,8 +350,7 @@ function ShopReelsRow({
                             aria-label={`Open reel${creator ? ` by ${creator}` : ""}`}
                             className="group relative aspect-[9/16] w-[186px] shrink-0 snap-start overflow-hidden rounded-[22px] border border-[#142338]/10 bg-[#101a29] text-left shadow-[0_10px_35px_rgba(11,25,42,0.13)] outline-none transition-[transform,box-shadow] duration-300 ease-out hover:-translate-y-1.5 hover:shadow-[0_22px_52px_rgba(11,25,42,0.24)] focus-visible:ring-2 focus-visible:ring-[#c59d5d] focus-visible:ring-offset-4 sm:w-[215px] lg:w-[235px]"
                         >
-                            {/* Video only: no poster or product thumbnail. */}
-                            <div className="absolute inset-0 bg-gradient-to-br from-[#253852] via-[#101a29] to-[#080c13]" />
+                           
                             {videoUrl ? (
                                 <video
                                     src={videoUrl}

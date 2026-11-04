@@ -56,8 +56,7 @@ import {
   BarChart3,
   Network,
   RefreshCw,
-  CircleDollarSign,
-  GitBranch,
+  IndianRupee,
   ChevronRight,
 } from "lucide-react";
 
@@ -290,6 +289,18 @@ type LedgerEntry = {
   related_member?: string | number | null;
 };
 
+// --------------------------------------------------
+// COMMISSION BREAKDOWN (API-authoritative) types
+// --------------------------------------------------
+
+type CommissionBreakdown = {
+  cash_count?: number | string | null;
+  yellow_count?: number | string | null;
+  green_count?: number | string | null;
+  blue_count?: number | string | null;
+  other_count?: number | string | null;
+};
+
 type ExtendedIgnite = IgniteDashboard & {
   cash_bal_inr?: number | string | null;
   retail_profit_usd?: number | string | null;
@@ -303,6 +314,7 @@ type ExtendedIgnite = IgniteDashboard & {
   far_right_id?: number | string | null;
   far_right_ba_id?: string | null;
   commissions_history?: LedgerEntry[] | null;
+  commission_breakdown?: CommissionBreakdown | null;
 };
 
 // --------------------------------------------------
@@ -324,7 +336,7 @@ function QuickStatsCards({ ignite }: { ignite?: IgniteDashboard | null }) {
     {
       label: "Retail profit (USD)",
       value: info?.retail_profit_usd,
-      prefix: "$",
+      prefix: "₹",
       icon: ShoppingBag,
       note: "Retail profit balance",
       tone: "#54729a",
@@ -333,7 +345,7 @@ function QuickStatsCards({ ignite }: { ignite?: IgniteDashboard | null }) {
     {
       label: "Weekly pairing (USD)",
       value: info?.weekly_pairing_usd,
-      prefix: "$",
+      prefix: "₹",
       icon: TrendingUp,
       note: "Weekly pairing amount",
       tone: "#776a98",
@@ -528,7 +540,6 @@ function CoinCard({
       className="group flex min-h-[132px] min-w-0 flex-col items-center justify-center rounded-[12px] border border-[#E9EBEF] bg-white px-2 py-3 text-center transition-colors hover:border-[#D4DAE3] hover:bg-[#FCFDFE]"
       title={`${label} • USD: ${valueUsd == null ? "Not available" : formatCurrency(valueUsd, "USD")} • INR: ${valueInr == null ? "Not available" : formatCurrency(valueInr, "INR")}`}
     >
-      {/* Stacked-coin outline, matching the supplied reference rather than a generic icon. */}
       <svg
         aria-hidden="true"
         width="40"
@@ -622,7 +633,6 @@ function RedeemCoinsModal({
   const canRedeem =
     isAmountValid && !exceedsBalance && selectedBalance > 0 && !isRedeeming;
 
-  // Close on Escape key
   useEffect(() => {
     if (!isOpen) return;
 
@@ -655,7 +665,6 @@ function RedeemCoinsModal({
             onClick={(e) => e.stopPropagation()}
             className="thin-scroll max-h-[92dvh] w-full max-w-[500px] overflow-y-auto rounded-[22px] border border-[#E8E8E8] bg-white shadow-[0_30px_100px_rgba(0,0,0,.25)]"
           >
-            {/* Header */}
             <div className="flex items-start justify-between gap-3 border-b border-[#EBEBEB] px-5 py-5 sm:px-6">
               <div className="flex min-w-0 items-center gap-3">
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px] border border-[#F0E5C9] bg-[#FFF9EA] text-[#B78B30]">
@@ -687,7 +696,6 @@ function RedeemCoinsModal({
               </button>
             </div>
 
-            {/* Body */}
             <div className="p-5 sm:p-6">
               <div>
                 <label className="mb-2 block text-[11px] font-bold text-[#525D70]">
@@ -700,17 +708,19 @@ function RedeemCoinsModal({
                     onClick={() => onSelectPoint("yellow_bal")}
                     disabled={isRedeeming}
                     aria-pressed={selectedRedeemPoint === "yellow_bal"}
-                    className={`flex min-w-0 items-center justify-between gap-2 rounded-[12px] border px-3 py-3 text-left transition-all disabled:cursor-not-allowed disabled:opacity-60 ${selectedRedeemPoint === "yellow_bal"
+                    className={`flex min-w-0 items-center justify-between gap-2 rounded-[12px] border px-3 py-3 text-left transition-all disabled:cursor-not-allowed disabled:opacity-60 ${
+                      selectedRedeemPoint === "yellow_bal"
                         ? "border-[#DCC58F] bg-[#FFF9EA] shadow-[0_3px_10px_rgba(183,139,48,.07)]"
                         : "border-[#E6E9EF] bg-white hover:border-[#D5D9E1]"
-                      }`}
+                    }`}
                   >
                     <span className="flex min-w-0 items-center gap-2.5">
                       <span
-                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] ${selectedRedeemPoint === "yellow_bal"
+                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] ${
+                          selectedRedeemPoint === "yellow_bal"
                             ? "bg-[#F4E8C9] text-[#A77B22]"
                             : "bg-[#F4F5F7] text-[#858B96]"
-                          }`}
+                        }`}
                       >
                         <Coins size={16} />
                       </span>
@@ -726,10 +736,11 @@ function RedeemCoinsModal({
                     </span>
 
                     <span
-                      className={`flex h-[17px] w-[17px] shrink-0 items-center justify-center rounded-full border ${selectedRedeemPoint === "yellow_bal"
+                      className={`flex h-[17px] w-[17px] shrink-0 items-center justify-center rounded-full border ${
+                        selectedRedeemPoint === "yellow_bal"
                           ? "border-[#B78B30] bg-[#B78B30] text-white"
                           : "border-[#CCD2DC] bg-white"
-                        }`}
+                      }`}
                     >
                       {selectedRedeemPoint === "yellow_bal" && (
                         <Check size={11} strokeWidth={3} />
@@ -742,17 +753,19 @@ function RedeemCoinsModal({
                     onClick={() => onSelectPoint("blue_bal")}
                     disabled={isRedeeming}
                     aria-pressed={selectedRedeemPoint === "blue_bal"}
-                    className={`flex min-w-0 items-center justify-between gap-2 rounded-[12px] border px-3 py-3 text-left transition-all disabled:cursor-not-allowed disabled:opacity-60 ${selectedRedeemPoint === "blue_bal"
+                    className={`flex min-w-0 items-center justify-between gap-2 rounded-[12px] border px-3 py-3 text-left transition-all disabled:cursor-not-allowed disabled:opacity-60 ${
+                      selectedRedeemPoint === "blue_bal"
                         ? "border-[#BFCBF0] bg-[#F0F4FE] shadow-[0_3px_10px_rgba(79,106,192,.07)]"
                         : "border-[#E6E9EF] bg-white hover:border-[#D5D9E1]"
-                      }`}
+                    }`}
                   >
                     <span className="flex min-w-0 items-center gap-2.5">
                       <span
-                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] ${selectedRedeemPoint === "blue_bal"
+                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] ${
+                          selectedRedeemPoint === "blue_bal"
                             ? "bg-[#DDE5FA] text-[#4F6AC0]"
                             : "bg-[#F4F5F7] text-[#858B96]"
-                          }`}
+                        }`}
                       >
                         <Coins size={16} />
                       </span>
@@ -768,10 +781,11 @@ function RedeemCoinsModal({
                     </span>
 
                     <span
-                      className={`flex h-[17px] w-[17px] shrink-0 items-center justify-center rounded-full border ${selectedRedeemPoint === "blue_bal"
+                      className={`flex h-[17px] w-[17px] shrink-0 items-center justify-center rounded-full border ${
+                        selectedRedeemPoint === "blue_bal"
                           ? "border-[#4F6AC0] bg-[#4F6AC0] text-white"
                           : "border-[#CCD2DC] bg-white"
-                        }`}
+                      }`}
                     >
                       {selectedRedeemPoint === "blue_bal" && (
                         <Check size={11} strokeWidth={3} />
@@ -796,10 +810,11 @@ function RedeemCoinsModal({
                 </div>
 
                 <div
-                  className={`flex h-[47px] items-center gap-2.5 rounded-[12px] border bg-white px-3.5 transition-all focus-within:ring-4 ${exceedsBalance
+                  className={`flex h-[47px] items-center gap-2.5 rounded-[12px] border bg-white px-3.5 transition-all focus-within:ring-4 ${
+                    exceedsBalance
                       ? "border-[#E7B5B5] focus-within:border-[#CE6464] focus-within:ring-[#CE6464]/10"
                       : "border-[#E2E6ED] focus-within:border-[#7183A3] focus-within:ring-[#7183A3]/10"
-                    }`}
+                  }`}
                 >
                   <Coins
                     size={17}
@@ -857,8 +872,9 @@ function RedeemCoinsModal({
                 </div>
 
                 <span
-                  className={`shrink-0 text-[10px] font-bold ${selectedBalance > 0 ? "text-[#28866B]" : "text-[#B85D5D]"
-                    }`}
+                  className={`shrink-0 text-[10px] font-bold ${
+                    selectedBalance > 0 ? "text-[#28866B]" : "text-[#B85D5D]"
+                  }`}
                 >
                   {selectedBalance > 0
                     ? "Balance available"
@@ -921,7 +937,9 @@ function CoinsSection({
   onRedeemSuccess: () => void;
 }) {
   const coinValues = ignite as
-    (IgniteDashboard & IgniteCoinValues) | null | undefined;
+    | (IgniteDashboard & IgniteCoinValues)
+    | null
+    | undefined;
 
   const [isRedeemModalOpen, setIsRedeemModalOpen] = useState(false);
 
@@ -999,8 +1017,8 @@ function CoinsSection({
 
       toast.error(
         apiError?.data?.message ||
-        apiError?.message ||
-        "Failed to redeem coins. Please try again.",
+          apiError?.message ||
+          "Failed to redeem coins. Please try again.",
       );
     }
   };
@@ -1087,7 +1105,11 @@ function AccountSummary({ ignite }: { ignite?: IgniteDashboard | null }) {
           </p>
         </div>
         <span
-          className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold ${isActive ? "border-[#D9EDE2] bg-[#F0FAF4] text-[#21845F]" : "border-[#EBEBEB] bg-[#F8F8F8] text-[#777777]"}`}
+          className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold ${
+            isActive
+              ? "border-[#D9EDE2] bg-[#F0FAF4] text-[#21845F]"
+              : "border-[#EBEBEB] bg-[#F8F8F8] text-[#777777]"
+          }`}
         >
           <span
             className={`h-1.5 w-1.5 rounded-full ${isActive ? "bg-[#21845F]" : "bg-[#BDBDBD]"}`}
@@ -1101,7 +1123,13 @@ function AccountSummary({ ignite }: { ignite?: IgniteDashboard | null }) {
           return (
             <div
               key={item.label}
-              className={`min-w-0 rounded-[14px] border p-3 sm:p-4 ${index === 0 ? "border-[#EAE5D9] bg-[#FBFAF7]" : index === 1 ? "border-[#E9ECEF] bg-[#F9FAFB]" : "border-[#E9ECEF] bg-[#F9FAFB]"}`}
+              className={`min-w-0 rounded-[14px] border p-3 sm:p-4 ${
+                index === 0
+                  ? "border-[#EAE5D9] bg-[#FBFAF7]"
+                  : index === 1
+                    ? "border-[#E9ECEF] bg-[#F9FAFB]"
+                    : "border-[#E9ECEF] bg-[#F9FAFB]"
+              }`}
             >
               <Icon
                 size={16}
@@ -1490,8 +1518,8 @@ function RecentActivity({ activity }: { activity: DashboardActivity[] }) {
           style={
             hasOverflow
               ? {
-                maxHeight: `${MAX_VISIBLE_ACTIVITY * ACTIVITY_ITEM_HEIGHT}px`,
-              }
+                  maxHeight: `${MAX_VISIBLE_ACTIVITY * ACTIVITY_ITEM_HEIGHT}px`,
+                }
               : undefined
           }
         >
@@ -1550,16 +1578,16 @@ function LatestOrderSection({ order }: { order: DashboardLatestOrder | null }) {
     order?.order_reference || order?.order_number || order?.reference;
   const orderData = order as
     | (DashboardLatestOrder & {
-      total_payable?: number | string;
-      order_date?: string;
-    })
+        total_payable?: number | string;
+        order_date?: string;
+      })
     | null;
   const amount = order?.total_amount ?? orderData?.total_payable;
   const status = order?.status?.toLowerCase() ?? "";
   const statusStyle =
     status.includes("deliver") ||
-      status.includes("confirm") ||
-      status.includes("complete")
+    status.includes("confirm") ||
+    status.includes("complete")
       ? "border-[#D8EEE0] bg-[#F1FAF5] text-[#21815A]"
       : status.includes("fail") || status.includes("cancel")
         ? "border-[#F1D6D6] bg-[#FFF5F5] text-[#B45454]"
@@ -1739,11 +1767,6 @@ function getCurrentCalendarWeek(calendar?: SalesCalendar): number {
   return Number.isFinite(week) && week > 0 ? week : 1;
 }
 
-/** The supplied backend timestamps are without an explicit timezone.
- * For the poster we display their DATE COMPONENTS as-is: this avoids
- * silently converting a payout date into a different day.
- * The raw timestamp is kept in the title attribute for precise review.
- */
 function formatPosterApiDate(value?: string | null): string {
   if (!value) return "—";
   const date = parseCalendarDate(value);
@@ -1757,9 +1780,6 @@ function formatPosterApiDate(value?: string | null): string {
     .toUpperCase();
 }
 
-/** Image's rank-basis rules, retained separately from the API schedule.
- * Only applied for the supplied 2026 poster. They are not returned by the API.
- */
 const POSTER_RANK_BASIS_2026: Record<
   number,
   { title: string; period: string }
@@ -1774,7 +1794,6 @@ const POSTER_RANK_BASIS_2026: Record<
   12: { title: "SALES FROM WEEK 43 TO 46", period: "24 OCT TO 20 NOV" },
 };
 
-/** Actual weeks from sales_calendar.all_months have priority over generated options. */
 function buildCvWeekOptions(
   year: number,
   calendar?: SalesCalendar,
@@ -1797,7 +1816,6 @@ function buildCvWeekOptions(
     }
   }
 
-  // Retain legacy fall-back for years not supplied in the dashboard API.
   const apiWeekNo = getCurrentCalendarWeek(calendar);
   const apiStart = parseCalendarDate(getActiveCalendarWeek(calendar)?.start);
   let firstWeekStart: Date;
@@ -2044,7 +2062,6 @@ function SalesCalendarPoster({
         )}
       </div>
 
-      {/* Find CV appears ABOVE the sales calendar, within the same card. */}
       {children && (
         <div className="relative mb-4 rounded-[12px] border border-[#dce5ef] bg-white/90 p-3 sm:p-4">
           {children}
@@ -2304,8 +2321,9 @@ function SearchableDropdown<T extends string | number>({
 
         <ChevronDown
           size={16}
-          className={`shrink-0 text-[#7c879b] transition-transform duration-200 group-hover:text-[#262626] ${open ? "rotate-180 text-[#262626]" : ""
-            }`}
+          className={`shrink-0 text-[#7c879b] transition-transform duration-200 group-hover:text-[#262626] ${
+            open ? "rotate-180 text-[#262626]" : ""
+          }`}
         />
       </button>
 
@@ -2366,10 +2384,11 @@ function SearchableDropdown<T extends string | number>({
                     role="option"
                     aria-selected={featuredOption.value === value}
                     onClick={() => chooseOption(featuredOption)}
-                    className={`flex w-full items-center gap-2.5 rounded-[11px] border px-3 py-2.5 text-left transition-colors ${featuredOption.value === value
+                    className={`flex w-full items-center gap-2.5 rounded-[11px] border px-3 py-2.5 text-left transition-colors ${
+                      featuredOption.value === value
                         ? "border-[#D0D0D0] bg-[#F2F2F2]"
                         : "border-[#E7E7E7] bg-[#FAFAFA] hover:bg-[#EFEFEF]"
-                      }`}
+                    }`}
                   >
                     <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] bg-white text-[#1f9d6b] ring-1 ring-[#d9eee2]">
                       <CalendarDays size={15} />
@@ -2406,10 +2425,11 @@ function SearchableDropdown<T extends string | number>({
                         role="option"
                         aria-selected={isSelected}
                         onClick={() => chooseOption(option)}
-                        className={`flex w-full items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-left transition-colors ${isSelected
+                        className={`flex w-full items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-left transition-colors ${
+                          isSelected
                             ? "bg-[#EFEFEF] text-[#202020]"
                             : "text-[#344054] hover:bg-[#F7F7F7]"
-                          }`}
+                        }`}
                       >
                         <span className="min-w-0 flex-1">
                           <span className="block truncate text-[12px] font-bold">
@@ -2511,27 +2531,29 @@ function CvFilters({
     apiCurrentMonth ??
     (derivedCurrentMonth
       ? {
-        year: calendar?.year,
-        month_no: derivedCurrentMonth.month_no,
-        label: derivedCurrentMonth.label,
-        start: derivedCurrentMonth.weeks?.[0]?.start,
-        end: (derivedCurrentMonth.weeks ?? []).slice(-1)[0]?.end,
-      }
+          year: calendar?.year,
+          month_no: derivedCurrentMonth.month_no,
+          label: derivedCurrentMonth.label,
+          start: derivedCurrentMonth.weeks?.[0]?.start,
+          end: (derivedCurrentMonth.weeks ?? []).slice(-1)[0]?.end,
+        }
       : undefined);
 
   const currentWeekLabel =
     currentWeek?.start && currentWeek?.end
       ? `Week ${currentWeek.week_no ?? "—"}: ${formatCalendarDate(
-        currentWeek.start,
-      )} – ${formatCalendarDate(currentWeek.end)} ${currentWeek.year ?? calendar?.year ?? ""
+          currentWeek.start,
+        )} – ${formatCalendarDate(currentWeek.end)} ${
+          currentWeek.year ?? calendar?.year ?? ""
         }`.trim()
       : "Sales calendar from dashboard";
 
   const currentMonthLabel =
     currentMonth?.start && currentMonth?.end
       ? `${formatCalendarDate(
-        currentMonth.start,
-      )} – ${formatCalendarDate(currentMonth.end)} ${currentMonth.year ?? calendar?.year ?? ""
+          currentMonth.start,
+        )} – ${formatCalendarDate(currentMonth.end)} ${
+          currentMonth.year ?? calendar?.year ?? ""
         }`.trim()
       : currentMonth?.label || "—";
 
@@ -2561,14 +2583,16 @@ function CvFilters({
 
         {currentWeek?.is_settled !== undefined && (
           <span
-            className={`inline-flex w-fit shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold sm:text-[11px] ${currentWeek.is_settled
+            className={`inline-flex w-fit shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold sm:text-[11px] ${
+              currentWeek.is_settled
                 ? "bg-[#eaf7f0] text-[#1f9d6b]"
                 : "bg-[#fff4e5] text-[#a15c07]"
-              }`}
+            }`}
           >
             <span
-              className={`h-1.5 w-1.5 rounded-full ${currentWeek.is_settled ? "bg-[#1f9d6b]" : "bg-[#f79009]"
-                }`}
+              className={`h-1.5 w-1.5 rounded-full ${
+                currentWeek.is_settled ? "bg-[#1f9d6b]" : "bg-[#f79009]"
+              }`}
             />
 
             {currentWeek.is_settled ? "Settled" : "Pending settlement"}
@@ -2634,12 +2658,13 @@ function CvFilters({
         searchedWeek !== undefined && (
           <div
             role={isError ? "alert" : "status"}
-            className={`mt-4 flex min-w-0 items-start gap-2 rounded-[11px] px-3 py-2.5 text-[11px] leading-5 sm:text-[12px] ${isError
+            className={`mt-4 flex min-w-0 items-start gap-2 rounded-[11px] px-3 py-2.5 text-[11px] leading-5 sm:text-[12px] ${
+              isError
                 ? "border border-[#f2c6c3] bg-[#fff4f3] text-[#b42318]"
                 : isFetching
                   ? "border border-[#E4E4E4] bg-[#FAFAFA] text-[#454545]"
                   : "border border-[#DAEBDD] bg-[#F6FBF6] text-[#28724C]"
-              }`}
+            }`}
           >
             {isFetching && (
               <Loader2 size={14} className="mt-0.5 shrink-0 animate-spin" />
@@ -2727,6 +2752,16 @@ function EarnedCoinsAndNetwork({ ignite }: { ignite?: ExtendedIgnite | null }) {
     },
   ];
 
+  return (
+    <section className={`${CARD} dashboard-card mt-5 p-4 sm:p-5`}>
+      <SectionTitle>Earned coins & network</SectionTitle>
+      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {fields.map((item) => (
+          <DataValue key={item.label} label={item.label} value={item.value} />
+        ))}
+      </div>
+    </section>
+  );
 }
 
 function FinancialSummary({ ignite }: { ignite?: ExtendedIgnite | null }) {
@@ -2773,6 +2808,16 @@ function FinancialSummary({ ignite }: { ignite?: ExtendedIgnite | null }) {
     },
   ];
 
+  return (
+    <section className={`${CARD} dashboard-card mt-5 p-4 sm:p-5`}>
+      <SectionTitle>Financial summary</SectionTitle>
+      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+        {vals.map((item) => (
+          <DataValue key={item.label} label={item.label} value={item.value} />
+        ))}
+      </div>
+    </section>
+  );
 }
 
 const ledgerCategories = [
@@ -2821,6 +2866,109 @@ function LedgerHistory({ entries }: { entries?: LedgerEntry[] | null }) {
     currentPage * pageSize,
   );
 
+  return (
+    <section className={`${CARD} dashboard-card mt-5 p-4 sm:p-5`}>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <SectionTitle>Wallet ledger</SectionTitle>
+          <p className="ml-11 mt-1 text-[11px] text-[#929292]">
+            Full history of credits and debits
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            placeholder="Search ledger..."
+            className="h-9 min-w-0 rounded-[9px] border border-[#E4E7EC] bg-white px-3 text-[12px] text-[#344054] outline-none placeholder:text-[#98a2b3] focus:border-[#7183A3]"
+          />
+        </div>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        {ledgerCategories.map((cat) => (
+          <button
+            key={cat}
+            type="button"
+            onClick={() => {
+              setFilter(cat);
+              setPage(1);
+            }}
+            className={`rounded-full border px-3 py-1 text-[10px] font-semibold transition-colors ${
+              filter === cat
+                ? "border-[#171717] bg-[#171717] text-white"
+                : "border-[#E4E7EC] bg-white text-[#475467] hover:bg-[#F5F6F8]"
+            }`}
+          >
+            {cat === "all" ? "All" : formatStatus(cat)}
+          </button>
+        ))}
+      </div>
+      {shown.length > 0 ? (
+        <div className="mt-3 overflow-x-auto rounded-[12px] border border-[#EBEBEB]">
+          <table className="w-full min-w-[520px] border-collapse text-left text-[11px]">
+            <thead>
+              <tr className="bg-[#F7F7F7] text-[10px] uppercase tracking-[.06em] text-[#868686]">
+                <th className="px-3 py-2 font-semibold">Date</th>
+                <th className="px-3 py-2 font-semibold">Category</th>
+                <th className="px-3 py-2 font-semibold">Type</th>
+                <th className="px-3 py-2 font-semibold">Description</th>
+                <th className="px-3 py-2 text-right font-semibold">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {shown.map((entry, i) => (
+                <tr
+                  key={`${entry.id}-${i}`}
+                  className="border-t border-[#EFEFEF] text-[#303030] hover:bg-[#FBFBFB]"
+                >
+                  <td className="px-3 py-2">{formatLedgerDate(entry.date_created)}</td>
+                  <td className="px-3 py-2">{formatStatus(entry.category)}</td>
+                  <td className="px-3 py-2">{formatStatus(entry.tx_type)}</td>
+                  <td className="px-3 py-2 break-words">
+                    {entry.description || "—"}
+                  </td>
+                  <td className="px-3 py-2 text-right font-bold">
+                    {entry.amount ?? "—"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p className="mt-3 rounded-[12px] border border-dashed border-[#E8E8E8] bg-[#FBFBFB] p-5 text-center text-[11px] text-[#929292]">
+          No ledger entries match the current filter.
+        </p>
+      )}
+      {pages > 1 && (
+        <div className="mt-3 flex items-center justify-end gap-2 text-[11px] text-[#667085]">
+          <button
+            type="button"
+            disabled={currentPage === 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            className="rounded-md border border-[#E4E7EC] bg-white px-2 py-1 font-semibold disabled:opacity-50"
+          >
+            Prev
+          </button>
+          <span>
+            Page {currentPage} / {pages}
+          </span>
+          <button
+            type="button"
+            disabled={currentPage === pages}
+            onClick={() => setPage((p) => Math.min(pages, p + 1))}
+            className="rounded-md border border-[#E4E7EC] bg-white px-2 py-1 font-semibold disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
+      )}
+    </section>
+  );
 }
 
 function ApiDetailsExplorer({
@@ -2829,7 +2977,6 @@ function ApiDetailsExplorer({
   dashboard: Record<string, any> | undefined;
 }) {
   const [expanded, setExpanded] = useState(false);
-  // Keeps every API field accessible without duplicating its value in the primary dashboard.
   const sections = [
     "user",
     "stats",
@@ -2841,6 +2988,38 @@ function ApiDetailsExplorer({
     "sales_calendar",
   ];
 
+  return (
+    <section className={`${CARD} dashboard-card mt-5 p-4 sm:p-5`}>
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        className="flex w-full items-center justify-between gap-3 text-left"
+      >
+        <SectionTitle>Raw API details</SectionTitle>
+        <ChevronDown
+          size={18}
+          className={`text-[#777] transition-transform ${expanded ? "rotate-180" : ""}`}
+        />
+      </button>
+      {expanded && dashboard && (
+        <div className="mt-4 space-y-3">
+          {sections.map((key) => (
+            <details
+              key={key}
+              className="rounded-[11px] border border-[#EAEAEA] bg-[#FBFBFB] px-3 py-2"
+            >
+              <summary className="cursor-pointer text-[11px] font-bold text-[#2B2B2B]">
+                {formatStatus(key)}
+              </summary>
+              <pre className="mt-2 max-h-56 overflow-auto rounded-md bg-white p-2 text-[10px] leading-5 text-[#444]">
+                {JSON.stringify(dashboard[key], null, 2)}
+              </pre>
+            </details>
+          ))}
+        </div>
+      )}
+    </section>
+  );
 }
 
 // ============================================================================
@@ -2919,12 +3098,12 @@ function DashboardTrackingCenter({
       const baId = String(a.ba_id ?? a.account_id ?? "").trim();
       return baId
         ? [
-          {
-            baId,
-            rank: String(a.rank_name ?? a.rank ?? "—"),
-            status: String(a.status ?? a.membership_status ?? "—"),
-          },
-        ]
+            {
+              baId,
+              rank: String(a.rank_name ?? a.rank ?? "—"),
+              status: String(a.status ?? a.membership_status ?? "—"),
+            },
+          ]
         : [];
     })
     .filter((a, i, arr) => arr.findIndex((b) => b.baId === a.baId) === i);
@@ -2938,15 +3117,15 @@ function DashboardTrackingCenter({
         const wkYear = Number(w.year ?? calendar.year);
         return Number.isFinite(number) && number > 0 && Number.isFinite(wkYear)
           ? [
-            {
-              year: wkYear,
-              weekNo: number,
-              start: String(w.start ?? ""),
-              end: String(w.end ?? ""),
-              isCurrent: w.is_current === true,
-              isSettled: w.is_settled === true,
-            },
-          ]
+              {
+                year: wkYear,
+                weekNo: number,
+                start: String(w.start ?? ""),
+                end: String(w.end ?? ""),
+                isCurrent: w.is_current === true,
+                isSettled: w.is_settled === true,
+              },
+            ]
           : [];
       }),
     )
@@ -2977,7 +3156,7 @@ function DashboardTrackingCenter({
       setWeekNo(
         String(
           weeksOfYear.find((w) => w.isCurrent)?.weekNo ??
-          weeksOfYear[weeksOfYear.length - 1].weekNo,
+            weeksOfYear[weeksOfYear.length - 1].weekNo,
         ),
       );
     }
@@ -3017,14 +3196,13 @@ function DashboardTrackingCenter({
       setRequestError(
         String(
           trackObj(obj.data).message ??
-          obj.message ??
-          obj.error ??
-          "Unable to load CV data.",
+            obj.message ??
+            obj.error ??
+            "Unable to load CV data.",
         ),
       );
     }
   };
-  // A different account/week must never show the previous selection's result.
   const activeKey = `${accountId}|${year}|${weekNo}`;
   const validResponse =
     hasSearched && selectedQuery === activeKey && response !== null;
@@ -3079,44 +3257,75 @@ function DashboardTrackingCenter({
     },
   ];
 
+  // ---------------------------------------------------------------
+  // Commission History Breakdown — API-authoritative counts
+  // Uses ignite.commission_breakdown when present; falls back to
+  // counting commissions_history by point_type otherwise.
+  // ---------------------------------------------------------------
   const history = ((ignite as ExtendedIgnite | null | undefined)
     ?.commissions_history ?? []) as TrackHistory[];
-  const historyGroups = [
-    { category: "cash_bal", label: "Cash wallet", color: "#5275b5" },
-    { category: "yellow_bal", label: "Yellow coins", color: "#e5b04c" },
-    { category: "green_bal", label: "Green coins", color: "#4cae8a" },
-    { category: "blue_bal", label: "Blue coins", color: "#91b4ea" },
-  ].map((group) => ({
-    ...group,
-    count: history.filter((h) => h.category === group.category).length,
-  }));
-  const otherCount = history.filter(
-    (h) => !historyGroups.some((g) => g.category === h.category),
-  ).length;
-  const allGroups = otherCount
+  const apiBreakdown = (ignite as ExtendedIgnite | null | undefined)
+    ?.commission_breakdown;
+
+  const toCount = (value: number | string | null | undefined): number => {
+    const n = Number(value);
+    return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
+  };
+
+  const countByPointType = (pointType: string) =>
+    history.filter(
+      (h) => String((h as any)?.point_type ?? "").toLowerCase() === pointType,
+    ).length;
+
+  const cashCount = apiBreakdown
+    ? toCount(apiBreakdown.cash_count)
+    : countByPointType("cash_bal");
+  const yellowCount = apiBreakdown
+    ? toCount(apiBreakdown.yellow_count)
+    : countByPointType("yellow_bal");
+  const greenCount = apiBreakdown
+    ? toCount(apiBreakdown.green_count)
+    : countByPointType("green_bal");
+  const blueCount = apiBreakdown
+    ? toCount(apiBreakdown.blue_count)
+    : countByPointType("blue_bal");
+
+  const breakdownGroups = [
+    { category: "cash", label: "Cash wallet", color: "#5275b5", count: cashCount },
+    { category: "yellow", label: "Yellow coins", color: "#e5b04c", count: yellowCount },
+    { category: "green", label: "Green coins", color: "#4cae8a", count: greenCount },
+    { category: "blue", label: "Blue coins", color: "#91b4ea", count: blueCount },
+  ];
+  const otherBreakdownCount = apiBreakdown
+    ? toCount(apiBreakdown.other_count)
+    : 0;
+  const allGroups = otherBreakdownCount
     ? [
-      ...historyGroups,
-      {
-        category: "other",
-        label: "Other",
-        color: "#9ca3af",
-        count: otherCount,
-      },
-    ]
-    : historyGroups;
+        ...breakdownGroups,
+        {
+          category: "other",
+          label: "Other",
+          color: "#9ca3af",
+          count: otherBreakdownCount,
+        },
+      ]
+    : breakdownGroups;
   const sumCount = allGroups.reduce((n, g) => n + g.count, 0);
   let donutOffset = 0;
   const donutStops = allGroups
-    .filter((g) => g.count)
+    .filter((g) => g.count > 0)
     .map((g) => {
       const from = donutOffset;
       donutOffset += (100 * g.count) / Math.max(1, sumCount);
       return `${g.color} ${from}% ${donutOffset}%`;
     });
+
+  // Weekly cash chart — still uses raw history for credit/debit aggregation
   const weeklyCash = weeks.map((w) => {
     const wkEntries = history.filter((h) => {
-      if (h.category !== "cash_bal" || !h.date_created) return false;
-      // Compare timestamp strings in the timezone/format supplied by API.
+      if (String((h as any)?.point_type ?? "") !== "cash_bal") return false;
+      if (!h.date_created) return false;
+      // Note: API dates are DD/MM/YYYY; string compare is best-effort only.
       return (
         String(h.date_created).slice(0, 19) >= w.start &&
         String(h.date_created).slice(0, 19) <= w.end
@@ -3125,11 +3334,11 @@ function DashboardTrackingCenter({
     return {
       ...w,
       credit: wkEntries.reduce(
-        (n, h) => n + Math.max(0, Number(h.amount) || 0),
+        (n, h) => n + Math.max(0, Number((h as any).amount_usd) || 0),
         0,
       ),
       debit: wkEntries.reduce(
-        (n, h) => n + Math.max(0, -(Number(h.amount) || 0)),
+        (n, h) => n + Math.max(0, -(Number((h as any).amount_usd) || 0)),
         0,
       ),
     };
@@ -3462,7 +3671,7 @@ function DashboardTrackingCenter({
         </div>
         <div className={panel}>
           <div className="flex items-center gap-2">
-            <CircleDollarSign size={18} className="text-[#6c82a0]" />
+            <IndianRupee size={18} className="text-[#6c82a0]" />
             <h3 className="text-[14px] font-bold text-[#253449]">
               Commission History Breakdown
             </h3>
@@ -3507,7 +3716,7 @@ function DashboardTrackingCenter({
                 <span className="font-bold text-[#253449]">{g.count}</span>
               </div>
             ))}
-            <div className="flex justify-between border-t border-[#e6eaf1] bg-[#f7f9fc] px-3 py-3 text-[12px] font-bold">
+            <div className="flex justify-between border-t border-[#e6eaf1] bg-[#f7f9fc] text-black px-3 py-3 text-[12px] font-bold">
               <span>Total</span>
               <span>{sumCount}</span>
             </div>
@@ -3534,7 +3743,6 @@ function DashboardTrackingCenter({
 
 // --------------------------------------------------
 // Screenshot-style account summary beside the coin cards.
-// Uses exactly the same My Accounts RTK Query cache as Tracking Center.
 // --------------------------------------------------
 function CoinsAndAccountStatusOverview({
   ignite,
@@ -3641,9 +3849,7 @@ function CoinsAndAccountStatusOverview({
           </h2>
           <button
             type="button"
-            onClick={() =>
-              router.push("/indiekonnect-distributor/distributor/MyAccounts/")
-            }
+            onClick={() => router.push("/distributor/MyAccounts/")}
             className="inline-flex items-center gap-1.5 rounded-[7px] px-1 py-1 text-[13px] font-medium text-[#303340] hover:text-black hover:underline"
           >
             View All <ChevronRight size={17} strokeWidth={2} />
@@ -3720,18 +3926,10 @@ export default function DistributorDashboardPage() {
   const [submittedCvFilters, setSubmittedCvFilters] =
     useState<CvSearchFilters | null>(null);
 
-  // --------------------------------------------------
-  // BANKED TC MODAL STATES
-  // --------------------------------------------------
-
   const [isBankedTcModalOpen, setIsBankedTcModalOpen] = useState(false);
 
   const [pendingBankedTcSide, setPendingBankedTcSide] =
     useState<BankedTcSide | null>(null);
-
-  // --------------------------------------------------
-  // BANKED TC MUTATION
-  // --------------------------------------------------
 
   const [placeBankedTc, { isLoading: isPlacingBankedTc }] =
     usePlaceBankedTcMutation();
@@ -3739,10 +3937,6 @@ export default function DistributorDashboardPage() {
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  // --------------------------------------------------
-  // Distributor authentication
-  // --------------------------------------------------
 
   useEffect(() => {
     if (!mounted) return;
@@ -3752,13 +3946,9 @@ export default function DistributorDashboardPage() {
     redirectLock.current = true;
 
     const distributorToken = localStorage.getItem("distributor_token");
-
     const authToken = localStorage.getItem("auth_token");
-
     const rawUserType = localStorage.getItem("user_type") || "";
-
     const isLoggedIn = localStorage.getItem("is_logged_in");
-
     const userType = rawUserType.trim().toLowerCase();
 
     const hasDistributorSession =
@@ -3772,13 +3962,8 @@ export default function DistributorDashboardPage() {
     }
 
     setAuthStatus("redirecting");
-
     router.replace("/auth/distributor/login/");
   }, [router, mounted]);
-
-  // --------------------------------------------------
-  // Dashboard API
-  // --------------------------------------------------
 
   const {
     data: dashboardResponse,
@@ -3794,26 +3979,17 @@ export default function DistributorDashboardPage() {
   const dashboard = dashboardResponse?.data;
 
   const user: DashboardUser | undefined = dashboard?.user;
-
   const stats = dashboard?.stats;
-
   const ignite: IgniteDashboard | null | undefined = dashboard?.ignite;
-
   const activity: DashboardActivity[] = dashboard?.recent_activity ?? [];
-
   const salesCalendar = (dashboard as any)?.sales_calendar as
-    SalesCalendar | undefined;
+    | SalesCalendar
+    | undefined;
 
   const calendarYear = getCalendarYear(salesCalendar);
   const calendarWeek = getCurrentCalendarWeek(salesCalendar);
-
   const calendarWeekStart = salesCalendar?.current_week?.start ?? "";
-
   const hasSalesCalendar = Boolean(salesCalendar);
-
-  // --------------------------------------------------
-  // Set current calendar filters
-  // --------------------------------------------------
 
   useEffect(() => {
     if (!hasSalesCalendar) return;
@@ -3822,26 +3998,18 @@ export default function DistributorDashboardPage() {
     setSelectedCvWeek(calendarWeek);
   }, [calendarYear, calendarWeek, calendarWeekStart, hasSalesCalendar]);
 
-  // --------------------------------------------------
-  // Pairings API
-  // --------------------------------------------------
-
   const pairingsQuery = useGetPairingsQuery(
     (submittedCvFilters
       ? {
-        year: submittedCvFilters.year,
-        week_no: submittedCvFilters.week_no,
-      }
+          year: submittedCvFilters.year,
+          week_no: submittedCvFilters.week_no,
+        }
       : undefined) as any,
     {
       skip: !submittedCvFilters,
       refetchOnMountOrArgChange: true,
     },
   ) as unknown as PairingsQueryResult;
-
-  // --------------------------------------------------
-  // CV search
-  // --------------------------------------------------
 
   const handleCvSearch = () => {
     const nextFilters: CvSearchFilters = {
@@ -3860,22 +4028,14 @@ export default function DistributorDashboardPage() {
     setSubmittedCvFilters(nextFilters);
   };
 
-  // --------------------------------------------------
-  // Pairings metrics
-  // --------------------------------------------------
-
   const periodIgniteMetrics = getPairingsMetrics(pairingsQuery.data);
 
   const cvCounterIgnite = periodIgniteMetrics
     ? ({
-      ...(ignite ?? {}),
-      ...periodIgniteMetrics,
-    } as IgniteDashboard)
+        ...(ignite ?? {}),
+        ...periodIgniteMetrics,
+      } as IgniteDashboard)
     : ignite;
-
-  // --------------------------------------------------
-  // HANDLE BANKED TC PLACEMENT
-  // --------------------------------------------------
 
   const handleBankedTcPlacement = async (side: BankedTcSide) => {
     if (isPlacingBankedTc) return;
@@ -3906,36 +4066,26 @@ export default function DistributorDashboardPage() {
 
       toast.success(
         response.message ||
-        `Banked TC placed on ${side === 1 ? "Left" : "Right"
-        } Side successfully.`,
+          `Banked TC placed on ${side === 1 ? "Left" : "Right"} Side successfully.`,
       );
 
       setIsBankedTcModalOpen(false);
 
-      // Refresh dashboard to get updated Banked TC count
       await refetch();
     } catch (error: any) {
       toast.error(
         error?.data?.message ||
-        error?.message ||
-        "Failed to place Banked TC. Please try again.",
+          error?.message ||
+          "Failed to place Banked TC. Please try again.",
       );
     } finally {
       setPendingBankedTcSide(null);
     }
   };
 
-  // --------------------------------------------------
-  // Loading
-  // --------------------------------------------------
-
   if (!mounted || authStatus !== "authorized" || isLoading) {
     return <DashboardLoader />;
   }
-
-  // --------------------------------------------------
-  // Dashboard UI
-  // --------------------------------------------------
 
   return (
     <div
@@ -3952,11 +4102,7 @@ export default function DistributorDashboardPage() {
 
         <main className="thin-scroll min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain bg-[#F8F9FB] px-3 pb-7 pt-3 sm:px-4 sm:pb-9 sm:pt-4 lg:px-5 lg:pt-5 xl:px-6">
           <div className="mx-auto w-full min-w-0 max-w-[1390px]">
-            {/* Welcome hero */}
-
             <WelcomeHero user={user} distributorId={ignite?.ba_id || "N/A"} />
-
-            {/* API error */}
 
             {isError && (
               <div
@@ -3977,17 +4123,10 @@ export default function DistributorDashboardPage() {
               </div>
             )}
 
-            {/* Cash wallet, floating retail profit and direct referral */}
-
             <QuickStatsCards ignite={ignite} />
 
-            {/* Inline Tracking Center: accounts + Sales Calendar weeks + live Show CV */}
-            <DashboardTrackingCenter
-              dashboardData={dashboard}
-              ignite={ignite}
-            />
+            <DashboardTrackingCenter dashboardData={dashboard} ignite={ignite} />
 
-            {/* Screenshot-style 2-column: My Coins, status counters, account list */}
             <CoinsAndAccountStatusOverview
               ignite={ignite}
               onRedeemSuccess={() => {
@@ -3998,8 +4137,6 @@ export default function DistributorDashboardPage() {
               ignite={ignite as ExtendedIgnite | null | undefined}
             />
             <DashboardOverview stats={stats} />
-
-            {/* Latest order and recent activity */}
 
             <section className="mt-5 grid min-w-0 grid-cols-1 gap-3 sm:mt-6 sm:gap-4 xl:grid-cols-2">
               <LatestOrderSection order={dashboard?.latest_order ?? null} />
@@ -4019,11 +4156,7 @@ export default function DistributorDashboardPage() {
               </div>
               <button
                 type="button"
-                onClick={() =>
-                  router.push(
-                    "/distributor/sales-calendar/",
-                  )
-                }
+                onClick={() => router.push("/distributor/sales-calendar/")}
                 className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] bg-[#171717] px-4 text-[12px] font-bold text-white hover:bg-[#333]"
               >
                 {" "}
@@ -4053,8 +4186,6 @@ export default function DistributorDashboardPage() {
               dashboard={dashboard as Record<string, any> | undefined}
             />
 
-            {/* Refresh indicator */}
-
             {isFetching && !isLoading && (
               <div className="mt-4 flex items-center justify-end gap-2 text-[11px] font-semibold text-[#777777]">
                 <Loader2 size={13} className="animate-spin" />
@@ -4065,10 +4196,6 @@ export default function DistributorDashboardPage() {
           </div>
         </main>
       </div>
-
-      {/* -------------------------------------------------- */}
-      {/* BANKED TC PLACEMENT MODAL */}
-      {/* -------------------------------------------------- */}
 
       <BankedTcModal
         isOpen={isBankedTcModalOpen}

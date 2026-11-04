@@ -20,7 +20,6 @@ import Header from "@/components/Header";
 
 export default function Home() {
   const reduced = useReducedMotion();
-
   const [heroReady, setHeroReady] = useState(false);
 
   const onReveal = useCallback(() => {
@@ -29,17 +28,16 @@ export default function Home() {
 
   return (
     <SmoothScroll>
+      {/* Preloader sabse upar hota hai, isliye wo header ko temporarily cover kar sakta hai, jo theek hai */}
       {!reduced ? <Preloader onReveal={onReveal} /> : null}
 
       <ScrollRail />
 
+      {/* Header ab poori tarah fixed aur z-index 9999 par hai */}
       <Header />
 
-      <main id="top">
-        <Hero
-          start={Boolean(reduced) || heroReady}
-        />
-
+      <main id="top" className="relative z-0">
+        <Hero start={Boolean(reduced) || heroReady} />
         <Nation />
         <TheName />
         <Collections />
