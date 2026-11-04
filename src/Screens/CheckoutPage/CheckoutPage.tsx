@@ -129,7 +129,6 @@ interface CheckoutSummaryItem {
   total_tax: number;
   line_total: number;
 
-  // Distributor commission (per-product) — optional, from API
   commission_value?: string | number | null;
   commission_total?: string | number | null;
 
@@ -169,7 +168,6 @@ interface CheckoutSummaryData {
   grand_total: number;
   items: CheckoutSummaryItem[];
 
-  // Optional total commission for distributor
   total_commission?: string | number | null;
 
   product_tax_breakdown?: Record<string, any>;
@@ -310,9 +308,6 @@ const getErrorMessage = (error: any, fallback: string): string =>
   error?.message ||
   fallback;
 
-/**
- * Detects backend "mandatory product" errors coming from Place Order.
- */
 const isMandatoryBackendError = (error: any): boolean => {
   const message = String(
     error?.data?.message ||
@@ -330,12 +325,6 @@ const isMandatoryBackendError = (error: any): boolean => {
   );
 };
 
-/**
- * Robust commission extraction from any object.
- * Tries many possible field names, so if backend sends
- * `commission`, `commission_amount`, `commission_value`,
- * `product.commission_value` — all will work.
- */
 const pickCommissionValue = (source: any): number | null => {
   if (!source || typeof source !== "object") return null;
 
@@ -388,7 +377,6 @@ const normalizeSummaryItems = (
       const breakdownItem = findBreakdownForProduct(productId);
       const cartLine = findCartLineForProduct(productId);
 
-      // Try every possible source
       const commissionValue =
         pickCommissionValue(raw) ??
         pickCommissionValue(breakdownItem) ??
@@ -1615,33 +1603,10 @@ function CartSummary({
     );
   }
 
-  // Pass cartLines to normalizer so commission can also come from cart API
   const items = normalizeSummaryItems(summaryData, cartLines);
 
   const isDistributor = coinRole === "distributor";
 
-  // ── DEBUG LOGS (open browser console) ──────────────────────────────────
-  console.log("=== CHECKOUT COMMISSION DEBUG ===");
-  console.log("coinRole:", coinRole);
-  console.log("isDistributor:", isDistributor);
-  console.log("summaryData.items (raw):", summaryData.items);
-  console.log("summaryData.product_tax_breakdown:", summaryData.product_tax_breakdown);
-  console.log("cartLines:", cartLines);
-  console.log("normalized items:", items);
-  console.log(
-    "per-item commission_value:",
-    items.map((i) => ({
-      product_id: i.product_id,
-      name: i.product_name,
-      commission_value: i.commission_value,
-      commission_total: i.commission_total,
-      quantity: i.quantity,
-    }))
-  );
-  console.log("summaryData.total_commission:", summaryData.total_commission);
-  console.log("=== END CHECKOUT COMMISSION DEBUG ===");
-
-  // Total commission — prefer API-provided, else sum of per-item commissions
   const itemsCommissionSum = items.reduce((acc, item) => {
     const perItem = Number(
       item.commission_total ??
@@ -1763,7 +1728,6 @@ function CartSummary({
               isUpdatingThisQuantity ||
               (checkoutType === "cart" && !matchingCartItem);
 
-            // Commission per product (distributor only)
             const perUnitCommission = Number(
               item.commission_value ?? 0
             );
@@ -1849,7 +1813,6 @@ function CartSummary({
                     )}
                   </div>
 
-                  {/* Distributor commission — per product */}
                   {showCommission && (
                     <div className="mt-1.5 inline-flex items-center gap-1 rounded-md bg-[#ECF9F1] px-1.5 py-0.5 text-[9.5px] font-semibold text-[#16845B]">
                       <BadgePercent className="h-3 w-3" />
@@ -1913,7 +1876,6 @@ function CartSummary({
         )}
       </div>
 
-      {/* Coupon section */}
       <div className="border-t border-[#EDF1EE] px-4 py-2.5 sm:px-5">
         <div className="mb-1.5 flex items-center justify-between gap-3">
           <p className="text-[12px] font-semibold text-[#303B33]">
@@ -2008,7 +1970,6 @@ function CartSummary({
         )}
       </div>
 
-      {/* Apply coins directly below coupon section */}
       <CoinRedemption
         role={coinRole}
         balances={coinBalances}
@@ -2026,7 +1987,6 @@ function CartSummary({
         retryMode={retryMode}
       />
 
-      {/* Price breakdown */}
       <div className="space-y-1 border-t border-[#E8EEE9] px-4 py-2.5 sm:px-5">
         <div className="flex items-center justify-between">
           <span className="text-[12px] text-[#667168]">Subtotal</span>
@@ -2078,7 +2038,6 @@ function CartSummary({
           </div>
         )}
 
-        {/* Distributor commission (total) */}
         {hasCommission && (
           <div className="mt-1 flex items-center justify-between rounded-lg bg-[#ECF9F1] px-2 py-1.5">
             <span className="flex items-center gap-1 text-[11.5px] font-semibold text-[#16845B]">
@@ -2092,7 +2051,6 @@ function CartSummary({
         )}
       </div>
 
-      {/* Total + CTA */}
       <div className="rounded-b-2xl border-t border-[#DEE7E0] bg-gradient-to-b from-white to-[#F8FBF8] px-4 pb-3 pt-2.5 sm:px-5">
         <div className="mb-2.5 flex items-center justify-between gap-3">
           <div>
@@ -2432,7 +2390,6 @@ export default function CheckoutPage() {
   const [hasManuallySelectedGateway, setHasManuallySelectedGateway] =
     useState(false);
 
-  // Mandatory product popup state
   const [isMandatoryModalOpen, setIsMandatoryModalOpen] = useState(false);
   const [addingMandatoryProductId, setAddingMandatoryProductId] =
     useState<number | null>(null);
@@ -2527,19 +2484,31 @@ export default function CheckoutPage() {
     blue: Math.max(0, Number(dashboardInfo?.ignite?.blue_bal ?? 0)),
   };
 
-  // ── can_buy + mandatory products ────────────────────────────────────────
+  // ── Role-aware mandatory product gating ────────────────────────────────
+  // Customers must NEVER be blocked by mandatory products.
+  // Only distributors (or any non-customer role) may be gated by `can_buy`.
+  const profileUserRole = String(
+    (profileResponse as any)?.user?.account_type || ""
+  ).toLowerCase();
+
+  const isCustomer =
+    profileUserRole === "customer" || coinRole === "customer";
+
   const canBuyRaw = (profileResponse as any)?.can_buy;
 
-  // 1 = allowed, 0 = blocked, undefined = treat as allowed (backward compatible)
-  const canBuy =
-    canBuyRaw === undefined || canBuyRaw === null
+  // For customers: always allowed.
+  // For others: 1 = allowed, 0 = blocked, undefined/null = allowed (backward compatible).
+  const canBuy = isCustomer
+    ? true
+    : canBuyRaw === undefined || canBuyRaw === null
       ? true
       : Number(canBuyRaw) === 1;
 
   const mandatoryProducts: MandatoryProduct[] = useMemo(() => {
+    if (isCustomer) return []; // customers never see mandatory products
     const list = (mandatoryProductsResponse as any)?.data;
     return Array.isArray(list) ? list : [];
-  }, [mandatoryProductsResponse]);
+  }, [mandatoryProductsResponse, isCustomer]);
 
   const cartProductIds = useMemo(() => {
     const ids = new Set<number>();
@@ -2551,18 +2520,17 @@ export default function CheckoutPage() {
   }, [cartLines]);
 
   const isMandatorySatisfied = useMemo(() => {
+    if (isCustomer) return true;         // customers are always satisfied
     if (canBuy) return true;
     if (mandatoryProducts.length === 0) return true;
     return mandatoryProducts.some((p) => cartProductIds.has(p.id));
-  }, [canBuy, mandatoryProducts, cartProductIds]);
+  }, [isCustomer, canBuy, mandatoryProducts, cartProductIds]);
 
   // ─────────────────────────────────────────────────────────────────────────
-  // Add mandatory product to cart, then:
-  //   - re-hit profile API (refetchProfile)
-  //   - refresh cart + summary
-  //   - close popup
+  // Add mandatory product to cart
   // ─────────────────────────────────────────────────────────────────────────
   const handleAddMandatoryToCart = async (product: MandatoryProduct) => {
+    if (isCustomer) return; // safety: customers shouldn't reach here
     if (!product?.id) return;
 
     if (cartProductIds.has(product.id)) {
@@ -2825,16 +2793,6 @@ export default function CheckoutPage() {
   const summaryData: CheckoutSummaryData | undefined = (
     checkoutSummaryResponse as any
   )?.data;
-
-  // ✅ DEBUG LOG — raw summary response
-  useEffect(() => {
-    if (checkoutSummaryResponse) {
-      console.log(
-        "[CheckoutSummary RAW RESPONSE]",
-        JSON.parse(JSON.stringify(checkoutSummaryResponse))
-      );
-    }
-  }, [checkoutSummaryResponse]);
 
   const displayCheckoutType: "cart" | "buy_now" =
     summaryData?.checkout_type === "buy_now" ||
@@ -3215,7 +3173,6 @@ export default function CheckoutPage() {
     setAppliedCoupon(code);
   };
 
-  // Coupon apply result watcher
   useEffect(() => {
     if (!pendingCoupon || isFetchingCheckoutSummary) return;
 
@@ -3382,11 +3339,6 @@ export default function CheckoutPage() {
     );
   };
 
-  // ───────────────────────────────────────────────────────────────────────────
-  // Apply coins API
-  // POST /checkout/apply-coins
-  // ───────────────────────────────────────────────────────────────────────────
-
   const handleApplyCoins = async () => {
     if (isRetryPaymentFlow) return;
 
@@ -3527,10 +3479,6 @@ export default function CheckoutPage() {
     }
   };
 
-  // ───────────────────────────────────────────────────────────────────────────
-  // Address handlers
-  // ───────────────────────────────────────────────────────────────────────────
-
   const handleCreateAddress = async (data: AddressFormData) => {
     try {
       const payload = {
@@ -3640,10 +3588,6 @@ export default function CheckoutPage() {
     setIsAddressModalOpen(true);
   };
 
-  // ───────────────────────────────────────────────────────────────────────────
-  // Order confirmation and retry helpers
-  // ───────────────────────────────────────────────────────────────────────────
-
   const goToOrderConfirmation = (
     orderId: number,
     orderReference: string
@@ -3694,10 +3638,6 @@ export default function CheckoutPage() {
       scroll: false,
     });
   };
-
-  // ───────────────────────────────────────────────────────────────────────────
-  // Razorpay helpers
-  // ───────────────────────────────────────────────────────────────────────────
 
   const openRazorpay = (nextOrderData: RazorpayOrderData) =>
     new Promise<any>((resolve, reject) => {
@@ -3829,10 +3769,6 @@ export default function CheckoutPage() {
     }
   };
 
-  // ───────────────────────────────────────────────────────────────────────────
-  // Stock validation
-  // ───────────────────────────────────────────────────────────────────────────
-
   const validateCheckoutStock = async (
     activeType: "cart" | "buy_now"
   ) => {
@@ -3919,10 +3855,6 @@ export default function CheckoutPage() {
     }
   };
 
-  // ───────────────────────────────────────────────────────────────────────────
-  // Refresh and validate checkout total
-  // ───────────────────────────────────────────────────────────────────────────
-
   const refreshAndValidateTotal = async (
     previousTotal: number
   ) => {
@@ -3956,10 +3888,6 @@ export default function CheckoutPage() {
 
     return latest;
   };
-
-  // ───────────────────────────────────────────────────────────────────────────
-  // Retry payment for existing order
-  // ───────────────────────────────────────────────────────────────────────────
 
   const handleRetryPayment = async () => {
     if (paymentActionInProgress.current) return;
@@ -4162,8 +4090,8 @@ export default function CheckoutPage() {
       return;
     }
 
-    // Mandatory product gate (can_buy === 0)
-    if (!canBuy && !isMandatorySatisfied) {
+    // Mandatory product gate — only for non-customer roles
+    if (!isCustomer && !canBuy && !isMandatorySatisfied) {
       dispatch(
         showToast({
           message:
@@ -4546,8 +4474,8 @@ export default function CheckoutPage() {
         return;
       }
 
-      // Detect backend "mandatory product" error and reopen the popup
-      if (isMandatoryBackendError(error)) {
+      // Mandatory backend error — only relevant for non-customer roles
+      if (!isCustomer && isMandatoryBackendError(error)) {
         dispatch(
           showToast({
             message:
@@ -4611,7 +4539,7 @@ export default function CheckoutPage() {
       isLoadingGatewaySettings ||
       isApplyingCoins ||
       isFetchingCheckoutSummary ||
-      (!canBuy && !isMandatorySatisfied) ||
+      (!isCustomer && !canBuy && !isMandatorySatisfied) ||
       (selectedCoin !== null && redemptionId === null);
 
   const handleExitPayment = () => {
@@ -4776,8 +4704,8 @@ export default function CheckoutPage() {
                   </div>
                 ))}
 
-              {/* Mandatory product banner */}
-              {!canBuy && !isRetryPaymentFlow && (
+              {/* Mandatory product banner — only for non-customer roles */}
+              {!isCustomer && !canBuy && !isRetryPaymentFlow && (
                 <div className="flex items-start gap-3 rounded-xl border border-[#F1C8C4] bg-[#FFF2F1] px-4 py-3">
                   <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[#B64339]" />
                   <div className="min-w-0 flex-1">
@@ -5015,16 +4943,18 @@ export default function CheckoutPage() {
           </div>
         )}
 
-        {/* Mandatory product popup */}
-        <MandatoryProductModal
-          isOpen={isMandatoryModalOpen && !isMandatorySatisfied}
-          products={mandatoryProducts}
-          isLoading={isLoadingMandatoryProducts}
-          onAddToCart={handleAddMandatoryToCart}
-          cartProductIds={cartProductIds}
-          addingProductId={addingMandatoryProductId}
-          onClose={() => setIsMandatoryModalOpen(false)}
-        />
+        {/* Mandatory product popup — hidden for customers */}
+        {!isCustomer && (
+          <MandatoryProductModal
+            isOpen={isMandatoryModalOpen && !isMandatorySatisfied}
+            products={mandatoryProducts}
+            isLoading={isLoadingMandatoryProducts}
+            onAddToCart={handleAddMandatoryToCart}
+            cartProductIds={cartProductIds}
+            addingProductId={addingMandatoryProductId}
+            onClose={() => setIsMandatoryModalOpen(false)}
+          />
+        )}
 
         {/* Address form modal */}
         <AddressFormModal
