@@ -1093,119 +1093,119 @@ function AccountSummary({ ignite }: { ignite?: IgniteDashboard | null }) {
   const leftPct = total > 0 ? (left / total) * 100 : 0;
   const rightPct = total > 0 ? (right / total) * 100 : 0;
   const isActive = ignite?.membership_status?.toLowerCase() === "active";
-  return (
-    <section className={`${CARD} dashboard-card h-full p-4 sm:p-5`}>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <SectionTitle>Network performance</SectionTitle>
-          <p className="ml-11 mt-1 text-[11px] leading-5 text-[#888888]">
-            Rank progress and CV distribution
-          </p>
-        </div>
-        <span
-          className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold ${
-            isActive
-              ? "border-[#D9EDE2] bg-[#F0FAF4] text-[#21845F]"
-              : "border-[#EBEBEB] bg-[#F8F8F8] text-[#777777]"
-          }`}
-        >
-          <span
-            className={`h-1.5 w-1.5 rounded-full ${isActive ? "bg-[#21845F]" : "bg-[#BDBDBD]"}`}
-          />
-          {formatStatus(ignite?.membership_status)}
-        </span>
-      </div>
-      <div className="mt-5 grid grid-cols-3 gap-2.5">
-        {ranks.map((item, index) => {
-          const Icon = item.icon;
-          return (
-            <div
-              key={item.label}
-              className={`min-w-0 rounded-[14px] border p-3 sm:p-4 ${
-                index === 0
-                  ? "border-[#EAE5D9] bg-[#FBFAF7]"
-                  : index === 1
-                    ? "border-[#E9ECEF] bg-[#F9FAFB]"
-                    : "border-[#E9ECEF] bg-[#F9FAFB]"
-              }`}
-            >
-              <Icon
-                size={16}
-                className={
-                  index === 0
-                    ? "text-[#C18D3D]"
-                    : index === 1
-                      ? "text-[#269C79]"
-                      : "text-[#7C78CE]"
-                }
-                strokeWidth={1.7}
-              />
-              <p className="dashboard-number mt-4 break-words text-[23px] font-bold leading-none tracking-[-.05em] text-[#191919] sm:text-[28px]">
-                {item.value ?? "—"}
-              </p>
-              <p className="mt-2 text-[10px] font-medium leading-4 text-[#777777] sm:text-[11px]">
-                {item.label}
-              </p>
-            </div>
-          );
-        })}
-      </div>
-      <div className="mt-5 rounded-[14px] border border-[#EAEAEA] bg-[#FCFCFC] p-3.5 sm:p-4">
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-[12px] font-semibold text-[#303030]">
-            CV distribution
-          </span>
-          <span className="dashboard-number text-[11px] font-bold text-[#8A8A8A]">
-            {formatNumber(total)} total
-          </span>
-        </div>
-        <div className="mt-4 flex min-w-0 items-end justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-[10px] text-[#8A8A8A]">Left leg</p>
-            <p className="dashboard-number mt-1 break-words text-[19px] font-bold leading-none text-[#202020]">
-              {formatNumber(left)}
-            </p>
-          </div>
-          <div className="min-w-0 text-right">
-            <p className="text-[10px] text-[#8A8A8A]">Right leg</p>
-            <p className="dashboard-number mt-1 break-words text-[19px] font-bold leading-none text-[#202020]">
-              {formatNumber(right)}
-            </p>
-          </div>
-        </div>
-        <div className="mt-4 flex h-[9px] w-full gap-[3px] overflow-hidden rounded-full bg-[#E9E9E9]">
-          {leftPct > 0 && (
-            <div
-              className="h-full rounded-l-full bg-[#5B83D8] transition-all"
-              style={{ width: `${leftPct}%` }}
-            />
-          )}
-          {rightPct > 0 && (
-            <div
-              className="h-full rounded-r-full bg-[#37B89A] transition-all"
-              style={{ width: `${rightPct}%` }}
-            />
-          )}
-        </div>
-        <div className="mt-2.5 flex justify-between gap-2 text-[10px] font-semibold text-[#888888]">
-          <span>
-            <span className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full bg-[#5B83D8]" />
-            Left {total > 0 ? leftPct.toFixed(0) : 0}%
-          </span>
-          <span>
-            Right {total > 0 ? rightPct.toFixed(0) : 0}%{" "}
-            <span className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-[#37B89A]" />
-          </span>
-        </div>
-      </div>
-      <div className="mt-4 flex items-center justify-between border-t border-[#F0F0F0] pt-4">
-        <span className="text-[11px] text-[#888888]">Membership status</span>
-        <span className="text-[11px] font-semibold text-[#2A2A2A]">
-          {formatStatus(ignite?.membership_status)}
-        </span>
-      </div>
-    </section>
-  );
+  // return (
+  //   <section className={`${CARD} dashboard-card h-full p-4 sm:p-5`}>
+  //     <div className="flex flex-wrap items-start justify-between gap-3">
+  //       <div>
+  //         <SectionTitle>Network performance</SectionTitle>
+  //         <p className="ml-11 mt-1 text-[11px] leading-5 text-[#888888]">
+  //           Rank progress and CV distribution
+  //         </p>
+  //       </div>
+  //       <span
+  //         className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold ${
+  //           isActive
+  //             ? "border-[#D9EDE2] bg-[#F0FAF4] text-[#21845F]"
+  //             : "border-[#EBEBEB] bg-[#F8F8F8] text-[#777777]"
+  //         }`}
+  //       >
+  //         <span
+  //           className={`h-1.5 w-1.5 rounded-full ${isActive ? "bg-[#21845F]" : "bg-[#BDBDBD]"}`}
+  //         />
+  //         {formatStatus(ignite?.membership_status)}
+  //       </span>
+  //     </div>
+  //     <div className="mt-5 grid grid-cols-3 gap-2.5">
+  //       {ranks.map((item, index) => {
+  //         const Icon = item.icon;
+  //         return (
+  //           <div
+  //             key={item.label}
+  //             className={`min-w-0 rounded-[14px] border p-3 sm:p-4 ${
+  //               index === 0
+  //                 ? "border-[#EAE5D9] bg-[#FBFAF7]"
+  //                 : index === 1
+  //                   ? "border-[#E9ECEF] bg-[#F9FAFB]"
+  //                   : "border-[#E9ECEF] bg-[#F9FAFB]"
+  //             }`}
+  //           >
+  //             <Icon
+  //               size={16}
+  //               className={
+  //                 index === 0
+  //                   ? "text-[#C18D3D]"
+  //                   : index === 1
+  //                     ? "text-[#269C79]"
+  //                     : "text-[#7C78CE]"
+  //               }
+  //               strokeWidth={1.7}
+  //             />
+  //             <p className="dashboard-number mt-4 break-words text-[23px] font-bold leading-none tracking-[-.05em] text-[#191919] sm:text-[28px]">
+  //               {item.value ?? "—"}
+  //             </p>
+  //             <p className="mt-2 text-[10px] font-medium leading-4 text-[#777777] sm:text-[11px]">
+  //               {item.label}
+  //             </p>
+  //           </div>
+  //         );
+  //       })}
+  //     </div>
+  //     <div className="mt-5 rounded-[14px] border border-[#EAEAEA] bg-[#FCFCFC] p-3.5 sm:p-4">
+  //       <div className="flex items-center justify-between gap-2">
+  //         <span className="text-[12px] font-semibold text-[#303030]">
+  //           CV distribution
+  //         </span>
+  //         <span className="dashboard-number text-[11px] font-bold text-[#8A8A8A]">
+  //           {formatNumber(total)} total
+  //         </span>
+  //       </div>
+  //       <div className="mt-4 flex min-w-0 items-end justify-between gap-3">
+  //         <div className="min-w-0">
+  //           <p className="text-[10px] text-[#8A8A8A]">Left leg</p>
+  //           <p className="dashboard-number mt-1 break-words text-[19px] font-bold leading-none text-[#202020]">
+  //             {formatNumber(left)}
+  //           </p>
+  //         </div>
+  //         <div className="min-w-0 text-right">
+  //           <p className="text-[10px] text-[#8A8A8A]">Right leg</p>
+  //           <p className="dashboard-number mt-1 break-words text-[19px] font-bold leading-none text-[#202020]">
+  //             {formatNumber(right)}
+  //           </p>
+  //         </div>
+  //       </div>
+  //       <div className="mt-4 flex h-[9px] w-full gap-[3px] overflow-hidden rounded-full bg-[#E9E9E9]">
+  //         {leftPct > 0 && (
+  //           <div
+  //             className="h-full rounded-l-full bg-[#5B83D8] transition-all"
+  //             style={{ width: `${leftPct}%` }}
+  //           />
+  //         )}
+  //         {rightPct > 0 && (
+  //           <div
+  //             className="h-full rounded-r-full bg-[#37B89A] transition-all"
+  //             style={{ width: `${rightPct}%` }}
+  //           />
+  //         )}
+  //       </div>
+  //       <div className="mt-2.5 flex justify-between gap-2 text-[10px] font-semibold text-[#888888]">
+  //         <span>
+  //           <span className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full bg-[#5B83D8]" />
+  //           Left {total > 0 ? leftPct.toFixed(0) : 0}%
+  //         </span>
+  //         <span>
+  //           Right {total > 0 ? rightPct.toFixed(0) : 0}%{" "}
+  //           <span className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-[#37B89A]" />
+  //         </span>
+  //       </div>
+  //     </div>
+  //     <div className="mt-4 flex items-center justify-between border-t border-[#F0F0F0] pt-4">
+  //       <span className="text-[11px] text-[#888888]">Membership status</span>
+  //       <span className="text-[11px] font-semibold text-[#2A2A2A]">
+  //         {formatStatus(ignite?.membership_status)}
+  //       </span>
+  //     </div>
+  //   </section>
+  // );
 }
 
 // --------------------------------------------------
@@ -1244,115 +1244,115 @@ function AccountTable({
     { label: "Qualified at", value: ignite?.qualified_at ?? "N/A" },
     { label: "Member ID", value: ignite?.member_id ?? "N/A" },
   ];
-  return (
-    <section className={`${CARD} dashboard-card h-full p-4 sm:p-5`}>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <SectionTitle>Account details</SectionTitle>
-          <p className="ml-11 mt-1 text-[11px] leading-5 text-[#888888]">
-            Your distributor placement and account information
-          </p>
-        </div>
-        {ignite?.is_placed && (
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-[#E6E6E6] bg-[#F7F7F7] px-2.5 py-1 text-[10px] font-semibold text-[#505050]">
-            <Check size={12} />
-            Placed
-          </span>
-        )}
-      </div>
-      <div className="mt-5 overflow-hidden rounded-[14px] border border-[#EBEBEB]">
-        <div className="grid grid-cols-[minmax(0,1.25fr)_minmax(0,.6fr)_minmax(0,.85fr)_16px] items-center gap-2 bg-[#F7F7F7] px-3 py-3 text-[10px] font-semibold uppercase tracking-[.06em] text-[#868686] sm:px-4">
-          <span>Account ID</span>
-          <span>Rank</span>
-          <span>Status</span>
-          <span />
-        </div>
-        {ignite ? (
-          <>
-            <button
-              type="button"
-              aria-expanded={expanded}
-              onClick={() => setExpanded((v) => !v)}
-              className="group grid min-h-[72px] w-full grid-cols-[minmax(0,1.25fr)_minmax(0,.6fr)_minmax(0,.85fr)_16px] items-center gap-2 bg-white px-3 text-left transition-colors hover:bg-[#FBFBFB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#333333] sm:px-4"
-            >
-              <span className="min-w-0 break-all text-[11px] font-bold text-[#252525] sm:text-[13px]">
-                {ignite.ba_id || "N/A"}
-              </span>
-              <span className="dashboard-number text-[13px] font-bold text-[#242424] sm:text-[15px]">
-                {ignite.rank_no ?? 0}
-              </span>
-              <span
-                className={`min-w-0 break-words text-[10px] font-semibold sm:text-[11px] ${isActive ? "text-[#25845F]" : "text-[#858585]"}`}
-              >
-                <span
-                  className={`mr-1.5 inline-block h-1.5 w-1.5 rounded-full align-middle ${isActive ? "bg-[#25845F]" : "bg-[#AFAFAF]"}`}
-                />
-                {formatStatus(ignite.membership_status)}
-              </span>
-              <ChevronDown
-                size={16}
-                className={`text-[#777777] transition-transform ${expanded ? "rotate-180" : ""}`}
-              />
-            </button>
-            <AnimatePresence initial={false}>
-              {expanded && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="overflow-hidden border-t border-[#EBEBEB]"
-                >
-                  <div className="grid grid-cols-2 gap-2.5 bg-[#FAFAFA] p-3 sm:grid-cols-3 sm:p-4">
-                    {details.map((item) => (
-                      <div
-                        key={item.label}
-                        className="min-w-0 rounded-[11px] border border-[#EAEAEA] bg-white p-3"
-                      >
-                        <p className="text-[10px] leading-4 text-[#8A8A8A]">
-                          {item.label}
-                        </p>
-                        <p className="dashboard-number mt-1 break-all text-[12px] font-bold text-[#252525] sm:text-[13px]">
-                          {item.value}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </>
-        ) : (
-          <p className="p-6 text-center text-[12px] text-[#929292]">
-            Account information is not available.
-          </p>
-        )}
-      </div>
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-[13px] border border-[#ECECEC] bg-[#FBFBFB] p-3 sm:p-3.5">
-        <div>
-          <p className="text-[11px] font-semibold text-[#343434]">
-            Banked TC available
-          </p>
-          <p className="dashboard-number mt-1 text-[21px] font-bold tracking-[-.04em] text-[#191919]">
-            {formatNumber(availableBankedTc)}
-          </p>
-        </div>
-        {availableBankedTc > 0 && Boolean(ignite?.ba_id) ? (
-          <button
-            type="button"
-            onClick={onOpenBankedTc}
-            className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-[11px] bg-[#171717] px-4 text-[12px] font-semibold text-white shadow-[0_6px_14px_rgba(0,0,0,.12)] transition-all hover:bg-[#333333] active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#333333]/30 focus-visible:ring-offset-2"
-          >
-            <HandCoins size={15} /> Place Banked TC <ArrowRight size={14} />
-          </button>
-        ) : (
-          <span className="rounded-full border border-[#E8E8E8] bg-white px-3 py-1.5 text-[10px] font-medium text-[#888888]">
-            No TC to place
-          </span>
-        )}
-      </div>
-    </section>
-  );
+  // return (
+  //   <section className={`${CARD} dashboard-card h-full p-4 sm:p-5`}>
+  //     <div className="flex flex-wrap items-start justify-between gap-3">
+  //       <div>
+  //         <SectionTitle>Account details</SectionTitle>
+  //         <p className="ml-11 mt-1 text-[11px] leading-5 text-[#888888]">
+  //           Your distributor placement and account information
+  //         </p>
+  //       </div>
+  //       {ignite?.is_placed && (
+  //         <span className="inline-flex items-center gap-1.5 rounded-full border border-[#E6E6E6] bg-[#F7F7F7] px-2.5 py-1 text-[10px] font-semibold text-[#505050]">
+  //           <Check size={12} />
+  //           Placed
+  //         </span>
+  //       )}
+  //     </div>
+  //     <div className="mt-5 overflow-hidden rounded-[14px] border border-[#EBEBEB]">
+  //       <div className="grid grid-cols-[minmax(0,1.25fr)_minmax(0,.6fr)_minmax(0,.85fr)_16px] items-center gap-2 bg-[#F7F7F7] px-3 py-3 text-[10px] font-semibold uppercase tracking-[.06em] text-[#868686] sm:px-4">
+  //         <span>Account ID</span>
+  //         <span>Rank</span>
+  //         <span>Status</span>
+  //         <span />
+  //       </div>
+  //       {ignite ? (
+  //         <>
+  //           <button
+  //             type="button"
+  //             aria-expanded={expanded}
+  //             onClick={() => setExpanded((v) => !v)}
+  //             className="group grid min-h-[72px] w-full grid-cols-[minmax(0,1.25fr)_minmax(0,.6fr)_minmax(0,.85fr)_16px] items-center gap-2 bg-white px-3 text-left transition-colors hover:bg-[#FBFBFB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#333333] sm:px-4"
+  //           >
+  //             <span className="min-w-0 break-all text-[11px] font-bold text-[#252525] sm:text-[13px]">
+  //               {ignite.ba_id || "N/A"}
+  //             </span>
+  //             <span className="dashboard-number text-[13px] font-bold text-[#242424] sm:text-[15px]">
+  //               {ignite.rank_no ?? 0}
+  //             </span>
+  //             <span
+  //               className={`min-w-0 break-words text-[10px] font-semibold sm:text-[11px] ${isActive ? "text-[#25845F]" : "text-[#858585]"}`}
+  //             >
+  //               <span
+  //                 className={`mr-1.5 inline-block h-1.5 w-1.5 rounded-full align-middle ${isActive ? "bg-[#25845F]" : "bg-[#AFAFAF]"}`}
+  //               />
+  //               {formatStatus(ignite.membership_status)}
+  //             </span>
+  //             <ChevronDown
+  //               size={16}
+  //               className={`text-[#777777] transition-transform ${expanded ? "rotate-180" : ""}`}
+  //             />
+  //           </button>
+  //           <AnimatePresence initial={false}>
+  //             {expanded && (
+  //               <motion.div
+  //                 initial={{ height: 0, opacity: 0 }}
+  //                 animate={{ height: "auto", opacity: 1 }}
+  //                 exit={{ height: 0, opacity: 0 }}
+  //                 transition={{ duration: 0.2 }}
+  //                 className="overflow-hidden border-t border-[#EBEBEB]"
+  //               >
+  //                 <div className="grid grid-cols-2 gap-2.5 bg-[#FAFAFA] p-3 sm:grid-cols-3 sm:p-4">
+  //                   {details.map((item) => (
+  //                     <div
+  //                       key={item.label}
+  //                       className="min-w-0 rounded-[11px] border border-[#EAEAEA] bg-white p-3"
+  //                     >
+  //                       <p className="text-[10px] leading-4 text-[#8A8A8A]">
+  //                         {item.label}
+  //                       </p>
+  //                       <p className="dashboard-number mt-1 break-all text-[12px] font-bold text-[#252525] sm:text-[13px]">
+  //                         {item.value}
+  //                       </p>
+  //                     </div>
+  //                   ))}
+  //                 </div>
+  //               </motion.div>
+  //             )}
+  //           </AnimatePresence>
+  //         </>
+  //       ) : (
+  //         <p className="p-6 text-center text-[12px] text-[#929292]">
+  //           Account information is not available.
+  //         </p>
+  //       )}
+  //     </div>
+  //     <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-[13px] border border-[#ECECEC] bg-[#FBFBFB] p-3 sm:p-3.5">
+  //       <div>
+  //         <p className="text-[11px] font-semibold text-[#343434]">
+  //           Banked TC available
+  //         </p>
+  //         <p className="dashboard-number mt-1 text-[21px] font-bold tracking-[-.04em] text-[#191919]">
+  //           {formatNumber(availableBankedTc)}
+  //         </p>
+  //       </div>
+  //       {availableBankedTc > 0 && Boolean(ignite?.ba_id) ? (
+  //         <button
+  //           type="button"
+  //           onClick={onOpenBankedTc}
+  //           className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-[11px] bg-[#171717] px-4 text-[12px] font-semibold text-white shadow-[0_6px_14px_rgba(0,0,0,.12)] transition-all hover:bg-[#333333] active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#333333]/30 focus-visible:ring-offset-2"
+  //         >
+  //           <HandCoins size={15} /> Place Banked TC <ArrowRight size={14} />
+  //         </button>
+  //       ) : (
+  //         <span className="rounded-full border border-[#E8E8E8] bg-white px-3 py-1.5 text-[10px] font-medium text-[#888888]">
+  //           No TC to place
+  //         </span>
+  //       )}
+  //     </div>
+  //   </section>
+  // );
 }
 
 // --------------------------------------------------
@@ -2750,25 +2750,25 @@ function EarnedCoinsAndNetwork({ ignite }: { ignite?: ExtendedIgnite | null }) {
     },
   ];
 
-  return (
-    <section className={`${CARD} dashboard-card mt-5 p-4 sm:p-5`}>
-      <SectionTitle>Earned coins & network</SectionTitle>
-      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-        {fields.map((item) => (
-          <DataValue key={item.label} label={item.label} value={item.value} />
-        ))}
-      </div>
-    </section>
-  );
+  // return (
+  //   <section className={`${CARD} dashboard-card mt-5 p-4 sm:p-5`}>
+  //     <SectionTitle>Earned coins & network</SectionTitle>
+  //     <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+  //       {fields.map((item) => (
+  //         <DataValue key={item.label} label={item.label} value={item.value} />
+  //       ))}
+  //     </div>
+  //   </section>
+  // );
 }
 
 function FinancialSummary({ ignite }: { ignite?: ExtendedIgnite | null }) {
   const vals = [
-    {
-      label: "Cash balance (USD units)",
-      value:
-        ignite?.cash_bal == null ? "—" : `$${formatNumber(ignite.cash_bal)}`,
-    },
+    // {
+    //   label: "Cash balance (USD units)",
+    //   value:
+    //     ignite?.cash_bal == null ? "—" : `$${formatNumber(ignite.cash_bal)}`,
+    // },
     {
       label: "Cash balance (INR)",
       value:
@@ -2776,13 +2776,13 @@ function FinancialSummary({ ignite }: { ignite?: ExtendedIgnite | null }) {
           ? "—"
           : `₹${formatNumber(ignite.cash_bal_inr)}`,
     },
-    {
-      label: "Exchange rate",
-      value:
-        ignite?.exchange_rate == null
-          ? "—"
-          : formatNumber(ignite.exchange_rate),
-    },
+    // {
+    //   label: "Exchange rate",
+    //   value:
+    //     ignite?.exchange_rate == null
+    //       ? "—"
+    //       : formatNumber(ignite.exchange_rate),
+    // },
     {
       label: "Retail profit ",
       value:
@@ -4164,26 +4164,6 @@ export default function DistributorDashboardPage() {
               <RecentActivity activity={activity} />
             </section>
 
-            <section className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-[15px] border border-[#e6e9ef] bg-white p-4 sm:p-5">
-              <div>
-                <h2 className="text-[14px] font-bold text-[#263449]">
-                  Sales Month Calendar
-                </h2>
-                <p className="mt-1 text-[11px] text-[#8994a4]">
-                  View month-wise weeks, payouts and the full sales calendar on
-                  its dedicated page.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => router.push("/distributor/sales-calendar/")}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] bg-[#171717] px-4 text-[12px] font-bold text-white hover:bg-[#333]"
-              >
-                {" "}
-                <CalendarDays size={15} /> Open Sales Calendar{" "}
-                <ArrowRight size={14} />
-              </button>
-            </section>
 
             <section className="mt-3 grid min-w-0 gap-3 lg:grid-cols-2">
               <AccountSummary ignite={ignite} />

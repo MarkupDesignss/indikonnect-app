@@ -104,11 +104,7 @@ const menuGroups: NavGroup[] = [
                         icon: Trophy,
                         href: "/distributor/profile/weekly-commission/",
                     },
-                    {
-                        label: "Weekly CV data",
-                        icon: Calendar,
-                        href: "/distributor/profile/weekly-cv-date",
-                    },
+                   
                     {
                         label: "Binary tree",
                         icon: GitFork,
