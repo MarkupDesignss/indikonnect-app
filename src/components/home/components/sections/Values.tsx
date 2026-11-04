@@ -1,11 +1,8 @@
 "use client";
 
 import { useMemo, useRef } from "react";
-import {
-  motion,
-  useInView,
-  useReducedMotion,
-} from "framer-motion";
+import { motion, useInView, useReducedMotion } from "framer-motion";
+import DOMPurify from "dompurify";
 
 import {
   Accent,
@@ -24,6 +21,47 @@ import styles from "./Values.module.css";
 import { useGetLandingPageQuery } from "@/lib/redux/api/Landing/landingPageApi";
 
 /* =========================================================
+   HTML ENTITY DECODER (plain text fields ke liye)
+========================================================= */
+const decodeHtml = (text: string): string => {
+  if (!text) return "";
+  if (typeof window !== "undefined" && typeof document !== "undefined") {
+    const txt = document.createElement("textarea");
+    txt.innerHTML = text;
+    return txt.value;
+  }
+  return text
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+};
+
+/* =========================================================
+   SANITIZER (rich HTML fields like <p>...</p>)
+   - safe tags allow
+   - &nbsp; ko normal space me convert
+========================================================= */
+const sanitizeHtml = (html: string): string => {
+  if (!html) return "";
+
+  // SSR fallback — tags strip karke plain text
+  if (typeof window === "undefined") {
+    return decodeHtml(html.replace(/<[^>]*>/g, "")).trim();
+  }
+
+  const cleaned = DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: ["p", "br", "strong", "b", "em", "i", "a", "ul", "ol", "li"],
+    ALLOWED_ATTR: ["href", "target", "rel"],
+  });
+
+  // &nbsp; → normal space (extra gap avoid)
+  return cleaned.replace(/&nbsp;/g, " ");
+};
+
+/* =========================================================
    CHIP STYLES
 ========================================================= */
 
@@ -35,10 +73,6 @@ const CHIP = {
 
 type ChipType = keyof typeof CHIP;
 
-/* =========================================================
-   VALUE TYPE
-========================================================= */
-
 type ValueItem = {
   idx: string;
   title: string;
@@ -48,45 +82,22 @@ type ValueItem = {
 };
 
 /* =========================================================
-   CHIP COLOR HELPER
+   HELPERS
 ========================================================= */
 
-const getChipType = (
-  colour: string
-): ChipType => {
-  const value = colour
-    .toLowerCase()
-    .trim();
-
-  if (value.includes("yellow")) {
-    return "gold";
-  }
-
-  if (value.includes("white")) {
-    return "white";
-  }
-
+const getChipType = (colour: string): ChipType => {
+  const value = colour.toLowerCase().trim();
+  if (value.includes("yellow")) return "gold";
+  if (value.includes("white")) return "white";
   return "navy";
 };
 
-/* =========================================================
-   TEXT PARSER
-========================================================= */
-
-const parseShortDescription = (
-  text: string
-) => {
-  const cleaned = text.trim();
-
-  const match = cleaned.match(
-    /^([^.!?]+)\.\s*(.*)$/
-  );
+const parseShortDescription = (text: string) => {
+  const cleaned = decodeHtml(text).trim();
+  const match = cleaned.match(/^([^.!?]+)\.\s*(.*)$/);
 
   if (!match) {
-    return {
-      colour: cleaned,
-      body: "",
-    };
+    return { colour: cleaned, body: "" };
   }
 
   return {
@@ -101,138 +112,87 @@ const parseShortDescription = (
 
 export function Values() {
   const reduced = useReducedMotion();
-
-  const gridRef =
-    useRef<HTMLDivElement>(null);
-
+  const gridRef = useRef<HTMLDivElement>(null);
   const seen = useInView(gridRef, {
     once: true,
     margin: "0px 0px -20% 0px",
   });
 
-  /* =========================================================
-     API
-  ========================================================= */
+  const { data: landingData } = useGetLandingPageQuery();
 
-  const { data: landingData } =
-    useGetLandingPageQuery();
+  const chapterFivePage = landingData?.data?.find(
+    (item: any) => item?.slug === "chapter-five"
+  );
 
-  /* =========================================================
-     FIND CHAPTER FIVE
-  ========================================================= */
-
-  const chapterFivePage =
-    landingData?.data?.find(
-      (item: any) =>
-        item?.slug === "chapter-five"
-    );
-
-  /* =========================================================
-     GET CHAPTER BLOCKS
-  ========================================================= */
-
-  const chapterFiveBlocks =
-    useMemo(() => {
-      const blocks =
-        chapterFivePage?.blocks || [];
-
-      return {
-        main:
-          blocks.find(
-            (block: any) =>
-              block?.sort_order === 0
-          ) || {},
-
-        values: blocks
-          .filter(
-            (block: any) =>
-              block?.sort_order > 0
-          )
-          .sort(
-            (a: any, b: any) =>
-              (a?.sort_order ?? 0) -
-              (b?.sort_order ?? 0)
-          ),
-      };
-    }, [chapterFivePage]);
+  const chapterFiveBlocks = useMemo(() => {
+    const blocks = chapterFivePage?.blocks || [];
+    return {
+      main: blocks.find((block: any) => block?.sort_order === 0) || {},
+      values: blocks
+        .filter((block: any) => block?.sort_order > 0)
+        .sort(
+          (a: any, b: any) =>
+            (a?.sort_order ?? 0) - (b?.sort_order ?? 0)
+        ),
+    };
+  }, [chapterFivePage]);
 
   /* =========================================================
      MAIN CONTENT
   ========================================================= */
 
   const chapterHeading =
-    chapterFiveBlocks.main?.heading?.trim() ||
+    decodeHtml(chapterFiveBlocks.main?.heading || "").trim() ||
     "Chapter Five · The Foundations";
 
   const chapterShortDescription =
-    chapterFiveBlocks.main?.short_description?.trim() ||
+    decodeHtml(chapterFiveBlocks.main?.short_description || "").trim() ||
     "Values you can trust";
 
-  const chapterDescription =
-    chapterFiveBlocks.main?.description?.trim() ||
-    "The IndieKonnect ecosystem runs on a people-first philosophy. Our house colours are not decoration, they are a commitment.";
+  // description me HTML <p> hai → sanitize karke render
+  const chapterDescriptionHtml = sanitizeHtml(
+    chapterFiveBlocks.main?.description ||
+      "<p>The IndieKonnect ecosystem runs on a people-first philosophy. Our house colours are not decoration, they are a commitment.</p>"
+  );
 
   /* =========================================================
      DYNAMIC VALUES
   ========================================================= */
 
   const values = useMemo<ValueItem[]>(() => {
-    return chapterFiveBlocks.values.map(
-      (block: any, index: number) => {
-        const parsed =
-          parseShortDescription(
-            block?.short_description ||
-              ""
-          );
+    return chapterFiveBlocks.values.map((block: any, index: number) => {
+      const parsed = parseShortDescription(
+        block?.short_description || ""
+      );
 
-        return {
-          idx: String(
-            index + 1
-          ).padStart(2, "0"),
-
-          title:
-            block?.heading?.trim() ||
-            `Value ${index + 1}`,
-
-          colour:
-            parsed.colour ||
-            "",
-
-          body:
-            parsed.body ||
-            block?.description?.trim() ||
-            "",
-
-          chip: getChipType(
-            parsed.colour || ""
-          ),
-        };
-      }
-    );
+      return {
+        idx: String(index + 1).padStart(2, "0"),
+        title:
+          decodeHtml(block?.heading || "").trim() ||
+          `Value ${index + 1}`,
+        colour: parsed.colour || "",
+        body:
+          parsed.body ||
+          decodeHtml(block?.description || "").trim() ||
+          "",
+        chip: getChipType(parsed.colour || ""),
+      };
+    });
   }, [chapterFiveBlocks]);
 
   /* =========================================================
      HEADING SPLIT
   ========================================================= */
 
-  const shortWords =
-    chapterShortDescription
-      .split(/\s+/)
-      .filter(Boolean);
+  const shortWords = chapterShortDescription.split(/\s+/).filter(Boolean);
 
   const firstHeadingPart =
     shortWords.length > 1
-      ? shortWords
-          .slice(0, -1)
-          .join(" ")
+      ? shortWords.slice(0, -1).join(" ")
       : chapterShortDescription;
 
   const lastHeadingWord =
-    shortWords.length > 1
-      ? shortWords[
-          shortWords.length - 1
-        ]
-      : "";
+    shortWords.length > 1 ? shortWords[shortWords.length - 1] : "";
 
   return (
     <Section
@@ -245,43 +205,26 @@ export function Values() {
         {/* =====================================================
             HEADER
         ====================================================== */}
-
         <div className={styles.head}>
           <Reveal as="p">
-            <Eyebrow>
-              {chapterHeading}
-            </Eyebrow>
+            <Eyebrow>{chapterHeading}</Eyebrow>
           </Reveal>
 
-          <Reveal
-            as="div"
-            delay={0.08}
-          >
-            <Display
-              size="lg"
-              style={{
-                marginTop: 20,
-              }}
-            >
+          <Reveal as="div" delay={0.08}>
+            <Display size="lg" style={{ marginTop: 20 }}>
               {firstHeadingPart}{" "}
-              {lastHeadingWord ? (
-                <Accent>
-                  {lastHeadingWord}
-                </Accent>
-              ) : null}
+              {lastHeadingWord ? <Accent>{lastHeadingWord}</Accent> : null}
             </Display>
           </Reveal>
 
-          <Reveal
-            as="div"
-            delay={0.16}
-          >
-            <Lede
-              style={{
-                marginTop: 20,
-              }}
-            >
-              {chapterDescription}
+          {/* Description: Lede ke andar nested <p> avoid karne ke liye
+              dangerouslySetInnerHTML wrapper div pe lagaya hai */}
+          <Reveal as="div" delay={0.16}>
+            <Lede as="div" style={{ marginTop: 20 }}>
+              <div
+                className={styles.ledeBody}
+                dangerouslySetInnerHTML={{ __html: chapterDescriptionHtml }}
+              />
             </Lede>
           </Reveal>
         </div>
@@ -289,93 +232,54 @@ export function Values() {
         {/* =====================================================
             VALUES GRID
         ====================================================== */}
+        <div className={styles.grid} ref={gridRef}>
+          {values.map((value, index) => (
+            <motion.article
+              key={`${value.title}-${value.idx}`}
+              className={styles.val}
+              initial={
+                reduced
+                  ? undefined
+                  : {
+                      rotateX: -34,
+                      rotateY:
+                        index === 0 ? -18 : index === 2 ? 18 : 0,
+                      y: 70,
+                      opacity: 0,
+                    }
+              }
+              animate={
+                seen || reduced
+                  ? { rotateX: 0, rotateY: 0, y: 0, opacity: 1 }
+                  : undefined
+              }
+              transition={{
+                duration: 1,
+                ease: ease.expoOut,
+                delay: index * 0.1,
+              }}
+              style={{ transformPerspective: 900 }}
+            >
+              {/* Index */}
+              <span className={styles.idx}>{value.idx}</span>
 
-        <div
-          className={styles.grid}
-          ref={gridRef}
-        >
-          {values.map(
-            (value, index) => (
-              <motion.article
-                key={`${value.title}-${value.idx}`}
-                className={styles.val}
-                initial={
-                  reduced
-                    ? undefined
-                    : {
-                        rotateX: -34,
-                        rotateY:
-                          index === 0
-                            ? -18
-                            : index ===
-                                2
-                              ? 18
-                              : 0,
-                        y: 70,
-                        opacity: 0,
-                      }
-                }
-                animate={
-                  seen || reduced
-                    ? {
-                        rotateX: 0,
-                        rotateY: 0,
-                        y: 0,
-                        opacity: 1,
-                      }
-                    : undefined
-                }
-                transition={{
-                  duration: 1,
-                  ease: ease.expoOut,
-                  delay:
-                    index * 0.1,
-                }}
-                style={{
-                  transformPerspective: 900,
-                }}
-              >
-                {/* Index */}
-                <span
-                  className={
-                    styles.idx
-                  }
-                >
-                  {value.idx}
-                </span>
+              {/* Dynamic Chip */}
+              <span
+                className={cx(styles.chip, CHIP[value.chip])}
+                aria-hidden="true"
+              />
 
-                {/* Dynamic Chip */}
-                <span
-                  className={cx(
-                    styles.chip,
-                    CHIP[value.chip]
-                  )}
-                  aria-hidden="true"
-                />
+              {/* Dynamic Title */}
+              <h3>{value.title}</h3>
 
-                {/* Dynamic Title */}
-                <h3>
-                  {value.title}
-                </h3>
-
-                {/* Dynamic Description */}
-                <p>
-                  {value.colour ? (
-                    <strong>
-                      {value.colour}
-                    </strong>
-                  ) : null}
-
-                  {value.colour &&
-                  value.body
-                    ? " "
-                    : null}
-
-                  {value.body}
-                </p>
-              </motion.article>
-            )
-          )}
+              {/* Dynamic Description */}
+              <p>
+                {value.colour ? <strong>{value.colour}</strong> : null}
+                {value.colour && value.body ? " " : null}
+                {value.body}
+              </p>
+            </motion.article>
+          ))}
         </div>
       </Wrap>
     </Section>

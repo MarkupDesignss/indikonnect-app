@@ -292,11 +292,26 @@ function readFilters(
 
     priceRange: [min, Math.max(min, max)],
 
-    availability: {
-      inStock: params.get("in_stock") === "true",
-      outOfStock: params.get("out_of_stock") === "true",
-      lowStock: params.get("low_stock") === "true",
-    },
+    availability: (() => {
+      const selectedStatuses = [
+        ...params.getAll("stock_status[]"),
+        ...params.getAll("stock_status"),
+      ];
+
+      const hasStockStatusParams = selectedStatuses.length > 0;
+
+      return {
+        inStock: hasStockStatusParams
+          ? selectedStatuses.includes("in_stock")
+          : params.get("in_stock") === "true",
+        outOfStock: hasStockStatusParams
+          ? selectedStatuses.includes("out_of_stock")
+          : params.get("out_of_stock") === "true",
+        lowStock: hasStockStatusParams
+          ? selectedStatuses.includes("low_stock")
+          : params.get("low_stock") === "true",
+      };
+    })(),
   };
 }
 
@@ -1169,24 +1184,32 @@ export default function FilterSidebar({
         params.delete("max_price");
       }
 
-      const stockKeys = {
-        inStock: "in_stock",
-        outOfStock: "out_of_stock",
-        lowStock: "low_stock",
-      } as const;
+      // Remove old and current stock params first so unchecked values
+      // never remain in the URL after a filter change.
+      [
+        "stock_status[]",
+        "stock_status",
+        "in_stock",
+        "out_of_stock",
+        "low_stock",
+      ].forEach((key) => params.delete(key));
 
-      (
-        Object.keys(stockKeys) as Array<
-          keyof typeof stockKeys
-        >
-      ).forEach((key) => {
-        const urlKey = stockKeys[key];
+      const selectedStatuses: string[] = [];
 
-        if (next.availability[key]) {
-          params.set(urlKey, "true");
-        } else {
-          params.delete(urlKey);
-        }
+      if (next.availability.inStock) {
+        selectedStatuses.push("in_stock");
+      }
+
+      if (next.availability.outOfStock) {
+        selectedStatuses.push("out_of_stock");
+      }
+
+      if (next.availability.lowStock) {
+        selectedStatuses.push("low_stock");
+      }
+
+      selectedStatuses.forEach((status) => {
+        params.append("stock_status[]", status);
       });
 
       // Every filter change starts from page 1.
@@ -1672,6 +1695,8 @@ export default function FilterSidebar({
       "color",
       "min_price",
       "max_price",
+      "stock_status[]",
+      "stock_status",
       "in_stock",
       "out_of_stock",
       "low_stock",

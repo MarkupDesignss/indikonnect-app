@@ -5,7 +5,6 @@ import {
   ArrowDownLeft,
   ArrowLeft,
   ArrowUpRight,
-  BadgeCheck,
   CheckCircle2,
   AlertCircle,
   GitBranch,
@@ -14,7 +13,6 @@ import {
   ChevronLeft,
   ChevronRight,
   CircleHelp,
-  Coins,
   FileClock,
   Info,
   Loader2,
@@ -23,22 +21,25 @@ import {
   Search,
   ShieldCheck,
   UsersRound,
-  Wallet,
   X,
 } from "lucide-react";
+import { useGetUserProfileQuery } from "@/lib/redux/api/authApi";
+import {
+  useGetTcBankDashboardQuery,
+  usePlaceBankedTcMutation,
+} from "@/lib/redux/api/distributor/userDashboardApi";
 
-/**
- * IndieKonnect TC Bank UI
- * ----------------------
- * UI-only / API-ready component. Supply live account, balance, and transaction data
- * from your own endpoint. Nothing is purchased, created, or submitted unless the
- * parent provides onCreateAccount. Snapshot values are used only as an EXAMPLE.
- */
+// =====================================================
+// TYPES
+// =====================================================
+
 export interface TCBankAccount {
   id: string | number;
   account_id: string;
   rank: string;
   status: string;
+  type?: string;
+  member_id?: number;
   qualified_cv?: number | string | null;
   created_at?: string | null;
 }
@@ -59,7 +60,6 @@ export interface TCBankData {
   qualified_accounts: number;
   required_qualified_accounts?: number;
   zone_tc_cv_price: number | string;
-  accounts: TCBankAccount[];
   transactions: TCBankTransaction[];
 }
 
@@ -70,15 +70,9 @@ export interface CreateTCBankAccountInput {
 export interface TCBankAllocationOption {
   value: string;
   label: string;
+  leftAvailable?: boolean;
+  rightAvailable?: boolean;
 }
-
-export interface TCBankAllocationInput {
-  placement_ba_id: string;
-  tc_id: string;
-  side: "left" | "right";
-}
-
-export type TCBankVerifyResult = boolean | { valid: boolean; message?: string };
 
 export interface TCBankPageProps {
   data?: TCBankData | null;
@@ -87,13 +81,6 @@ export interface TCBankPageProps {
   error?: string | null;
   onRefresh?: () => void | Promise<void>;
   onCreateAccount?: (input: CreateTCBankAccountInput) => Promise<void> | void;
-  placementBaOptions?: TCBankAllocationOption[];
-  allocationTcOptions?: TCBankAllocationOption[];
-  /** Kept for compatibility, but no longer used in the UI */
-  onVerifyPlacementBaId?: (
-    baId: string,
-  ) => Promise<TCBankVerifyResult> | TCBankVerifyResult;
-  onAllocateTc?: (input: TCBankAllocationInput) => Promise<void> | void;
   onBack?: () => void;
   className?: string;
 }
@@ -103,28 +90,12 @@ export const EXAMPLE_TC_BANK_DATA: TCBankData = {
   qualified_accounts: 0,
   required_qualified_accounts: 3,
   zone_tc_cv_price: 600,
-  accounts: [
-    {
-      id: 1,
-      account_id: "AIA2938393-001",
-      rank: "Titanium",
-      status: "Activated",
-    },
-    {
-      id: 2,
-      account_id: "AIA2938393-002",
-      rank: "Titanium",
-      status: "Activated",
-    },
-    {
-      id: 3,
-      account_id: "AIA2938393-003",
-      rank: "Titanium",
-      status: "Activated",
-    },
-  ],
   transactions: [],
 };
+
+// =====================================================
+// HELPERS
+// =====================================================
 
 const n = (value: number | string | null | undefined): number => {
   const parsed = Number(value ?? 0);
@@ -156,8 +127,30 @@ const getStatusTone = (status: string) => {
   return "border-[#E7E9ED] bg-[#F7F8FA] text-[#697386]";
 };
 
+const getTypeBadge = (type?: string) => {
+  const normalized = (type || "").toLowerCase();
+  if (normalized === "base") {
+    return "border-[#DDE6F4] bg-[#EFF4FD] text-[#456CA7]";
+  }
+  if (normalized === "extra_tc") {
+    return "border-[#E8E3F5] bg-[#F5F2FB] text-[#7A5AC7]";
+  }
+  return "border-[#E7E9ED] bg-[#F7F8FA] text-[#697386]";
+};
+
+const formatType = (type?: string) => {
+  if (!type) return "—";
+  return type === "extra_tc"
+    ? "Extra TC"
+    : type.charAt(0).toUpperCase() + type.slice(1);
+};
+
 const panel =
   "min-w-0 rounded-[18px] border border-[#E7EAF0] bg-white shadow-[0_3px_18px_rgba(16,24,40,0.035)]";
+
+// =====================================================
+// SMALL UI COMPONENTS
+// =====================================================
 
 function SectionHeading({
   icon: Icon,
@@ -182,59 +175,6 @@ function SectionHeading({
         </p>
       </div>
     </div>
-  );
-}
-
-function SummaryCard({
-  label,
-  value,
-  icon: Icon,
-  subtitle,
-  shade,
-  accent,
-}: {
-  label: string;
-  value: React.ReactNode;
-  icon: React.ElementType;
-  subtitle: string;
-  shade: string;
-  accent: string;
-}) {
-  return (
-    <article
-      className={`${panel} group relative flex min-h-[136px] flex-col justify-between overflow-hidden p-4 transition-all duration-200 hover:-translate-y-[2px] hover:shadow-[0_12px_28px_rgba(16,24,40,0.07)] sm:p-5`}
-    >
-      <div
-        className="absolute inset-x-0 top-0 h-[3px]"
-        style={{ backgroundColor: accent }}
-        aria-hidden="true"
-      />
-      <div className="flex items-start justify-between gap-3">
-        <div
-          className="flex h-10 w-10 items-center justify-center rounded-[12px]"
-          style={{ backgroundColor: shade, color: accent }}
-        >
-          <Icon size={20} strokeWidth={1.8} />
-        </div>
-        <span
-          className="mt-1 rounded-full bg-[#F7F8FA] p-1.5 text-[#B4BBC6]"
-          aria-hidden="true"
-        >
-          <ArrowUpRight size={14} />
-        </span>
-      </div>
-      <div className="mt-4">
-        <p className="text-[11px] font-semibold text-[#758092] sm:text-[12px]">
-          {label}
-        </p>
-        <p className="mt-1 text-[26px] font-bold leading-none tracking-[-.04em] text-[#1F2937] sm:text-[29px]">
-          {value}
-        </p>
-        <p className="mt-1.5 text-[10px] leading-4 text-[#98A1AF]">
-          {subtitle}
-        </p>
-      </div>
-    </article>
   );
 }
 
@@ -354,23 +294,39 @@ function EmptyTable({
   );
 }
 
+// =====================================================
+// ACCOUNT LIST (Member column removed)
+// =====================================================
+
 function AccountList({
   accounts,
   search,
+  isLoading,
+  isError,
+  onRetry,
 }: {
   accounts: TCBankAccount[];
   search: string;
+  isLoading?: boolean;
+  isError?: boolean;
+  onRetry?: () => void;
 }) {
   const [page, setPage] = useState(1);
   const [size, setSize] = useState(10);
   const [sortAsc, setSortAsc] = useState(true);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return [...accounts]
       .filter(
         (account) =>
           !q ||
-          [account.account_id, account.rank, account.status].some((v) =>
+          [
+            account.account_id,
+            account.rank,
+            account.status,
+            account.type,
+          ].some((v) =>
             String(v ?? "")
               .toLowerCase()
               .includes(q),
@@ -382,6 +338,7 @@ function AccountList({
           : b.account_id.localeCompare(a.account_id),
       );
   }, [accounts, search, sortAsc]);
+
   const totalPages = Math.max(1, Math.ceil(filtered.length / size));
   const safePage = Math.min(page, totalPages);
   const items = filtered.slice((safePage - 1) * size, safePage * size);
@@ -389,10 +346,42 @@ function AccountList({
     setSize(v);
     setPage(1);
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[200px] flex-col items-center justify-center gap-2 rounded-[13px] border border-[#E8ECF1]">
+        <Loader2 size={22} className="animate-spin text-[#5B6B82]" />
+        <span className="text-[11px] text-[#8791A0]">
+          Loading accounts…
+        </span>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="flex min-h-[200px] flex-col items-center justify-center gap-2 rounded-[13px] border border-[#F1D6D6] bg-[#FFF7F7] px-4 text-center">
+        <AlertCircle size={22} className="text-[#B45353]" />
+        <p className="text-[12px] font-semibold text-[#8E3A3A]">
+          Failed to load accounts
+        </p>
+        {onRetry && (
+          <button
+            type="button"
+            onClick={onRetry}
+            className="mt-1 rounded-[8px] border border-[#E3C8C8] bg-white px-3 py-1 text-[11px] font-semibold text-[#8E3A3A] hover:bg-[#FFF0F0]"
+          >
+            Retry
+          </button>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="overflow-hidden rounded-[13px] border border-[#E8ECF1]">
       <div className="w-full overflow-x-auto">
-        <table className="w-full min-w-[510px] border-collapse text-left">
+        <table className="w-full min-w-[480px] border-collapse text-left">
           <thead className="bg-[#F7F9FB]">
             <tr className="border-b border-[#E9ECF1] text-[10px] font-bold uppercase tracking-[.075em] text-[#7A8799]">
               <th className="px-4 py-3.5 sm:px-5">
@@ -409,8 +398,8 @@ function AccountList({
                 </button>
               </th>
               <th className="px-4 py-3.5">Rank</th>
+              <th className="px-4 py-3.5">Type</th>
               <th className="px-4 py-3.5">Status</th>
-              <th className="px-4 py-3.5 text-right sm:px-5">Member</th>
             </tr>
           </thead>
           <tbody>
@@ -427,15 +416,17 @@ function AccountList({
                 </td>
                 <td className="px-4 py-3.5">
                   <span
+                    className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${getTypeBadge(account.type)}`}
+                  >
+                    {formatType(account.type)}
+                  </span>
+                </td>
+                <td className="px-4 py-3.5">
+                  <span
                     className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold ${getStatusTone(account.status)}`}
                   >
                     <span className="h-1.5 w-1.5 rounded-full bg-current opacity-70" />
                     {account.status || "Unknown"}
-                  </span>
-                </td>
-                <td className="px-4 py-3.5 text-right sm:px-5">
-                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#E9EDF2] bg-[#F6F7F9] text-[10px] font-bold text-[#667386]">
-                    {account.account_id.slice(-2)}
                   </span>
                 </td>
               </tr>
@@ -733,51 +724,96 @@ function CreateAccountModal({
   );
 }
 
-/** TC Allocation — cleaned up, BA Verification removed */
+// =====================================================
+// TC ALLOCATION
+// =====================================================
+
 function TCAllocation({
-  baOptions,
-  tcOptions,
-  onAllocate,
+  baId,
+  placements,
+  placementsLoading,
+  placementsError,
+  availableBalance,
+  onRefreshPlacements,
   onAllocated,
 }: {
-  baOptions: TCBankAllocationOption[];
-  tcOptions: TCBankAllocationOption[];
-  onAllocate?: TCBankPageProps["onAllocateTc"];
+  baId: string;
+  placements: TCBankAllocationOption[];
+  placementsLoading: boolean;
+  placementsError: boolean;
+  availableBalance: number;
+  onRefreshPlacements: () => void;
   onAllocated?: () => void | Promise<void>;
 }) {
-  const [baId, setBaId] = useState("");
-  const [tcId, setTcId] = useState("");
+  const [placementBaId, setPlacementBaId] = useState("");
   const [side, setSide] = useState<"left" | "right" | "">("");
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const [placeBankedTc, { isLoading: submitting }] =
+    usePlaceBankedTcMutation();
+
+  const selectedPlacement = useMemo(
+    () => placements.find((p) => p.value === placementBaId),
+    [placements, placementBaId],
+  );
+
+  React.useEffect(() => {
+    if (!selectedPlacement || !side) return;
+    if (side === "left" && selectedPlacement.leftAvailable === false) {
+      setSide("");
+    }
+    if (side === "right" && selectedPlacement.rightAvailable === false) {
+      setSide("");
+    }
+  }, [selectedPlacement, side]);
 
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!onAllocate || !baId || !tcId || !side || submitting) return;
-    setSubmitting(true);
+    if (!baId || !placementBaId || !side || submitting) return;
+    if (availableBalance <= 0) return;
+
     setError(null);
     setSuccess(null);
+
     try {
-      await onAllocate({ placement_ba_id: baId, tc_id: tcId, side });
-      setSuccess("TC allocation submitted successfully.");
-      setTcId("");
+      const res = await placeBankedTc({
+        ba_id: baId,
+        placement_ba_id: placementBaId,
+        side: side === "left" ? 1 : 2,
+      }).unwrap();
+
+      if (res?.success === false || res?.status === false) {
+        throw new Error(res?.message || "TC placement failed");
+      }
+
+      setSuccess("TC placed successfully.");
+      setPlacementBaId("");
       setSide("");
-      setBaId("");
       await onAllocated?.();
-    } catch (cause) {
-      setError(
+    } catch (cause: unknown) {
+      const message =
         cause instanceof Error
           ? cause.message
-          : "TC allocation failed. Please try again.",
-      );
-    } finally {
-      setSubmitting(false);
+          : typeof cause === "object" && cause !== null && "data" in cause
+            ? ((cause as { data?: { message?: string } }).data?.message ??
+              "TC placement failed. Please try again.")
+            : "TC placement failed. Please try again.";
+      setError(message);
     }
   };
 
   const selectClass =
     "h-[44px] w-full appearance-none rounded-[10px] border border-[#E2E7EE] bg-white px-3.5 pr-9 text-[12px] font-medium text-[#293447] outline-none focus:border-[#78899C] focus:ring-2 focus:ring-[#78899C]/15 disabled:bg-[#F6F7F9] disabled:text-[#9AA3B0]";
+
+  const hasBalance = availableBalance > 0;
+  const canSubmit =
+    hasBalance &&
+    !!baId &&
+    !!placementBaId &&
+    !!side &&
+    !submitting &&
+    !!placements.length;
 
   return (
     <section className={`${panel} overflow-hidden`} aria-label="TC Allocation">
@@ -789,71 +825,80 @@ function TCAllocation({
         />
       </div>
       <form onSubmit={submit} className="space-y-4 p-4 sm:p-5">
+        {!hasBalance && (
+          <div
+            role="alert"
+            className="flex items-center gap-2 rounded-[9px] border border-[#F1E5CC] bg-[#FFF9ED] px-3 py-2 text-[11px] font-medium text-[#9F7134]"
+          >
+            <AlertCircle size={14} />
+            No TC available in your bank balance. Available balance is{" "}
+            {number(availableBalance)} — you cannot place a TC until you have a
+            positive balance.
+          </div>
+        )}
+
         <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-[minmax(0,380px)_minmax(0,175px)_auto] sm:justify-start">
-          {/* BA ID Select */}
           <label className="min-w-0">
-            <span className="mb-1.5 block text-[12px] font-semibold text-[#485263]">
-              Placement BA ID
+            <span className="mb-1.5 flex items-center justify-between text-[12px] font-semibold text-[#485263]">
+              <span>Placement BA ID</span>
+              {placementsLoading && (
+                <Loader2 size={12} className="animate-spin text-[#8893A2]" />
+              )}
             </span>
             <span className="relative block">
               <select
                 aria-label="Placement BA ID"
                 className={selectClass}
-                value={baId}
-                disabled={submitting}
+                value={placementBaId}
+                disabled={
+                  submitting ||
+                  placementsLoading ||
+                  !placements.length ||
+                  !hasBalance
+                }
                 onChange={(e) => {
-                  setBaId(e.target.value);
+                  setPlacementBaId(e.target.value);
                   setSuccess(null);
                   setError(null);
                 }}
               >
-                <option value="">Select placement BA ID</option>
-                {baOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown
-                size={16}
-                className="pointer-events-none absolute right-3 top-3.5 text-[#5E718B]"
-              />
-            </span>
-          </label>
-
-          {/* TC Select */}
-          <label className="min-w-0">
-            <span className="mb-1.5 block text-[12px] font-semibold text-[#485263]">
-              TC
-            </span>
-            <span className="relative block">
-              <select
-                aria-label="TC"
-                value={tcId}
-                onChange={(event) => {
-                  setTcId(event.target.value);
-                  setSuccess(null);
-                }}
-                disabled={submitting || tcOptions.length === 0}
-                className={selectClass}
-              >
                 <option value="">
-                  {tcOptions.length ? "Select TC" : "No available TC"}
+                  {placementsLoading
+                    ? "Loading available BA IDs..."
+                    : placements.length === 0
+                      ? "No placements available"
+                      : "Select placement BA ID"}
                 </option>
-                {tcOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
+                {placements.map((option) => {
+                  const sides: string[] = [];
+                  if (option.leftAvailable) sides.push("L");
+                  if (option.rightAvailable) sides.push("R");
+                  return (
+                    <option key={option.value} value={option.value}>
+                      {option.label} — {sides.join("/") || "full"}
+                    </option>
+                  );
+                })}
               </select>
               <ChevronDown
                 size={16}
                 className="pointer-events-none absolute right-3 top-3.5 text-[#5E718B]"
               />
             </span>
+            {placementsError && (
+              <p className="mt-1 flex items-center gap-1 text-[10px] text-[#B45353]">
+                <AlertCircle size={11} /> Failed to load placements.{" "}
+                <button
+                  type="button"
+                  onClick={onRefreshPlacements}
+                  className="underline hover:text-[#7A3535]"
+                >
+                  Retry
+                </button>
+              </p>
+            )}
           </label>
 
-          {/* Side Select */}
           <label className="min-w-0">
             <span className="mb-1.5 block text-[12px] font-semibold text-[#485263]">
               Left/Right
@@ -862,7 +907,7 @@ function TCAllocation({
               <select
                 aria-label="Placement side"
                 value={side}
-                disabled={submitting}
+                disabled={submitting || !placementBaId || !hasBalance}
                 onChange={(event) => {
                   setSide(event.target.value as "left" | "right" | "");
                   setSuccess(null);
@@ -870,8 +915,24 @@ function TCAllocation({
                 className={selectClass}
               >
                 <option value="">Select side</option>
-                <option value="left">Left</option>
-                <option value="right">Right</option>
+                <option
+                  value="left"
+                  disabled={selectedPlacement?.leftAvailable === false}
+                >
+                  Left
+                  {selectedPlacement?.leftAvailable === false
+                    ? " (unavailable)"
+                    : ""}
+                </option>
+                <option
+                  value="right"
+                  disabled={selectedPlacement?.rightAvailable === false}
+                >
+                  Right
+                  {selectedPlacement?.rightAvailable === false
+                    ? " (unavailable)"
+                    : ""}
+                </option>
               </select>
               <ChevronDown
                 size={16}
@@ -880,13 +941,12 @@ function TCAllocation({
             </span>
           </label>
 
-          {/* Submit Button */}
           <button
             type="submit"
-            disabled={!onAllocate || !tcId || !side || !baId || submitting}
+            disabled={!canSubmit}
             title={
-              !onAllocate
-                ? "Connect the TC allocation API to enable submission"
+              !hasBalance
+                ? "Available TC balance is 0 — cannot place"
                 : undefined
             }
             className="inline-flex h-[44px] items-center justify-center gap-2 rounded-[10px] bg-[#171717] px-6 text-[12px] font-bold text-white hover:bg-[#333333] disabled:cursor-not-allowed disabled:bg-[#CFD4DC] disabled:text-[#778292]"
@@ -895,6 +955,13 @@ function TCAllocation({
             {submitting ? "Submitting..." : "Submit"}
           </button>
         </div>
+
+        {baId && (
+          <p className="flex items-center gap-1.5 text-[10px] text-[#8B96A6]">
+            <Info size={12} /> Placing from:{" "}
+            <strong className="font-semibold text-[#5F6C80]">{baId}</strong>
+          </p>
+        )}
 
         {error && (
           <p
@@ -914,18 +981,14 @@ function TCAllocation({
             {success}
           </p>
         )}
-        {!onAllocate || !tcOptions.length ? (
-          <p className="text-[10px] leading-4 text-[#8B96A6]">
-            {!onAllocate ? "TC placement requires your backend callback. " : ""}
-            {!tcOptions.length
-              ? "Supply available TC units from your TC Bank API."
-              : ""}
-          </p>
-        ) : null}
       </form>
     </section>
   );
 }
+
+// =====================================================
+// MAIN PAGE
+// =====================================================
 
 export default function TCBankPage({
   data,
@@ -934,36 +997,76 @@ export default function TCBankPage({
   error = null,
   onRefresh,
   onCreateAccount,
-  placementBaOptions,
-  allocationTcOptions = [],
-  onAllocateTc,
   onBack,
   className = "",
 }: TCBankPageProps) {
   const [accountQuery, setAccountQuery] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
   const [showAllRules, setShowAllRules] = useState(false);
-  const isSample = data === undefined;
+
+  const { data: profileData } = useGetUserProfileQuery();
+  const distributorBaId = profileData?.user?.distributor_id ?? "";
+
+  const {
+    data: tcBankRes,
+    isLoading: tcBankLoading,
+    isFetching: tcBankFetching,
+    isError: tcBankError,
+    refetch: refetchTcBank,
+  } = useGetTcBankDashboardQuery();
+
+  const placementOptions: TCBankAllocationOption[] = useMemo(() => {
+    const list = tcBankRes?.data?.available_slots ?? [];
+    return list.map((p) => ({
+      value: p.ba_id,
+      label: p.display_label || p.ba_id,
+      leftAvailable: p.left_available,
+      rightAvailable: p.right_available,
+    }));
+  }, [tcBankRes]);
+
+  const accountRows: TCBankAccount[] = useMemo(() => {
+    const list = tcBankRes?.data?.my_accounts ?? [];
+    return list.map((a) => ({
+      id: a.account_id,
+      account_id: a.account_id,
+      rank: a.rank_no ? `Rank ${a.rank_no}` : "—",
+      status: a.status,
+      type: a.type,
+      member_id: a.member_id,
+    }));
+  }, [tcBankRes]);
+
+  const balances = tcBankRes?.data?.balances;
+  const availableBalance = n(balances?.available_balance);
+  const qualifiedStatus = balances?.qualified_status ?? "0 / 0";
+  const zoneTcCvPrice = balances?.zone_tc_cv_price ?? 600;
+
+  const [qualifiedCount, requiredCount] = useMemo(() => {
+    const parts = String(qualifiedStatus)
+      .split("/")
+      .map((p) => Number(p.trim()));
+    return [parts[0] || 0, parts[1] || 0];
+  }, [qualifiedStatus]);
+
   const tcData = data === undefined ? EXAMPLE_TC_BANK_DATA : data;
-  const required = Math.max(1, tcData?.required_qualified_accounts ?? 3);
-  const qualified = Math.max(0, tcData?.qualified_accounts ?? 0);
-  const ratio = Math.min(100, (qualified / required) * 100);
-  const availableBaOptions = useMemo(
-    () =>
-      placementBaOptions ??
-      (tcData?.accounts ?? []).map((account) => ({
-        value: account.account_id,
-        label: account.account_id,
-      })),
-    [placementBaOptions, tcData?.accounts],
-  );
+
+  const combinedError =
+    error ||
+    (tcBankError
+      ? "Failed to load TC Bank dashboard. Please try again."
+      : null);
+
+  const pageLoading = isLoading || tcBankLoading;
+  const pageFetching = isFetching || tcBankFetching;
 
   return (
     <main
-      className={`w-full min-w-0 bg-[#F8F9FC] px-3 py-5 text-[#253044] sm:px-5 sm:py-6 lg:px-6 ${className}`}
+      className={`w-full min-w-0  text-[#253044] ${className}`}
       style={{ fontFamily: "'Inter', 'Lato', system-ui, sans-serif" }}
     >
       <div className="mx-auto w-full max-w-[1500px] space-y-4 sm:space-y-5">
+        {/* HEADER */}
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex min-w-0 items-start gap-3">
             {onBack && (
@@ -985,49 +1088,50 @@ export default function TCBankPage({
               </h1>
               <p className="mt-1 text-[12px] text-[#8691A1]">
                 Manage your TC balance, accounts and transactions
+                {distributorBaId && (
+                  <>
+                    {" "}
+                    ·{" "}
+                    <strong className="font-semibold text-[#5F6C80]">
+                      {distributorBaId}
+                    </strong>
+                  </>
+                )}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {onRefresh && (
-              <button
-                type="button"
-                disabled={isFetching || isLoading}
-                onClick={() => void onRefresh()}
-                className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-[#E2E7EE] bg-white px-3 text-[11px] font-semibold text-[#48576D] hover:bg-[#F4F6F9] disabled:opacity-50"
-              >
-                <RefreshCw
-                  size={14}
-                  className={isFetching ? "animate-spin" : ""}
-                />{" "}
-                Refresh
-              </button>
-            )}
+            <button
+              type="button"
+              disabled={pageFetching || pageLoading}
+              onClick={() => {
+                void refetchTcBank();
+                if (onRefresh) void onRefresh();
+              }}
+              className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-[#E2E7EE] bg-white px-3 text-[11px] font-semibold text-[#48576D] hover:bg-[#F4F6F9] disabled:opacity-50"
+            >
+              <RefreshCw
+                size={14}
+                className={pageFetching ? "animate-spin" : ""}
+              />{" "}
+              Refresh
+            </button>
             <span className="hidden items-center gap-1.5 rounded-full border border-[#E2E9F2] bg-white px-2.5 py-1.5 text-[10px] font-semibold text-[#6E798B] sm:inline-flex">
               <ShieldCheck size={13} /> TC Bank Overview
             </span>
           </div>
         </div>
 
-        {isSample && (
-          <div className="flex items-start gap-2 rounded-[11px] border border-[#F1E3C5] bg-[#FFF9EB] px-3.5 py-2.5 text-[11px] leading-5 text-[#876B31]">
-            <Info size={15} className="mt-0.5 shrink-0" />
-            <span>
-              <strong>Preview data:</strong> Account figures below match your
-              screenshot for design preview. Pass real TC Bank API data using
-              the <code>data</code> prop to display live values.
-            </span>
-          </div>
-        )}
-        {error && (
+        {combinedError && (
           <div
             role="alert"
             className="rounded-[11px] border border-[#F1D6D6] bg-[#FFF5F5] px-4 py-3 text-[12px] text-[#A94343]"
           >
-            {error}
+            {combinedError}
           </div>
         )}
-        {isLoading ? (
+
+        {pageLoading ? (
           <div
             className={`${panel} flex min-h-[320px] flex-col items-center justify-center gap-3`}
           >
@@ -1050,65 +1154,55 @@ export default function TCBankPage({
           </div>
         ) : (
           <>
-            <section
-              aria-label="TC Bank summary"
-              className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4"
-            >
-              <SummaryCard
-                label="Available Balance"
-                value={number(tcData.available_balance)}
-                icon={Wallet}
-                subtitle="TC available in your bank"
-                shade="#EFF4FD"
-                accent="#456CA7"
-              />
-              <SummaryCard
-                label="Qualified Status"
-                value={
-                  <>
-                    {qualified}
-                    <span className="mx-1 text-[20px] font-medium text-[#ACB4C0]">
-                      /
-                    </span>
-                    {required}
-                  </>
-                }
-                icon={BadgeCheck}
-                subtitle="Accounts meeting qualification"
-                shade="#FFF7E8"
-                accent="#B88A40"
-              />
-              <SummaryCard
-                label="Zone TC CV Price"
-                value={number(tcData.zone_tc_cv_price)}
-                icon={Coins}
-                subtitle="CV needed for one TC counter"
-                shade="#EDF8F2"
-                accent="#3A8C6B"
-              />
-            </section>
+            {/* BALANCE SUMMARY CARDS */}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div className={`${panel} p-4 sm:p-5`}>
+                <p className="text-[10px] font-semibold uppercase tracking-[.12em] text-[#9AA3B1]">
+                  Available Balance
+                </p>
+                <p className="mt-2 text-[24px] font-bold tracking-[-.03em] text-[#1F2937]">
+                  {number(availableBalance)}{" "}
+                  <span className="text-[12px] font-semibold text-[#8691A1]">
+                    TC
+                  </span>
+                </p>
+              </div>
+              <div className={`${panel} p-4 sm:p-5`}>
+                <p className="text-[10px] font-semibold uppercase tracking-[.12em] text-[#9AA3B1]">
+                  Qualified Accounts
+                </p>
+                <p className="mt-2 text-[24px] font-bold tracking-[-.03em] text-[#1F2937]">
+                  {qualifiedCount}{" "}
+                  <span className="text-[12px] font-semibold text-[#8691A1]">
+                    / {requiredCount}
+                  </span>
+                </p>
+              </div>
+              <div className={`${panel} p-4 sm:p-5`}>
+                <p className="text-[10px] font-semibold uppercase tracking-[.12em] text-[#9AA3B1]">
+                  Zone TC CV Price
+                </p>
+                <p className="mt-2 text-[24px] font-bold tracking-[-.03em] text-[#1F2937]">
+                  {number(zoneTcCvPrice)}{" "}
+                  <span className="text-[12px] font-semibold text-[#8691A1]">
+                    CV
+                  </span>
+                </p>
+              </div>
+            </div>
 
-            <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,.9fr)]">
-              <section className={`${panel} overflow-hidden`}>
+            {/* =====================================================
+                ACCOUNTS + HOW TC BANK WORKS — SIDE BY SIDE, EQUAL HEIGHT
+               ===================================================== */}
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-stretch">
+              {/* ACCOUNTS */}
+              <section className={`${panel} flex h-full flex-col overflow-hidden`}>
                 <div className="flex flex-wrap items-center justify-between gap-3 p-4 pb-3 sm:p-5 sm:pb-4">
                   <SectionHeading
                     icon={UsersRound}
                     title="My Accounts Status"
                     subtitle="Your active and qualified TC Bank accounts"
                   />
-                  <button
-                    type="button"
-                    onClick={() => setCreateOpen(true)}
-                    disabled={!onCreateAccount}
-                    title={
-                      !onCreateAccount
-                        ? "Connect the new account API to enable this action"
-                        : undefined
-                    }
-                    className="inline-flex h-10 items-center justify-center gap-1.5 rounded-[10px] bg-[#171717] px-4 text-[11px] font-bold text-white transition hover:bg-[#353535] disabled:cursor-not-allowed disabled:bg-[#ACB2BA] sm:text-[12px]"
-                  >
-                    <Plus size={15} /> New Account
-                  </button>
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-3 px-4 pb-3 sm:px-5">
                   <div className="relative w-full sm:max-w-[260px]">
@@ -1125,24 +1219,30 @@ export default function TCBankPage({
                     />
                   </div>
                   <span className="text-[11px] font-semibold text-[#8B95A5]">
-                    {tcData.accounts.length} accounts
+                    {tcBankLoading
+                      ? "Loading…"
+                      : `${accountRows.length} accounts`}
                   </span>
                 </div>
-                <div className="px-4 pb-4 sm:px-5 sm:pb-5">
+                <div className="flex-1 px-4 pb-4 sm:px-5 sm:pb-5">
                   <AccountList
-                    accounts={tcData.accounts}
+                    accounts={accountRows}
                     search={accountQuery}
+                    isLoading={tcBankLoading}
+                    isError={tcBankError}
+                    onRetry={() => void refetchTcBank()}
                   />
                 </div>
               </section>
 
-              <section className={`${panel} p-4 sm:p-5`}>
+              {/* HOW TC BANK WORKS */}
+              <section className={`${panel} flex h-full flex-col p-4 sm:p-5`}>
                 <SectionHeading
                   icon={BookOpenText}
                   title="How TC Bank Works"
                   subtitle="Qualification, purchase and placement guidelines"
                 />
-                <div className="mt-4 grid grid-cols-1 gap-2.5">
+                <div className="mt-4 flex-1 grid grid-cols-1 gap-2.5">
                   <div className="flex items-start gap-3 rounded-[12px] border border-[#EEF0F4] bg-[#FBFCFD] p-3.5">
                     <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[9px] bg-[#EDF3FC] text-[11px] font-bold text-[#4F6B97]">
                       01
@@ -1186,29 +1286,10 @@ export default function TCBankPage({
                     </div>
                   </div>
                 </div>
-                <div className="mt-4 rounded-[11px] border border-[#E8EDF3] bg-[#F6F8FB] p-3.5">
-                  <div className="mb-2 flex items-center justify-between gap-3">
-                    <span className="text-[11px] font-semibold text-[#5F6C80]">
-                      Qualification progress
-                    </span>
-                    <span className="text-[11px] font-bold text-[#26364C]">
-                      {qualified} / {required}
-                    </span>
-                  </div>
-                  <div className="h-2 overflow-hidden rounded-full bg-[#E3E8F0]">
-                    <div
-                      className="h-full rounded-full bg-[#3F648F] transition-all duration-500"
-                      style={{ width: `${ratio}%` }}
-                    />
-                  </div>
-                  <p className="mt-2 text-[10px] leading-4 text-[#939EAD]">
-                    Based on qualified account count received from your API.
-                  </p>
-                </div>
                 <button
                   type="button"
                   onClick={() => setShowAllRules((value) => !value)}
-                  className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#526782] hover:text-[#202D42]"
+                  className="mt-3 inline-flex items-center gap-1.5 self-start text-[11px] font-semibold text-[#526782] hover:text-[#202D42]"
                 >
                   {showAllRules ? "Hide" : "View"} important note{" "}
                   <ChevronDown
@@ -1225,16 +1306,27 @@ export default function TCBankPage({
                 )}
               </section>
             </div>
+
+            {/* TC ALLOCATION */}
             <TCAllocation
-              baOptions={availableBaOptions}
-              tcOptions={allocationTcOptions}
-              onAllocate={onAllocateTc}
-              onAllocated={onRefresh}
+              baId={distributorBaId}
+              placements={placementOptions}
+              placementsLoading={tcBankLoading}
+              placementsError={tcBankError}
+              availableBalance={availableBalance}
+              onRefreshPlacements={() => void refetchTcBank()}
+              onAllocated={() => {
+                void refetchTcBank();
+                if (onRefresh) void onRefresh();
+              }}
             />
+
+            {/* TRANSACTIONS */}
             <TransactionHistory transactions={tcData.transactions} />
           </>
         )}
       </div>
+
       {onCreateAccount && (
         <CreateAccountModal
           open={createOpen}

@@ -1,3 +1,5 @@
+// lib/redux/api/distributor/userDashboardApi.ts
+
 import { baseApi } from "../baseApi";
 
 // =====================================================
@@ -159,11 +161,33 @@ export interface CreateCorrectionRequestResponse {
 }
 
 // =====================================================
+// AVAILABLE PLACEMENTS
+// =====================================================
+
+export interface AvailablePlacement {
+  ba_id: string;
+  member_id: number;
+  display_label: string;
+  left_available: boolean;
+  right_available: boolean;
+}
+
+export interface AvailablePlacementsResponse {
+  success: boolean;
+  data: AvailablePlacement[];
+  total: number;
+}
+
+// =====================================================
 // PLACE BANKED TC
 // =====================================================
 
 export interface PlaceBankedTcPayload {
+  /** The BA ID whose banked TC we are placing */
   ba_id: string;
+  /** The BA ID under which we are placing the TC (downline) */
+  placement_ba_id: string;
+  /** 1 = left leg, 2 = right leg */
   side: 1 | 2;
 }
 
@@ -212,6 +236,41 @@ export interface MyAccountsResponse {
   total: number;
 }
 
+export interface TCBankBalances {
+  available_balance: number;
+  qualified_status: string;
+  zone_tc_cv_price: number;
+}
+
+export interface TCBankMyAccount {
+  account_id: string;
+  member_id: number;
+  rank_no: number;
+  status: string;
+  qualified: boolean;
+  type: string;
+}
+
+export interface TCBankAvailableSlot {
+  ba_id: string;
+  member_id: number;
+  display_label: string;
+  left_available: boolean;
+  right_available: boolean;
+}
+
+export interface TCBankDashboardData {
+  balances: TCBankBalances;
+  my_accounts: TCBankMyAccount[];
+  available_slots: TCBankAvailableSlot[];
+  tc_transactions: unknown[];
+}
+
+export interface TCBankDashboardResponse {
+  success: boolean;
+  data: TCBankDashboardData;
+}
+
 // =====================================================
 // USER DASHBOARD API
 // =====================================================
@@ -246,6 +305,18 @@ export const userDashboardApi = baseApi.injectEndpoints({
     }),
 
     // -------------------------------------------------
+    // GET AVAILABLE PLACEMENTS
+    // -------------------------------------------------
+
+    getAvailablePlacements: builder.query<AvailablePlacementsResponse, void>({
+      query: () => ({
+        url: "/distributor/genealogy/available-placements",
+        method: "GET",
+      }),
+      providesTags: ["AvailablePlacements"],
+    }),
+
+    // -------------------------------------------------
     // PLACE BANKED TC
     // -------------------------------------------------
 
@@ -258,16 +329,26 @@ export const userDashboardApi = baseApi.injectEndpoints({
         method: "POST",
         body,
       }),
+      // Refresh dashboard, available placements & accounts after placing a TC
+      invalidatesTags: [
+        "UserDashboard",
+        "AvailablePlacements",
+      ],
+    }),
+
+    getTcBankDashboard: builder.query<TCBankDashboardResponse, void>({
+      query: () => ({
+        url: "/distributor/genealogy/tc-bank-dashboard",
+        method: "GET",
+      }),
+      providesTags: ["TCBankDashboard"],
     }),
 
     // -------------------------------------------------
     // REDEEM COINS
     // -------------------------------------------------
 
-    redeemCoins: builder.mutation<
-      RedeemCoinsResponse,
-      RedeemCoinsPayload
-    >({
+    redeemCoins: builder.mutation<RedeemCoinsResponse, RedeemCoinsPayload>({
       query: (body) => ({
         url: "/distributor/coins/redeem",
         method: "POST",
@@ -285,7 +366,7 @@ export const userDashboardApi = baseApi.injectEndpoints({
         url: "/distributor/genealogy/my-accounts",
         method: "GET",
       }),
-      providesTags: ["UserDashboard"],
+      providesTags: ["MyAccounts"],
     }),
   }),
 });
@@ -297,9 +378,11 @@ export const userDashboardApi = baseApi.injectEndpoints({
 export const {
   useGetUserDashboardQuery,
   useCreateCorrectionRequestMutation,
+  useGetAvailablePlacementsQuery,
   usePlaceBankedTcMutation,
   useRedeemCoinsMutation,
   useGetMyAccountsQuery,
+  useGetTcBankDashboardQuery
 } = userDashboardApi;
 
 export default userDashboardApi;

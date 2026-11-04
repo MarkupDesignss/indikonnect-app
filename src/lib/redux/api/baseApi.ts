@@ -468,6 +468,9 @@ export const baseApi = createApi({
     "Testimonial",
     "FAQ",
     "UserDashboard",
+    "AvailablePlacements",
+    "MyAccounts",
+    "TCBankDashboard",
 
     // -----------------------------------------------------
     // DISTRIBUTOR AUTH / KYC FLOW
