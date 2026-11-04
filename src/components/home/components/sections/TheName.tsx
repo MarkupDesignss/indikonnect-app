@@ -266,12 +266,12 @@ export function TheName() {
               reduced
                 ? undefined
                 : {
-                    rotateY: leftRotate,
-                    x: leftX,
-                    opacity: cardOpacity,
-                    transformOrigin:
-                      "right center",
-                  }
+                  rotateY: leftRotate,
+                  x: leftX,
+                  opacity: cardOpacity,
+                  transformOrigin:
+                    "right center",
+                }
             }
           >
             <div>
@@ -283,6 +283,7 @@ export function TheName() {
                 className={styles.word}
                 style={{
                   fontWeight: 700,
+                  fontSize: "25px"
                 }}
               >
                 {partOneWord}
@@ -305,9 +306,9 @@ export function TheName() {
               reduced
                 ? undefined
                 : {
-                    scale: joinScale,
-                    rotate: joinRotate,
-                  }
+                  scale: joinScale,
+                  rotate: joinRotate,
+                }
             }
           >
             &#10022;
@@ -326,12 +327,12 @@ export function TheName() {
               reduced
                 ? undefined
                 : {
-                    rotateY: rightRotate,
-                    x: rightX,
-                    opacity: cardOpacity,
-                    transformOrigin:
-                      "left center",
-                  }
+                  rotateY: rightRotate,
+                  x: rightX,
+                  opacity: cardOpacity,
+                  transformOrigin:
+                    "left center",
+                }
             }
           >
             <div>
@@ -339,6 +340,7 @@ export function TheName() {
                 className={styles.role}
                 style={{
                   fontWeight: 700,
+
                 }}
               >
                 {partTwoRole}
@@ -348,6 +350,7 @@ export function TheName() {
                 className={styles.word}
                 style={{
                   fontWeight: 700,
+                  fontSize: "25px"
                 }}
               >
                 {partTwoWord}
@@ -375,24 +378,24 @@ export function TheName() {
               className={cx(
                 styles.lk,
                 i === 5 &&
-                  styles.lkGold
+                styles.lkGold
               )}
               initial={
                 reduced
                   ? undefined
                   : {
-                      y: "100%",
-                      opacity: 0,
-                      rotateX: -80,
-                    }
+                    y: "100%",
+                    opacity: 0,
+                    rotateX: -80,
+                  }
               }
               animate={
                 lockupSeen || reduced
                   ? {
-                      y: "0%",
-                      opacity: 1,
-                      rotateX: 0,
-                    }
+                    y: "0%",
+                    opacity: 1,
+                    rotateX: 0,
+                  }
                   : undefined
               }
               transition={{
