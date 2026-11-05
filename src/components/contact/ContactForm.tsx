@@ -185,43 +185,7 @@ export default function ContactForm({ onSubmit }: ContactFormProps) {
       transition={{ duration: 0.5 }}
       className="w-full"
     >
-      <div className="mb-6">
-        {/* Heading with Continuous Shimmer Effect */}
-        <div className="relative inline-block overflow-hidden">
-          <h2
-            className="text-[24px] md:text-[28px] font-serif font-semibold text-[#101B3D]"
-            style={{ fontFamily: "Georgia, serif" }}
-          >
-            Send us a message
-          </h2>
-
-          {/* Continuous Shimmer Effect on Heading */}
-          <motion.span
-            className="absolute inset-0 -translate-x-full"
-            style={{
-              background:
-                "linear-gradient(90deg, transparent, rgba(200, 155, 60, 0.15), transparent)",
-              width: "200%",
-              height: "100%",
-            }}
-            animate={{
-              x: ["0%", "200%"],
-            }}
-            transition={{
-              duration: 3,
-              repeat: Infinity,
-              ease: "easeInOut",
-              repeatDelay: 1.5,
-            }}
-          />
-        </div>
-
-        <p className="text-[14px] md:text-[15px] text-gray-500 mt-1.5">
-          Questions about an order, a partnership, or an artisan collective
-          you&apos;d like us to feature — write in.
-        </p>
-      </div>
-
+     
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Name + Email */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useMemo, useState } from "react";
@@ -5,7 +6,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowRight,
   ChevronDown,
-  Clock3,
   ExternalLink,
   Mail,
   MapPin,
@@ -27,87 +27,22 @@ import Footer from "../../components/Footer/Footer";
 import ContactForm from "../../components/contact/ContactForm";
 
 import { useGetFAQsQuery } from "@/lib/redux/api/faqApi";
-import {
-  useGetContentsQuery,
-  useGetFooterQuery,
-} from "@/lib/redux/api/Home/contentApi";
+import { useGetFooterQuery } from "@/lib/redux/api/Home/contentApi";
+import { useGetContactContentQuery } from "@/lib/redux/api/ContactApi";
 
 /* =========================================================
-   CONTACT HELPERS – FILTER CONTENT USING SLUG
+   TYPES
 ========================================================= */
 
-type ContactBlock = {
+type ContactContentBlock = {
+  id: number;
   heading: string;
-  short_description: string | null;
+  short_description: string;
   description: string | null;
+  sort_order: number;
+  images: string[];
+  videos: string[];
 };
-
-const CONTACT_US_SLUG = "contact-us";
-
-function getContactUsContent(contents: any) {
-  /*
-    API response can be in different formats:
-
-    1. { data: [ { slug: "contact-us", blocks: [] } ] }
-
-    2. { data: { slug: "contact-us", blocks: [] } }
-
-    3. { slug: "contact-us", blocks: [] }
-
-    4. [ { slug: "contact-us", blocks: [] } ]
-
-    5. { data: { data: [ { slug: "contact-us", blocks: [] } ] } }
-  */
-
-  const contentCandidates = [
-    contents?.data?.data,
-    contents?.data,
-    contents?.contents?.data,
-    contents?.contents,
-    contents,
-  ];
-
-  for (const candidate of contentCandidates) {
-    const contentList = Array.isArray(candidate)
-      ? candidate
-      : candidate && typeof candidate === "object"
-        ? [candidate]
-        : [];
-
-    const matchedContent = contentList.find(
-      (item: any) =>
-        String(item?.slug || "")
-          .trim()
-          .toLowerCase() === CONTACT_US_SLUG,
-    );
-
-    if (matchedContent) {
-      return matchedContent;
-    }
-  }
-
-  return undefined;
-}
-
-function getBlockByHeading(
-  contactContent: any,
-  heading: string,
-): ContactBlock | undefined {
-  if (!contactContent || !Array.isArray(contactContent.blocks)) {
-    return undefined;
-  }
-
-  return contactContent.blocks.find(
-    (block: any) =>
-      String(block?.heading || "")
-        .trim()
-        .toLowerCase() === heading.toLowerCase().trim(),
-  );
-}
-
-/* =========================================================
-   FAQ TYPES
-========================================================= */
 
 type FAQItem = {
   id: number;
@@ -129,6 +64,16 @@ type FAQGroup = {
   items: FAQItem[];
 };
 
+type ContactTileProps = {
+  icon: typeof Mail;
+  block: ContactContentBlock;
+  href: string;
+};
+
+/* =========================================================
+   ANIMATION
+========================================================= */
+
 const visible = {
   hidden: {
     opacity: 0,
@@ -141,7 +86,7 @@ const visible = {
 };
 
 /* =========================================================
-   FAQ HTML SANITIZER
+   HTML SANITIZER
 ========================================================= */
 
 const ALLOWED_TAGS = new Set([
@@ -242,7 +187,9 @@ function hasMeaningfulContent(element: Element): boolean {
       return false;
     }
 
-    if (["table", "hr", "ul", "ol"].includes(tag)) {
+    if (
+      ["table", "hr", "ul", "ol"].includes(tag)
+    ) {
       return true;
     }
 
@@ -288,7 +235,7 @@ function collapseRepeatedBreaks(parent: ParentNode): void {
   });
 }
 
-function sanitizeFaqHtml(raw: string): string {
+function sanitizeHtml(raw: string): string {
   if (
     typeof document === "undefined" ||
     typeof DOMParser === "undefined"
@@ -302,9 +249,12 @@ function sanitizeFaqHtml(raw: string): string {
 
   for (let i = 0; i < 3; i += 1) {
     decoder.innerHTML = html;
+
     const decoded = decoder.value;
 
-    if (decoded === html) break;
+    if (decoded === html) {
+      break;
+    }
 
     html = decoded;
   }
@@ -335,9 +285,7 @@ function sanitizeFaqHtml(raw: string): string {
     Array.from(element.childNodes).forEach(clean);
 
     if (!ALLOWED_TAGS.has(tag)) {
-      element.replaceWith(
-        ...Array.from(element.childNodes),
-      );
+      element.replaceWith(...Array.from(element.childNodes));
       return;
     }
 
@@ -368,7 +316,6 @@ function sanitizeFaqHtml(raw: string): string {
       !hasMeaningfulContent(element)
     ) {
       element.remove();
-      return;
     }
   }
 
@@ -380,21 +327,58 @@ function sanitizeFaqHtml(raw: string): string {
 }
 
 /* =========================================================
+   PLAIN TEXT
+========================================================= */
+
+function getPlainText(value?: string | null): string {
+  if (!value) return "";
+
+  return value
+    .replace(/<[^>]*>/g, "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&#39;/g, "'")
+    .replace(/&quot;/gi, '"')
+    .trim();
+}
+
+/* =========================================================
+   SAFE HTML
+========================================================= */
+
+function SafeHtml({
+  html,
+  className = "",
+}: {
+  html: string;
+  className?: string;
+}) {
+  const safeHtml = useMemo(
+    () => sanitizeHtml(html),
+    [html],
+  );
+
+  if (!safeHtml) return null;
+
+  return (
+    <div
+      className={`contact-faq-content min-w-0 w-full max-w-full ${className}`}
+      dangerouslySetInnerHTML={{
+        __html: safeHtml,
+      }}
+    />
+  );
+}
+
+/* =========================================================
    FAQ ANSWER
 ========================================================= */
 
 function FaqAnswer({ html }: { html: string }) {
-  const safeHtml = useMemo(
-    () => sanitizeFaqHtml(html),
-    [html],
-  );
-
   return (
-    <div
-      className="contact-faq-content min-w-0 w-full max-w-full text-[14px] leading-7 text-[#626973]"
-      dangerouslySetInnerHTML={{
-        __html: safeHtml,
-      }}
+    <SafeHtml
+      html={html}
+      className="text-[14px] leading-7 text-[#626973]"
     />
   );
 }
@@ -405,22 +389,16 @@ function FaqAnswer({ html }: { html: string }) {
 
 function ContactTile({
   icon: Icon,
-  eyebrow,
-  title,
-  detail,
+  block,
   href,
-}: {
-  icon: typeof Mail;
-  eyebrow: string;
-  title: string;
-  detail: string;
-  href: string;
-}) {
+}: ContactTileProps) {
   return (
     <motion.a
       variants={visible}
       href={href}
-      target={href.startsWith("http") ? "_blank" : undefined}
+      target={
+        href.startsWith("http") ? "_blank" : undefined
+      }
       rel={
         href.startsWith("http")
           ? "noopener noreferrer"
@@ -439,17 +417,31 @@ function ContactTile({
         />
       </div>
 
-      <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-[#7B838B]">
-        {eyebrow}
-      </p>
+      {/* API HEADING */}
 
-      <h3 className="mt-1.5 text-[19px] font-semibold tracking-[-0.025em] text-[#15191D]">
-        {title}
-      </h3>
+      {block.heading && (
+        <h3 className="text-[19px] font-semibold tracking-[-0.025em] text-[#15191D]">
+          {block.heading}
+        </h3>
+      )}
 
-      <p className="mt-2 min-w-0 break-words text-[14px] leading-6 text-[#636B73] [overflow-wrap:anywhere]">
-        {detail}
-      </p>
+      {/* API SHORT DESCRIPTION */}
+
+      {block.short_description && (
+        <SafeHtml
+          html={block.short_description}
+          className="mt-2 text-[14px] leading-6 text-[#636B73] [&_p]:!mb-0"
+        />
+      )}
+
+      {/* API DESCRIPTION */}
+
+      {block.description && (
+        <SafeHtml
+          html={block.description}
+          className="mt-2 text-[12px] leading-5 text-[#879099] [&_p]:!mb-0"
+        />
+      )}
     </motion.a>
   );
 }
@@ -461,99 +453,119 @@ function ContactTile({
 export default function ContactPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
-  // FAQ API
+  /* =====================================================
+     CONTACT CONTENT API
+  ===================================================== */
+
+  const {
+    data: contactContent,
+  } = useGetContactContentQuery();
+
+  /* =====================================================
+     FAQ API
+  ===================================================== */
+
   const {
     data: faqResponse,
     isLoading: faqLoading,
     isError: faqError,
   } = useGetFAQsQuery({});
 
-  // Footer API
+  /* =====================================================
+     FOOTER API
+  ===================================================== */
+
   const { data: footerResponse } = useGetFooterQuery({});
 
-  // Contents API
-  const { data: contactResponse } = useGetContentsQuery({});
-
   /* =====================================================
-     FILTER CONTACT-US CONTENT BY SLUG
+     CONTACT BLOCKS
+
+     1. Email us
+     2. Call us
+     3. Visit us
+     4. Get in touch
   ===================================================== */
 
-  const contactContent = useMemo(() => {
-    return getContactUsContent(contactResponse);
-  }, [contactResponse]);
+  const {
+    emailBlock,
+    callBlock,
+    visitBlock,
+    getInTouchBlock,
+  } = useMemo(() => {
+    const blocks: ContactContentBlock[] = Array.isArray(
+      contactContent?.data?.blocks,
+    )
+      ? [...contactContent.data.blocks].sort(
+          (a, b) =>
+            (Number(a.sort_order) || 0) -
+            (Number(b.sort_order) || 0),
+        )
+      : [];
 
-  /* =====================================================
-     CONTACT DETAILS FROM FILTERED CONTENT
-  ===================================================== */
-
-  const contactDetails = useMemo(() => {
-    const emailBlock = getBlockByHeading(
-      contactContent,
-      "Email us",
-    );
-
-    const callBlock = getBlockByHeading(
-      contactContent,
-      "Call us",
-    );
-
-    const visitBlock = getBlockByHeading(
-      contactContent,
-      "Visit us",
-    );
-
-    const getInTouchBlock = getBlockByHeading(
-      contactContent,
-      "Get in touch",
-    );
-
-    const email =
-      emailBlock?.short_description?.trim() || "";
-
-    const phoneDisplay =
-      callBlock?.short_description?.trim() || "";
-
-    const address =
-      visitBlock?.short_description?.trim() || "";
-
-    const hours =
-      callBlock?.description?.trim() || "";
-
-    const getInTouchDescription =
-      getInTouchBlock?.description?.trim() || "";
+    const findBlock = (heading: string) =>
+      blocks.find(
+        (block) =>
+          block.heading?.trim().toLowerCase() ===
+          heading.toLowerCase(),
+      );
 
     return {
-      email,
-      phoneDisplay,
-      phoneHref: phoneDisplay.replace(/\s/g, ""),
-      hours,
-      address,
-      getInTouchDescription,
+      emailBlock: findBlock("Email us"),
+      callBlock: findBlock("Call us"),
+      visitBlock: findBlock("Visit us"),
+      getInTouchBlock: findBlock("Get in touch"),
     };
   }, [contactContent]);
 
   /* =====================================================
-     MAP URLS FROM API ADDRESS
+     API CONTACT VALUES
   ===================================================== */
 
-  const mapsApiKey =
+  const email = getPlainText(
+    emailBlock?.short_description,
+  );
+
+  const phone = getPlainText(
+    callBlock?.short_description,
+  );
+
+  const phoneHref = phone.replace(/[^\d+]/g, "");
+
+  const address = getPlainText(
+    visitBlock?.short_description,
+  );
+
+  /* =====================================================
+     GOOGLE MAPS
+
+     Address comes only from Contact API.
+  ===================================================== */
+
+  const MAPS_API_KEY =
     process.env.NEXT_PUBLIC_GOOGLE_MAPS_EMBED_API_KEY;
 
-  const mapEmbedUrl = mapsApiKey
-    ? `https://www.google.com/maps/embed/v1/place?key=${encodeURIComponent(
-        mapsApiKey,
-      )}&q=${encodeURIComponent(contactDetails.address)}`
-    : `https://maps.google.com/maps?q=${encodeURIComponent(
-        contactDetails.address,
-      )}&z=15&output=embed`;
+  const MAP_EMBED_URL =
+    address && MAPS_API_KEY
+      ? `https://www.google.com/maps/embed/v1/place?key=${encodeURIComponent(
+          MAPS_API_KEY,
+        )}&q=${encodeURIComponent(address)}`
+      : address
+        ? `https://maps.google.com/maps?q=${encodeURIComponent(
+            address,
+          )}&z=15&output=embed`
+        : "";
 
-  const mapSearchUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-    contactDetails.address,
-  )}`;
+  const MAP_SEARCH_URL = address
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+        address,
+      )}`
+    : "";
 
-  const mapDirectionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
-    contactDetails.address,
-  )}`;
+  const MAP_DIRECTIONS_URL = address
+    ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
+        address,
+      )}`
+    : "";
 
   /* =====================================================
      GROUP FAQS
@@ -652,6 +664,10 @@ export default function ContactPage() {
     );
   }, [footerResponse]);
 
+  /* =====================================================
+     RENDER
+  ===================================================== */
+
   return (
     <div className="contact-page min-h-screen w-full max-w-full overflow-x-clip bg-white text-[#15191D]">
       <Header
@@ -663,172 +679,188 @@ export default function ContactPage() {
 
       <main className="relative bg-white">
         <div className="mx-auto w-full max-w-[1220px] px-4 pb-16 sm:px-6 lg:px-10 lg:pb-24">
-          {/* HERO */}
-          <motion.section
-            initial="hidden"
-            animate="show"
-            variants={visible}
-            transition={{ duration: 0.45 }}
-            className="mx-auto max-w-[760px] pb-6 pt-5 text-center sm:pb-6 sm:pt-7"
-          >
-            <span className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.22em] text-[#168998]">
-              <span className="size-1.5 rounded-full bg-[#16A9BA]" />
-              LET'S CONNECT
-            </span>
 
-            <h1 className="mt-5 break-words font-serif text-5xl leading-[1.12] tracking-[-0.045em] text-[#111820]">
-              Let’s make things{" "}
-              <span className="font-normal italic">
-                simple.
-              </span>
-            </h1>
+          {/* =========================================
+              API PAGE TITLE
+          ========================================= */}
 
-            <p className="mx-auto mt-4 max-w-[590px] text-[10px] leading-6 text-[#69717A] sm:text-[16px]">
-              {contactDetails.getInTouchDescription}
-            </p>
-          </motion.section>
+          {contactContent?.data?.title && (
+            <motion.section
+              initial="hidden"
+              animate="show"
+              variants={visible}
+              transition={{ duration: 0.45 }}
+              className="mx-auto max-w-[760px] pb-6 pt-5 text-center sm:pb-6 sm:pt-7"
+            >
+              <h1 className="break-words font-serif text-5xl leading-[1.12] tracking-[-0.045em] text-[#111820]">
+                {contactContent.data.title}
+              </h1>
+            </motion.section>
+          )}
 
-          {/* CONTACT DETAILS */}
-          <motion.section
-            initial="hidden"
-            animate="show"
-            transition={{ staggerChildren: 0.07 }}
-            className="grid grid-cols-1 gap-4 md:grid-cols-3"
-            aria-label="Contact details"
-          >
-            <ContactTile
-              icon={Mail}
-              eyebrow="WRITE TO US"
-              title="Email support"
-              detail={contactDetails.email}
-              href={`mailto:${contactDetails.email}`}
-            />
+          {/* =========================================
+              CONTACT DETAILS FROM API
+          ========================================= */}
 
-            <ContactTile
-              icon={Phone}
-              eyebrow="SPEAK WITH US"
-              title="Give us a call"
-              detail={contactDetails.phoneDisplay}
-              href={`tel:${contactDetails.phoneHref}`}
-            />
+          {(emailBlock || callBlock || visitBlock) && (
+            <motion.section
+              initial="hidden"
+              animate="show"
+              transition={{ staggerChildren: 0.07 }}
+              className="grid grid-cols-1 gap-4 md:grid-cols-3"
+              aria-label={contactContent?.data?.title}
+            >
+              {emailBlock && (
+                <ContactTile
+                  icon={Mail}
+                  block={emailBlock}
+                  href={email ? `mailto:${email}` : ""}
+                />
+              )}
 
-            <ContactTile
-              icon={MapPin}
-              eyebrow="COME SAY HELLO"
-              title="Our office"
-              detail={contactDetails.address}
-              href={mapSearchUrl}
-            />
-          </motion.section>
+              {callBlock && (
+                <ContactTile
+                  icon={Phone}
+                  block={callBlock}
+                  href={phoneHref ? `tel:${phoneHref}` : ""}
+                />
+              )}
 
-          {/* CONTACT FORM + MAP */}
-          <section className="mt-6 grid min-w-0 grid-cols-1 items-stretch gap-5 lg:mt-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-6">
-            {/* CONTACT FORM */}
-            <div className="contact-form-panel min-w-0 rounded-[28px] border border-[#E7E9EB] bg-white p-6 shadow-[0_18px_55px_rgba(0,0,0,0.045)] sm:p-9 lg:p-10">
-              <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#168998]">
-                SEND A MESSAGE
-              </span>
+              {visitBlock && (
+                <ContactTile
+                  icon={MapPin}
+                  block={visitBlock}
+                  href={MAP_SEARCH_URL}
+                />
+              )}
+            </motion.section>
+          )}
 
-              <h2 className="mt-3 font-serif text-[clamp(1.75rem,3vw,2.35rem)] leading-tight tracking-[-0.03em]">
-                Tell us what’s on your mind.
-              </h2>
+          {/* =========================================
+              CONTACT FORM + MAP
+          ========================================= */}
 
-              <p className="mb-7 mt-3 max-w-[490px] text-[14px] leading-7 text-[#737B83]">
-                Share a few details and we’ll help you find
-                the right next step.
-              </p>
+          {(getInTouchBlock || visitBlock || socialLinks.length > 0) && (
+            <section className="mt-6 grid min-w-0 grid-cols-1 items-stretch gap-5 lg:mt-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-6">
 
-              <ContactForm />
-            </div>
+              {/* =====================================
+                  GET IN TOUCH + CONTACT FORM
+              ===================================== */}
 
-            {/* MAP AND BUSINESS HOURS */}
-            <div className="flex min-w-0 flex-col gap-5">
-              <div className="min-w-0 overflow-hidden rounded-[24px] border border-[#E9EBED] bg-white shadow-[0_10px_40px_rgba(0,0,0,0.035)]">
-                <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-5 sm:px-6">
-                  <div className="min-w-0">
-                    <p className="text-[11px] font-bold uppercase tracking-[0.17em] text-[#168998]">
-                      FIND US
-                    </p>
+              <div className="contact-form-panel min-w-0 rounded-[28px] border border-[#E7E9EB] bg-white p-6 shadow-[0_18px_55px_rgba(0,0,0,0.045)] sm:p-9 lg:p-10">
 
-                    <h2 className="mt-1 text-[19px] font-semibold tracking-[-0.025em]">
-                      Visit our office
-                    </h2>
-                  </div>
+                {getInTouchBlock && (
+                  <>
+                    {getInTouchBlock.heading && (
+                      <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#168998]">
+                        {getInTouchBlock.heading}
+                      </span>
+                    )}
 
-                  <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#F3F6F6]">
-                    <MapPin size={18} />
-                  </span>
-                </div>
+                    {getInTouchBlock.short_description && (
+                      <h2 className="mt-3 font-serif text-[clamp(1.75rem,3vw,2.35rem)] leading-tight tracking-[-0.03em]">
+                        {getInTouchBlock.short_description}
+                      </h2>
+                    )}
 
-                <div className="relative h-[290px] w-full bg-[#F2F5F5] sm:h-[340px] lg:h-[365px]">
-                  {contactDetails.address && (
-                    <iframe
-                      title="Google Maps location for Indiekonnect office"
-                      src={mapEmbedUrl}
-                      className="absolute inset-0 h-full w-full border-0"
-                      loading="lazy"
-                      allowFullScreen
-                      referrerPolicy="strict-origin-when-cross-origin"
-                    />
-                  )}
-                </div>
+                    {getInTouchBlock.description && (
+                      <div className="mb-7 mt-3">
+                        <SafeHtml
+                          html={getInTouchBlock.description}
+                          className="text-[14px] leading-7 text-[#737B83]"
+                        />
+                      </div>
+                    )}
+                  </>
+                )}
 
-                <div className="px-5 pb-5 pt-5 sm:px-6 sm:pb-6">
-                  <p className="min-w-0 break-words text-[13px] leading-6 text-[#626B74] [overflow-wrap:anywhere]">
-                    <MapPin
-                      size={15}
-                      className="mr-1 inline-block -translate-y-px text-[#15191D]"
-                    />
-                    {contactDetails.address}
-                  </p>
-
-                  <a
-                    href={mapDirectionsUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-5 inline-flex min-h-12 w-full flex-wrap items-center justify-center gap-2 rounded-xl bg-[#111820] px-5 py-3 text-center text-[13px] font-semibold text-white transition-all hover:bg-[#27313A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black"
-                  >
-                    <Navigation size={17} />
-                    Get directions
-                    <ExternalLink size={15} />
-                  </a>
-
-                  <a
-                    href={mapSearchUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-3 flex min-h-9 items-center justify-center gap-1.5 text-[12px] font-medium text-[#57616A] underline-offset-4 hover:text-black hover:underline"
-                  >
-                    Open full map
-                    <ArrowRight size={14} />
-                  </a>
-                </div>
+                <ContactForm />
               </div>
 
-              {/* BUSINESS HOURS */}
-              <div className="min-w-0 rounded-[24px] border border-[#E9EBED] bg-white p-5 shadow-[0_10px_40px_rgba(0,0,0,0.025)] sm:p-6">
-                <div className="flex items-start gap-3">
-                  <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-[#F2F5F5]">
-                    <Clock3 size={20} />
-                  </span>
+              {/* =====================================
+                  MAP + SOCIAL LINKS
+              ===================================== */}
 
-                  <div className="min-w-0">
-                    <h3 className="text-[15px] font-semibold">
-                      Business hours
-                    </h3>
+              <div className="flex min-w-0 flex-col gap-5">
 
-                    <p className="mt-1 break-words text-[13px] leading-6 text-[#6D757D]">
-                      {contactDetails.hours}
-                    </p>
+                {/* MAP */}
+
+                {visitBlock && address && (
+                  <div className="min-w-0 overflow-hidden rounded-[24px] border border-[#E9EBED] bg-white shadow-[0_10px_40px_rgba(0,0,0,0.035)]">
+
+                    <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-5 sm:px-6">
+                      <div className="min-w-0">
+                        {visitBlock.heading && (
+                          <h2 className="text-[19px] font-semibold tracking-[-0.025em]">
+                            {visitBlock.heading}
+                          </h2>
+                        )}
+                      </div>
+
+                      <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#F3F6F6]">
+                        <MapPin size={18} />
+                      </span>
+                    </div>
+
+                    <div className="relative h-[290px] w-full bg-[#F2F5F5] sm:h-[340px] lg:h-[365px]">
+                      {MAP_EMBED_URL && (
+                        <iframe
+                          title={visitBlock.heading}
+                          src={MAP_EMBED_URL}
+                          className="absolute inset-0 h-full w-full border-0"
+                          loading="lazy"
+                          allowFullScreen
+                          referrerPolicy="strict-origin-when-cross-origin"
+                        />
+                      )}
+                    </div>
+
+                    <div className="px-5 pb-5 pt-5 sm:px-6 sm:pb-6">
+
+                      <SafeHtml
+                        html={visitBlock.short_description}
+                        className="text-[13px] leading-6 text-[#626B74]"
+                      />
+
+                      {visitBlock.description && (
+                        <SafeHtml
+                          html={visitBlock.description}
+                          className="mt-2 text-[13px] leading-6 text-[#626B74]"
+                        />
+                      )}
+
+                      {MAP_DIRECTIONS_URL && (
+                        <a
+                          href={MAP_DIRECTIONS_URL}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-5 inline-flex min-h-12 w-full flex-wrap items-center justify-center gap-2 rounded-xl bg-[#111820] px-5 py-3 text-center text-[13px] font-semibold text-white transition-all hover:bg-[#27313A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black"
+                        >
+                          <Navigation size={17} />
+                          Get directions
+                          <ExternalLink size={15} />
+                        </a>
+                      )}
+
+                      {MAP_SEARCH_URL && (
+                        <a
+                          href={MAP_SEARCH_URL}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-3 flex min-h-9 items-center justify-center gap-1.5 text-[12px] font-medium text-[#57616A] underline-offset-4 hover:text-black hover:underline"
+                        >
+                          Open full map
+                          <ArrowRight size={14} />
+                        </a>
+                      )}
+                    </div>
                   </div>
-                </div>
+                )}
+
+                {/* SOCIAL LINKS FROM FOOTER API */}
 
                 {socialLinks.length > 0 && (
-                  <div className="mt-5 border-t border-[#ECEEF0] pt-5">
-                    <p className="mb-3 text-[12px] font-semibold text-[#303740]">
-                      Follow our journey
-                    </p>
-
+                  <div className="rounded-[24px] border border-[#E9EBED] bg-white p-5 shadow-[0_10px_40px_rgba(0,0,0,0.025)] sm:p-6">
                     <div className="flex flex-wrap gap-2.5">
                       {socialLinks.map((social) => {
                         const Icon = social.icon;
@@ -851,10 +883,13 @@ export default function ContactPage() {
                   </div>
                 )}
               </div>
-            </div>
-          </section>
+            </section>
+          )}
 
-          {/* FAQ SECTION */}
+          {/* =========================================
+              FAQ SECTION
+          ========================================= */}
+
           <section
             className="mx-auto max-w-[900px] pb-1 pt-20 sm:pt-24"
             aria-labelledby="faq-heading"
@@ -899,14 +934,18 @@ export default function ContactPage() {
             ) : (
               <div className="space-y-7">
                 {groupedFaqs.map((group) => (
-                  <div key={group.id} className="min-w-0">
+                  <div
+                    key={group.id}
+                    className="min-w-0"
+                  >
                     <h3 className="mb-3 px-1 text-[12px] font-bold uppercase tracking-[0.13em] text-[#5E6972]">
                       {group.name}
                     </h3>
 
                     <div className="min-w-0 overflow-hidden rounded-[22px] border border-[#E8EBED] bg-white">
                       {group.items.map((faq, index) => {
-                        const expanded = openFaq === faq.id;
+                        const expanded =
+                          openFaq === faq.id;
 
                         return (
                           <div
@@ -917,11 +956,15 @@ export default function ContactPage() {
                                 : ""
                             }
                           >
+                            {/* QUESTION */}
+
                             <button
                               type="button"
                               onClick={() =>
                                 setOpenFaq((old) =>
-                                  old === faq.id ? null : faq.id,
+                                  old === faq.id
+                                    ? null
+                                    : faq.id,
                                 )
                               }
                               aria-expanded={expanded}
@@ -936,11 +979,15 @@ export default function ContactPage() {
                                 <ChevronDown
                                   size={17}
                                   className={`transition-transform duration-200 ${
-                                    expanded ? "rotate-180" : ""
+                                    expanded
+                                      ? "rotate-180"
+                                      : ""
                                   }`}
                                 />
                               </span>
                             </button>
+
+                            {/* ANSWER */}
 
                             <AnimatePresence initial={false}>
                               {expanded && (
@@ -958,11 +1005,15 @@ export default function ContactPage() {
                                     height: 0,
                                     opacity: 0,
                                   }}
-                                  transition={{ duration: 0.2 }}
+                                  transition={{
+                                    duration: 0.2,
+                                  }}
                                   className="min-w-0 overflow-hidden"
                                 >
                                   <div className="min-w-0 px-5 pb-6 sm:px-7">
-                                    <FaqAnswer html={faq.answer} />
+                                    <FaqAnswer
+                                      html={faq.answer}
+                                    />
                                   </div>
                                 </motion.div>
                               )}
@@ -981,6 +1032,10 @@ export default function ContactPage() {
 
       <Footer />
 
+      {/* ===============================================
+          GLOBAL CSS
+      =============================================== */}
+
       <style jsx global>{`
         .contact-page,
         .contact-page * {
@@ -991,7 +1046,10 @@ export default function ContactPage() {
           font-family: "Lato", Arial, sans-serif;
         }
 
-        /* CONTACT FORM */
+        /* ================================================
+           CONTACT FORM
+        ================================================ */
+
         .contact-page .contact-form-panel form {
           width: 100%;
           min-width: 0;
@@ -1139,7 +1197,10 @@ export default function ContactPage() {
           max-width: 100%;
         }
 
-        /* FAQ ANSWER */
+        /* ================================================
+           HTML CONTENT
+        ================================================ */
+
         .contact-page .contact-faq-content {
           width: 100%;
           min-width: 0;
@@ -1214,7 +1275,10 @@ export default function ContactPage() {
           color: #252b31;
         }
 
-        /* FAQ TABLE */
+        /* ================================================
+           FAQ TABLE
+        ================================================ */
+
         .contact-page .contact-faq-content table {
           width: 100%;
           max-width: 100%;
@@ -1292,6 +1356,8 @@ export default function ContactPage() {
           margin-bottom: 0 !important;
         }
 
+        /* RESPONSIVE */
+
         @media (max-width: 640px) {
           .contact-page .contact-faq-content {
             font-size: 13px;
@@ -1317,6 +1383,8 @@ export default function ContactPage() {
             padding-left: 20px;
           }
         }
+
+        /* REDUCED MOTION */
 
         @media (prefers-reduced-motion: reduce) {
           .contact-page * {
