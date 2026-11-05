@@ -44,6 +44,7 @@ import {
 } from "@/lib/redux/api/Wishlist/wishlistApi";
 
 import { useAddToCartMutation } from "@/lib/redux/api/cartApi";
+import IndiaPostDeliveryChecker from "./IndiaPostDeliveryChecker";
 
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { showToast } from "../../lib/slices/toastSlice";
@@ -138,11 +139,11 @@ function flyImageToCart(sourceEl: HTMLElement | null, imgSrc: string) {
   const b = target
     ? target.getBoundingClientRect()
     : ({
-        left: window.innerWidth - 60,
-        top: 20,
-        width: 24,
-        height: 24,
-      } as DOMRect);
+      left: window.innerWidth - 60,
+      top: 20,
+      width: 24,
+      height: 24,
+    } as DOMRect);
 
   const ghost = document.createElement("div");
 
@@ -327,8 +328,8 @@ const getVariantGalleryImages = (variant: any): string[] => {
 
   const images = Array.isArray(variant.images)
     ? variant.images
-        .map((img: any) => img?.image_url || img?.image)
-        .filter(Boolean)
+      .map((img: any) => img?.image_url || img?.image)
+      .filter(Boolean)
     : [];
 
   const primary =
@@ -668,21 +669,21 @@ export default function ProductDetail({
     return {
       country: String(
         spec["Country of Origin:"] ??
-          spec["Country of Origin"] ??
-          spec["Country of Manufacture"] ??
-          "India",
+        spec["Country of Origin"] ??
+        spec["Country of Manufacture"] ??
+        "India",
       ),
 
       manufacturedBy: String(
         spec["Manufactured By:"] ??
-          spec["Manufactured By"] ??
-          "Not available",
+        spec["Manufactured By"] ??
+        "Not available",
       ),
 
       marketedBy: String(
         spec["Marketed By:"] ??
-          spec["Marketed By"] ??
-          "Not available",
+        spec["Marketed By"] ??
+        "Not available",
       ),
     };
   }, [apiProduct?.specification]);
@@ -711,115 +712,115 @@ export default function ProductDetail({
 
   const product = apiProduct
     ? {
-        id: apiProduct.id,
+      id: apiProduct.id,
 
-        name: apiProduct.name,
+      name: apiProduct.name,
 
-        slug:
-          apiProduct.slug ||
-          generateSlugFromName(apiProduct.name),
+      slug:
+        apiProduct.slug ||
+        generateSlugFromName(apiProduct.name),
 
-        description: apiProduct.description,
+      description: apiProduct.description,
 
-        specification: apiProduct.specification,
+      specification: apiProduct.specification,
 
-        category: apiProduct.category?.name || "Uncategorized",
+      category: apiProduct.category?.name || "Uncategorized",
 
-        categoryId:
-          apiProduct.category_id || apiProduct.category?.id,
+      categoryId:
+        apiProduct.category_id || apiProduct.category?.id,
 
-        productCode: apiProduct.product_code,
+      productCode: apiProduct.product_code,
 
-        retailMrp: Number(apiProduct.retail_mrp || 0),
+      retailMrp: Number(apiProduct.retail_mrp || 0),
 
-        distributorMrp: Number(apiProduct.distributor_mrp || 0),
+      distributorMrp: Number(apiProduct.distributor_mrp || 0),
 
-        retailPrice: Number(apiProduct.retail_price || 0),
+      retailPrice: Number(apiProduct.retail_price || 0),
 
-        distributorPrice: Number(apiProduct.distributor_price || 0),
+      distributorPrice: Number(apiProduct.distributor_price || 0),
 
-        price:
-          userAccountType === "distributor"
-            ? Number(
-                apiProduct.distributor_price ||
-                  apiProduct.retail_price ||
-                  0,
-              )
-            : Number(apiProduct.retail_price || 0),
+      price:
+        userAccountType === "distributor"
+          ? Number(
+            apiProduct.distributor_price ||
+            apiProduct.retail_price ||
+            0,
+          )
+          : Number(apiProduct.retail_price || 0),
 
-        mrp:
-          userAccountType === "distributor"
-            ? Number(
-                apiProduct.distributor_mrp ||
-                  apiProduct.retail_mrp ||
-                  0,
-              )
-            : Number(apiProduct.retail_mrp || 0),
+      mrp:
+        userAccountType === "distributor"
+          ? Number(
+            apiProduct.distributor_mrp ||
+            apiProduct.retail_mrp ||
+            0,
+          )
+          : Number(apiProduct.retail_mrp || 0),
 
-        originalPrice:
-          userAccountType === "distributor"
-            ? Number(
-                apiProduct.distributor_mrp ||
-                  apiProduct.retail_mrp ||
-                  0,
-              )
-            : Number(apiProduct.retail_mrp || 0),
+      originalPrice:
+        userAccountType === "distributor"
+          ? Number(
+            apiProduct.distributor_mrp ||
+            apiProduct.retail_mrp ||
+            0,
+          )
+          : Number(apiProduct.retail_mrp || 0),
 
-        discount:
-          userAccountType === "distributor"
-            ? (() => {
-                const mrp = Number(
-                  apiProduct.distributor_mrp ||
-                    apiProduct.retail_mrp ||
-                    0,
-                );
+      discount:
+        userAccountType === "distributor"
+          ? (() => {
+            const mrp = Number(
+              apiProduct.distributor_mrp ||
+              apiProduct.retail_mrp ||
+              0,
+            );
 
-                const price = Number(
-                  apiProduct.distributor_price ||
-                    apiProduct.retail_price ||
-                    0,
-                );
+            const price = Number(
+              apiProduct.distributor_price ||
+              apiProduct.retail_price ||
+              0,
+            );
 
-                return mrp > price && price > 0
-                  ? Math.round(((mrp - price) / mrp) * 100)
-                  : null;
-              })()
-            : (() => {
-                const mrp = Number(apiProduct.retail_mrp || 0);
+            return mrp > price && price > 0
+              ? Math.round(((mrp - price) / mrp) * 100)
+              : null;
+          })()
+          : (() => {
+            const mrp = Number(apiProduct.retail_mrp || 0);
 
-                const price = Number(apiProduct.retail_price || 0);
+            const price = Number(apiProduct.retail_price || 0);
 
-                return mrp > price && price > 0
-                  ? Math.round(((mrp - price) / mrp) * 100)
-                  : null;
-              })(),
+            return mrp > price && price > 0
+              ? Math.round(((mrp - price) / mrp) * 100)
+              : null;
+          })(),
 
-        image:
-          apiProduct.primary_image_url ||
-          apiProduct.images?.[0]?.image_url ||
-          PLACEHOLDER,
+      image:
+        apiProduct.primary_image_url ||
+        apiProduct.images?.[0]?.image_url ||
+        PLACEHOLDER,
 
-        images: apiProduct.images || [],
+      images: apiProduct.images || [],
 
-        // Correct rating source from API.
-        rating: getAverageRating(reviewsSummary),
+      // Correct rating source from API.
+      rating: getAverageRating(reviewsSummary),
 
-        // Correct review count from API.
-        reviews: getTotalReviews(reviewsSummary),
+      // Correct review count from API.
+      reviews: getTotalReviews(reviewsSummary),
 
-        inStock: Number(apiProduct.stock_quantity ?? 0) > 0,
+      inStock: Number(apiProduct.stock_quantity ?? 0) > 0,
 
-        stockQuantity: Number(apiProduct.stock_quantity ?? 0),
+      stockQuantity: Number(apiProduct.stock_quantity ?? 0),
 
-        isLowStock:
-          Number(apiProduct.stock_quantity ?? 0) > 0 &&
-          Number(apiProduct.stock_quantity ?? 0) <=
-            Number(apiProduct.low_stock_threshold ?? 10),
+      isLowStock:
+        Number(apiProduct.stock_quantity ?? 0) > 0 &&
+        Number(apiProduct.stock_quantity ?? 0) <=
+        Number(apiProduct.low_stock_threshold ?? 10),
 
-        lowStockThreshold: Number(
-          apiProduct.low_stock_threshold || 10,
-        ),
-      }
+      lowStockThreshold: Number(
+        apiProduct.low_stock_threshold || 10,
+      ),
+    }
     : null;
 
   /* =========================================================
@@ -831,8 +832,8 @@ export default function ProductDetail({
 
     const images = Array.isArray(product.images)
       ? product.images
-          .map((img: any) => img?.image_url || img?.image)
-          .filter(Boolean)
+        .map((img: any) => img?.image_url || img?.image)
+        .filter(Boolean)
       : [];
 
     return Array.from(new Set([product.image, ...images]));
@@ -1036,13 +1037,13 @@ export default function ProductDetail({
     if (
       variant?.slug &&
       String(variant?.product_id ?? variant?.id) !==
-        String(product?.id)
+      String(product?.id)
     ) {
       setSelectedVariantId(variant.id);
 
       setSelectedVariantAttributes(
         variant?.parsedAttributes ||
-          parseJsonObject(variant?.attributes),
+        parseJsonObject(variant?.attributes),
       );
 
       setActiveImage(0);
@@ -1270,9 +1271,9 @@ export default function ProductDetail({
         return prev.map((c) =>
           c.id === item.id
             ? {
-                ...c,
-                quantity: Math.min(c.quantity + qty, 10),
-              }
+              ...c,
+              quantity: Math.min(c.quantity + qty, 10),
+            }
             : c,
         );
       }
@@ -1323,7 +1324,7 @@ export default function ProductDetail({
     } catch (error: any) {
       throw new Error(
         error?.data?.message ||
-          "Unable to verify live stock. Please retry.",
+        "Unable to verify live stock. Please retry.",
       );
     }
 
@@ -1448,10 +1449,10 @@ export default function ProductDetail({
 
     const variantId =
       !isMainProductSelected &&
-      selectedVariant &&
-      selectedVariantProductId === productId
+        selectedVariant &&
+        selectedVariantProductId === productId
         ? selectedVariant.product_variant_id ??
-          selectedVariant.variant_id
+        selectedVariant.variant_id
         : undefined;
 
     if (!Number.isFinite(productId) || productId <= 0) {
@@ -1940,18 +1941,18 @@ export default function ProductDetail({
 
       const price = distributor
         ? Number(
-            p.distributor_price ||
-              p.retail_price ||
-              0,
-          )
+          p.distributor_price ||
+          p.retail_price ||
+          0,
+        )
         : Number(p.retail_price || 0);
 
       const mrp = distributor
         ? Number(
-            p.distributor_mrp ||
-              p.retail_mrp ||
-              0,
-          )
+          p.distributor_mrp ||
+          p.retail_mrp ||
+          0,
+        )
         : Number(p.retail_mrp || 0);
 
       /*
@@ -2001,8 +2002,8 @@ export default function ProductDetail({
 
         peopleBought: Number(
           p.people_bought_this_week ||
-            p.peopleBoughtThisWeek ||
-            0,
+          p.peopleBoughtThisWeek ||
+          0,
         ),
 
         badge:
@@ -2155,8 +2156,8 @@ export default function ProductDetail({
   ) => {
     const url = buildProductPath(
       item.slug ||
-        generateSlugFromName(item.name) ||
-        String(item.id),
+      generateSlugFromName(item.name) ||
+      String(item.id),
     );
 
     const discounted =
@@ -2165,15 +2166,15 @@ export default function ProductDetail({
 
     const discountPercent = discounted
       ? Math.round(
-          (1 - item.price / item.originalPrice) * 100,
-        )
+        (1 - item.price / item.originalPrice) * 100,
+      )
       : 0;
 
     const lowStock =
       item.inStock &&
       item.stockQuantity > 0 &&
       item.stockQuantity <=
-        (item.lowStockThreshold || 10);
+      (item.lowStockThreshold || 10);
 
     // A zero/missing rating must not display a rating row.
     const hasRating =
@@ -2234,11 +2235,10 @@ export default function ProductDetail({
             }
           >
             <Heart
-              className={`h-4 w-4 ${
-                wishlistState[Number(item.id)]
-                  ? "fill-red-500 text-red-500"
-                  : "text-[#222]"
-              }`}
+              className={`h-4 w-4 ${wishlistState[Number(item.id)]
+                ? "fill-red-500 text-red-500"
+                : "text-[#222]"
+                }`}
             />
           </button>
 
@@ -2443,26 +2443,26 @@ export default function ProductDetail({
   const specRows =
     Object.keys(specification).length > 0
       ? Object.entries(specification).map(
-          ([key, value]) => [
-            key
-              .replace(/_/g, " ")
-              .replace(/\b\w/g, (char) => char.toUpperCase()),
-            String(value),
-          ],
-        )
+        ([key, value]) => [
+          key
+            .replace(/_/g, " ")
+            .replace(/\b\w/g, (char) => char.toUpperCase()),
+          String(value),
+        ],
+      )
       : [
-          ["Product Type", product.category],
-          ["Product Code", product.productCode || "N/A"],
-          [
-            "Availability",
-            product.inStock ? "In Stock" : "Out of Stock",
-          ],
-          ["Stock Quantity", product.stockQuantity],
-          ["UOM", apiProduct?.uom || "NOS"],
-          ["HSN Code", apiProduct?.hsn_code || "N/A"],
-          ["Warranty", "1 Year"],
-          ["Return Policy", "7 Days"],
-        ];
+        ["Product Type", product.category],
+        ["Product Code", product.productCode || "N/A"],
+        [
+          "Availability",
+          product.inStock ? "In Stock" : "Out of Stock",
+        ],
+        ["Stock Quantity", product.stockQuantity],
+        ["UOM", apiProduct?.uom || "NOS"],
+        ["HSN Code", apiProduct?.hsn_code || "N/A"],
+        ["Warranty", "1 Year"],
+        ["Return Policy", "7 Days"],
+      ];
 
   /* =========================================================
      RENDER
@@ -2538,11 +2538,10 @@ export default function ProductDetail({
                           setActiveImage(index);
                         }
                       }}
-                      className={`relative h-[62px] w-[62px] flex-shrink-0 overflow-hidden rounded-[7px] border-2 bg-white transition sm:h-[70px] sm:w-[70px] lg:h-[74px] lg:w-[74px] ${
-                        activeImage === index
-                          ? "border-[#111]"
-                          : "border-[#E4E4E4] hover:border-[#999]"
-                      }`}
+                      className={`relative h-[62px] w-[62px] flex-shrink-0 overflow-hidden rounded-[7px] border-2 bg-white transition sm:h-[70px] sm:w-[70px] lg:h-[74px] lg:w-[74px] ${activeImage === index
+                        ? "border-[#111]"
+                        : "border-[#E4E4E4] hover:border-[#999]"
+                        }`}
                     >
                       <Image
                         src={img || PLACEHOLDER}
@@ -2655,11 +2654,10 @@ export default function ProductDetail({
                     }
                   >
                     <Heart
-                      className={`h-4 w-4 ${
-                        isWishlisted
-                          ? "fill-[#111] text-[#111]"
-                          : "text-[#111]"
-                      }`}
+                      className={`h-4 w-4 ${isWishlisted
+                        ? "fill-[#111] text-[#111]"
+                        : "text-[#111]"
+                        }`}
                     />
                   </button>
 
@@ -2708,11 +2706,10 @@ export default function ProductDetail({
                       <div
                         className="absolute inset-0 bg-cover bg-no-repeat"
                         style={{
-                          backgroundImage: `url(${
-                            gallery[activeImage] ||
+                          backgroundImage: `url(${gallery[activeImage] ||
                             product.image ||
                             PLACEHOLDER
-                          })`,
+                            })`,
                           backgroundPosition: `${zoomPosition.x}% ${zoomPosition.y}%`,
                           backgroundSize: "250%",
                         }}
@@ -2745,11 +2742,10 @@ export default function ProductDetail({
                   {[1, 2, 3, 4, 5].map((n) => (
                     <Star
                       key={n}
-                      className={`h-3.5 w-3.5 ${
-                        n <= Math.floor(product.rating)
-                          ? "fill-[#188447] text-[#188447]"
-                          : "fill-[#188447]/10 text-[#D1D5DB]"
-                      }`}
+                      className={`h-3.5 w-3.5 ${n <= Math.floor(product.rating)
+                        ? "fill-[#188447] text-[#188447]"
+                        : "fill-[#188447]/10 text-[#D1D5DB]"
+                        }`}
                     />
                   ))}
                 </div>
@@ -2860,7 +2856,7 @@ export default function ProductDetail({
                           {values.map((value) => {
                             const selected =
                               selectedVariantAttributes[
-                                attributeKey
+                              attributeKey
                               ] === value;
 
                             return (
@@ -2873,11 +2869,10 @@ export default function ProductDetail({
                                     value,
                                   )
                                 }
-                                className={`rounded-full border px-4 py-1.5 text-[11px] font-semibold transition ${
-                                  selected
-                                    ? "border-[#111] bg-[#111] text-white"
-                                    : "border-[#D7D7D7] bg-white text-[#222] hover:border-[#111]"
-                                }`}
+                                className={`rounded-full border px-4 py-1.5 text-[11px] font-semibold transition ${selected
+                                  ? "border-[#111] bg-[#111] text-white"
+                                  : "border-[#D7D7D7] bg-white text-[#222] hover:border-[#111]"
+                                  }`}
                               >
                                 {value}
                               </button>
@@ -2915,7 +2910,7 @@ export default function ProductDetail({
                       const isSelected = isMain
                         ? isMainProductSelected
                         : String(selectedVariantId) ===
-                          String(variant.id);
+                        String(variant.id);
 
                       const colorName =
                         variant?.parsedAttributes?.color1 ||
@@ -2926,12 +2921,12 @@ export default function ProductDetail({
                         )
                           ? "Rose Gold"
                           : /steel|silver/i.test(
-                                variant?.name || "",
-                              )
+                            variant?.name || "",
+                          )
                             ? "Steel"
                             : /gold/i.test(
-                                  variant?.name || "",
-                                )
+                              variant?.name || "",
+                            )
                               ? "Gold"
                               : variant?.name || "");
 
@@ -2949,11 +2944,10 @@ export default function ProductDetail({
                             onClick={() =>
                               handleSelectVariant(variant)
                             }
-                            className={`relative h-[58px] w-[58px] overflow-hidden rounded-[8px] border-2 bg-white transition ${
-                              isSelected
-                                ? "border-[#111] ring-1 ring-[#111]"
-                                : "border-[#E3E3E3] hover:border-[#999]"
-                            }`}
+                            className={`relative h-[58px] w-[58px] overflow-hidden rounded-[8px] border-2 bg-white transition ${isSelected
+                              ? "border-[#111] ring-1 ring-[#111]"
+                              : "border-[#E3E3E3] hover:border-[#999]"
+                              }`}
                             aria-label={
                               colorName || product.name
                             }
@@ -2971,11 +2965,10 @@ export default function ProductDetail({
 
                           {!isMain && colorName && (
                             <span
-                              className={`mt-1 max-w-[60px] truncate text-center text-[9px] font-medium ${
-                                isSelected
-                                  ? "text-[#111]"
-                                  : "text-[#888]"
-                              }`}
+                              className={`mt-1 max-w-[60px] truncate text-center text-[9px] font-medium ${isSelected
+                                ? "text-[#111]"
+                                : "text-[#888]"
+                                }`}
                               title={colorName}
                             >
                               {colorName}
@@ -3086,16 +3079,14 @@ export default function ProductDetail({
               <button
                 type="button"
                 onClick={(e) => handleWishlistToggle(e)}
-                className={`flex h-[46px] w-[46px] flex-shrink-0 items-center justify-center rounded-[4px] border-2 ${
-                  isWishlisted
-                    ? "border-[#111] bg-[#111] text-white"
-                    : "border-[#D7D7D7] bg-white text-[#111]"
-                }`}
+                className={`flex h-[46px] w-[46px] flex-shrink-0 items-center justify-center rounded-[4px] border-2 ${isWishlisted
+                  ? "border-[#111] bg-[#111] text-white"
+                  : "border-[#D7D7D7] bg-white text-[#111]"
+                  }`}
               >
                 <Heart
-                  className={`h-[18px] w-[18px] ${
-                    isWishlisted ? "fill-white" : ""
-                  }`}
+                  className={`h-[18px] w-[18px] ${isWishlisted ? "fill-white" : ""
+                    }`}
                 />
               </button>
             </div>
@@ -3105,6 +3096,13 @@ export default function ProductDetail({
                 Currently out of stock
               </p>
             )}
+
+            {/* DELIVERY COVERAGE: INDIA EXCEPT TELANGANA (RTK QUERY) */}
+            <IndiaPostDeliveryChecker
+              key={`${activeProductSlug}-${String(selectedVariantId ?? "main")}`}
+              product={apiProduct}
+              variant={selectedVariant}
+            />
 
             {/* PRODUCT INFO */}
             <div className="mt-4 border-t border-[#E8E8E8] pt-4">
@@ -3207,11 +3205,10 @@ export default function ProductDetail({
                 key={key}
                 type="button"
                 onClick={() => setActiveTab(key)}
-                className={`relative pb-3 text-[12px] font-semibold transition ${
-                  activeTab === key
-                    ? "text-[#111]"
-                    : "text-[#999] hover:text-[#333]"
-                }`}
+                className={`relative pb-3 text-[12px] font-semibold transition ${activeTab === key
+                  ? "text-[#111]"
+                  : "text-[#999] hover:text-[#333]"
+                  }`}
               >
                 {label}
 
@@ -3270,11 +3267,10 @@ export default function ProductDetail({
                         .map(([label, value], index) => (
                           <div
                             key={label}
-                            className={`flex justify-between gap-4 border-b border-[#EFEFEF] px-4 py-2.5 text-[10px] ${
-                              index % 2 === 0
-                                ? "bg-white"
-                                : "bg-[#FCFCFC]"
-                            }`}
+                            className={`flex justify-between gap-4 border-b border-[#EFEFEF] px-4 py-2.5 text-[10px] ${index % 2 === 0
+                              ? "bg-white"
+                              : "bg-[#FCFCFC]"
+                              }`}
                           >
                             <span className="text-[#888]">
                               {label}
@@ -3388,11 +3384,10 @@ export default function ProductDetail({
                               }
                             >
                               <Star
-                                className={`h-5 w-5 ${
-                                  star <= reviewRating
-                                    ? "fill-[#188447] text-[#188447]"
-                                    : "text-[#D1D5DB]"
-                                }`}
+                                className={`h-5 w-5 ${star <= reviewRating
+                                  ? "fill-[#188447] text-[#188447]"
+                                  : "text-[#D1D5DB]"
+                                  }`}
                               />
                             </button>
                           ))}
@@ -3498,11 +3493,11 @@ export default function ProductDetail({
                           const reviewImageUrls =
                             Array.isArray(review.images)
                               ? review.images
-                                  .map(
-                                    (img: any) =>
-                                      img?.image_url,
-                                  )
-                                  .filter(Boolean)
+                                .map(
+                                  (img: any) =>
+                                    img?.image_url,
+                                )
+                                .filter(Boolean)
                               : [];
 
                           const visibleReviewImages =
@@ -3555,12 +3550,11 @@ export default function ProductDetail({
                                     {[1, 2, 3, 4, 5].map((n) => (
                                       <Star
                                         key={n}
-                                        className={`h-3 w-3 ${
-                                          n <=
+                                        className={`h-3 w-3 ${n <=
                                           Number(review.rating)
-                                            ? "fill-[#188447] text-[#188447]"
-                                            : "text-[#D1D5DB]"
-                                        }`}
+                                          ? "fill-[#188447] text-[#188447]"
+                                          : "text-[#D1D5DB]"
+                                          }`}
                                       />
                                     ))}
                                   </div>
@@ -3646,11 +3640,10 @@ export default function ProductDetail({
                       {[1, 2, 3, 4, 5].map((n) => (
                         <Star
                           key={n}
-                          className={`h-4 w-4 ${
-                            n <= Math.round(product.rating)
-                              ? "fill-[#188447] text-[#188447]"
-                              : "text-[#D1D5DB]"
-                          }`}
+                          className={`h-4 w-4 ${n <= Math.round(product.rating)
+                            ? "fill-[#188447] text-[#188447]"
+                            : "text-[#D1D5DB]"
+                            }`}
                         />
                       ))}
                     </div>
@@ -3667,16 +3660,16 @@ export default function ProductDetail({
                         {[5, 4, 3, 2, 1].map((star) => {
                           const count = Number(
                             reviewsSummary.rating_distribution?.[
-                              star
+                            star
                             ] || 0,
                           );
 
                           const pct =
                             product.reviews > 0
                               ? Math.round(
-                                  (count / product.reviews) *
-                                    100,
-                                )
+                                (count / product.reviews) *
+                                100,
+                              )
                               : 0;
 
                           return (
@@ -3902,11 +3895,10 @@ export default function ProductDetail({
                     e.stopPropagation();
                     setFullscreenImageIndex(index);
                   }}
-                  className={`relative h-10 w-10 flex-shrink-0 overflow-hidden rounded border-2 ${
-                    fullscreenImageIndex === index
-                      ? "border-white"
-                      : "border-transparent opacity-50"
-                  }`}
+                  className={`relative h-10 w-10 flex-shrink-0 overflow-hidden rounded border-2 ${fullscreenImageIndex === index
+                    ? "border-white"
+                    : "border-transparent opacity-50"
+                    }`}
                   aria-label={`Open image ${index + 1}`}
                 >
                   <Image
@@ -4001,11 +3993,10 @@ export default function ProductDetail({
                       onClick={() =>
                         setReviewViewerIndex(index)
                       }
-                      className={`relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-[6px] border-2 transition ${
-                        reviewViewerIndex === index
-                          ? "border-white"
-                          : "border-transparent opacity-50 hover:opacity-100"
-                      }`}
+                      className={`relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-[6px] border-2 transition ${reviewViewerIndex === index
+                        ? "border-white"
+                        : "border-transparent opacity-50 hover:opacity-100"
+                        }`}
                       aria-label={`Open review image ${index + 1}`}
                     >
                       <Image
@@ -4204,11 +4195,10 @@ export default function ProductDetail({
                         setActiveImage(index);
                         setShowAllThumbnails(false);
                       }}
-                      className={`relative aspect-square overflow-hidden rounded-[8px] border-2 bg-[#F3F3F3] transition ${
-                        activeImage === index
-                          ? "border-[#111]"
-                          : "border-transparent hover:border-[#999]"
-                      }`}
+                      className={`relative aspect-square overflow-hidden rounded-[8px] border-2 bg-[#F3F3F3] transition ${activeImage === index
+                        ? "border-[#111]"
+                        : "border-transparent hover:border-[#999]"
+                        }`}
                     >
                       <Image
                         src={img || PLACEHOLDER}

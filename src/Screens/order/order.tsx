@@ -49,6 +49,10 @@ import { showToast } from "@/lib/slices/toastSlice";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { LuReceiptIndianRupee } from "react-icons/lu";
 import Loding from "@/components/common/Loding";
+import {
+  useLazyGetIndiaPostOrderTrackingQuery,
+  type IndiaPostOrderTrackingData,
+} from "@/lib/redux/api/indiaPostTrackingApi";
 
 /* ============================================================
    STATUS HELPERS
@@ -153,9 +157,8 @@ const getInitials = (name?: string) => {
     return parts[0].slice(0, 2).toUpperCase();
   }
 
-  return `${parts[0]?.[0] || ""}${
-    parts[parts.length - 1]?.[0] || ""
-  }`.toUpperCase();
+  return `${parts[0]?.[0] || ""}${parts[parts.length - 1]?.[0] || ""
+    }`.toUpperCase();
 };
 
 /* ============================================================
@@ -329,11 +332,10 @@ function ReviewDisplay({ reviews }: { reviews: any[] }) {
                     {[1, 2, 3, 4, 5].map((star) => (
                       <Star
                         key={star}
-                        className={`h-3 w-3 ${
-                          star <= review.rating
+                        className={`h-3 w-3 ${star <= review.rating
                             ? "fill-[#171717] text-[#171717]"
                             : "fill-[#E4E4E2] text-[#E4E4E2]"
-                        }`}
+                          }`}
                       />
                     ))}
                   </div>
@@ -489,30 +491,65 @@ function RefundBadge({ creditNotes }: { creditNotes: any[] }) {
 }
 
 /* ============================================================
-   TRACK MODAL
+   TRACK MODAL — EXISTING LARAVEL TIMELINE + LIVE INDIA POST
 ============================================================ */
+
+const indiaPostEventLabel = (eventName: string) => {
+  const key = String(eventName || "").trim().toLowerCase();
+  if (key.includes("delivered(returned to sender)")) return "Returned to sender";
+  if (key.includes("delivered(addressee)")) return "Delivered successfully";
+  if (key.includes("returned to sender")) return "Returning to seller";
+  if (key.includes("kept on hold")) return "Delivery temporarily on hold";
+  if (key.includes("taken out for delivery")) return "Out for delivery";
+  if (key.includes("received at destination")) return "Reached destination office";
+  if (key.includes("item dispatched")) return "In transit";
+  if (key.includes("item booked")) return "Shipment booked";
+  if (key.includes("item pickedup") || key.includes("item picked up")) return "Parcel picked up";
+  if (key.includes("pickup assigned")) return "Pickup scheduled";
+  return eventName || "Shipment update";
+};
 
 function TrackModal({
   isOpen,
   onClose,
   timelineSteps,
   order,
+  tracking,
+  loading,
+  loadFailed,
+  onRefresh,
 }: {
   isOpen: boolean;
   onClose: () => void;
   timelineSteps: any[];
   order: any;
+  tracking: IndiaPostOrderTrackingData | null;
+  loading: boolean;
+  loadFailed: boolean;
+  onRefresh: () => void;
 }) {
-  if (!isOpen) {
-    return null;
-  }
+  if (!isOpen) return null;
+
+  const shipments = tracking?.shipments ?? [];
+  const hasEvents = shipments.some((s) => s.events.length > 0);
+  const formatEventDate = (value: string | null | undefined) => {
+    if (!value) return "Date unavailable";
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return "Date unavailable";
+    return d.toLocaleString("en-IN", {
+      timeZone: "Asia/Kolkata",
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
 
   return (
     <motion.div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/35 p-4 font-sans backdrop-blur-[2px]"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/45 p-3 font-sans backdrop-blur-[2px] sm:p-4"
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       onClick={onClose}
     >
       <motion.div
@@ -521,77 +558,112 @@ function TrackModal({
         exit={{ opacity: 0, scale: 0.98, y: 12 }}
         transition={{ duration: 0.2 }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md overflow-hidden rounded-[8px] border border-[#E4E4E2] bg-white shadow-[0_18px_60px_rgba(0,0,0,0.14)]"
+        className="flex max-h-[88vh] w-full max-w-lg flex-col overflow-hidden rounded-[10px] border border-[#E4E4E2] bg-white shadow-[0_18px_60px_rgba(0,0,0,0.14)]"
       >
-        <div className="flex items-center justify-between border-b border-[#E6E6E4] px-5 py-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-[6px] bg-[#111111] text-white">
+        <div className="flex flex-shrink-0 items-center justify-between border-b border-[#E6E6E4] px-4 py-4 sm:px-5">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[7px] bg-[#111111] text-white">
               <Truck className="h-4 w-4" />
             </div>
-
-            <div>
-              <h3 className="text-[15px] font-semibold text-[#171717]">
-                Order Tracking
-              </h3>
-
-              <p className="text-[10px] text-[#888888]">
-                Order # {order?.order_reference || order?.order_id || "N/A"}
-              </p>
-
+            <div className="min-w-0">
+              <h3 className="text-[15px] font-semibold text-[#171717]">Order Tracking</h3>
+              <p className="text-[10px] text-[#888888]">Order # {order?.order_reference || order?.order_id || "N/A"}</p>
               {order?.product_name && (
-                <p className="mt-0.5 max-w-[230px] truncate text-[10px] text-[#555555]">
-                  Item: {order.product_name}
-                </p>
+                <p className="mt-0.5 max-w-[255px] truncate text-[10px] text-[#555555]">{order.product_name}</p>
               )}
             </div>
           </div>
-
-          <button
-            onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-[#D7D7D5] bg-white text-[#777777] transition hover:border-[#BDBDBA] hover:text-[#111111]"
-          >
-            <X className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button" onClick={onRefresh} disabled={loading}
+              aria-label="Refresh India Post tracking"
+              title="Refresh India Post tracking"
+              className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-[#D7D7D5] text-[#555555] hover:bg-[#F8F8F8] disabled:opacity-50"
+            ><RotateCcw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} /></button>
+            <button type="button" onClick={onClose} aria-label="Close tracking"
+              className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-[#D7D7D5] text-[#777777] hover:text-[#111111]"
+            ><X className="h-4 w-4" /></button>
+          </div>
         </div>
 
-        <div className="max-h-[60vh] overflow-y-auto p-5">
-          {timelineSteps.length > 0 ? (
-            <div className="relative">
-              {timelineSteps.map((step, index) => (
-                <div
-                  key={step.key}
-                  className="relative flex items-start gap-3 pb-5 last:pb-0"
-                >
-                  {index < timelineSteps.length - 1 && (
-                    <div className="absolute left-[5px] top-5 h-[calc(100%-6px)] w-px bg-[#E6E6E4]" />
-                  )}
+        <div className="min-h-0 overflow-y-auto px-4 py-4 sm:px-5">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <h4 className="text-[12px] font-semibold text-[#171717]">India Post Shipment Updates</h4>
+            {loading && <span className="flex items-center gap-1 text-[10px] text-[#888888]"><Loader2 className="h-3 w-3 animate-spin" /> Checking...</span>}
+          </div>
 
-                  <div
-                    className={`relative z-10 mt-1 h-3 w-3 flex-shrink-0 rounded-full ${step.color} ring-4 ring-white`}
-                  />
-
-                  <div className="flex-1">
-                    <p className="text-[12px] font-medium text-[#171717]">
-                      {step.label}
-                    </p>
-
-                    <p className="text-[10px] text-[#888888]">
-                      {formatDate(step.date)}
-                      {step.time && ` at ${step.time}`}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="py-8 text-center">
-              <Truck className="mx-auto h-8 w-8 text-[#C2C2C0]" />
-
-              <p className="mt-2 text-[12px] text-[#888888]">
-                No tracking information available
-              </p>
+          {loadFailed && !loading && (
+            <div className="mb-4 rounded-[7px] border border-[#EFE2C6] bg-[#FFFBF2] p-3 text-[11px] leading-5 text-[#795F25]">
+              Live courier tracking is temporarily unavailable. Your order updates are still shown below.
             </div>
           )}
+
+          {!loadFailed && !loading && shipments.length === 0 && (
+            <div className="mb-4 rounded-[7px] border border-[#ECECE9] bg-[#FAFAF9] px-3 py-3 text-[11px] leading-5 text-[#777777]">
+              India Post tracking will appear here after your shipment is booked and assigned a tracking number.
+            </div>
+          )}
+
+          {tracking?.warning && !loading && (
+            <div className="mb-3 rounded-[7px] border border-[#EFE2C6] bg-[#FFFBF2] p-3 text-[11px] text-[#795F25]">{tracking.warning}</div>
+          )}
+
+          {shipments.map((shipment) => (
+            <div key={shipment.barcode} className="mb-4 overflow-hidden rounded-[9px] border border-[#E6E6E4]">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#ECECE9] bg-[#FAFAF9] px-3.5 py-3">
+                <div>
+                  <p className="text-[9px] uppercase tracking-[.06em] text-[#888888]">India Post tracking number</p>
+                  <p className="mt-0.5 font-mono text-[12px] font-semibold text-[#171717]">{shipment.barcode}</p>
+                </div>
+                <p className="text-[10px] font-medium text-[#555555]">{shipment.latest_event || "Tracking updates pending"}</p>
+              </div>
+              {shipment.events.length ? (
+                <div className="px-3.5 py-3">
+                  {shipment.events.map((event, index) => (
+                    <div key={`${shipment.barcode}-${index}-${event.date ?? ""}`} className="relative flex gap-3 pb-4 last:pb-0">
+                      {index < shipment.events.length - 1 && <div className="absolute left-[5px] top-[13px] h-[calc(100%-7px)] w-px bg-[#E6E6E4]" />}
+                      <div className={`relative z-10 mt-1 h-3 w-3 flex-shrink-0 rounded-full ${index === 0 ? "bg-[#3F765A]" : "bg-[#B6B6B6]"} ring-[3px] ring-white`} />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[11px] font-semibold text-[#171717]">{indiaPostEventLabel(event.event)}</p>
+                        {event.office && <p className="mt-0.5 text-[10px] text-[#555555]">{event.office}</p>}
+                        <p className="mt-0.5 text-[10px] text-[#888888]">{formatEventDate(event.date)}</p>
+                        {event.remarks && <p className="mt-0.5 text-[10px] text-[#888888]">{event.remarks}</p>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="px-3.5 py-3 text-[11px] text-[#888888]">No movement events have been reported for this tracking number yet.</p>
+              )}
+            </div>
+          ))}
+
+          {!loading && shipments.length > 0 && !hasEvents && !tracking?.warning && (
+            <p className="mb-4 text-[10px] text-[#888888]">India Post events become available after the first physical scan.</p>
+          )}
+
+          <div className="mt-4 border-t border-[#E6E6E4] pt-4">
+            <h4 className="mb-3 text-[12px] font-semibold text-[#171717]">Order Updates</h4>
+            {timelineSteps.length > 0 ? (
+              <div className="relative">
+                {timelineSteps.map((step, index) => (
+                  <div key={step.key} className="relative flex items-start gap-3 pb-4 last:pb-0">
+                    {index < timelineSteps.length - 1 && <div className="absolute left-[5px] top-5 h-[calc(100%-6px)] w-px bg-[#E6E6E4]" />}
+                    <div className={`relative z-10 mt-1 h-3 w-3 flex-shrink-0 rounded-full ${step.color} ring-4 ring-white`} />
+                    <div className="flex-1">
+                      <p className="text-[12px] font-medium text-[#171717]">{step.label}</p>
+                      <p className="text-[10px] text-[#888888]">{formatDate(step.date)}{step.time && ` at ${step.time}`}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="pb-4 text-[11px] text-[#888888]">No order timeline information available.</p>
+            )}
+          </div>
+        </div>
+        <div className="flex-shrink-0 border-t border-[#ECECE9] bg-[#FAFAF9] px-4 py-3 text-[10px] text-[#888888] sm:px-5">
+          Tracking events are supplied by India Post and may take time to update.
         </div>
       </motion.div>
     </motion.div>
@@ -708,9 +780,9 @@ function WithdrawCancelModal({
                   <span className="text-[13px] font-semibold text-[#171717]">
                     {formatPrice(
                       Number(order?.final_amount) ||
-                        Number(order?.amount_paid) ||
-                        Number(order?.line_total) ||
-                        0,
+                      Number(order?.amount_paid) ||
+                      Number(order?.line_total) ||
+                      0,
                     )}
                   </span>
                 </div>
@@ -873,9 +945,9 @@ function WithdrawReturnModal({
                   <span className="text-[13px] font-semibold text-[#171717]">
                     {formatPrice(
                       Number(order?.final_amount) ||
-                        Number(order?.amount_paid) ||
-                        Number(order?.line_total) ||
-                        0,
+                      Number(order?.amount_paid) ||
+                      Number(order?.line_total) ||
+                      0,
                     )}
                   </span>
                 </div>
@@ -1040,6 +1112,10 @@ export default function OrdersPage() {
     useCancelReturnMutation();
 
   const [getInvoice] = useLazyGetInvoiceByOrderIdQuery();
+
+  // DoP credentials stay server-side. Only request tracking when the popup opens.
+  const [loadIndiaPostTracking, { data: indiaPostTrackingResponse, isFetching: isIndiaPostTracking, isError: isIndiaPostTrackingError }] =
+    useLazyGetIndiaPostOrderTrackingQuery();
 
   /* ============================================================
      ✅ FILTERED STATUS LIST — REMOVES BUYBACK STATUSES
@@ -1638,8 +1714,8 @@ export default function OrdersPage() {
     try {
       const files: File[] = Array.isArray(reviewData?.images)
         ? reviewData.images.filter(
-            (img: any): img is File => img instanceof File,
-          )
+          (img: any): img is File => img instanceof File,
+        )
         : [];
 
       const rating = Number(reviewData?.rating);
@@ -1787,6 +1863,17 @@ export default function OrdersPage() {
   const openTrackModal = (order: any) => {
     setSelectedOrderForTracking(order);
     setShowTrackModal(true);
+    const id = Number(order?.order_id);
+    if (Number.isSafeInteger(id) && id > 0) {
+      void loadIndiaPostTracking(id, false);
+    }
+  };
+
+  const refreshIndiaPostTracking = () => {
+    const id = Number(selectedOrderForTracking?.order_id);
+    if (Number.isSafeInteger(id) && id > 0) {
+      void loadIndiaPostTracking(id, false);
+    }
   };
 
   /* ============================================================
@@ -1968,9 +2055,8 @@ export default function OrdersPage() {
                     </span>
 
                     <ChevronDown
-                      className={`h-3.5 w-3.5 text-[#888888] transition-transform ${
-                        isFilterDropdownOpen ? "rotate-180" : ""
-                      }`}
+                      className={`h-3.5 w-3.5 text-[#888888] transition-transform ${isFilterDropdownOpen ? "rotate-180" : ""
+                        }`}
                     />
                   </button>
 
@@ -1981,11 +2067,10 @@ export default function OrdersPage() {
                           setFilter("all");
                           setIsFilterDropdownOpen(false);
                         }}
-                        className={`w-full px-4 py-2 text-left text-[11px] transition-colors hover:bg-[#FAFAF9] ${
-                          filter === "all"
+                        className={`w-full px-4 py-2 text-left text-[11px] transition-colors hover:bg-[#FAFAF9] ${filter === "all"
                             ? "bg-[#FAFAF9] font-medium text-[#171717]"
                             : "text-[#666666]"
-                        }`}
+                          }`}
                       >
                         All Statuses
                       </button>
@@ -2001,18 +2086,16 @@ export default function OrdersPage() {
                               setFilter(statusKey);
                               setIsFilterDropdownOpen(false);
                             }}
-                            className={`flex w-full items-center gap-2 px-4 py-2 text-left text-[11px] transition-colors hover:bg-[#FAFAF9] ${
-                              normalizeStatus(filter) === statusKey
+                            className={`flex w-full items-center gap-2 px-4 py-2 text-left text-[11px] transition-colors hover:bg-[#FAFAF9] ${normalizeStatus(filter) === statusKey
                                 ? "bg-[#FAFAF9] font-medium text-[#171717]"
                                 : "text-[#666666]"
-                            }`}
+                              }`}
                           >
                             <span
-                              className={`h-1.5 w-1.5 rounded-full ${
-                                statusColors[statusKey]
+                              className={`h-1.5 w-1.5 rounded-full ${statusColors[statusKey]
                                   ?.split(" ")[0]
                                   ?.replace("text-", "bg-") || "bg-gray-400"
-                              }`}
+                                }`}
                             />
 
                             {getStatusDisplayName(status)}
@@ -2120,8 +2203,7 @@ export default function OrdersPage() {
                     <motion.div
                       key={order.display_id}
                       variants={itemVariants}
-                      className={`overflow-hidden rounded-[8px] border bg-white transition-all ${
-                        isCancelled
+                      className={`overflow-hidden rounded-[8px] border bg-white transition-all ${isCancelled
                           ? "border-[#F0CFCF]"
                           : isCancelPending
                             ? "border-[#EBD9B4]"
@@ -2134,7 +2216,7 @@ export default function OrdersPage() {
                                   : hasCreditNotes
                                     ? "border-[#CFE0D4]"
                                     : "border-[#E4E4E2]"
-                      }`}
+                        }`}
                     >
                       {/* ORDER HEADER */}
 
@@ -2223,16 +2305,15 @@ export default function OrdersPage() {
                             <span className="text-[15px] font-semibold text-[#111111]">
                               {formatPrice(
                                 Number(order.final_amount) ||
-                                  Number(order.amount_paid) ||
-                                  Number(order.line_total) ||
-                                  0,
+                                Number(order.amount_paid) ||
+                                Number(order.line_total) ||
+                                0,
                               )}
                             </span>
 
                             <ChevronDown
-                              className={`h-4 w-4 text-[#888888] transition-transform ${
-                                isExpanded ? "rotate-180" : ""
-                              }`}
+                              className={`h-4 w-4 text-[#888888] transition-transform ${isExpanded ? "rotate-180" : ""
+                                }`}
                             />
                           </div>
                         </div>
@@ -2270,13 +2351,12 @@ export default function OrdersPage() {
 
                                   <p className="mt-1">
                                     <span
-                                      className={`rounded-full px-2.5 py-0.5 text-[10px] font-medium ${
-                                        order.payment_status === "paid"
+                                      className={`rounded-full px-2.5 py-0.5 text-[10px] font-medium ${order.payment_status === "paid"
                                           ? "bg-[#F1F7F3] text-[#3F765A]"
                                           : order.payment_status === "failed"
                                             ? "bg-[#FDF2F2] text-[#B24C4C]"
                                             : "bg-[#FBF3E4] text-[#A9711F]"
-                                      }`}
+                                        }`}
                                     >
                                       {order.payment_status || "N/A"}
                                     </span>
@@ -2311,9 +2391,9 @@ export default function OrdersPage() {
                                   <p className="mt-0.5 text-[15px] font-semibold text-[#111111]">
                                     {formatPrice(
                                       Number(order.final_amount) ||
-                                        Number(order.amount_paid) ||
-                                        Number(order.line_total) ||
-                                        0,
+                                      Number(order.amount_paid) ||
+                                      Number(order.line_total) ||
+                                      0,
                                     )}
                                   </p>
                                 </div>
@@ -2385,7 +2465,7 @@ export default function OrdersPage() {
                                     className="flex items-center gap-1.5 rounded-[6px] border border-[#EBD9B4] bg-[#FBF3E4] px-3.5 py-2 text-[11px] font-medium text-[#A9711F] transition hover:bg-[#A9711F] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
                                   >
                                     {isWithdrawingCancelRequest &&
-                                    selectedOrderForWithdraw?.display_id ===
+                                      selectedOrderForWithdraw?.display_id ===
                                       order.display_id ? (
                                       <>
                                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -2424,7 +2504,7 @@ export default function OrdersPage() {
                                     className="flex items-center gap-1.5 rounded-[6px] border border-[#EBD9B4] bg-[#FBF3E4] px-3.5 py-2 text-[11px] font-medium text-[#A9711F] transition hover:bg-[#A9711F] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
                                   >
                                     {isWithdrawingReturnRequest &&
-                                    selectedOrderForWithdrawReturn?.display_id ===
+                                      selectedOrderForWithdrawReturn?.display_id ===
                                       order.display_id ? (
                                       <>
                                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -2631,11 +2711,10 @@ export default function OrdersPage() {
                       return (
                         <div
                           key={item.line_id}
-                          className={`flex items-center justify-between rounded-[7px] border p-3.5 ${
-                            isCancelled
+                          className={`flex items-center justify-between rounded-[7px] border p-3.5 ${isCancelled
                               ? "border-[#F0CFCF] bg-[#FDF2F2]"
                               : "border-[#E4E4E2] bg-[#FAFAF9]"
-                          }`}
+                            }`}
                         >
                           <div className="flex items-center gap-3">
                             {itemProductHref ? (
@@ -2693,11 +2772,10 @@ export default function OrdersPage() {
 
                           <div className="text-right">
                             <p
-                              className={`text-[14px] font-semibold ${
-                                isCancelled
+                              className={`text-[14px] font-semibold ${isCancelled
                                   ? "text-[#B24C4C]"
                                   : "text-[#111111]"
-                              }`}
+                                }`}
                             >
                               {formatPrice(Number(item.final_amount) || 0)}
                             </p>
@@ -2740,26 +2818,26 @@ export default function OrdersPage() {
                         <span className="font-medium text-[#171717]">
                           {formatPrice(
                             Number(selectedBreakupItems[0]?.shipping_charge) ||
-                              0,
+                            0,
                           )}
                         </span>
                       </div>
 
                       {Number(selectedBreakupItems[0]?.coin_redeemed_amount) >
                         0 && (
-                        <div className="flex justify-between py-1.5 text-[12px]">
-                          <span className="text-[#888888]">Coins Redeemed</span>
+                          <div className="flex justify-between py-1.5 text-[12px]">
+                            <span className="text-[#888888]">Coins Redeemed</span>
 
-                          <span className="font-medium text-[#3F765A]">
-                            -
-                            {formatPrice(
-                              Number(
-                                selectedBreakupItems[0]?.coin_redeemed_amount,
-                              ) || 0,
-                            )}
-                          </span>
-                        </div>
-                      )}
+                            <span className="font-medium text-[#3F765A]">
+                              -
+                              {formatPrice(
+                                Number(
+                                  selectedBreakupItems[0]?.coin_redeemed_amount,
+                                ) || 0,
+                              )}
+                            </span>
+                          </div>
+                        )}
 
                       <div className="mt-2 flex justify-between border-t border-[#E6E6E4] pt-3">
                         <span className="text-[13px] font-semibold text-[#171717]">
@@ -2800,6 +2878,15 @@ export default function OrdersPage() {
                 selectedOrderForTracking?.timeline,
               )}
               order={selectedOrderForTracking}
+              tracking={
+                Number(indiaPostTrackingResponse?.data?.order_id) ===
+                  Number(selectedOrderForTracking?.order_id)
+                  ? (indiaPostTrackingResponse?.data ?? null)
+                  : null
+              }
+              loading={isIndiaPostTracking}
+              loadFailed={isIndiaPostTrackingError}
+              onRefresh={refreshIndiaPostTracking}
             />
           )}
         </AnimatePresence>
