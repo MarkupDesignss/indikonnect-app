@@ -12,6 +12,8 @@ import {
   FaChevronRight,
 } from "react-icons/fa";
 
+import { FaThreads } from "react-icons/fa6";
+
 import { useGetFooterQuery } from "@/lib/redux/api/Home/contentApi";
 
 import { useTokenCheck } from "@/hooks/useTokenCheck";
@@ -275,6 +277,7 @@ export default function Footer() {
 
   const socials = [
     { icon: FaInstagram, label: "Instagram", href: footer?.instagram },
+    { icon: FaThreads, label: "Threads", href: footer?.threads },
     { icon: FaLinkedin, label: "LinkedIn", href: footer?.linkedin },
     { icon: FaYoutube, label: "YouTube", href: footer?.youtube },
     { icon: FaFacebook, label: "Facebook", href: footer?.facebook },
@@ -507,33 +510,31 @@ export default function Footer() {
               `© ${new Date().getFullYear()} IndieKonnect. All rights reserved.`}
           </p>
 
-
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[#8B887F]">
-  <span className="inline-flex items-center gap-1.5 font-medium text-[#33332F]">
-    <span
-      aria-hidden
-      className="flex h-[13px] w-[13px] flex-col overflow-hidden rounded-[2px] ring-1 ring-black/10"
-    >
-      <span className="h-1/3 w-full bg-[#FF9933]" />
-      <span className="h-1/3 w-full bg-white" />
-      <span className="h-1/3 w-full bg-[#138808]" />
-    </span>
-    Made in India
-  </span>
+            <span className="inline-flex items-center gap-1.5 font-medium text-[#33332F]">
+              <span
+                aria-hidden
+                className="flex h-[13px] w-[13px] flex-col overflow-hidden rounded-[2px] ring-1 ring-black/10"
+              >
+                <span className="h-1/3 w-full bg-[#FF9933]" />
+                <span className="h-1/3 w-full bg-white" />
+                <span className="h-1/3 w-full bg-[#138808]" />
+              </span>
+              Made in India
+            </span>
 
-  <span
-    aria-hidden
-    className="hidden h-3 w-px bg-[#D3D0C8] sm:block"
-  />
+            <span
+              aria-hidden
+              className="hidden h-3 w-px bg-[#D3D0C8] sm:block"
+            />
 
-  <span>
-    Marketed by{" "}
-    <span className="font-medium text-[#555550]">
-      {footer?.marketed_by || "Indie Konnect Pvt Ltd"}
-    </span>
-  </span>
-</div>
-
+            <span>
+              Marketed by{" "}
+              <span className="font-medium text-[#555550]">
+                {footer?.marketed_by || "Indie Konnect Pvt Ltd"}
+              </span>
+            </span>
+          </div>
         </div>
       </div>
     </footer>
