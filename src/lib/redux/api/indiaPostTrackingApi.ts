@@ -19,6 +19,9 @@ export interface IndiaPostOrderShipment {
 
 export interface IndiaPostOrderTrackingData {
   order_id: number;
+  // Allocated but not necessarily booked. Never interpret as courier pickup.
+  allocated_awb?: string | null;
+  allocated_at?: string | null;
   shipments: IndiaPostOrderShipment[];
   warning?: string | null;
 }
