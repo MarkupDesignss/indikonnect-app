@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import DOMPurify from "dompurify";
 
 import {
   motion,
@@ -28,6 +29,43 @@ import valStyles from "./Values.module.css";
 
 import { useGetLandingPageQuery } from "@/lib/redux/api/Landing/landingPageApi";
 import { useGetTestimonialsQuery } from "@/lib/redux/api/testimonialApi";
+
+/* =========================================================
+   HTML HELPERS (Cleans &nbsp; and <p> tags)
+========================================================= */
+
+const stripAndDecode = (text: string): string => {
+  if (!text) return "";
+
+  let cleaned = text;
+  // convert paragraph breaks & br to newline
+  cleaned = cleaned
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>\s*<p[^>]*>/gi, "\n")
+    .replace(/<\/?p[^>]*>/gi, "");
+  // remove any remaining tags
+  cleaned = cleaned.replace(/<[^>]*>/g, "");
+
+  if (typeof window !== "undefined" && typeof document !== "undefined") {
+    const txt = document.createElement("textarea");
+    txt.innerHTML = cleaned;
+    cleaned = txt.value;
+  } else {
+    cleaned = cleaned
+      .replace(/&nbsp;/g, " ")
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'");
+  }
+
+  return cleaned
+    .split("\n")
+    .map((line) => line.replace(/\s+/g, " ").trim())
+    .filter(Boolean)
+    .join("\n");
+};
 
 /* =========================================================
    TYPES
@@ -59,40 +97,20 @@ type ComplianceItem = {
 
 export function Voices() {
   const reduced = useReducedMotion();
-
   const ref = useRef<HTMLElement>(null);
 
   const [currentIndex, setCurrentIndex] = useState(0);
-
   const [isDragging, setIsDragging] = useState(false);
-
   const [touchStartY, setTouchStartY] = useState(0);
-
   const [touchEndY, setTouchEndY] = useState(0);
-
   const [isMobile, setIsMobile] = useState(false);
 
-  /* =========================================================
-     MOBILE DETECTION
-  ========================================================== */
-
   useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth <= 768);
-    };
-
+    const checkMobile = () => setIsMobile(window.innerWidth <= 768);
     checkMobile();
-
     window.addEventListener("resize", checkMobile);
-
-    return () => {
-      window.removeEventListener("resize", checkMobile);
-    };
+    return () => window.removeEventListener("resize", checkMobile);
   }, []);
-
-  /* =========================================================
-     LANDING PAGE API
-  ========================================================== */
 
   const { data: landingData } = useGetLandingPageQuery();
 
@@ -109,10 +127,12 @@ export function Voices() {
   );
 
   const chapterHeading =
-    chapterSevenBlock?.heading?.trim() || "Chapter Seven · The People";
+    stripAndDecode(chapterSevenBlock?.heading || "") ||
+    "Chapter Seven · The People";
 
   const chapterShortDescription =
-    chapterSevenBlock?.short_description?.trim() || "People & possibilities";
+    stripAndDecode(chapterSevenBlock?.short_description || "") ||
+    "Stories That Inspire, Experiences That Connect";
 
   /* =========================================================
      FUTURE READY API
@@ -122,11 +142,6 @@ export function Voices() {
     (item: any) => item?.slug === "future-ready",
   );
 
-  /* =========================================================
-     FUTURE READY BLOCKS
-     ALL BLOCKS = ALL CARDS
-  ========================================================== */
-
   const futureReadyBlocks = useMemo(() => {
     const blocks = [...(futureReadyPage?.blocks || [])].sort(
       (a: any, b: any) => (a?.sort_order ?? 0) - (b?.sort_order ?? 0),
@@ -134,20 +149,16 @@ export function Voices() {
 
     return {
       main: blocks.find((block: any) => block?.sort_order === 0) || {},
-
       items: blocks,
     };
   }, [futureReadyPage]);
 
-  /* =========================================================
-     FUTURE READY MAIN CONTENT
-  ========================================================== */
-
   const futureReadyHeading =
-    futureReadyBlocks.main?.heading?.trim() || "Future-Ready & Compliant";
+    stripAndDecode(futureReadyBlocks.main?.heading || "") ||
+    "Future-Ready & Compliant";
 
   const futureReadyShortDescription =
-    futureReadyBlocks.main?.short_description?.trim() ||
+    stripAndDecode(futureReadyBlocks.main?.short_description || "") ||
     "A proud advocate of Aatmanirbhar Bharat";
 
   /* =========================================================
@@ -157,13 +168,12 @@ export function Voices() {
   const compliance = useMemo<ComplianceItem[]>(() => {
     return futureReadyBlocks.items.map((block: any, index: number) => ({
       id: block?.id ?? block?.sort_order ?? index + 1,
-
       idx: String(index + 1).padStart(2, "0"),
-
-      title: block?.heading?.trim() || `Item ${index + 1}`,
-
+      title: stripAndDecode(block?.heading || "") || `Item ${index + 1}`,
       body:
-        block?.short_description?.trim() || block?.description?.trim() || "",
+        stripAndDecode(block?.short_description || "") ||
+        stripAndDecode(block?.description || "") ||
+        "",
     }));
   }, [futureReadyBlocks]);
 
@@ -177,13 +187,8 @@ export function Voices() {
     isError: testimonialsError,
   } = useGetTestimonialsQuery();
 
-  /* =========================================================
-     TESTIMONIAL LIST
-  ========================================================== */
-
   const testimonials = useMemo<Testimonial[]>(() => {
     const responseData = testimonialsResponse?.data;
-
     let list: any[] = [];
 
     if (responseData && Array.isArray(responseData.data)) {
@@ -199,37 +204,23 @@ export function Voices() {
       )
       .map((item: any) => ({
         id: item?.id,
-
         video_path: item?.video_path || null,
-
         video_title: item?.video_title || null,
-
         person_name: item?.person_name || "Anonymous",
-
         heading: item?.heading || null,
-
         rating: item?.rating ?? null,
-
-        text: item?.text || "",
-
+        text: stripAndDecode(item?.text || ""),
         is_active: item?.is_active ?? true,
-
         display_order: item?.display_order ?? 0,
-
         view_counts: item?.view_counts ?? 0,
       }));
   }, [testimonialsResponse]);
-
-  /* =========================================================
-     CURRENT INDEX SAFETY
-  ========================================================== */
 
   useEffect(() => {
     if (!testimonials.length) {
       setCurrentIndex(0);
       return;
     }
-
     setCurrentIndex((prev) => Math.min(prev, testimonials.length - 1));
   }, [testimonials.length]);
 
@@ -243,60 +234,37 @@ export function Voices() {
   });
 
   const p = useSpring(scrollYProgress, scrub.s10);
-
   const x = useTransform(p, [0, 0.5], [0, -50]);
 
   /* =========================================================
-     MOBILE AUTO ROTATE
+     MOBILE AUTO ROTATE & TOUCH
   ========================================================== */
 
   useEffect(() => {
-    if (reduced || !isMobile || isDragging || testimonials.length <= 1) {
-      return;
-    }
+    if (reduced || !isMobile || isDragging || testimonials.length <= 1) return;
 
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % testimonials.length);
     }, 4000);
 
-    return () => {
-      clearInterval(interval);
-    };
+    return () => clearInterval(interval);
   }, [reduced, isMobile, isDragging, testimonials.length]);
-
-  /* =========================================================
-     TOUCH START
-  ========================================================== */
 
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStartY(e.touches[0].clientY);
-
     setTouchEndY(e.touches[0].clientY);
-
     setIsDragging(true);
   };
-
-  /* =========================================================
-     TOUCH MOVE
-  ========================================================== */
 
   const handleTouchMove = (e: React.TouchEvent) => {
     setTouchEndY(e.touches[0].clientY);
   };
 
-  /* =========================================================
-     TOUCH END
-  ========================================================== */
-
   const handleTouchEnd = () => {
     setIsDragging(false);
-
-    if (!testimonials.length) {
-      return;
-    }
+    if (!testimonials.length) return;
 
     const swipeDistance = touchStartY - touchEndY;
-
     if (Math.abs(swipeDistance) > 50) {
       if (swipeDistance > 0) {
         setCurrentIndex((prev) => (prev + 1) % testimonials.length);
@@ -306,59 +274,60 @@ export function Voices() {
         );
       }
     }
-
     setTouchStartY(0);
     setTouchEndY(0);
   };
-
-  /* =========================================================
-     DUPLICATED DESKTOP TESTIMONIALS
-  ========================================================== */
 
   const duplicatedTestimonials = useMemo(
     () => [...testimonials, ...testimonials],
     [testimonials],
   );
 
-  /* =========================================================
-     STATES
-  ========================================================== */
-
   const isLoading = testimonialsLoading && testimonials.length === 0;
-
   const noTestimonials = !testimonialsLoading && testimonials.length === 0;
-
   const currentTestimonial = testimonials[currentIndex];
 
   /* =========================================================
-     CHAPTER SEVEN HEADING
-     ✅ Gap between lines via flex-col + gap-*
+     HEADING RENDERERS
   ========================================================== */
 
   const renderChapterHeading = () => {
-    const words = chapterShortDescription.split(/\s+/).filter(Boolean);
+    const lines = chapterShortDescription.split("\n").filter(Boolean);
 
-    if (!words.length) {
-      return null;
+    // If API sent actual newlines
+    if (lines.length > 1) {
+      const lastLine = lines[lines.length - 1];
+      const firstLines = lines.slice(0, -1);
+
+      return (
+        <>
+          {firstLines.map((line, i) => (
+            <span key={i}>
+              {line}{" "}
+            </span>
+          ))}
+          <br />
+          <Accent>{lastLine}</Accent>
+        </>
+      );
     }
 
-    const lastWord = words[words.length - 1];
-    const firstPart = words.slice(0, -1).join(" ");
+    // Single line fallback - EXACTLY 2 LINES
+    // Example: "Stories That Inspire, Experiences That Connect"
+    const words = chapterShortDescription.split(/\s+/).filter(Boolean);
+    if (!words.length) return null;
+
+    const lastWord = words[words.length - 1]; // "Connect"
+    const firstPart = words.slice(0, -1).join(" "); // "Stories That Inspire, Experiences That"
 
     return (
-      <span className="flex flex-col gap-1 sm:gap-1.5 md:gap-2">
-        <span className="block">{firstPart}</span>
-        <span className="block">
-          <Accent>{lastWord}</Accent>
-        </span>
-      </span>
+      <>
+        <span>{firstPart}</span>
+        <br />
+        <Accent>{lastWord}</Accent>
+      </>
     );
   };
-
-  /* =========================================================
-     FUTURE READY HEADING
-     ✅ Gap between lines via flex-col + gap-*
-  ========================================================== */
 
   const renderFutureReadyHeading = () => {
     const text = futureReadyShortDescription;
@@ -366,18 +335,19 @@ export function Voices() {
 
     if (text.toLowerCase().includes(target.toLowerCase())) {
       const index = text.toLowerCase().indexOf(target.toLowerCase());
-
       const before = text.slice(0, index).trim();
-
       const after = text.slice(index + target.length).trim();
 
       return (
-        <span className="flex flex-col gap-1 sm:gap-1.5 md:gap-2">
-          <span className="block">
-            {before} <Accent>{text.slice(index, index + target.length)}</Accent>
-            {after ? ` ${after}` : ""}
-          </span>
-        </span>
+        <>
+          {before && (
+            <span>
+              {before} <br />
+            </span>
+          )}
+          <Accent>{text.slice(index, index + target.length)}</Accent>
+          {after ? ` ${after}` : ""}
+        </>
       );
     }
 
@@ -385,12 +355,12 @@ export function Voices() {
 
     if (words.length >= 2) {
       return (
-        <span className="flex flex-col gap-1 sm:gap-1.5 md:gap-2">
-          <span className="block">{words.slice(0, -2).join(" ")}</span>
-          <span className="block">
-            <Accent>{words.slice(-2).join(" ")}</Accent>
+        <>
+          <span>
+            {words.slice(0, -2).join(" ")} <br />
           </span>
-        </span>
+          <Accent>{words.slice(-2).join(" ")}</Accent>
+        </>
       );
     }
 
@@ -405,10 +375,7 @@ export function Voices() {
       className={styles.voices}
       ref={ref}
     >
-      {/* =====================================================
-          CHAPTER SEVEN HEADER
-      ====================================================== */}
-
+      {/* CHAPTER SEVEN HEADER */}
       <div className={styles.head}>
         <Reveal as="p">
           <Eyebrow center>{chapterHeading}</Eyebrow>
@@ -427,22 +394,15 @@ export function Voices() {
         </Reveal>
       </div>
 
-      {/* =====================================================
-          TESTIMONIAL SLIDER
-      ====================================================== */}
-
+      {/* TESTIMONIAL SLIDER */}
       <div className={styles.sliderWrapper}>
         {isLoading ? (
           <div className={styles.mobileContainer}>
             <article className={styles.card}>
               <p className={styles.mark}>&ldquo;</p>
-
               <div className="h-6 w-2/3 rounded bg-black/10 animate-pulse" />
-
               <div className="mt-4 h-4 w-full rounded bg-black/10 animate-pulse" />
-
               <div className="mt-2 h-4 w-5/6 rounded bg-black/10 animate-pulse" />
-
               <div className="mt-8 h-12 w-40 rounded bg-black/10 animate-pulse" />
             </article>
           </div>
@@ -450,7 +410,6 @@ export function Voices() {
           <div className={styles.mobileContainer}>
             <article className={styles.card}>
               <p className={styles.mark}>&ldquo;</p>
-
               <q>Unable to load testimonials right now.</q>
             </article>
           </div>
@@ -458,15 +417,10 @@ export function Voices() {
           <div className={styles.mobileContainer}>
             <article className={styles.card}>
               <p className={styles.mark}>&ldquo;</p>
-
               <q>No testimonials available yet.</q>
             </article>
           </div>
         ) : isMobile ? (
-          /* =================================================
-             MOBILE
-          ================================================== */
-
           <div
             className={styles.mobileContainer}
             onTouchStart={handleTouchStart}
@@ -478,23 +432,10 @@ export function Voices() {
                 <motion.div
                   key={currentTestimonial.id}
                   className={styles.mobileCard}
-                  initial={{
-                    opacity: 0,
-                    y: 50,
-                  }}
-                  animate={{
-                    opacity: 1,
-                    y: 0,
-                  }}
-                  exit={{
-                    opacity: 0,
-                    y: -50,
-                  }}
-                  transition={{
-                    type: "spring",
-                    stiffness: 300,
-                    damping: 30,
-                  }}
+                  initial={{ opacity: 0, y: 50 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -50 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
                 >
                   <TestimonialCard testimonial={currentTestimonial} />
                 </motion.div>
@@ -517,10 +458,6 @@ export function Voices() {
             </div>
           </div>
         ) : (
-          /* =================================================
-             DESKTOP
-          ================================================== */
-
           <motion.div
             className={styles.row}
             style={reduced ? undefined : { x }}
@@ -542,10 +479,7 @@ export function Voices() {
         )}
       </div>
 
-      {/* =====================================================
-          FUTURE READY / COMPLIANT
-      ====================================================== */}
-
+      {/* FUTURE READY / COMPLIANT */}
       <Wrap className={styles.closing}>
         <Reveal as="p">
           <Eyebrow center>{futureReadyHeading}</Eyebrow>
@@ -555,28 +489,18 @@ export function Voices() {
           <Display
             as="h3"
             size="md"
-            style={{
-              marginTop: 16,
-              lineHeight: 1.2,
-            }}
+            style={{ marginTop: 16, lineHeight: 1.2 }}
           >
             {renderFutureReadyHeading()}
           </Display>
         </Reveal>
-
-        {/* =================================================
-            4 DYNAMIC API CARDS
-        ================================================== */}
 
         {compliance.length > 0 && (
           <Reveal
             as="div"
             delay={0.16}
             className={valStyles.grid}
-            style={{
-              marginTop: "var(--space-4)",
-              textAlign: "left",
-            }}
+            style={{ marginTop: "var(--space-4)", textAlign: "left" }}
           >
             {compliance.map((item) => (
               <article
@@ -584,9 +508,7 @@ export function Voices() {
                 className={cx(valStyles.val, valStyles.compact)}
               >
                 <span className={valStyles.idx}>{item.idx}</span>
-
                 <h3>{item.title}</h3>
-
                 <p>{item.body}</p>
               </article>
             ))}
@@ -603,51 +525,34 @@ export function Voices() {
 
 function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
   const [expanded, setExpanded] = useState(false);
-
   const text = testimonial.text?.trim() || "";
-
   const [isLongText, setIsLongText] = useState(false);
-
   const textRef = useRef<HTMLQuoteElement>(null);
-
-  /* =========================================================
-     CHECK IF TEXT EXCEEDS 4 LINES
-  ========================================================== */
 
   useEffect(() => {
     const checkTextHeight = () => {
       const element = textRef.current;
-
       if (!element) return;
 
       const computed = window.getComputedStyle(element);
-
       const lineHeight = parseFloat(computed.lineHeight);
-
       if (!lineHeight) {
         setIsLongText(false);
         return;
       }
 
       const maxHeight = lineHeight * 4;
-
       setIsLongText(element.scrollHeight > maxHeight + 2);
     };
 
     const timer = setTimeout(checkTextHeight, 50);
-
     window.addEventListener("resize", checkTextHeight);
 
     return () => {
       clearTimeout(timer);
-
       window.removeEventListener("resize", checkTextHeight);
     };
   }, [text]);
-
-  /* =========================================================
-     FOUR LINE CLAMP STYLE
-  ========================================================== */
 
   const fourLineClampStyle = expanded
     ? undefined
@@ -660,15 +565,9 @@ function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
 
   return (
     <article className={styles.card}>
-      {/* Quote */}
       <p className={styles.mark} aria-hidden="true">
         &ldquo;
       </p>
-
-      {/* =================================================
-          VOICE TEXT
-          EXACTLY 4 LINES
-      ================================================== */}
 
       <div className="relative">
         <q ref={textRef} style={fourLineClampStyle}>
@@ -680,18 +579,12 @@ function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
             type="button"
             onClick={() => setExpanded((prev) => !prev)}
             className="mt-2 inline-flex items-center text-sm font-medium transition-opacity hover:opacity-70"
-            style={{
-              color: "var(--gold, #C9A227)",
-            }}
+            style={{ color: "var(--gold, #C9A227)" }}
           >
             {expanded ? "Read Less" : "Read More"}
           </button>
         )}
       </div>
-
-      {/* =================================================
-          PERSON
-      ================================================== */}
 
       <div className={styles.who}>
         <span className={styles.av}>
@@ -714,9 +607,7 @@ function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
 
         <span>
           <span className={styles.name}>{testimonial.person_name}</span>
-
           <br />
-
           <span className={styles.role}>
             {testimonial.rating
               ? `Rating ${testimonial.rating}/10`

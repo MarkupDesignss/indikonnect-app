@@ -21,22 +21,33 @@ import styles from "./Values.module.css";
 import { useGetLandingPageQuery } from "@/lib/redux/api/Landing/landingPageApi";
 
 /* =========================================================
-   HTML ENTITY DECODER (plain text fields ke liye)
+   HTML ENTITY DECODER + STRIP TAGS (plain text fields ke liye)
+   - <p>...</p> remove
+   - &nbsp; &amp; etc decode
 ========================================================= */
-const decodeHtml = (text: string): string => {
+const stripAndDecode = (text: string): string => {
   if (!text) return "";
+
+  // remove all HTML tags first
+  let cleaned = text.replace(/<[^>]*>/g, " ");
+
+  // decode entities
   if (typeof window !== "undefined" && typeof document !== "undefined") {
     const txt = document.createElement("textarea");
-    txt.innerHTML = text;
-    return txt.value;
+    txt.innerHTML = cleaned;
+    cleaned = txt.value;
+  } else {
+    cleaned = cleaned
+      .replace(/&nbsp;/g, " ")
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'");
   }
-  return text
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'");
+
+  // collapse multiple spaces
+  return cleaned.replace(/\s+/g, " ").trim();
 };
 
 /* =========================================================
@@ -49,7 +60,7 @@ const sanitizeHtml = (html: string): string => {
 
   // SSR fallback — tags strip karke plain text
   if (typeof window === "undefined") {
-    return decodeHtml(html.replace(/<[^>]*>/g, "")).trim();
+    return stripAndDecode(html);
   }
 
   const cleaned = DOMPurify.sanitize(html, {
@@ -93,7 +104,7 @@ const getChipType = (colour: string): ChipType => {
 };
 
 const parseShortDescription = (text: string) => {
-  const cleaned = decodeHtml(text).trim();
+  const cleaned = stripAndDecode(text);
   const match = cleaned.match(/^([^.!?]+)\.\s*(.*)$/);
 
   if (!match) {
@@ -129,7 +140,7 @@ export function Values() {
     return {
       main: blocks.find((block: any) => block?.sort_order === 0) || {},
       values: blocks
-        .filter((block: any) => block?.sort_order > 0)
+        .filter((block: any) => (block?.sort_order ?? 0) > 0)
         .sort(
           (a: any, b: any) =>
             (a?.sort_order ?? 0) - (b?.sort_order ?? 0)
@@ -138,15 +149,15 @@ export function Values() {
   }, [chapterFivePage]);
 
   /* =========================================================
-     MAIN CONTENT
+     MAIN CONTENT (sort_order === 0 — TOP BLOCK)
   ========================================================= */
 
   const chapterHeading =
-    decodeHtml(chapterFiveBlocks.main?.heading || "").trim() ||
+    stripAndDecode(chapterFiveBlocks.main?.heading || "") ||
     "Chapter Five · The Foundations";
 
   const chapterShortDescription =
-    decodeHtml(chapterFiveBlocks.main?.short_description || "").trim() ||
+    stripAndDecode(chapterFiveBlocks.main?.short_description || "") ||
     "Values you can trust";
 
   // description me HTML <p> hai → sanitize karke render
@@ -156,7 +167,7 @@ export function Values() {
   );
 
   /* =========================================================
-     DYNAMIC VALUES
+     DYNAMIC VALUES (sort_order >= 1 — BELOW BLOCKS)
   ========================================================= */
 
   const values = useMemo<ValueItem[]>(() => {
@@ -165,16 +176,23 @@ export function Values() {
         block?.short_description || ""
       );
 
+      // title: heading → fallback short_description → fallback "Value N"
+      const rawTitle =
+        stripAndDecode(block?.heading || "") ||
+        stripAndDecode(block?.short_description || "") ||
+        `Value ${index + 1}`;
+
+      // body: parsed body → fallback description (HTML stripped) → ""
+      const rawBody =
+        parsed.body ||
+        stripAndDecode(block?.description || "") ||
+        "";
+
       return {
         idx: String(index + 1).padStart(2, "0"),
-        title:
-          decodeHtml(block?.heading || "").trim() ||
-          `Value ${index + 1}`,
+        title: rawTitle,
         colour: parsed.colour || "",
-        body:
-          parsed.body ||
-          decodeHtml(block?.description || "").trim() ||
-          "",
+        body: rawBody,
         chip: getChipType(parsed.colour || ""),
       };
     });
@@ -203,7 +221,7 @@ export function Values() {
     >
       <Wrap>
         {/* =====================================================
-            HEADER
+            HEADER — sort_order === 0 block ka data yahan aayega
         ====================================================== */}
         <div className={styles.head}>
           <Reveal as="p">
@@ -230,7 +248,7 @@ export function Values() {
         </div>
 
         {/* =====================================================
-            VALUES GRID
+            VALUES GRID — sort_order 1,2,3... blocks niche
         ====================================================== */}
         <div className={styles.grid} ref={gridRef}>
           {values.map((value, index) => (
@@ -272,7 +290,7 @@ export function Values() {
               {/* Dynamic Title */}
               <h3>{value.title}</h3>
 
-              {/* Dynamic Description */}
+              {/* Dynamic Description — plain text, no nested <p> */}
               <p>
                 {value.colour ? <strong>{value.colour}</strong> : null}
                 {value.colour && value.body ? " " : null}

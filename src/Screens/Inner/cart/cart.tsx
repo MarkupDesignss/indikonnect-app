@@ -51,17 +51,13 @@ import {
 
 import { useGetProductsQuery } from "@/lib/redux/api/productApi";
 
-import {
-  useGetCheckoutSummaryQuery,
-  useGetMandatoryProductsQuery,
-  type MandatoryProduct,
-} from "@/lib/redux/api/checkoutApi";
+import { useGetCheckoutSummaryQuery } from "@/lib/redux/api/checkoutApi";
 
 import {
   useGetAddressesQuery,
   useCreateAddressMutation,
   useUpdateAddressMutation,
-  useDeleteAddressMutation, // Added Delete Mutation
+  useDeleteAddressMutation,
   useSetDefaultAddressMutation,
 } from "@/lib/redux/api/addressApi";
 
@@ -583,7 +579,7 @@ function AddressSelectorModal({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Delete Confirm Modal (NEW)
+// Delete Confirm Modal
 // ─────────────────────────────────────────────────────────────────────────────
 
 function DeleteConfirmModal({
@@ -1333,7 +1329,7 @@ function OrderSummary({
     <section className="rounded-xl border border-[#E5E5E5] bg-white p-4 sm:p-5">
       <div className="mb-4 flex items-center justify-between gap-3">
         <h2 className="text-[17px] font-semibold text-[#171717]">
-          Order Summary
+          Cart Summary
         </h2>
 
         <span className="rounded-full bg-[#F4F4F4] px-2.5 py-1 text-[10px] font-medium text-[#777]">
@@ -1679,12 +1675,6 @@ export default function CartPage() {
     isFetching: isFetchingProfile,
     refetch: refetchProfile,
   } = useGetUserProfileQuery(undefined, {
-    refetchOnMountOrArgChange: true,
-  });
-
-  // Kept so existing module imports remain valid; the result is intentionally
-  // not used to force-add anything anymore.
-  useGetMandatoryProductsQuery(undefined, {
     refetchOnMountOrArgChange: true,
   });
 
@@ -2090,7 +2080,6 @@ export default function CartPage() {
     try {
       setDeletingAddressId(addressToDelete.id);
 
-      // FIX: API call changed to pass { id, data } structure
       const result = await deleteAddress({ 
         id: addressToDelete.id, 
         data: {} as any 

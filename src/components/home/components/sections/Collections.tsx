@@ -37,6 +37,25 @@ import { useGetCategoriesQuery } from "@/lib/redux/api/categoryApi";
 import { useGetLandingPageQuery } from "@/lib/redux/api/Landing/landingPageApi";
 
 /* =========================================================
+   HTML → plain text helper
+   Strips tags + decodes common entities (e.g. &nbsp;)
+========================================================= */
+function stripHtml(html?: string | null): string {
+  if (!html) return "";
+  return html
+    .replace(/<[^>]*>/g, "")   // remove all tags
+    .replace(/&nbsp;/g, " ")   // decode &nbsp;
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&#x27;/g, "'")
+    .replace(/\s+/g, " ")      // collapse whitespace
+    .trim();
+}
+
+/* =========================================================
    TIER STYLES
 ========================================================= */
 
@@ -94,12 +113,12 @@ export function Collections() {
     (block: any) => block?.sort_order === 0
   );
 
+  // Heading na ho to null — fallback mat do (taaki eyebrow hide ho jaye)
   const chapterHeading =
-    chapterThreeBlock?.heading?.trim() ||
-    "Chapter Three · The Collections";
+    stripHtml(chapterThreeBlock?.heading) || null;
 
   const chapterDescription =
-    chapterThreeBlock?.description?.trim() ||
+    stripHtml(chapterThreeBlock?.description) ||
     "Curated for the discerning";
 
   /* =========================================================
@@ -124,11 +143,11 @@ export function Collections() {
         (category: any, index: number) => ({
           id: category?.id ?? index + 1,
           title:
-            category?.title?.trim() ||
+            stripHtml(category?.title) ||
             "Collection",
           image: category.image,
           description:
-            category?.description || "",
+            stripHtml(category?.description) || "",
           tier:
             index % 3 === 0
               ? "l"
@@ -164,8 +183,7 @@ export function Collections() {
         getComputedStyle(track).paddingLeft
       ) || 0;
 
-    track.style.paddingRight =
-      base + "px";
+    track.style.paddingRight = base + "px";
 
     const cards =
       cardsRef.current.filter(
@@ -173,28 +191,21 @@ export function Collections() {
       ) as HTMLElement[];
 
     if (cards.length) {
-      const last =
-        cards[cards.length - 1];
+      const last = cards[cards.length - 1];
 
       const trackLeft =
-        track.getBoundingClientRect()
-          .left;
+        track.getBoundingClientRect().left;
 
-      const rect =
-        last.getBoundingClientRect();
+      const rect = last.getBoundingClientRect();
 
       const lastCentre =
-        rect.left +
-        rect.width / 2 -
-        trackLeft;
+        rect.left + rect.width / 2 - trackLeft;
 
       const trailing =
-        track.scrollWidth -
-        lastCentre;
+        track.scrollWidth - lastCentre;
 
       const need =
-        window.innerWidth * 0.66 -
-        trailing;
+        window.innerWidth * 0.66 - trailing;
 
       if (need > 0) {
         track.style.paddingRight =
@@ -204,8 +215,7 @@ export function Collections() {
 
     const pad =
       parseFloat(
-        getComputedStyle(track)
-          .paddingRight
+        getComputedStyle(track).paddingRight
       ) || 0;
 
     const d = Math.max(
@@ -217,11 +227,7 @@ export function Collections() {
 
     setDistance(d);
 
-    setExtra(
-      d +
-        window.innerHeight *
-          0.5
-    );
+    setExtra(d + window.innerHeight * 0.5);
   }, []);
 
   /* =========================================================
@@ -239,140 +245,88 @@ export function Collections() {
 
     runMeasure();
 
-    window.addEventListener(
-      "resize",
-      runMeasure
-    );
+    window.addEventListener("resize", runMeasure);
 
-    if (
-      document.fonts &&
-      document.fonts.ready
-    ) {
-      void document.fonts.ready.then(
-        runMeasure
-      );
+    if (document.fonts && document.fonts.ready) {
+      void document.fonts.ready.then(runMeasure);
     }
 
     return () => {
-      window.removeEventListener(
-        "resize",
-        runMeasure
-      );
+      window.removeEventListener("resize", runMeasure);
     };
-  }, [
-    measure,
-    reduced,
-    categories.length,
-  ]);
+  }, [measure, reduced, categories.length]);
 
   /* =========================================================
      SCROLL PROGRESS
   ========================================================= */
 
-  const { scrollYProgress } =
-    useScroll({
-      target: sectionRef,
-      offset: [
-        "start start",
-        "end end",
-      ],
-    });
+  const { scrollYProgress } = useScroll({
+    target: sectionRef,
+    offset: ["start start", "end end"],
+  });
 
-  const p = useSpring(
-    scrollYProgress,
-    scrub.s07
-  );
+  const p = useSpring(scrollYProgress, scrub.s07);
 
-  const x = useTransform(
-    p,
-    [0, 1],
-    [0, -distance]
-  );
+  const x = useTransform(p, [0, 1], [0, -distance]);
 
   /* =========================================================
      SYNC ACTIVE CARD
   ========================================================= */
 
   const syncFocus = useCallback(() => {
-    const line =
-      window.innerWidth * 0.34;
+    const line = window.innerWidth * 0.34;
 
     let best = 0;
     let bestD = Infinity;
 
-    cardsRef.current.forEach(
-      (card, index) => {
-        if (!card) return;
+    cardsRef.current.forEach((card, index) => {
+      if (!card) return;
 
-        const rect =
-          card.getBoundingClientRect();
+      const rect = card.getBoundingClientRect();
 
-        const d = Math.abs(
-          rect.left +
-            rect.width / 2 -
-            line
-        );
+      const d = Math.abs(
+        rect.left + rect.width / 2 - line
+      );
 
-        if (d < bestD) {
-          bestD = d;
-          best = index;
-        }
+      if (d < bestD) {
+        bestD = d;
+        best = index;
       }
-    );
+    });
 
-    setActive((prev) =>
-      prev === best ? prev : best
-    );
+    setActive((prev) => (prev === best ? prev : best));
   }, []);
 
-  useMotionValueEvent(
-    x,
-    "change",
-    syncFocus
-  );
+  useMotionValueEvent(x, "change", syncFocus);
 
   useEffect(() => {
     if (!reduced) {
-      requestAnimationFrame(
-        syncFocus
-      );
+      requestAnimationFrame(syncFocus);
     }
-  }, [
-    distance,
-    reduced,
-    syncFocus,
-    categories.length,
-  ]);
+  }, [distance, reduced, syncFocus, categories.length]);
 
   /* =========================================================
      CURRENT CATEGORY
   ========================================================= */
 
-  const current =
-    categories[active] ??
-    categories[0];
+  const current = categories[active] ?? categories[0];
 
   /* =========================================================
      HEADING SPLIT
   ========================================================= */
 
-  const descriptionWords =
-    chapterDescription
-      .split(/\s+/)
-      .filter(Boolean);
+  const descriptionWords = chapterDescription
+    .split(/\s+/)
+    .filter(Boolean);
 
   const firstHeadingPart =
     descriptionWords.length > 1
-      ? descriptionWords
-          .slice(0, -1)
-          .join(" ")
+      ? descriptionWords.slice(0, -1).join(" ")
       : chapterDescription;
 
   const lastHeadingWord =
     descriptionWords.length > 1
-      ? descriptionWords[
-          descriptionWords.length - 1
-        ]
+      ? descriptionWords[descriptionWords.length - 1]
       : "";
 
   return (
@@ -385,10 +339,7 @@ export function Collections() {
         reduced
           ? undefined
           : {
-              height:
-                "calc(100svh + " +
-                extra +
-                "px)",
+              height: "calc(100svh + " + extra + "px)",
             }
       }
     >
@@ -397,16 +348,12 @@ export function Collections() {
             GHOST CATEGORY WORDS
         ====================================================== */}
 
-        <div
-          className={styles.ghost}
-          aria-hidden="true"
-        >
+        <div className={styles.ghost} aria-hidden="true">
           {ghostWords.map((item) => (
             <span
               key={item.word}
               className={cx(
-                item.category ===
-                  current?.title &&
+                item.category === current?.title &&
                   styles.on
               )}
             >
@@ -421,21 +368,17 @@ export function Collections() {
 
         <div className={styles.head}>
           <div>
-            <Eyebrow>
-              {chapterHeading}
-            </Eyebrow>
+            {chapterHeading && (
+              <Eyebrow>{chapterHeading}</Eyebrow>
+            )}
 
             <Display
               size="lg"
-              style={{
-                marginTop: 16,
-              }}
+              style={{ marginTop: chapterHeading ? 16 : 0 }}
             >
               {firstHeadingPart}{" "}
               {lastHeadingWord ? (
-                <Accent>
-                  {lastHeadingWord}
-                </Accent>
+                <Accent>{lastHeadingWord}</Accent>
               ) : null}
             </Display>
           </div>
@@ -450,132 +393,80 @@ export function Collections() {
             CATEGORY STAGE
         ====================================================== */}
 
-        <div
-          className={styles.stage}
-        >
+        <div className={styles.stage}>
           <motion.div
             className={cx(
               styles.track,
-              reduced &&
-                styles.staticTrack
+              reduced && styles.staticTrack
             )}
             ref={trackRef}
-            style={
-              reduced
-                ? undefined
-                : { x }
-            }
+            style={reduced ? undefined : { x }}
           >
             {categoriesLoading ? (
               <>
-                {Array.from({
-                  length: 5,
-                }).map(
-                  (_, index) => (
-                    <article
-                      key={index}
-                      className={cx(
-                        styles.card,
-                        TIER_CLASS[
-                          index % 3 === 0
-                            ? "l"
-                            : index % 3 === 1
-                              ? "m"
-                              : "s"
-                        ]
-                      )}
-                    >
-                      <div
-                        className={styles.media}
-                        style={{
-                          background:
-                            "rgba(255,255,255,0.05)",
-                        }}
-                      />
-                    </article>
-                  )
-                )}
+                {Array.from({ length: 5 }).map((_, index) => (
+                  <article
+                    key={index}
+                    className={cx(
+                      styles.card,
+                      TIER_CLASS[
+                        index % 3 === 0
+                          ? "l"
+                          : index % 3 === 1
+                            ? "m"
+                            : "s"
+                      ]
+                    )}
+                  >
+                    <div
+                      className={styles.media}
+                      style={{
+                        background: "rgba(255,255,255,0.05)",
+                      }}
+                    />
+                  </article>
+                ))}
               </>
             ) : categories.length ? (
               <>
-                {categories.map(
-                  (
-                    category,
-                    index
-                  ) => (
-                    <Card
-                      key={
-                        category.id
-                      }
-                      category={
-                        category
-                      }
-                      progress={p}
-                      active={
-                        !reduced &&
-                        index === active
-                      }
-                      reduced={Boolean(
-                        reduced
-                      )}
-                      register={(
-                        element
-                      ) => {
-                        cardsRef.current[
-                          index
-                        ] =
-                          element;
-                      }}
-                    />
-                  )
-                )}
+                {categories.map((category, index) => (
+                  <Card
+                    key={category.id}
+                    category={category}
+                    progress={p}
+                    active={!reduced && index === active}
+                    reduced={Boolean(reduced)}
+                    register={(element) => {
+                      cardsRef.current[index] = element;
+                    }}
+                  />
+                ))}
 
                 {/* =================================================
                     END CARD
                 ================================================== */}
 
-                <div
-                  className={
-                    styles.end
-                  }
-                >
-                  <Eyebrow>
-                    The full range
-                  </Eyebrow>
+                <div className={styles.end}>
+                  <Eyebrow>The full range</Eyebrow>
 
                   <p>
-                    {categories.length}{" "}
-                    categories,
+                    {categories.length} categories,
                     <br />
                     one standard.
                   </p>
 
-                  <Link
-                    href="/products/"
-                    className="inline-flex"
-                  >
-                    <Button
-                      variant="gold"
-                    >
-                      View all
-                      collections
+                  <Link href="/products/" className="inline-flex">
+                    <Button variant="gold">
+                      View all collections
                       <ArrowIcon />
                     </Button>
                   </Link>
                 </div>
               </>
             ) : (
-              <div
-                className={styles.end}
-              >
-                <Eyebrow>
-                  Collections
-                </Eyebrow>
-
-                <p>
-                  No collections
-                  available.
-                </p>
+              <div className={styles.end}>
+                <Eyebrow>Collections</Eyebrow>
+                <p>No collections available.</p>
               </div>
             )}
           </motion.div>
@@ -586,37 +477,23 @@ export function Collections() {
         ====================================================== */}
 
         <div className={styles.foot}>
-          <span
-            className={styles.idx}
-          >
+          <span className={styles.idx}>
             <b>
               {String(
-                categories.length
-                  ? active + 1
-                  : 0
+                categories.length ? active + 1 : 0
               ).padStart(2, "0")}
             </b>{" "}
-            /{" "}
-            {String(
-              categories.length
-            ).padStart(2, "0")}
+            / {String(categories.length).padStart(2, "0")}
           </span>
 
-          <span
-            className={styles.now}
-          >
-            {current?.title ||
-              "Collections"}
+          <span className={styles.now}>
+            {current?.title || "Collections"}
           </span>
 
-          <span
-            className={styles.rail}
-          >
+          <span className={styles.rail}>
             <motion.i
               style={{
-                scaleX: reduced
-                  ? 1
-                  : p,
+                scaleX: reduced ? 1 : p,
               }}
             />
           </span>
@@ -641,20 +518,14 @@ function Card({
   progress: MotionValue<number>;
   active: boolean;
   reduced: boolean;
-  register: (
-    el: HTMLElement | null
-  ) => void;
+  register: (el: HTMLElement | null) => void;
 }) {
-  const depth =
-    TIER_DEPTH[category.tier];
+  const depth = TIER_DEPTH[category.tier];
 
   const y = useTransform(
     progress,
     [0, 1],
-    [
-      `-${depth}%`,
-      `${depth * 0.7}%`,
-    ]
+    [`-${depth}%`, `${depth * 0.7}%`]
   );
 
   return (
@@ -662,9 +533,7 @@ function Card({
       ref={register}
       className={cx(
         styles.card,
-        TIER_CLASS[
-          category.tier
-        ],
+        TIER_CLASS[category.tier],
         active && styles.active
       )}
     >
@@ -672,24 +541,14 @@ function Card({
           IMAGE
       ====================================================== */}
 
-      <div
-        className={styles.media}
-      >
+      <div className={styles.media}>
         <motion.div
-          className={
-            styles.mediaShift
-          }
-          style={
-            reduced
-              ? undefined
-              : { y }
-          }
+          className={styles.mediaShift}
+          style={reduced ? undefined : { y }}
         >
           <Image
             src={category.image}
-            alt={
-              category.title
-            }
+            alt={category.title}
             fill
             sizes="(max-width: 760px) 60vw, 30vw"
             className="object-cover"
@@ -701,12 +560,8 @@ function Card({
           NUMBER
       ====================================================== */}
 
-      <span
-        className={styles.num}
-      >
-        {String(
-          category.id
-        ).padStart(2, "0")}
+      <span className={styles.num}>
+        {String(category.id).padStart(2, "0")}
       </span>
 
       {/* =====================================================
@@ -714,21 +569,8 @@ function Card({
       ====================================================== */}
 
       <div className={styles.cap}>
-        <p
-          className={styles.cat}
-        >
-          Collection
-        </p>
-
-        <h3
-          className={
-            styles.name
-          }
-        >
-          {category.title}
-        </h3>
-
-        {/* No product price/name */}
+        <p className={styles.cat}>Collection</p>
+        <h3 className={styles.name}>{category.title}</h3>
       </div>
     </article>
   );

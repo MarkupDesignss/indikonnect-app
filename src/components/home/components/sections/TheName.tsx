@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useMemo, useRef } from "react";
@@ -26,6 +25,25 @@ import { ease, scrub } from "../../design-system/motion";
 import styles from "./TheName.module.css";
 
 import { useGetLandingPageQuery } from "@/lib/redux/api/Landing/landingPageApi";
+
+/* =========================================================
+   HTML → plain text helper
+   Strips tags + decodes common entities (e.g. &nbsp;)
+========================================================= */
+function stripHtml(html?: string | null): string {
+  if (!html) return "";
+  return html
+    .replace(/<[^>]*>/g, "")   // remove all tags
+    .replace(/&nbsp;/g, " ")   // decode &nbsp;
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&#x27;/g, "'")
+    .replace(/\s+/g, " ")      // collapse whitespace
+    .trim();
+}
 
 export function TheName() {
   const reduced = useReducedMotion();
@@ -61,84 +79,83 @@ export function TheName() {
     return {
       intro:
         blocks.find(
-          (block: any) =>
-            block?.sort_order === 0
+          (block: any) => block?.sort_order === 0
         ) || null,
 
       partOne:
         blocks.find(
-          (block: any) =>
-            block?.sort_order === 1
+          (block: any) => block?.sort_order === 1
         ) || null,
 
       partTwo:
         blocks.find(
-          (block: any) =>
-            block?.sort_order === 2
+          (block: any) => block?.sort_order === 2
         ) || null,
 
       identity:
         blocks.find(
-          (block: any) =>
-            block?.sort_order === 3
+          (block: any) => block?.sort_order === 3
         ) || null,
     };
   }, [landingData]);
 
   /* =========================================================
-     DYNAMIC CONTENT
+     DYNAMIC CONTENT (HTML STRIPPED)
   ========================================================= */
 
+  // Heading na ho to null — fallback mat do (taaki eyebrow hide ho jaye)
   const chapterHeading =
-    chapterTwoBlocks.intro?.heading?.trim() ||
-    "Chapter Two · The Meaning";
+    stripHtml(chapterTwoBlocks.intro?.heading) || null;
 
   const introTitle =
-    chapterTwoBlocks.intro?.short_description?.trim() ||
+    stripHtml(chapterTwoBlocks.intro?.short_description) ||
     "So we built a doorway, and gave it a name.";
 
   const introDescription =
-    chapterTwoBlocks.intro?.description?.trim() ||
+    stripHtml(chapterTwoBlocks.intro?.description) ||
     "Two ideas, one identity. The independent spirit of India, bridged to the aspirations of every entrepreneur who dares to rise.";
 
   const partOneRole =
-    chapterTwoBlocks.partOne?.heading?.trim() ||
+    stripHtml(chapterTwoBlocks.partOne?.heading) ||
     "Part One";
 
   const partOneWord =
-    chapterTwoBlocks.partOne?.short_description?.trim() ||
+    stripHtml(chapterTwoBlocks.partOne?.short_description) ||
     "Indie";
 
   const partOneDescription =
-    chapterTwoBlocks.partOne?.description?.trim() ||
+    stripHtml(chapterTwoBlocks.partOne?.description) ||
     "The independent spirit of India. Its culture, its people, and an ambition that has never asked permission to exist.";
 
   const partTwoRole =
-    chapterTwoBlocks.partTwo?.heading?.trim() ||
+    stripHtml(chapterTwoBlocks.partTwo?.heading) ||
     "Part Two";
 
   const partTwoWord =
-    chapterTwoBlocks.partTwo?.short_description?.trim() ||
+    stripHtml(chapterTwoBlocks.partTwo?.short_description) ||
     "Konnect";
 
   const partTwoDescription =
-    chapterTwoBlocks.partTwo?.description?.trim() ||
+    stripHtml(chapterTwoBlocks.partTwo?.description) ||
     "The bridge of opportunity. Our mission to close the distance between world-class products and the aspiring Indian entrepreneur.";
 
   const identityTitle =
-    chapterTwoBlocks.identity?.heading?.trim() ||
+    stripHtml(chapterTwoBlocks.identity?.heading) ||
     "INDIEKONNECT";
 
   const identityDescription =
-    chapterTwoBlocks.identity?.description?.trim() ||
+    stripHtml(chapterTwoBlocks.identity?.description) ||
     "The brand is the identity. An institution built not around individuals, but a collective vision of excellence.";
 
   /* =========================================================
-     LOCKUP
+     LOCKUP (safe, uppercased, single-line)
   ========================================================= */
 
   const lockup = useMemo(() => {
-    return identityTitle.split("");
+    // Keep letters only so per-char animation is stable
+    return identityTitle
+      .replace(/\s+/g, "")
+      .split("");
   }, [identityTitle]);
 
   /* =========================================================
@@ -150,52 +167,15 @@ export function TheName() {
     offset: ["start 0.78", "start 0.28"],
   });
 
-  const p = useSpring(
-    scrollYProgress,
-    scrub.s09
-  );
+  const p = useSpring(scrollYProgress, scrub.s09);
 
-  const leftRotate = useTransform(
-    p,
-    [0, 1],
-    [-72, 0]
-  );
-
-  const leftX = useTransform(
-    p,
-    [0, 1],
-    ["-14%", "0%"]
-  );
-
-  const rightRotate = useTransform(
-    p,
-    [0, 1],
-    [72, 0]
-  );
-
-  const rightX = useTransform(
-    p,
-    [0, 1],
-    ["14%", "0%"]
-  );
-
-  const cardOpacity = useTransform(
-    p,
-    [0, 1],
-    [0, 1]
-  );
-
-  const joinScale = useTransform(
-    p,
-    [0.25, 1],
-    [0, 1]
-  );
-
-  const joinRotate = useTransform(
-    p,
-    [0.25, 1],
-    [-140, 0]
-  );
+  const leftRotate = useTransform(p, [0, 1], [-72, 0]);
+  const leftX = useTransform(p, [0, 1], ["-14%", "0%"]);
+  const rightRotate = useTransform(p, [0, 1], [72, 0]);
+  const rightX = useTransform(p, [0, 1], ["14%", "0%"]);
+  const cardOpacity = useTransform(p, [0, 1], [0, 1]);
+  const joinScale = useTransform(p, [0.25, 1], [0, 1]);
+  const joinRotate = useTransform(p, [0.25, 1], [-140, 0]);
 
   return (
     <Section
@@ -210,39 +190,23 @@ export function TheName() {
         ====================================================== */}
 
         <div className={styles.head}>
-          <Reveal as="p">
-            <Eyebrow>
-              {chapterHeading}
-            </Eyebrow>
-          </Reveal>
+          {chapterHeading && (
+            <Reveal as="p">
+              <Eyebrow>{chapterHeading}</Eyebrow>
+            </Reveal>
+          )}
 
-          <Reveal
-            as="div"
-            delay={0.08}
-          >
+          <Reveal as="div" delay={chapterHeading ? 0.08 : 0}>
             <Display
               size="lg"
-              style={{
-                marginTop: 20,
-              }}
+              style={{ marginTop: chapterHeading ? 20 : 0 }}
             >
-              So we built a{" "}
-              <Accent>
-                doorway
-              </Accent>
-              , and gave it a name.
+              {introTitle}
             </Display>
           </Reveal>
 
-          <Reveal
-            as="div"
-            delay={0.16}
-          >
-            <Lede
-              style={{
-                marginTop: 20,
-              }}
-            >
+          <Reveal as="div" delay={chapterHeading ? 0.16 : 0.08}>
+            <Lede style={{ marginTop: 20 }}>
               {introDescription}
             </Lede>
           </Reveal>
@@ -252,13 +216,8 @@ export function TheName() {
             CONTENT GRID
         ====================================================== */}
 
-        <div
-          className={styles.grid}
-          ref={gridRef}
-        >
-          {/* ===================================================
-              PART ONE
-          ==================================================== */}
+        <div className={styles.grid} ref={gridRef}>
+          {/* ---------- PART ONE ---------- */}
 
           <motion.article
             className={styles.card}
@@ -266,38 +225,28 @@ export function TheName() {
               reduced
                 ? undefined
                 : {
-                  rotateY: leftRotate,
-                  x: leftX,
-                  opacity: cardOpacity,
-                  transformOrigin:
-                    "right center",
-                }
+                    rotateY: leftRotate,
+                    x: leftX,
+                    opacity: cardOpacity,
+                    transformOrigin: "right center",
+                  }
             }
           >
             <div>
-              <p className={styles.role}>
-                {partOneRole}
-              </p>
+              <p className={styles.role}>{partOneRole}</p>
 
               <p
                 className={styles.word}
-                style={{
-                  fontWeight: 700,
-                  fontSize: "25px"
-                }}
+                style={{ fontWeight: 700, fontSize: "25px" }}
               >
                 {partOneWord}
               </p>
             </div>
 
-            <p>
-              {partOneDescription}
-            </p>
+            <p>{partOneDescription}</p>
           </motion.article>
 
-          {/* ===================================================
-              JOIN ICON
-          ==================================================== */}
+          {/* ---------- JOIN ICON ---------- */}
 
           <motion.div
             className={styles.join}
@@ -306,60 +255,46 @@ export function TheName() {
               reduced
                 ? undefined
                 : {
-                  scale: joinScale,
-                  rotate: joinRotate,
-                }
+                    scale: joinScale,
+                    rotate: joinRotate,
+                  }
             }
           >
             &#10022;
           </motion.div>
 
-          {/* ===================================================
-              PART TWO
-          ==================================================== */}
+          {/* ---------- PART TWO ---------- */}
 
           <motion.article
-            className={cx(
-              styles.card,
-              styles.alt
-            )}
+            className={cx(styles.card, styles.alt)}
             style={
               reduced
                 ? undefined
                 : {
-                  rotateY: rightRotate,
-                  x: rightX,
-                  opacity: cardOpacity,
-                  transformOrigin:
-                    "left center",
-                }
+                    rotateY: rightRotate,
+                    x: rightX,
+                    opacity: cardOpacity,
+                    transformOrigin: "left center",
+                  }
             }
           >
             <div>
               <p
                 className={styles.role}
-                style={{
-                  fontWeight: 700,
-
-                }}
+                style={{ fontWeight: 700 }}
               >
                 {partTwoRole}
               </p>
 
               <p
                 className={styles.word}
-                style={{
-                  fontWeight: 700,
-                  fontSize: "25px"
-                }}
+                style={{ fontWeight: 700, fontSize: "25px" }}
               >
                 {partTwoWord}
               </p>
             </div>
 
-            <p>
-              {partTwoDescription}
-            </p>
+            <p>{partTwoDescription}</p>
           </motion.article>
         </div>
 
@@ -377,25 +312,24 @@ export function TheName() {
               key={`${char}-${i}`}
               className={cx(
                 styles.lk,
-                i === 5 &&
-                styles.lkGold
+                i === 5 && styles.lkGold
               )}
               initial={
                 reduced
                   ? undefined
                   : {
-                    y: "100%",
-                    opacity: 0,
-                    rotateX: -80,
-                  }
+                      y: "100%",
+                      opacity: 0,
+                      rotateX: -80,
+                    }
               }
               animate={
                 lockupSeen || reduced
                   ? {
-                    y: "0%",
-                    opacity: 1,
-                    rotateX: 0,
-                  }
+                      y: "0%",
+                      opacity: 1,
+                      rotateX: 0,
+                    }
                   : undefined
               }
               transition={{
@@ -404,7 +338,7 @@ export function TheName() {
                 delay: i * 0.045,
               }}
             >
-              {char}
+              {char === " " ? "\u00A0" : char}
             </motion.span>
           ))}
         </p>
@@ -413,10 +347,7 @@ export function TheName() {
             FINAL DESCRIPTION
         ====================================================== */}
 
-        <Reveal
-          as="p"
-          className={styles.quote}
-        >
+        <Reveal as="p" className={styles.quote}>
           {identityDescription}
         </Reveal>
 
@@ -425,11 +356,7 @@ export function TheName() {
         ====================================================== */}
 
         {isLoading && (
-          <span
-            style={{
-              display: "none",
-            }}
-          >
+          <span style={{ display: "none" }}>
             Loading...
           </span>
         )}

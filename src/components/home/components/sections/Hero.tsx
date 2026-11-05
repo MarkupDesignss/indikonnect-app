@@ -36,6 +36,21 @@ const T = {
   cue: 1.2,
 };
 
+/** Strip HTML tags + decode common entities, collapse whitespace */
+function stripHtml(html: string): string {
+  if (!html) return "";
+  return html
+    .replace(/<[^>]*>/g, "")   // remove all tags
+    .replace(/&nbsp;/g, " ")   // decode &nbsp;
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, " ")      // collapse whitespace
+    .trim();
+}
+
 export function Hero({ start }: { start: boolean }) {
   const reduced = useReducedMotion();
   const ref = useRef<HTMLElement>(null);
@@ -50,16 +65,27 @@ export function Hero({ start }: { start: boolean }) {
     (block: any) => block?.sort_order === 0
   );
 
+  // ----- Dynamic heading -----
   const heroHeading =
     heroBlock?.heading?.trim() || "Art of Opportunity";
 
+  // ----- Dynamic description (HTML stripped) -----
   const heroDescription =
-    heroBlock?.description?.trim() ||
+    stripHtml(heroBlock?.description?.trim() || "") ||
     "A modern Indian movement built on Connection, Opportunity, Growth and Trust, where the spirit of 1.4 billion meets the power of entrepreneurship.";
 
-  const headingWords = heroHeading
-    .split(/\s+/)
-    .filter(Boolean);
+  // ----- Dynamic background image -----
+  const primaryImage =
+    heroBlock?.images?.find((img: any) => img.is_primary) ??
+    heroBlock?.images?.[0];
+
+  const heroImage =
+    primaryImage?.url || U("1477587458883-47145ed94245", 2000);
+
+  const heroImageAlt = primaryImage?.alt_text || "";
+
+  // ----- Heading split into lines (last word italic) -----
+  const headingWords = heroHeading.split(/\s+/).filter(Boolean);
 
   const headingLines =
     headingWords.length > 1
@@ -80,6 +106,7 @@ export function Hero({ start }: { start: boolean }) {
           },
         ];
 
+  // ----- Scroll-driven parallax -----
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ["start start", "end start"],
@@ -87,35 +114,11 @@ export function Hero({ start }: { start: boolean }) {
 
   const p = useSpring(scrollYProgress, scrub.s06);
 
-  const bgY = useTransform(
-    p,
-    [0, 1],
-    ["0%", "22%"]
-  );
-
-  const bgScale = useTransform(
-    p,
-    [0, 1],
-    [1, 1.12]
-  );
-
-  const inY = useTransform(
-    p,
-    [0, 1],
-    ["0%", "-28%"]
-  );
-
-  const inOpacity = useTransform(
-    p,
-    [0, 1],
-    [1, 0.25]
-  );
-
-  const cueOpacity = useTransform(
-    p,
-    [0, 0.6],
-    [1, 0]
-  );
+  const bgY = useTransform(p, [0, 1], ["0%", "22%"]);
+  const bgScale = useTransform(p, [0, 1], [1, 1.12]);
+  const inY = useTransform(p, [0, 1], ["0%", "-28%"]);
+  const inOpacity = useTransform(p, [0, 1], [1, 0.25]);
+  const cueOpacity = useTransform(p, [0, 0.6], [1, 0]);
 
   const go = reduced ? true : start;
 
@@ -137,8 +140,8 @@ export function Hero({ start }: { start: boolean }) {
         }}
       >
         <Image
-          src={U("1477587458883-47145ed94245", 2000)}
-          alt=""
+          src={heroImage}
+          alt={heroImageAlt}
           fill
           priority
           sizes="112vw"
@@ -171,8 +174,7 @@ export function Hero({ start }: { start: boolean }) {
                 {line.text.split("").map((char, i) => {
                   charIndex += 1;
 
-                  const delay =
-                    T.chars + charIndex * 0.022;
+                  const delay = T.chars + charIndex * 0.022;
 
                   return (
                     <motion.span
@@ -206,9 +208,7 @@ export function Hero({ start }: { start: boolean }) {
                         delay,
                       }}
                     >
-                      {char === " "
-                        ? "\u00A0"
-                        : char}
+                      {char === " " ? "\u00A0" : char}
                     </motion.span>
                   );
                 })}
@@ -236,12 +236,10 @@ export function Hero({ start }: { start: boolean }) {
               delay: T.lede,
             }}
           >
-            <Lede className={styles.lede}>
-              {heroDescription}
-            </Lede>
+            <Lede className={styles.lede}>{heroDescription}</Lede>
           </motion.div>
 
-          {/* Shop Button */}
+          {/* CTA Button */}
           <motion.div
             className={styles.actions}
             initial={{
@@ -262,15 +260,9 @@ export function Hero({ start }: { start: boolean }) {
               delay: T.actions,
             }}
           >
-            <Link
-              href="/products/"
-              className="inline-flex"
-            >
-              <Button
-                className="cursor-pointer"
-                variant="gold"
-              >
-                Shop the Collections
+            <Link href="/products/" className="inline-flex">
+              <Button className="cursor-pointer" variant="gold">
+                Start Your Journey
                 <ArrowIcon />
               </Button>
             </Link>

@@ -108,12 +108,10 @@ export function Nation() {
      DYNAMIC CONTENT  (FIXED)
   ========================================================= */
 
-  // Heading: only use API value if it has real text
+  // Heading: only use API value if it has real text — NO fallback
   const chapterHeading = useMemo(() => {
     const apiHeading = chapterOneBlock?.heading;
-    return hasMeaningfulContent(apiHeading)
-      ? stripHtml(apiHeading)
-      : "Chapter One · The Nation";
+    return hasMeaningfulContent(apiHeading) ? stripHtml(apiHeading) : "";
   }, [chapterOneBlock]);
 
   // Description: strip HTML; fall back if nothing meaningful
@@ -220,9 +218,11 @@ export function Nation() {
 
         {/* CENTER CONTENT */}
         <div className={styles.core}>
-          <Eyebrow center style={{ marginBottom: 22 }}>
-            {chapterHeading}
-          </Eyebrow>
+          {chapterHeading && (
+            <Eyebrow center style={{ marginBottom: 22 }}>
+              {chapterHeading}
+            </Eyebrow>
+          )}
 
           <motion.p
             className={styles.count}

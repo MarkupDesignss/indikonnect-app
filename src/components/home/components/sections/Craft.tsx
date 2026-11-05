@@ -19,6 +19,8 @@ import {
   Section,
 } from "../../design-system";
 
+import DOMPurify from "dompurify";
+
 import { scrub } from "../../design-system/motion";
 import styles from "./Craft.module.css";
 
@@ -30,7 +32,7 @@ import { useGetLandingPageQuery } from "@/lib/redux/api/Landing/landingPageApi";
 
 /**
  * HTML tags + entities strip karke plain text nikalta hai.
- * short_description / heading ke liye use karo.
+ * heading / short_description ke liye.
  */
 function stripHtml(input?: string | null): string {
   if (!input) return "";
@@ -46,16 +48,41 @@ function stripHtml(input?: string | null): string {
     .trim();
 }
 
+/** HTML entity decoder (SSR fallback ke liye) */
+function decodeHtml(text: string): string {
+  if (!text) return "";
+  if (typeof window !== "undefined" && typeof document !== "undefined") {
+    const txt = document.createElement("textarea");
+    txt.innerHTML = text;
+    return txt.value;
+  }
+  return text
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+}
+
 /**
- * Description HTML ko clean karta hai:
- * - &nbsp; ko normal space mein badalta hai
- * - extra spaces collapse karta hai
- * - content ko <p> tags ke andar preserve karta hai
+ * Description HTML sanitize (XSS-safe) + &nbsp; → " "
  */
-function cleanHtml(input?: string | null): string {
-  if (!input) return "";
-  return input
-    .replace(/&nbsp;/gi, " ")
+function sanitizeHtml(html?: string | null): string {
+  if (!html) return "";
+
+  // SSR fallback → tags strip
+  if (typeof window === "undefined") {
+    return decodeHtml(html.replace(/<[^>]*>/g, "")).trim();
+  }
+
+  const cleaned = DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: ["p", "br", "strong", "b", "em", "i", "a", "ul", "ol", "li"],
+    ALLOWED_ATTR: ["href", "target", "rel"],
+  });
+
+  return cleaned
+    .replace(/&nbsp;/g, " ")
     .replace(/\u00A0/g, " ")
     .replace(/\s{2,}/g, " ")
     .trim();
@@ -68,44 +95,40 @@ export function Craft() {
   const { data: landingData } = useGetLandingPageQuery();
 
   /* =========================================================
-     DATA EXTRACTION — Chapter Five
-  ========================================================== */
+     DATA — Chapter Four
+  ========================================================= */
 
-  const chapterFivePage = landingData?.data?.find(
-    (item: any) => item?.slug === "chapter-five"
+  const chapterFourPage = landingData?.data?.find(
+    (item: any) => item?.slug === "chapter-four"
   );
 
-  const chapterFiveBlock = chapterFivePage?.blocks?.find(
+  const chapterFourBlock = chapterFourPage?.blocks?.find(
     (block: any) => block?.sort_order === 0
   );
 
-  /* Heading — plain text */
+  /* Plain text fields — HTML strip */
+
+  // Heading na ho to null — fallback mat do (taaki eyebrow hide ho jaye)
   const chapterHeading =
-    stripHtml(chapterFiveBlock?.heading) ||
-    "Chapter Five · The Foundations";
+    stripHtml(chapterFourBlock?.heading) || null;
 
-  /* Short description — plain text (last word Accent hoga) */
   const chapterShortDescription =
-    stripHtml(chapterFiveBlock?.short_description) ||
-    "Values you can trust";
+    stripHtml(chapterFourBlock?.short_description) ||
+    "Made to be kept";
 
-  /* Description — HTML allowed (paragraphs render honge) */
-  const chapterDescriptionHtml = cleanHtml(
-    chapterFiveBlock?.description
-  );
-
-  const chapterDescriptionFallback =
-    "The IndieKonnect ecosystem runs on a people-first philosophy. Our house colours are not decoration, they are a commitment.";
-
-  const finalDescriptionHtml =
-    chapterDescriptionHtml || chapterDescriptionFallback;
+  /* Rich HTML field — sanitized */
+  const chapterDescriptionHtml =
+    sanitizeHtml(chapterFourBlock?.description) ||
+    sanitizeHtml(
+      "<p>Watches drawn from heritage horology. Jewellery that reflects individuality. Skincare built on performance, not promises. Dining pieces that bring elegance to the modern Indian home. Four categories, one standard.</p>"
+    );
 
   /* =========================================================
      DYNAMIC IMAGE
-  ========================================================== */
+  ========================================================= */
 
   const chapterImage = useMemo(() => {
-    const images = chapterFiveBlock?.images || [];
+    const images = chapterFourBlock?.images || [];
 
     const primaryImage = images.find(
       (image: any) => image?.is_primary === true && image?.url
@@ -114,18 +137,18 @@ export function Craft() {
     return (
       primaryImage?.url ||
       images.find((image: any) => image?.url)?.url ||
-      "/indiekonnect-web/images/chapter-bg-5.jpg"
+      "/indiekonnect-web/images/chapter-bg-4.jpg"
     );
-  }, [chapterFiveBlock]);
+  }, [chapterFourBlock]);
 
   const chapterImageAlt =
-    chapterFiveBlock?.images?.find(
+    chapterFourBlock?.images?.find(
       (image: any) => image?.is_primary === true
-    )?.alt_text || chapterHeading;
+    )?.alt_text || chapterHeading || "Our standard of craft";
 
   /* =========================================================
      SCROLL ANIMATION
-  ========================================================== */
+  ========================================================= */
 
   const { scrollYProgress } = useScroll({
     target: ref,
@@ -134,7 +157,15 @@ export function Craft() {
 
   const p = useSpring(scrollYProgress, scrub.s08);
 
-  const scale = useTransform(p, [0, 1], [1, 9.5], { ease: easeIn });
+  /*
+   * power1.in on the zoom,
+   * so the frame accelerates
+   * into full bleed.
+   */
+  const scale = useTransform(p, [0, 1], [1, 9.5], {
+    ease: easeIn,
+  });
+
   const radius = useTransform(p, [0, 1], [6, 0]);
   const imgScale = useTransform(p, [0, 1], [1.25, 1]);
   const scrimOpacity = useTransform(p, [0.5, 0.85], [0, 1]);
@@ -144,7 +175,7 @@ export function Craft() {
 
   /* =========================================================
      RENDER
-  ========================================================== */
+  ========================================================= */
 
   return (
     <Section
@@ -166,7 +197,10 @@ export function Craft() {
             : undefined
         }
       >
-        {/* ===== IMAGE FRAME ===== */}
+        {/* =====================================================
+            IMAGE FRAME
+        ====================================================== */}
+
         <motion.figure
           className={styles.frame}
           style={
@@ -188,30 +222,46 @@ export function Craft() {
           </motion.div>
         </motion.figure>
 
-        {/* ===== SCRIM ===== */}
+        {/* =====================================================
+            SCRIM
+        ====================================================== */}
+
         <motion.div
           className={styles.scrim}
           style={{ opacity: reduced ? 1 : scrimOpacity }}
         />
 
-        {/* ===== DYNAMIC CONTENT ===== */}
+        {/* =====================================================
+            DYNAMIC CONTENT
+        ====================================================== */}
+
         <motion.div
           className={styles.copy}
           style={
             reduced
               ? { opacity: 1 }
-              : { opacity: copyOpacity, y: copyY, scale: copyScale }
+              : {
+                  opacity: copyOpacity,
+                  y: copyY,
+                  scale: copyScale,
+                }
           }
         >
-          {/* Heading — plain text */}
-          <Eyebrow center>{chapterHeading}</Eyebrow>
+          {/* Dynamic Chapter Heading — sirf tab jab heading ho */}
+          {chapterHeading && (
+            <Eyebrow center>{chapterHeading}</Eyebrow>
+          )}
 
-          {/* Short description — last word Accent */}
-          <Display size="xl" style={{ marginTop: 20 }}>
+          {/* Dynamic Short Description — last word Accent */}
+          <Display
+            size="xl"
+            style={{ marginTop: chapterHeading ? 20 : 0 }}
+          >
             {chapterShortDescription
               .split(/\s+/)
               .map((word: string, index: number, words: string[]) => {
                 const isLast = index === words.length - 1;
+
                 return (
                   <span key={`${word}-${index}`}>
                     {isLast ? <Accent>{word}</Accent> : word}
@@ -221,10 +271,10 @@ export function Craft() {
               })}
           </Display>
 
-          {/* ✅ Description — HTML render via dangerouslySetInnerHTML */}
+          {/* ✅ Dynamic Description — HTML render (sanitized) */}
           <div
             className={styles.description}
-            dangerouslySetInnerHTML={{ __html: finalDescriptionHtml }}
+            dangerouslySetInnerHTML={{ __html: chapterDescriptionHtml }}
           />
         </motion.div>
       </div>
