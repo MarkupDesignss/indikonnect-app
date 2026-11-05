@@ -126,9 +126,9 @@ export function Voices() {
     (block: any) => block?.sort_order === 0,
   );
 
+  // Heading na ho to null — fallback mat do (taaki eyebrow hide ho jaye)
   const chapterHeading =
-    stripAndDecode(chapterSevenBlock?.heading || "") ||
-    "Chapter Seven · The People";
+    stripAndDecode(chapterSevenBlock?.heading || "") || null;
 
   const chapterShortDescription =
     stripAndDecode(chapterSevenBlock?.short_description || "") ||
@@ -153,9 +153,9 @@ export function Voices() {
     };
   }, [futureReadyPage]);
 
+  // Heading na ho to null
   const futureReadyHeading =
-    stripAndDecode(futureReadyBlocks.main?.heading || "") ||
-    "Future-Ready & Compliant";
+    stripAndDecode(futureReadyBlocks.main?.heading || "") || null;
 
   const futureReadyShortDescription =
     stripAndDecode(futureReadyBlocks.main?.short_description || "") ||
@@ -377,15 +377,17 @@ export function Voices() {
     >
       {/* CHAPTER SEVEN HEADER */}
       <div className={styles.head}>
-        <Reveal as="p">
-          <Eyebrow center>{chapterHeading}</Eyebrow>
-        </Reveal>
+        {chapterHeading && (
+          <Reveal as="p">
+            <Eyebrow center>{chapterHeading}</Eyebrow>
+          </Reveal>
+        )}
 
-        <Reveal as="div" delay={0.08}>
+        <Reveal as="div" delay={chapterHeading ? 0.08 : 0}>
           <Display
             size="lg"
             style={{
-              marginTop: 20,
+              marginTop: chapterHeading ? 20 : 0,
               lineHeight: 1.15,
             }}
           >
@@ -481,15 +483,20 @@ export function Voices() {
 
       {/* FUTURE READY / COMPLIANT */}
       <Wrap className={styles.closing}>
-        <Reveal as="p">
-          <Eyebrow center>{futureReadyHeading}</Eyebrow>
-        </Reveal>
+        {futureReadyHeading && (
+          <Reveal as="p">
+            <Eyebrow center>{futureReadyHeading}</Eyebrow>
+          </Reveal>
+        )}
 
-        <Reveal as="div" delay={0.08}>
+        <Reveal as="div" delay={futureReadyHeading ? 0.08 : 0}>
           <Display
             as="h3"
             size="md"
-            style={{ marginTop: 16, lineHeight: 1.2 }}
+            style={{
+              marginTop: futureReadyHeading ? 16 : 0,
+              lineHeight: 1.2,
+            }}
           >
             {renderFutureReadyHeading()}
           </Display>

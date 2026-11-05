@@ -140,9 +140,9 @@ export function Finale() {
      DYNAMIC CONTENT
   ========================================================== */
 
+  // Heading na ho to null — fallback mat do (taaki eyebrow hide ho jaye)
   const chapterHeading =
-    stripAndDecode(chapterEightBlock?.heading || "") ||
-    "Chapter Eight · The Invitation";
+    stripAndDecode(chapterEightBlock?.heading || "") || null;
 
   const chapterShortDescription =
     stripAndDecode(chapterEightBlock?.short_description || "") ||
@@ -175,7 +175,7 @@ export function Finale() {
   const imageAlt =
     chapterEightBlock?.images?.find(
       (image: any) => image?.is_primary === true
-    )?.alt_text || "Chapter Eight";
+    )?.alt_text || chapterHeading || "Chapter Eight";
 
   /* =========================================================
      HEADING
@@ -298,17 +298,19 @@ export function Finale() {
                 }
           }
         >
-          {/* Dynamic Chapter Heading */}
-          <Reveal as="p">
-            <Eyebrow center>{chapterHeading}</Eyebrow>
-          </Reveal>
+          {/* Dynamic Chapter Heading — sirf tab jab heading ho */}
+          {chapterHeading && (
+            <Reveal as="p">
+              <Eyebrow center>{chapterHeading}</Eyebrow>
+            </Reveal>
+          )}
 
           {/* Dynamic Short Description */}
-          <Reveal as="div" delay={0.08}>
+          <Reveal as="div" delay={chapterHeading ? 0.08 : 0}>
             <Display
               size="xl"
               style={{
-                marginTop: 22,
+                marginTop: chapterHeading ? 22 : 0,
                 lineHeight: 1.15,
               }}
             >
@@ -317,7 +319,7 @@ export function Finale() {
           </Reveal>
 
           {/* Dynamic Description — HTML sanitized */}
-          <Reveal as="div" delay={0.16}>
+          <Reveal as="div" delay={chapterHeading ? 0.16 : 0.08}>
             <Lede as="div" className={styles.lede}>
               <div
                 dangerouslySetInnerHTML={{ __html: chapterDescriptionHtml }}
@@ -326,7 +328,7 @@ export function Finale() {
           </Reveal>
 
           {/* Actions */}
-          <Reveal as="div" delay={0.24} className={styles.actions}>
+          <Reveal as="div" delay={chapterHeading ? 0.24 : 0.16} className={styles.actions}>
             <Link href="/auth/distributor/login">
               <Button variant="gold">
                 Join Indie Konnect

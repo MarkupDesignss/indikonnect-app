@@ -227,9 +227,9 @@ export function Ladder() {
 
         <div className={styles.sticky}>
           {/* Dynamic Chapter Heading */}
-          <Eyebrow>
+          {/* <Eyebrow>
             {chapterHeading}
-          </Eyebrow>
+          </Eyebrow> */}
 
           {/* Dynamic Main Heading */}
           <Display
