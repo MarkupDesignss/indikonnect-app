@@ -292,7 +292,7 @@ export function Values() {
 
               {/* Dynamic Description — plain text, no nested <p> */}
               <p>
-                {value.colour ? <strong>{value.colour}</strong> : null}
+             
                 {value.colour && value.body ? " " : null}
                 {value.body}
               </p>
