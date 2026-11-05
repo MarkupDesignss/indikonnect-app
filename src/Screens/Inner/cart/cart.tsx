@@ -31,6 +31,7 @@ import {
   Tag,
   X,
   AlertTriangle,
+  Trash2,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 
@@ -60,6 +61,7 @@ import {
   useGetAddressesQuery,
   useCreateAddressMutation,
   useUpdateAddressMutation,
+  useDeleteAddressMutation, // Added Delete Mutation
   useSetDefaultAddressMutation,
 } from "@/lib/redux/api/addressApi";
 
@@ -419,6 +421,8 @@ function AddressSelectorModal({
   onSelect,
   onEdit,
   onAddNew,
+  onDelete,
+  deletingId,
   onClose,
 }: {
   isOpen: boolean;
@@ -427,6 +431,8 @@ function AddressSelectorModal({
   onSelect: (address: Address) => void;
   onEdit: (address: Address) => void;
   onAddNew: () => void;
+  onDelete: (address: Address) => void;
+  deletingId: number | null;
   onClose: () => void;
 }) {
   if (!isOpen) return null;
@@ -457,12 +463,17 @@ function AddressSelectorModal({
         <div className="flex-1 space-y-3 overflow-y-auto p-5">
           {addresses.map((address) => {
             const isSelected = selectedId === address.id;
+            const isDeleting = deletingId === address.id;
 
             return (
               <div
                 key={address.id}
-                onClick={() => onSelect(address)}
-                className={`relative cursor-pointer rounded-xl border p-4 transition-all duration-200 ${
+                onClick={() => !isDeleting && onSelect(address)}
+                className={`relative rounded-xl border p-4 transition-all duration-200 ${
+                  isDeleting
+                    ? "pointer-events-none opacity-50"
+                    : "cursor-pointer"
+                } ${
                   isSelected
                     ? "border-[#16845B] bg-[#F5FBF6] shadow-sm ring-1 ring-[#16845B]"
                     : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
@@ -511,17 +522,37 @@ function AddressSelectorModal({
                     </p>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onEdit(address);
-                    }}
-                    className="rounded-lg p-2 text-gray-400 transition hover:bg-green-50 hover:text-[#16845B]"
-                    title="Edit Address"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </button>
+                  <div className="flex shrink-0 items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onEdit(address);
+                      }}
+                      disabled={isDeleting}
+                      className="rounded-lg p-2 text-gray-400 transition hover:bg-green-50 hover:text-[#16845B] disabled:cursor-not-allowed disabled:opacity-40"
+                      title="Edit Address"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onDelete(address);
+                      }}
+                      disabled={isDeleting}
+                      className="rounded-lg p-2 text-gray-400 transition hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
+                      title="Delete Address"
+                    >
+                      {isDeleting ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
             );
@@ -544,6 +575,68 @@ function AddressSelectorModal({
             className="rounded-lg bg-gray-900 px-5 py-2 text-[12px] font-medium text-white transition hover:bg-gray-800"
           >
             Done
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Delete Confirm Modal (NEW)
+// ─────────────────────────────────────────────────────────────────────────────
+
+function DeleteConfirmModal({
+  isOpen,
+  isDeleting,
+  onConfirm,
+  onCancel,
+}: {
+  isOpen: boolean;
+  isDeleting: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
+        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+          <Trash2 className="h-6 w-6 text-red-600" />
+        </div>
+
+        <h3 className="text-lg font-semibold text-gray-900">
+          Delete Address
+        </h3>
+        <p className="mt-2 text-sm text-gray-500">
+          Are you sure you want to delete this address? This action cannot be
+          undone.
+        </p>
+
+        <div className="mt-6 flex gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={isDeleting}
+            className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={isDeleting}
+            className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isDeleting ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Deleting...
+              </>
+            ) : (
+              "Delete"
+            )}
           </button>
         </div>
       </div>
@@ -1523,6 +1616,11 @@ export default function CartPage() {
   const [isSelectorModalOpen, setIsSelectorModalOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
 
+  // Delete Address State
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [addressToDelete, setAddressToDelete] = useState<Address | null>(null);
+  const [deletingAddressId, setDeletingAddressId] = useState<number | null>(null);
+
   // ── Cart query ────────────────────────────────────────────────────────────
 
   const {
@@ -1562,6 +1660,9 @@ export default function CartPage() {
 
   const [updateAddress, { isLoading: isUpdatingAddress }] =
     useUpdateAddressMutation();
+
+  const [deleteAddress, { isLoading: isDeleting }] =
+    useDeleteAddressMutation();
 
   const [setDefaultAddress] = useSetDefaultAddressMutation();
 
@@ -1978,6 +2079,54 @@ export default function CartPage() {
     }
   };
 
+  const openDeleteConfirm = (address: Address) => {
+    setAddressToDelete(address);
+    setIsDeleteConfirmOpen(true);
+  };
+
+  const handleDeleteAddress = async () => {
+    if (!addressToDelete?.id || deletingAddressId !== null) return;
+
+    try {
+      setDeletingAddressId(addressToDelete.id);
+
+      // FIX: API call changed to pass { id, data } structure
+      const result = await deleteAddress({ 
+        id: addressToDelete.id, 
+        data: {} as any 
+      }).unwrap();
+
+      if ((result as any)?.status === false) {
+        throw new Error(
+          (result as any)?.message || "Failed to delete address"
+        );
+      }
+
+      toast.success("Address deleted successfully!", {
+        position: "bottom-center",
+      });
+
+      if (selectedDeliveryAddress?.id === addressToDelete.id) {
+        setSelectedDeliveryAddress(null);
+      }
+
+      await refetchAddresses();
+
+      setIsDeleteConfirmOpen(false);
+      setAddressToDelete(null);
+
+      setTimeout(() => {
+        void refetchCheckoutSummary();
+      }, 100);
+    } catch (error: any) {
+      toast.error(getErrorMessage(error, "Failed to delete address"), {
+        position: "bottom-center",
+      });
+    } finally {
+      setDeletingAddressId(null);
+    }
+  };
+
   const handleSetDefaultAddress = async (id: number) => {
     if (!id) return;
 
@@ -2376,13 +2525,15 @@ export default function CartPage() {
                 </p>
               </div>
 
-              <button
-                type="button"
-                onClick={() => setIsSelectorModalOpen(true)}
-                className="inline-flex h-10 w-full shrink-0 items-center justify-center rounded-lg border border-[#16845B] bg-white px-4 text-[11px] font-semibold uppercase tracking-wide text-[#16845B] transition hover:bg-[#E6F4EA] sm:w-auto"
-              >
-                Change Address
-              </button>
+              <div className="flex w-full shrink-0 items-center gap-2 sm:w-auto">
+                <button
+                  type="button"
+                  onClick={() => setIsSelectorModalOpen(true)}
+                  className="inline-flex h-10 flex-1 items-center justify-center rounded-lg border border-[#16845B] bg-white px-4 text-[11px] font-semibold uppercase tracking-wide text-[#16845B] transition hover:bg-[#E6F4EA] sm:flex-none"
+                >
+                  Change Address
+                </button>
+              </div>
             </div>
 
             <div className="mb-4 flex items-center justify-between px-1">
@@ -2487,20 +2638,6 @@ export default function CartPage() {
                     ))}
                   </AnimatePresence>
                 </div>
-
-                <div className="mt-3 flex items-center justify-between gap-3 border-t border-[#EEEEEE] pt-4">
-                  <Link
-                    href="/products"
-                    className="flex items-center gap-1.5 text-[10px] font-medium text-[#555] transition hover:text-black"
-                  >
-                    <ArrowLeft className="h-3 w-3" />
-                    Continue Shopping
-                  </Link>
-
-                  <span className="text-right text-[9px] text-[#999]">
-                    Secure &amp; easy checkout
-                  </span>
-                </div>
               </section>
 
               {!isProductsLoading && recommended.length > 0 && (
@@ -2579,7 +2716,24 @@ export default function CartPage() {
           setEditingAddress(null);
           setIsAddressModalOpen(true);
         }}
+        onDelete={(address) => {
+          openDeleteConfirm(address);
+        }}
+        deletingId={deletingAddressId}
         onClose={() => setIsSelectorModalOpen(false)}
+      />
+
+      {/* Custom Delete Confirmation Modal */}
+      <DeleteConfirmModal
+        isOpen={isDeleteConfirmOpen}
+        isDeleting={isDeleting}
+        onConfirm={handleDeleteAddress}
+        onCancel={() => {
+          if (!isDeleting) {
+            setIsDeleteConfirmOpen(false);
+            setAddressToDelete(null);
+          }
+        }}
       />
     </div>
   );
