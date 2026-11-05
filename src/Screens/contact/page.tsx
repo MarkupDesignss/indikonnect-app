@@ -27,38 +27,87 @@ import Footer from "../../components/Footer/Footer";
 import ContactForm from "../../components/contact/ContactForm";
 
 import { useGetFAQsQuery } from "@/lib/redux/api/faqApi";
-import { useGetFooterQuery } from "@/lib/redux/api/Home/contentApi";
+import {
+  useGetContentsQuery,
+  useGetFooterQuery,
+} from "@/lib/redux/api/Home/contentApi";
 
-/**
- * IMPORTANT: Use your VERIFIED business contact details here.
- */
-const CONTACT = {
-  email: "support@indiekonnect.in",
-  phoneDisplay: "+91 80 4567 1234",
-  phoneHref: "+918045671234",
-  hours: "Monday – Saturday, 10:00 AM – 7:00 PM IST",
-  address:
-    "5 New Lajpat Nagar, Ludhiana, Bharat Nagar Chowk, Punjab 141001, India",
+/* =========================================================
+   CONTACT HELPERS – FILTER CONTENT USING SLUG
+========================================================= */
+
+type ContactBlock = {
+  heading: string;
+  short_description: string | null;
+  description: string | null;
 };
 
-// Google Maps
-const MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_EMBED_API_KEY;
+const CONTACT_US_SLUG = "contact-us";
 
-const MAP_EMBED_URL = MAPS_API_KEY
-  ? `https://www.google.com/maps/embed/v1/place?key=${encodeURIComponent(
-      MAPS_API_KEY,
-    )}&q=${encodeURIComponent(CONTACT.address)}`
-  : `https://maps.google.com/maps?q=${encodeURIComponent(
-      CONTACT.address,
-    )}&z=15&output=embed`;
+function getContactUsContent(contents: any) {
+  /*
+    API response can be in different formats:
 
-const MAP_SEARCH_URL = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-  CONTACT.address,
-)}`;
+    1. { data: [ { slug: "contact-us", blocks: [] } ] }
 
-const MAP_DIRECTIONS_URL = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
-  CONTACT.address,
-)}`;
+    2. { data: { slug: "contact-us", blocks: [] } }
+
+    3. { slug: "contact-us", blocks: [] }
+
+    4. [ { slug: "contact-us", blocks: [] } ]
+
+    5. { data: { data: [ { slug: "contact-us", blocks: [] } ] } }
+  */
+
+  const contentCandidates = [
+    contents?.data?.data,
+    contents?.data,
+    contents?.contents?.data,
+    contents?.contents,
+    contents,
+  ];
+
+  for (const candidate of contentCandidates) {
+    const contentList = Array.isArray(candidate)
+      ? candidate
+      : candidate && typeof candidate === "object"
+        ? [candidate]
+        : [];
+
+    const matchedContent = contentList.find(
+      (item: any) =>
+        String(item?.slug || "")
+          .trim()
+          .toLowerCase() === CONTACT_US_SLUG,
+    );
+
+    if (matchedContent) {
+      return matchedContent;
+    }
+  }
+
+  return undefined;
+}
+
+function getBlockByHeading(
+  contactContent: any,
+  heading: string,
+): ContactBlock | undefined {
+  if (!contactContent || !Array.isArray(contactContent.blocks)) {
+    return undefined;
+  }
+
+  return contactContent.blocks.find(
+    (block: any) =>
+      String(block?.heading || "")
+        .trim()
+        .toLowerCase() === heading.toLowerCase().trim(),
+  );
+}
+
+/* =========================================================
+   FAQ TYPES
+========================================================= */
 
 type FAQItem = {
   id: number;
@@ -93,7 +142,6 @@ const visible = {
 
 /* =========================================================
    FAQ HTML SANITIZER
-   Removes empty HTML tags and unnecessary spacing.
 ========================================================= */
 
 const ALLOWED_TAGS = new Set([
@@ -168,7 +216,6 @@ const EMPTY_REMOVABLE_TAGS = new Set([
   "a",
 ]);
 
-// Check whitespace, non-breaking spaces and invisible characters.
 function isEmptyText(value: string): boolean {
   return (
     value.replace(
@@ -178,15 +225,12 @@ function isEmptyText(value: string): boolean {
   );
 }
 
-// Check whether an element has actual visible content.
 function hasMeaningfulContent(element: Element): boolean {
   return Array.from(element.childNodes).some((node) => {
-    // Text content
     if (node.nodeType === 3) {
       return !isEmptyText(node.textContent || "");
     }
 
-    // Ignore comments and other non-element nodes.
     if (node.nodeType !== 1) {
       return false;
     }
@@ -194,15 +238,11 @@ function hasMeaningfulContent(element: Element): boolean {
     const child = node as Element;
     const tag = child.tagName.toLowerCase();
 
-    // A line break alone is not meaningful content.
     if (tag === "br") {
       return false;
     }
 
-    // Preserve meaningful structural elements.
-    if (
-      ["table", "hr", "ul", "ol"].includes(tag)
-    ) {
+    if (["table", "hr", "ul", "ol"].includes(tag)) {
       return true;
     }
 
@@ -210,12 +250,10 @@ function hasMeaningfulContent(element: Element): boolean {
   });
 }
 
-// Remove unnecessary consecutive BR tags.
 function collapseRepeatedBreaks(parent: ParentNode): void {
   let previousWasBreak = false;
 
   Array.from(parent.childNodes).forEach((node) => {
-    // Handle BR elements.
     if (node.nodeType === 1) {
       const element = node as Element;
       const tag = element.tagName.toLowerCase();
@@ -230,14 +268,11 @@ function collapseRepeatedBreaks(parent: ParentNode): void {
         return;
       }
 
-      // Process nested elements.
       collapseRepeatedBreaks(element);
-
       previousWasBreak = false;
       return;
     }
 
-    // Remove unnecessary whitespace between BR tags.
     if (node.nodeType === 3) {
       const value = node.textContent || "";
 
@@ -253,7 +288,6 @@ function collapseRepeatedBreaks(parent: ParentNode): void {
   });
 }
 
-// Main HTML sanitizer.
 function sanitizeFaqHtml(raw: string): string {
   if (
     typeof document === "undefined" ||
@@ -264,17 +298,13 @@ function sanitizeFaqHtml(raw: string): string {
 
   let html = raw || "";
 
-  // Decode HTML entities, including repeatedly encoded content.
   const decoder = document.createElement("textarea");
 
   for (let i = 0; i < 3; i += 1) {
     decoder.innerHTML = html;
-
     const decoded = decoder.value;
 
-    if (decoded === html) {
-      break;
-    }
+    if (decoded === html) break;
 
     html = decoded;
   }
@@ -285,7 +315,6 @@ function sanitizeFaqHtml(raw: string): string {
   );
 
   function clean(node: Node): void {
-    // Remove comments.
     if (node.nodeType === 8) {
       node.parentNode?.removeChild(node);
       return;
@@ -298,28 +327,25 @@ function sanitizeFaqHtml(raw: string): string {
     const element = node as HTMLElement;
     const tag = element.tagName.toLowerCase();
 
-    // Remove dangerous elements completely.
     if (FORBIDDEN_TAGS.has(tag)) {
       element.remove();
       return;
     }
 
-    // Clean child nodes first.
     Array.from(element.childNodes).forEach(clean);
 
-    // Unwrap unsupported elements but preserve their text.
     if (!ALLOWED_TAGS.has(tag)) {
-      element.replaceWith(...Array.from(element.childNodes));
+      element.replaceWith(
+        ...Array.from(element.childNodes),
+      );
       return;
     }
 
-    // Preserve only valid links.
     const href =
       tag === "a"
         ? element.getAttribute("href")?.trim()
         : null;
 
-    // Strip all other attributes, including inline styles.
     Array.from(element.attributes).forEach((attribute) => {
       element.removeAttribute(attribute.name);
     });
@@ -337,8 +363,6 @@ function sanitizeFaqHtml(raw: string): string {
       );
     }
 
-    // Remove empty paragraphs, divs, spans and headings.
-    // This is the main fix for the large blank gap.
     if (
       EMPTY_REMOVABLE_TAGS.has(tag) &&
       !hasMeaningfulContent(element)
@@ -348,13 +372,10 @@ function sanitizeFaqHtml(raw: string): string {
     }
   }
 
-  // Sanitize all top-level nodes.
   Array.from(parsed.body.childNodes).forEach(clean);
 
-  // Collapse repeated line breaks throughout the answer.
   collapseRepeatedBreaks(parsed.body);
 
-  // Return clean HTML.
   return parsed.body.innerHTML.trim();
 }
 
@@ -449,6 +470,90 @@ export default function ContactPage() {
 
   // Footer API
   const { data: footerResponse } = useGetFooterQuery({});
+
+  // Contents API
+  const { data: contactResponse } = useGetContentsQuery({});
+
+  /* =====================================================
+     FILTER CONTACT-US CONTENT BY SLUG
+  ===================================================== */
+
+  const contactContent = useMemo(() => {
+    return getContactUsContent(contactResponse);
+  }, [contactResponse]);
+
+  /* =====================================================
+     CONTACT DETAILS FROM FILTERED CONTENT
+  ===================================================== */
+
+  const contactDetails = useMemo(() => {
+    const emailBlock = getBlockByHeading(
+      contactContent,
+      "Email us",
+    );
+
+    const callBlock = getBlockByHeading(
+      contactContent,
+      "Call us",
+    );
+
+    const visitBlock = getBlockByHeading(
+      contactContent,
+      "Visit us",
+    );
+
+    const getInTouchBlock = getBlockByHeading(
+      contactContent,
+      "Get in touch",
+    );
+
+    const email =
+      emailBlock?.short_description?.trim() || "";
+
+    const phoneDisplay =
+      callBlock?.short_description?.trim() || "";
+
+    const address =
+      visitBlock?.short_description?.trim() || "";
+
+    const hours =
+      callBlock?.description?.trim() || "";
+
+    const getInTouchDescription =
+      getInTouchBlock?.description?.trim() || "";
+
+    return {
+      email,
+      phoneDisplay,
+      phoneHref: phoneDisplay.replace(/\s/g, ""),
+      hours,
+      address,
+      getInTouchDescription,
+    };
+  }, [contactContent]);
+
+  /* =====================================================
+     MAP URLS FROM API ADDRESS
+  ===================================================== */
+
+  const mapsApiKey =
+    process.env.NEXT_PUBLIC_GOOGLE_MAPS_EMBED_API_KEY;
+
+  const mapEmbedUrl = mapsApiKey
+    ? `https://www.google.com/maps/embed/v1/place?key=${encodeURIComponent(
+        mapsApiKey,
+      )}&q=${encodeURIComponent(contactDetails.address)}`
+    : `https://maps.google.com/maps?q=${encodeURIComponent(
+        contactDetails.address,
+      )}&z=15&output=embed`;
+
+  const mapSearchUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+    contactDetails.address,
+  )}`;
+
+  const mapDirectionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
+    contactDetails.address,
+  )}`;
 
   /* =====================================================
      GROUP FAQS
@@ -558,9 +663,7 @@ export default function ContactPage() {
 
       <main className="relative bg-white">
         <div className="mx-auto w-full max-w-[1220px] px-4 pb-16 sm:px-6 lg:px-10 lg:pb-24">
-
           {/* HERO */}
-
           <motion.section
             initial="hidden"
             animate="show"
@@ -581,14 +684,11 @@ export default function ContactPage() {
             </h1>
 
             <p className="mx-auto mt-4 max-w-[590px] text-[10px] leading-6 text-[#69717A] sm:text-[16px]">
-              Whether you need order assistance, distributor
-              support, or a business conversation, our team
-              is ready to listen.
+              {contactDetails.getInTouchDescription}
             </p>
           </motion.section>
 
           {/* CONTACT DETAILS */}
-
           <motion.section
             initial="hidden"
             animate="show"
@@ -600,33 +700,30 @@ export default function ContactPage() {
               icon={Mail}
               eyebrow="WRITE TO US"
               title="Email support"
-              detail={CONTACT.email}
-              href={`mailto:${CONTACT.email}`}
+              detail={contactDetails.email}
+              href={`mailto:${contactDetails.email}`}
             />
 
             <ContactTile
               icon={Phone}
               eyebrow="SPEAK WITH US"
               title="Give us a call"
-              detail={CONTACT.phoneDisplay}
-              href={`tel:${CONTACT.phoneHref}`}
+              detail={contactDetails.phoneDisplay}
+              href={`tel:${contactDetails.phoneHref}`}
             />
 
             <ContactTile
               icon={MapPin}
               eyebrow="COME SAY HELLO"
               title="Our office"
-              detail={CONTACT.address}
-              href={MAP_SEARCH_URL}
+              detail={contactDetails.address}
+              href={mapSearchUrl}
             />
           </motion.section>
 
           {/* CONTACT FORM + MAP */}
-
           <section className="mt-6 grid min-w-0 grid-cols-1 items-stretch gap-5 lg:mt-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-6">
-
             {/* CONTACT FORM */}
-
             <div className="contact-form-panel min-w-0 rounded-[28px] border border-[#E7E9EB] bg-white p-6 shadow-[0_18px_55px_rgba(0,0,0,0.045)] sm:p-9 lg:p-10">
               <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#168998]">
                 SEND A MESSAGE
@@ -645,10 +742,8 @@ export default function ContactPage() {
             </div>
 
             {/* MAP AND BUSINESS HOURS */}
-
             <div className="flex min-w-0 flex-col gap-5">
               <div className="min-w-0 overflow-hidden rounded-[24px] border border-[#E9EBED] bg-white shadow-[0_10px_40px_rgba(0,0,0,0.035)]">
-
                 <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-5 sm:px-6">
                   <div className="min-w-0">
                     <p className="text-[11px] font-bold uppercase tracking-[0.17em] text-[#168998]">
@@ -666,14 +761,16 @@ export default function ContactPage() {
                 </div>
 
                 <div className="relative h-[290px] w-full bg-[#F2F5F5] sm:h-[340px] lg:h-[365px]">
-                  <iframe
-                    title="Google Maps location for Indiekonnect office"
-                    src={MAP_EMBED_URL}
-                    className="absolute inset-0 h-full w-full border-0"
-                    loading="lazy"
-                    allowFullScreen
-                    referrerPolicy="strict-origin-when-cross-origin"
-                  />
+                  {contactDetails.address && (
+                    <iframe
+                      title="Google Maps location for Indiekonnect office"
+                      src={mapEmbedUrl}
+                      className="absolute inset-0 h-full w-full border-0"
+                      loading="lazy"
+                      allowFullScreen
+                      referrerPolicy="strict-origin-when-cross-origin"
+                    />
+                  )}
                 </div>
 
                 <div className="px-5 pb-5 pt-5 sm:px-6 sm:pb-6">
@@ -682,11 +779,11 @@ export default function ContactPage() {
                       size={15}
                       className="mr-1 inline-block -translate-y-px text-[#15191D]"
                     />
-                    {CONTACT.address}
+                    {contactDetails.address}
                   </p>
 
                   <a
-                    href={MAP_DIRECTIONS_URL}
+                    href={mapDirectionsUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="mt-5 inline-flex min-h-12 w-full flex-wrap items-center justify-center gap-2 rounded-xl bg-[#111820] px-5 py-3 text-center text-[13px] font-semibold text-white transition-all hover:bg-[#27313A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black"
@@ -697,7 +794,7 @@ export default function ContactPage() {
                   </a>
 
                   <a
-                    href={MAP_SEARCH_URL}
+                    href={mapSearchUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="mt-3 flex min-h-9 items-center justify-center gap-1.5 text-[12px] font-medium text-[#57616A] underline-offset-4 hover:text-black hover:underline"
@@ -709,7 +806,6 @@ export default function ContactPage() {
               </div>
 
               {/* BUSINESS HOURS */}
-
               <div className="min-w-0 rounded-[24px] border border-[#E9EBED] bg-white p-5 shadow-[0_10px_40px_rgba(0,0,0,0.025)] sm:p-6">
                 <div className="flex items-start gap-3">
                   <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-[#F2F5F5]">
@@ -722,7 +818,7 @@ export default function ContactPage() {
                     </h3>
 
                     <p className="mt-1 break-words text-[13px] leading-6 text-[#6D757D]">
-                      {CONTACT.hours}
+                      {contactDetails.hours}
                     </p>
                   </div>
                 </div>
@@ -758,10 +854,7 @@ export default function ContactPage() {
             </div>
           </section>
 
-          {/* =================================================
-              FAQ SECTION
-          ================================================= */}
-
+          {/* FAQ SECTION */}
           <section
             className="mx-auto max-w-[900px] pb-1 pt-20 sm:pt-24"
             aria-labelledby="faq-heading"
@@ -783,8 +876,6 @@ export default function ContactPage() {
                 common questions.
               </p>
             </div>
-
-            {/* LOADING */}
 
             {faqLoading ? (
               <div
@@ -808,18 +899,14 @@ export default function ContactPage() {
             ) : (
               <div className="space-y-7">
                 {groupedFaqs.map((group) => (
-                  <div
-                    key={group.id}
-                    className="min-w-0"
-                  >
+                  <div key={group.id} className="min-w-0">
                     <h3 className="mb-3 px-1 text-[12px] font-bold uppercase tracking-[0.13em] text-[#5E6972]">
                       {group.name}
                     </h3>
 
                     <div className="min-w-0 overflow-hidden rounded-[22px] border border-[#E8EBED] bg-white">
                       {group.items.map((faq, index) => {
-                        const expanded =
-                          openFaq === faq.id;
+                        const expanded = openFaq === faq.id;
 
                         return (
                           <div
@@ -830,15 +917,11 @@ export default function ContactPage() {
                                 : ""
                             }
                           >
-                            {/* QUESTION */}
-
                             <button
                               type="button"
                               onClick={() =>
                                 setOpenFaq((old) =>
-                                  old === faq.id
-                                    ? null
-                                    : faq.id,
+                                  old === faq.id ? null : faq.id,
                                 )
                               }
                               aria-expanded={expanded}
@@ -853,15 +936,11 @@ export default function ContactPage() {
                                 <ChevronDown
                                   size={17}
                                   className={`transition-transform duration-200 ${
-                                    expanded
-                                      ? "rotate-180"
-                                      : ""
+                                    expanded ? "rotate-180" : ""
                                   }`}
                                 />
                               </span>
                             </button>
-
-                            {/* ANSWER */}
 
                             <AnimatePresence initial={false}>
                               {expanded && (
@@ -879,15 +958,11 @@ export default function ContactPage() {
                                     height: 0,
                                     opacity: 0,
                                   }}
-                                  transition={{
-                                    duration: 0.2,
-                                  }}
+                                  transition={{ duration: 0.2 }}
                                   className="min-w-0 overflow-hidden"
                                 >
                                   <div className="min-w-0 px-5 pb-6 sm:px-7">
-                                    <FaqAnswer
-                                      html={faq.answer}
-                                    />
+                                    <FaqAnswer html={faq.answer} />
                                   </div>
                                 </motion.div>
                               )}
@@ -906,10 +981,6 @@ export default function ContactPage() {
 
       <Footer />
 
-      {/* =====================================================
-          GLOBAL CSS
-      ===================================================== */}
-
       <style jsx global>{`
         .contact-page,
         .contact-page * {
@@ -920,10 +991,7 @@ export default function ContactPage() {
           font-family: "Lato", Arial, sans-serif;
         }
 
-        /* ================================================
-           CONTACT FORM
-        ================================================ */
-
+        /* CONTACT FORM */
         .contact-page .contact-form-panel form {
           width: 100%;
           min-width: 0;
@@ -953,8 +1021,6 @@ export default function ContactPage() {
             border-color 0.2s ease,
             box-shadow 0.2s ease;
         }
-
-        /* Hide decorative input icons. */
 
         .contact-page
           .contact-form-panel
@@ -1073,10 +1139,7 @@ export default function ContactPage() {
           max-width: 100%;
         }
 
-        /* ================================================
-           FAQ ANSWER - IMPORTANT SPACING FIX
-        ================================================ */
-
+        /* FAQ ANSWER */
         .contact-page .contact-faq-content {
           width: 100%;
           min-width: 0;
@@ -1088,8 +1151,6 @@ export default function ContactPage() {
           white-space: normal;
           line-height: 1.7;
         }
-
-        /* Remove unnecessary spacing from paragraphs. */
 
         .contact-page .contact-faq-content p {
           margin: 0 0 10px;
@@ -1104,8 +1165,6 @@ export default function ContactPage() {
           margin-bottom: 0;
         }
 
-        /* No empty paragraphs or wrappers. */
-
         .contact-page
           .contact-faq-content
           :is(p, div, span, h1, h2, h3, h4, h5, h6):empty {
@@ -1116,8 +1175,6 @@ export default function ContactPage() {
           min-height: 0 !important;
         }
 
-        /* Prevent large default heading gaps. */
-
         .contact-page
           .contact-faq-content
           :is(h1, h2, h3, h4, h5, h6) {
@@ -1127,8 +1184,6 @@ export default function ContactPage() {
           padding: 0;
           line-height: 1.4;
         }
-
-        /* Lists. */
 
         .contact-page .contact-faq-content :is(ul, ol) {
           margin: 8px 0 12px;
@@ -1148,25 +1203,18 @@ export default function ContactPage() {
           padding: 0;
         }
 
-        /* Links. */
-
         .contact-page .contact-faq-content a {
           color: #087b8c;
           text-decoration: underline;
           overflow-wrap: anywhere;
         }
 
-        /* Bold text. */
-
         .contact-page .contact-faq-content strong {
           font-weight: 700;
           color: #252b31;
         }
 
-        /* ================================================
-           FAQ TABLE FIX
-        ================================================ */
-
+        /* FAQ TABLE */
         .contact-page .contact-faq-content table {
           width: 100%;
           max-width: 100%;
@@ -1195,8 +1243,6 @@ export default function ContactPage() {
           min-width: 75px;
         }
 
-        /* Horizontal scroll only when table needs it. */
-
         .contact-page
           .contact-faq-content
           :is(table, pre) {
@@ -1220,8 +1266,6 @@ export default function ContactPage() {
           word-break: break-word;
         }
 
-        /* Blockquote. */
-
         .contact-page
           .contact-faq-content
           blockquote {
@@ -1230,15 +1274,11 @@ export default function ContactPage() {
           margin: 12px 0;
         }
 
-        /* Remove consecutive line break spacing. */
-
         .contact-page
           .contact-faq-content
           br + br {
           display: none !important;
         }
-
-        /* First and last elements should not create extra spacing. */
 
         .contact-page
           .contact-faq-content
@@ -1251,8 +1291,6 @@ export default function ContactPage() {
           > :last-child {
           margin-bottom: 0 !important;
         }
-
-        /* Responsive FAQ table. */
 
         @media (max-width: 640px) {
           .contact-page .contact-faq-content {
@@ -1279,8 +1317,6 @@ export default function ContactPage() {
             padding-left: 20px;
           }
         }
-
-        /* Reduced motion. */
 
         @media (prefers-reduced-motion: reduce) {
           .contact-page * {

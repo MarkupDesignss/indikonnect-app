@@ -560,7 +560,6 @@ function CartProductItem({
   isUpdating,
   isRemoving,
   isUnavailable,
-  isMandatory,
   updateQuantity,
   removeItem,
 }: {
@@ -568,7 +567,6 @@ function CartProductItem({
   isUpdating: boolean;
   isRemoving: boolean;
   isUnavailable: boolean;
-  isMandatory: boolean;
   updateQuantity: (id: number, quantity: number) => void;
   removeItem: (id: number) => void;
 }) {
@@ -626,11 +624,7 @@ function CartProductItem({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, height: 0, marginBottom: 0 }}
       transition={{ duration: 0.18 }}
-      className={`grid min-h-[128px] grid-cols-[88px_minmax(0,1fr)] gap-2.5 rounded-[5px] border bg-white px-2.5 py-2 sm:min-h-[170px] sm:grid-cols-[112px_minmax(0,1fr)] sm:gap-3 sm:px-3 sm:py-2.5 ${
-        isMandatory
-          ? "border-[#F2D9B8] bg-[#FFFCF7]"
-          : "border-[#E5E5E5]"
-      }`}
+      className="grid min-h-[128px] grid-cols-[88px_minmax(0,1fr)] gap-2.5 rounded-[5px] border border-[#E5E5E5] bg-white px-2.5 py-2 sm:min-h-[170px] sm:grid-cols-[112px_minmax(0,1fr)] sm:gap-3 sm:px-3 sm:py-2.5"
     >
       <Link
         href={`/product/${item.slug}`}
@@ -672,12 +666,6 @@ function CartProductItem({
               {item.name}
             </Link>
 
-            {isMandatory && (
-              <span className="mt-1 inline-flex items-center rounded bg-[#FFF0D9] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-[#A65A11]">
-                Mandatory Product
-              </span>
-            )}
-
             {categoryAndBrand && (
               <p className="mt-1 truncate text-[9.5px] font-medium leading-3.5 text-[#666] sm:text-[10.5px]">
                 {categoryAndBrand}
@@ -697,22 +685,20 @@ function CartProductItem({
             )}
           </div>
 
-          {!isMandatory && (
-            <button
-              type="button"
-              aria-label={`Remove ${item.name}`}
-              title="Remove item"
-              onClick={() => removeItem(item.id)}
-              disabled={isRemoving}
-              className="-mr-1 -mt-1 flex h-6 w-6 shrink-0 items-center justify-center text-[#111] transition hover:text-[#E43D5C] disabled:opacity-40 sm:h-7 sm:w-7"
-            >
-              {isRemoving ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <X className="h-5 w-5" strokeWidth={1.4} />
-              )}
-            </button>
-          )}
+          <button
+            type="button"
+            aria-label={`Remove ${item.name}`}
+            title="Remove item"
+            onClick={() => removeItem(item.id)}
+            disabled={isRemoving}
+            className="-mr-1 -mt-1 flex h-6 w-6 shrink-0 items-center justify-center text-[#111] transition hover:text-[#E43D5C] disabled:opacity-40 sm:h-7 sm:w-7"
+          >
+            {isRemoving ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <X className="h-5 w-5" strokeWidth={1.4} />
+            )}
+          </button>
         </div>
 
         <div className="flex flex-wrap items-center gap-1.5">
@@ -735,7 +721,7 @@ function CartProductItem({
               aria-label={`Quantity for ${item.name}`}
               aria-haspopup="listbox"
               aria-expanded={qtyOpen}
-              disabled={isUpdating || isUnavailable || isMandatory}
+              disabled={isUpdating || isUnavailable}
               onClick={() => setQtyOpen((value) => !value)}
               className={`inline-flex h-6 items-center gap-1 rounded-[3px] border bg-[#F4F4F4] pl-2 pr-1.5 text-[10px] font-semibold text-[#252525] transition hover:border-[#FF3E69]/60 disabled:cursor-not-allowed disabled:opacity-60 sm:text-[11px] ${
                 qtyOpen ? "border-[#FF3E69]" : "border-transparent"
@@ -746,55 +732,51 @@ function CartProductItem({
                 {item.quantity}
               </span>
 
-              {!isMandatory && (
-                <ChevronDown
-                  className={`h-3 w-3 shrink-0 text-[#555] transition-transform ${
-                    qtyOpen ? "rotate-180" : ""
-                  }`}
-                />
-              )}
+              <ChevronDown
+                className={`h-3 w-3 shrink-0 text-[#555] transition-transform ${
+                  qtyOpen ? "rotate-180" : ""
+                }`}
+              />
             </button>
 
-            {!isMandatory && (
-              <AnimatePresence>
-                {qtyOpen && (
-                  <motion.ul
-                    role="listbox"
-                    initial={{ opacity: 0, y: -4, scale: 0.97 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -4, scale: 0.97 }}
-                    transition={{ duration: 0.12 }}
-                    className="absolute left-0 top-full z-30 mt-1 max-h-44 w-[64px] overflow-y-auto rounded-[5px] border border-[#E5E5E5] bg-white py-1 shadow-[0_6px_20px_rgba(0,0,0,0.12)]"
-                  >
-                    {quantityOptions.map((quantity) => {
-                      const active = quantity === item.quantity;
+            <AnimatePresence>
+              {qtyOpen && (
+                <motion.ul
+                  role="listbox"
+                  initial={{ opacity: 0, y: -4, scale: 0.97 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -4, scale: 0.97 }}
+                  transition={{ duration: 0.12 }}
+                  className="absolute left-0 top-full z-30 mt-1 max-h-44 w-[64px] overflow-y-auto rounded-[5px] border border-[#E5E5E5] bg-white py-1 shadow-[0_6px_20px_rgba(0,0,0,0.12)]"
+                >
+                  {quantityOptions.map((quantity) => {
+                    const active = quantity === item.quantity;
 
-                      return (
-                        <li key={quantity}>
-                          <button
-                            type="button"
-                            role="option"
-                            aria-selected={active}
-                            onClick={() => handleQtySelect(quantity)}
-                            className={`flex w-full items-center justify-between px-2 py-[5px] text-[11px] font-medium transition ${
-                              active
-                                ? "bg-[#FFF1F4] text-[#E43D5C]"
-                                : "text-[#252525] hover:bg-[#F5F5F5]"
-                            }`}
-                          >
-                            {quantity}
+                    return (
+                      <li key={quantity}>
+                        <button
+                          type="button"
+                          role="option"
+                          aria-selected={active}
+                          onClick={() => handleQtySelect(quantity)}
+                          className={`flex w-full items-center justify-between px-2 py-[5px] text-[11px] font-medium transition ${
+                            active
+                              ? "bg-[#FFF1F4] text-[#E43D5C]"
+                              : "text-[#252525] hover:bg-[#F5F5F5]"
+                          }`}
+                        >
+                          {quantity}
 
-                            {active && (
-                              <Check className="h-3 w-3" strokeWidth={3} />
-                            )}
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </motion.ul>
-                )}
-              </AnimatePresence>
-            )}
+                          {active && (
+                            <Check className="h-3 w-3" strokeWidth={3} />
+                          )}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </motion.ul>
+              )}
+            </AnimatePresence>
           </div>
 
           {item.stockQuantity !== null && item.stockQuantity > 0 && (
@@ -1468,7 +1450,6 @@ function OrderSummary({
         </div>
       )}
 
-      {/* Checkout button: always clickable */}
       <button
         type="button"
         onClick={onCheckout}
@@ -1525,17 +1506,6 @@ export default function CartPage() {
 
   const [isCheckingStock, setIsCheckingStock] = useState(false);
 
-  // ─── NEW ROBUST AUTO-ADD REFS ────────────────────────────────────────────
-  // Tracks whether we've already completed (or skipped) the auto-add check
-  // for the current page session. Reset only on a confirmed successful add.
-  const autoAddCompletedRef = useRef(false);
-  // Tracks whether we're currently in the middle of an add request so we
-  // never fire duplicates.
-  const autoAddInFlightRef = useRef(false);
-  // Tracks whether all initial data (cart + profile + mandatory) has settled
-  // at least once for this page session.
-  const initialDataSettledRef = useRef(false);
-
   // ── Coupon state ──────────────────────────────────────────────────────────
 
   const [couponInput, setCouponInput] = useState("");
@@ -1554,7 +1524,6 @@ export default function CartPage() {
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
 
   // ── Cart query ────────────────────────────────────────────────────────────
-  // Refetch cart whenever this page is mounted again.
 
   const {
     data: cartData,
@@ -1568,16 +1537,13 @@ export default function CartPage() {
     },
   );
 
-  const {
-    data: productsData,
-    isLoading: isProductsLoading,
-  } = useGetProductsQuery({});
+  const { data: productsData, isLoading: isProductsLoading } =
+    useGetProductsQuery({});
 
   const [removeFromCart, { isLoading: isRemoving }] =
     useRemoveFromCartMutation();
 
-  const [clearCart, { isLoading: isClearing }] =
-    useClearCartMutation();
+  const [clearCart, { isLoading: isClearing }] = useClearCartMutation();
 
   const [updateCartItem] = useUpdateCartItemMutation();
   const [addToCart] = useAddToCartMutation();
@@ -1601,16 +1567,10 @@ export default function CartPage() {
 
   // ── Summary & supporting APIs ─────────────────────────────────────────────
 
-  const {
-    data: couponsData,
-    isLoading: isLoadingCoupons,
-  } = useGetCouponsQuery();
+  const { data: couponsData, isLoading: isLoadingCoupons } =
+    useGetCouponsQuery();
 
   const { data: dashboardResponse } = useGetUserDashboardQuery();
-
-  // IMPORTANT:
-  // Profile API will refetch every time the cart page is mounted.
-  // This also works when navigating back to the cart after adding a product.
 
   const {
     data: profileResponse,
@@ -1621,23 +1581,13 @@ export default function CartPage() {
     refetchOnMountOrArgChange: true,
   });
 
-  // IMPORTANT:
-  // Mandatory products API will also refetch every time the cart page mounts.
-
-  const {
-    data: mandatoryProductsResponse,
-    isLoading: isLoadingMandatoryProducts,
-    isFetching: isFetchingMandatoryProducts,
-    refetch: refetchMandatoryProducts,
-  } = useGetMandatoryProductsQuery(undefined, {
+  // Kept so existing module imports remain valid; the result is intentionally
+  // not used to force-add anything anymore.
+  useGetMandatoryProductsQuery(undefined, {
     refetchOnMountOrArgChange: true,
   });
 
   // ── Profile response mapping ──────────────────────────────────────────────
-  // Supports both:
-  // response.user
-  // response.data.user
-  // response.data
 
   const profilePayload = profileResponse as any;
 
@@ -1653,9 +1603,7 @@ export default function CartPage() {
 
   // ── Address selection logic ───────────────────────────────────────────────
 
-  const addresses: Address[] = Array.isArray(
-    (addressesData as any)?.data,
-  )
+  const addresses: Address[] = Array.isArray((addressesData as any)?.data)
     ? (addressesData as any).data
     : [];
 
@@ -1738,9 +1686,7 @@ export default function CartPage() {
     return {};
   }, [dashboardResponse]);
 
-  const coinRole = String(
-    dashboardInfo?.user?.account_type || "",
-  )
+  const coinRole = String(dashboardInfo?.user?.account_type || "")
     .trim()
     .toLowerCase();
 
@@ -1753,68 +1699,8 @@ export default function CartPage() {
     .trim()
     .toLowerCase();
 
-  const isCustomer =
-    profileUserRole === "customer" || coinRole === "customer";
-
-  // can_buy can be present at different levels depending on API response.
-  const canBuyRaw =
-    profilePayload?.can_buy ??
-    profilePayload?.data?.can_buy ??
-    profilePayload?.user?.can_buy ??
-    profilePayload?.data?.user?.can_buy ??
-    profileUser?.can_buy;
-
-  const canBuyValue = String(canBuyRaw ?? "")
-    .trim()
-    .toLowerCase();
-
-  const canBuy =
-    canBuyRaw === undefined || canBuyRaw === null
-      ? true
-      : canBuyRaw === true ||
-        canBuyValue === "1" ||
-        canBuyValue === "true" ||
-        canBuyValue === "yes";
-
   const isDistributor =
     coinRole === "distributor" || profileUserRole === "distributor";
-
-  // ── Mandatory products ────────────────────────────────────────────────────
-
-  const mandatoryProducts: MandatoryProduct[] = useMemo(() => {
-    if (isCustomer) return [];
-
-    const response = mandatoryProductsResponse as any;
-
-    const rawData =
-      response?.data?.data ??
-      response?.data?.mandatory_products ??
-      response?.data?.mandatory_product ??
-      response?.data?.products ??
-      response?.data ??
-      response?.mandatory_products ??
-      response?.mandatory_product;
-
-    if (Array.isArray(rawData)) {
-      return rawData;
-    }
-
-    if (rawData && typeof rawData === "object") {
-      if (Array.isArray(rawData.products)) {
-        return rawData.products;
-      }
-
-      if (Array.isArray(rawData.data)) {
-        return rawData.data;
-      }
-
-      if (rawData.id) {
-        return [rawData];
-      }
-    }
-
-    return [];
-  }, [mandatoryProductsResponse, isCustomer]);
 
   // ── Cart items mapping ────────────────────────────────────────────────────
 
@@ -1854,9 +1740,7 @@ export default function CartPage() {
         stockQuantity:
           stockQuantity === null ? null : Number(stockQuantity),
         priceType:
-          item.current_price_type ||
-          cartData?.data?.price_type ||
-          "retail",
+          item.current_price_type || cartData?.data?.price_type || "retail",
       };
     });
   }, [cartData]);
@@ -1870,196 +1754,6 @@ export default function CartPage() {
 
     return ids;
   }, [cartItems]);
-
-  // ── Mandatory product validation ─────────────────────────────────────────
-
-  const isMandatorySatisfied = useMemo(() => {
-    if (isCustomer) return true;
-    if (canBuy) return true;
-    if (mandatoryProducts.length === 0) return true;
-
-    return mandatoryProducts.some((product) =>
-      cartProductIds.has(Number(product.id)),
-    );
-  }, [
-    isCustomer,
-    canBuy,
-    mandatoryProducts,
-    cartProductIds,
-  ]);
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // ROBUST AUTO-ADD MANDATORY PRODUCT
-  //
-  // Key fixes vs. the previous version:
-  //
-  // 1. We only consider data "settled" once ALL three APIs have finished at
-  //    least one full fetch after mount (using isLoading, isFetching, and
-  //    checking that data is present). This prevents the race where cart
-  //    briefly loads empty before profile/mandatory responses arrive.
-  //
-  // 2. We never reset `autoAddCompletedRef` just because
-  //    `isMandatorySatisfied` became true. Instead we reset it only when we
-  //    have *confirmed* (after settled) that the mandatory product is
-  //    genuinely in the cart. This means a stale empty cart on hard refresh
-  //    cannot silently cancel the auto-add.
-  //
-  // 3. We use a separate `autoAddInFlightRef` to prevent duplicate requests
-  //    even across rerenders that happen mid-flight.
-  //
-  // 4. We re-check the latest cart *inside* the async function right before
-  //    calling the add mutation, using the freshest `refetchCart()` result.
-  //    This eliminates the "double add" or "missed add" race on hard
-  //    refresh.
-  // ─────────────────────────────────────────────────────────────────────────
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    // Step 1: Determine whether all initial data has settled for this mount.
-    const cartReady = !isCartLoading && !isFetchingCart && cartData !== undefined;
-    const profileReady = !isLoadingProfile && !isFetchingProfile && profileResponse !== undefined;
-    const mandatoryReady =
-      !isLoadingMandatoryProducts &&
-      !isFetchingMandatoryProducts &&
-      mandatoryProductsResponse !== undefined;
-
-    if (!(cartReady && profileReady && mandatoryReady)) {
-      return;
-    }
-
-    initialDataSettledRef.current = true;
-
-    // Step 2: Only distributors with can_buy = 0 need mandatory products.
-    if (!isDistributor || isCustomer || canBuy) {
-      autoAddCompletedRef.current = true;
-      return;
-    }
-
-    if (!mandatoryProducts.length) {
-      autoAddCompletedRef.current = true;
-      return;
-    }
-
-    // Step 3: If the mandatory product is already in the freshly-loaded
-    // cart, mark complete and stop.
-    if (isMandatorySatisfied) {
-      autoAddCompletedRef.current = true;
-      return;
-    }
-
-    // Step 4: If we already completed the add attempt this session, do
-    // nothing. (Do NOT reset on every render.)
-    if (autoAddCompletedRef.current) {
-      return;
-    }
-
-    // Step 5: If an add is already in flight, wait.
-    if (autoAddInFlightRef.current) {
-      return;
-    }
-
-    // Step 6: Pick the first in-stock mandatory product.
-    const productToAdd = mandatoryProducts.find((product: any) => {
-      const stock = Number(
-        product?.stock_quantity ??
-          product?.available_stock ??
-          product?.stock ??
-          0,
-      );
-
-      return stock > 0;
-    });
-
-    if (!productToAdd) {
-      autoAddCompletedRef.current = true;
-      toast.error("Mandatory product is currently out of stock.", {
-        position: "bottom-center",
-        duration: 4000,
-      });
-      return;
-    }
-
-    // Step 7: Fire the add exactly once, then re-verify with a fresh cart.
-    autoAddInFlightRef.current = true;
-
-    const runAutoAdd = async () => {
-      try {
-        await addToCart({
-          product_id: Number(productToAdd.id),
-          quantity: 1,
-        }).unwrap();
-
-        // Re-fetch fresh cart, then double-check that the product exists.
-        const freshCart: any = await refetchCart().unwrap();
-        const freshItems: CartItemApi[] = freshCart?.data?.items || [];
-
-        const wasAdded = freshItems.some(
-          (entry) => Number(entry.product_id) === Number(productToAdd.id),
-        );
-
-        if (wasAdded) {
-          autoAddCompletedRef.current = true;
-
-          // Only after a confirmed add do we refresh the summary.
-          void refetchCheckoutSummary();
-
-          toast.success(
-            `${productToAdd.name || "Mandatory product"} was automatically added to your cart.`,
-            {
-              position: "bottom-center",
-              duration: 3000,
-              icon: "🛍️",
-            },
-          );
-        } else {
-          // If for any reason it didn't persist, allow one more retry on
-          // the next effect run.
-          autoAddCompletedRef.current = false;
-        }
-      } catch (error: any) {
-        console.error("Mandatory product auto-add failed:", error);
-
-        autoAddCompletedRef.current = false;
-
-        toast.error(
-          getErrorMessage(
-            error,
-            "Unable to add mandatory product. Please try again.",
-          ),
-          {
-            position: "bottom-center",
-            duration: 4000,
-          },
-        );
-      } finally {
-        autoAddInFlightRef.current = false;
-      }
-    };
-
-    void runAutoAdd();
-    // Deliberately narrow dependency list — we only want to react to
-    // settled data signals, not to unrelated state changes.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    isCartLoading,
-    isFetchingCart,
-    cartData,
-    isLoadingProfile,
-    isFetchingProfile,
-    profileResponse,
-    isLoadingMandatoryProducts,
-    isFetchingMandatoryProducts,
-    mandatoryProductsResponse,
-    isDistributor,
-    isCustomer,
-    canBuy,
-    mandatoryProducts.length,
-    isMandatorySatisfied,
-    addToCart,
-    refetchCart,
-    refetchCheckoutSummary,
-  ]);
 
   // ── Recommended ───────────────────────────────────────────────────────────
 
@@ -2085,10 +1779,7 @@ export default function CartPage() {
       0,
     );
 
-    const count = cartItems.reduce(
-      (sum, item) => sum + item.quantity,
-      0,
-    );
+    const count = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
     return {
       subtotal: subtotalValue,
@@ -2112,9 +1803,7 @@ export default function CartPage() {
       return apiTotal;
     }
 
-    const items = Array.isArray(summaryData?.items)
-      ? summaryData.items
-      : [];
+    const items = Array.isArray(summaryData?.items) ? summaryData.items : [];
 
     return items.reduce((sum, item: any) => {
       const quantity = Number(item.quantity || 1);
@@ -2180,9 +1869,7 @@ export default function CartPage() {
     }
 
     if (currentResponse?.success === true) {
-      const responseCouponCode = String(
-        responseData?.data?.coupon?.code || "",
-      )
+      const responseCouponCode = String(responseData?.data?.coupon?.code || "")
         .trim()
         .toUpperCase();
 
@@ -2252,12 +1939,9 @@ export default function CartPage() {
         }, 100);
       }
     } catch (error: any) {
-      toast.error(
-        getErrorMessage(error, "Failed to add address"),
-        {
-          position: "bottom-center",
-        },
-      );
+      toast.error(getErrorMessage(error, "Failed to add address"), {
+        position: "bottom-center",
+      });
     }
   };
 
@@ -2288,12 +1972,9 @@ export default function CartPage() {
         }, 100);
       }
     } catch (error: any) {
-      toast.error(
-        getErrorMessage(error, "Failed to update address"),
-        {
-          position: "bottom-center",
-        },
-      );
+      toast.error(getErrorMessage(error, "Failed to update address"), {
+        position: "bottom-center",
+      });
     }
   };
 
@@ -2315,12 +1996,9 @@ export default function CartPage() {
         }, 100);
       }
     } catch (error: any) {
-      toast.error(
-        getErrorMessage(error, "Failed to set default address"),
-        {
-          position: "bottom-center",
-        },
-      );
+      toast.error(getErrorMessage(error, "Failed to set default address"), {
+        position: "bottom-center",
+      });
     }
   };
 
@@ -2411,64 +2089,12 @@ export default function CartPage() {
     }
 
     if (!selectedDeliveryAddress?.id) {
-      toast.error(
-        "Please add an address first to continue checkout.",
-        {
-          position: "bottom-center",
-          duration: 3500,
-        },
-      );
-
-      return;
-    }
-
-    // Fallback mandatory-product check before checkout.
-    if (!isCustomer && isDistributor && !canBuy && !isMandatorySatisfied) {
-      const productToAdd = mandatoryProducts.find((product: any) => {
-        const stock = Number(
-          product?.stock_quantity ??
-            product?.available_stock ??
-            product?.stock ??
-            0,
-        );
-
-        return stock > 0;
+      toast.error("Please add an address first to continue checkout.", {
+        position: "bottom-center",
+        duration: 3500,
       });
 
-      if (!productToAdd) {
-        toast.error("Mandatory product is out of stock.", {
-          position: "bottom-center",
-        });
-
-        return;
-      }
-
-      setIsCheckingStock(true);
-
-      try {
-        await addToCart({
-          product_id: Number(productToAdd.id),
-          quantity: 1,
-        }).unwrap();
-
-        await refetchCart();
-
-        await refetchCheckoutSummary();
-      } catch (error: any) {
-        toast.error(
-          getErrorMessage(
-            error,
-            "Failed to add mandatory product. Please try again.",
-          ),
-          {
-            position: "bottom-center",
-          },
-        );
-
-        setIsCheckingStock(false);
-
-        return;
-      }
+      return;
     }
 
     setIsCheckingStock(true);
@@ -2487,10 +2113,7 @@ export default function CartPage() {
       }
 
       if (selectedDeliveryAddress?.id) {
-        params.set(
-          "address_id",
-          String(selectedDeliveryAddress.id),
-        );
+        params.set("address_id", String(selectedDeliveryAddress.id));
       }
 
       router.push(`/checkout?${params.toString()}`);
@@ -2505,9 +2128,7 @@ export default function CartPage() {
     cartItemId: number,
     requestedQuantity: number,
   ) => {
-    const item = cartItems.find(
-      (cartItem) => cartItem.id === cartItemId,
-    );
+    const item = cartItems.find((cartItem) => cartItem.id === cartItemId);
 
     if (!item?.cartItemId) {
       toast.error("Cart item not found");
@@ -2533,10 +2154,7 @@ export default function CartPage() {
         itemId: item.cartItemId,
         data: {
           quantity: newQuantity,
-          action:
-            newQuantity > item.quantity
-              ? "increment"
-              : "decrement",
+          action: newQuantity > item.quantity ? "increment" : "decrement",
         },
       }).unwrap();
 
@@ -2554,9 +2172,7 @@ export default function CartPage() {
         return next;
       });
     } catch (error: any) {
-      toast.error(
-        error?.data?.message || "Unable to update quantity",
-      );
+      toast.error(error?.data?.message || "Unable to update quantity");
     } finally {
       setIsUpdating(null);
     }
@@ -2565,30 +2181,9 @@ export default function CartPage() {
   // ── Remove item ───────────────────────────────────────────────────────────
 
   const removeItem = async (cartItemId: number) => {
-    const item = cartItems.find(
-      (cartItem) => cartItem.id === cartItemId,
-    );
+    const item = cartItems.find((cartItem) => cartItem.id === cartItemId);
 
     if (!item?.cartItemId) return;
-
-    // Prevent removing mandatory product.
-    if (
-      !isCustomer &&
-      isDistributor &&
-      !canBuy &&
-      mandatoryProducts.some(
-        (product) => Number(product.id) === Number(item.productId),
-      )
-    ) {
-      toast.error(
-        "Mandatory product cannot be removed from cart.",
-        {
-          position: "bottom-center",
-        },
-      );
-
-      return;
-    }
 
     try {
       await removeFromCart(item.cartItemId).unwrap();
@@ -2611,9 +2206,7 @@ export default function CartPage() {
         position: "bottom-center",
       });
     } catch (error: any) {
-      toast.error(
-        error?.data?.message || "Unable to remove item",
-      );
+      toast.error(error?.data?.message || "Unable to remove item");
     }
   };
 
@@ -2633,9 +2226,7 @@ export default function CartPage() {
         position: "bottom-center",
       });
     } catch (error: any) {
-      toast.error(
-        error?.data?.message || "Unable to clear cart",
-      );
+      toast.error(error?.data?.message || "Unable to clear cart");
     }
   };
 
@@ -2666,12 +2257,9 @@ export default function CartPage() {
         position: "bottom-center",
       });
     } catch (error: any) {
-      toast.error(
-        error?.data?.message || "Unable to add product",
-        {
-          position: "bottom-center",
-        },
-      );
+      toast.error(error?.data?.message || "Unable to add product", {
+        position: "bottom-center",
+      });
     } finally {
       setAddingProductId(null);
     }
@@ -2680,9 +2268,7 @@ export default function CartPage() {
   // ── Coupon handlers ───────────────────────────────────────────────────────
 
   const handleApplyCoupon = (codeOverride?: string) => {
-    const code = (codeOverride ?? couponInput)
-      .trim()
-      .toUpperCase();
+    const code = (codeOverride ?? couponInput).trim().toUpperCase();
 
     if (!code || isApplyingCoupon) return;
 
@@ -2765,8 +2351,7 @@ export default function CartPage() {
 
         {isLoadingAddresses ? (
           <div className="mb-4 h-[68px] animate-pulse rounded-xl bg-[#F4F4F4]" />
-        ) : availableAddresses.length > 0 &&
-          selectedDeliveryAddress ? (
+        ) : availableAddresses.length > 0 && selectedDeliveryAddress ? (
           <div>
             <div className="mb-4 flex flex-col gap-3 rounded-xl border border-[#D5E6DB] bg-[#F1FAF4] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
               <div className="min-w-0">
@@ -2815,9 +2400,7 @@ export default function CartPage() {
                   <button
                     type="button"
                     onClick={() =>
-                      handleSetDefaultAddress(
-                        selectedDeliveryAddress.id,
-                      )
+                      handleSetDefaultAddress(selectedDeliveryAddress.id)
                     }
                     className="text-[12px] font-medium text-[#718077] underline underline-offset-4 transition hover:text-[#173E2B]"
                   >
@@ -2868,8 +2451,8 @@ export default function CartPage() {
                     </h1>
 
                     <p className="mt-0.5 text-[10px] text-[#888]">
-                      {itemCount} {itemCount === 1 ? "item" : "items"} in
-                      your cart
+                      {itemCount} {itemCount === 1 ? "item" : "items"} in your
+                      cart
                     </p>
                   </div>
 
@@ -2889,31 +2472,19 @@ export default function CartPage() {
 
                 <div className="space-y-2.5">
                   <AnimatePresence initial={false}>
-                    {cartItems.map((item) => {
-                      const isMandatory =
-                        !isCustomer &&
-                        isDistributor &&
-                        !canBuy &&
-                        mandatoryProducts.some(
-                          (product) =>
-                            Number(product.id) === Number(item.productId),
-                        );
-
-                      return (
-                        <CartProductItem
-                          key={item.id}
-                          item={item}
-                          isUpdating={isUpdating === item.id}
-                          isRemoving={isRemoving}
-                          isUnavailable={unavailableProductIds.has(
-                            item.productId,
-                          )}
-                          isMandatory={isMandatory}
-                          updateQuantity={updateQuantity}
-                          removeItem={removeItem}
-                        />
-                      );
-                    })}
+                    {cartItems.map((item) => (
+                      <CartProductItem
+                        key={item.id}
+                        item={item}
+                        isUpdating={isUpdating === item.id}
+                        isRemoving={isRemoving}
+                        isUnavailable={unavailableProductIds.has(
+                          item.productId,
+                        )}
+                        updateQuantity={updateQuantity}
+                        removeItem={removeItem}
+                      />
+                    ))}
                   </AnimatePresence>
                 </div>
 
@@ -2936,9 +2507,7 @@ export default function CartPage() {
                 <RecommendedSection
                   recommended={recommended}
                   addingProductId={addingProductId}
-                  handleRecommendedAddToCart={
-                    handleRecommendedAddToCart
-                  }
+                  handleRecommendedAddToCart={handleRecommendedAddToCart}
                   scrollRecommended={scrollRecommended}
                   recommendedScrollRef={recommendedScrollRef}
                 />
@@ -2985,11 +2554,7 @@ export default function CartPage() {
             setEditingAddress(null);
           }
         }}
-        onSubmit={
-          editingAddress
-            ? handleUpdateAddress
-            : handleCreateAddress
-        }
+        onSubmit={editingAddress ? handleUpdateAddress : handleCreateAddress}
         initialData={editingAddress}
         isLoading={isCreating || isUpdatingAddress}
       />

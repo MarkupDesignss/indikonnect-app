@@ -18,7 +18,6 @@ import {
   Pencil,
   Plus,
   ShieldCheck,
-  ShoppingCart,
   X,
 } from "lucide-react";
 import { SiAxisbank, SiHdfcbank, SiRazorpay } from "react-icons/si";
@@ -36,15 +35,12 @@ import {
   useGetCheckoutSummaryQuery,
   usePlaceOrderMutation,
   useInitiateHdfcPaymentMutation,
-  useGetMandatoryProductsQuery,
   type HdfcApiResult,
-  type MandatoryProduct,
 } from "@/lib/redux/api/checkoutApi";
 
 import {
   useLazyGetCartQuery,
   useCheckCartStockMutation,
-  useAddToCartMutation,
 } from "@/lib/redux/api/cartApi";
 
 import { useCheckProductStockMutation } from "@/lib/redux/api/productApi";
@@ -55,7 +51,6 @@ import Footer from "@/components/Footer/Footer";
 import AddressFormModal from "./AddressFormModal";
 
 import { useRetryOrderMutation } from "@/lib/redux/api/order/orderApi";
-import { useGetUserProfileQuery } from "@/lib/redux/api/authApi";
 
 export interface Address {
   id: number;
@@ -267,23 +262,6 @@ const getErrorMessage = (error: any, fallback: string): string =>
   error?.data?.error ||
   error?.message ||
   fallback;
-
-const isMandatoryBackendError = (error: any): boolean => {
-  const message = String(
-    error?.data?.message ||
-      error?.error?.data?.message ||
-      error?.data?.error ||
-      error?.message ||
-      ""
-  ).toLowerCase();
-
-  if (!message) return false;
-
-  return (
-    message.includes("mandatory for your first purchase") ||
-    (message.includes("mandatory") && message.includes("add it to your order"))
-  );
-};
 
 const pickCommissionValue = (source: any): number | null => {
   if (!source || typeof source !== "object") return null;
@@ -641,176 +619,6 @@ function TaxBreakdownPopup({
           )}
         </div>
       )}
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Mandatory product popup
-// ─────────────────────────────────────────────────────────────────────────────
-
-function MandatoryProductModal({
-  isOpen,
-  products,
-  isLoading,
-  onAddToCart,
-  cartProductIds,
-  addingProductId,
-  onClose,
-}: {
-  isOpen: boolean;
-  products: MandatoryProduct[];
-  isLoading: boolean;
-  onAddToCart: (product: MandatoryProduct) => void;
-  cartProductIds: Set<number>;
-  addingProductId: number | null;
-  onClose: () => void;
-}) {
-  if (!isOpen) return null;
-
-  const allInCart =
-    products.length > 0 &&
-    products.every((p) => cartProductIds.has(p.id));
-
-  return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-      <div className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
-        <div className="border-b border-[#F0E2CC] bg-gradient-to-r from-[#FFF8ED] to-white px-5 py-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex min-w-0 items-start gap-3">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FFF0D9] text-[#A65A11]">
-                <AlertTriangle className="h-5 w-5" />
-              </span>
-
-              <div className="min-w-0">
-                <h2 className="text-[16px] font-semibold text-[#392B1C]">
-                  Mandatory product required
-                </h2>
-                <p className="mt-1 text-[12px] leading-5 text-[#806B55]">
-                  Please purchase our mandatory product first. This is not
-                  optional — you cannot place an order without buying it.
-                </p>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Close"
-              title="Close"
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#806B55] transition hover:bg-white hover:text-[#111] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A65A11]/40"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-
-        <div className="flex-1 space-y-3 overflow-y-auto p-5">
-          {isLoading ? (
-            <div className="space-y-3">
-              <div className="h-32 animate-pulse rounded-xl bg-[#EEEEEC]" />
-              <div className="h-32 animate-pulse rounded-xl bg-[#EEEEEC]" />
-            </div>
-          ) : products.length === 0 ? (
-            <p className="py-6 text-center text-[12px] text-[#777777]">
-              No mandatory products available right now.
-            </p>
-          ) : (
-            products.map((product) => {
-              const primaryImage =
-                product.images?.find((img) => img.is_primary)?.image_url ||
-                product.images?.[0]?.image_url ||
-                null;
-
-              const inCart = cartProductIds.has(product.id);
-              const isAdding = addingProductId === product.id;
-              const outOfStock = product.stock_quantity <= 0;
-
-              return (
-                <div
-                  key={product.id}
-                  className="overflow-hidden rounded-xl border border-[#E5ECF6] bg-white"
-                >
-                  <div className="flex items-start gap-3 p-3">
-                    <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg border border-[#EDF1EE] bg-[#F8FAF8]">
-                      {primaryImage ? (
-                        <Image
-                          src={primaryImage}
-                          alt={product.name}
-                          fill
-                          sizes="80px"
-                          className="object-contain p-1"
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center">
-                          <Package className="h-6 w-6 text-[#999]" />
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-                      <p className="line-clamp-2 text-[13px] font-semibold text-[#1B2C20]">
-                        {product.name}
-                      </p>
-
-                      <p className="mt-1 text-[10.5px] text-[#7B877F]">
-                        Code: {product.product_code} · GST{" "}
-                        {product.tax_category?.rate || "0"}%
-                      </p>
-
-                      <div className="mt-2 flex items-center justify-between gap-2">
-                        <span className="text-[14px] font-bold text-[#17251B]">
-                          {formatPrice(product.retail_price)}
-                        </span>
-
-                        <span className="text-[10px] text-[#7B877F]">
-                          Stock: {product.stock_quantity}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="border-t border-[#EDF1EE] bg-[#F8FBF8] px-3 py-2.5">
-                    <button
-                      type="button"
-                      onClick={() => onAddToCart(product)}
-                      disabled={inCart || outOfStock || isAdding}
-                      className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#173E2B] to-[#16845B] px-3 py-2 text-[12px] font-semibold text-white transition hover:brightness-105 disabled:cursor-not-allowed disabled:from-[#AAB9AE] disabled:to-[#AAB9AE]"
-                    >
-                      {isAdding ? (
-                        <>
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          Adding to cart...
-                        </>
-                      ) : inCart ? (
-                        <>
-                          <Check className="h-3.5 w-3.5" />
-                          Added to cart
-                        </>
-                      ) : outOfStock ? (
-                        "Out of stock"
-                      ) : (
-                        <>
-                          <ShoppingCart className="h-3.5 w-3.5" />
-                          Add to Cart
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
-
-        <div className="border-t border-[#EDF1EE] bg-[#FFFCF7] px-5 py-3">
-          <p className="text-center text-[10.5px] leading-4 text-[#8A6B44]">
-            {allInCart
-              ? "All mandatory products added. Close this popup and place your order."
-              : "You can complete checkout only after purchasing the mandatory product."}
-          </p>
-        </div>
-      </div>
     </div>
   );
 }
@@ -1408,13 +1216,8 @@ export default function CheckoutPage() {
   const [hasManuallySelectedGateway, setHasManuallySelectedGateway] =
     useState(false);
 
-  const [isMandatoryModalOpen, setIsMandatoryModalOpen] = useState(false);
-  const [addingMandatoryProductId, setAddingMandatoryProductId] =
-    useState<number | null>(null);
-
   const paymentActionInProgress = useRef(false);
   const orderCreatedRef = useRef(false);
-  const afterMandatoryAddRef = useRef(false);
 
   const [orderCreatedForCheckout, setOrderCreatedForCheckout] =
     useState(false);
@@ -1435,8 +1238,6 @@ export default function CheckoutPage() {
 
   const [placeOrder] = usePlaceOrderMutation();
 
-  const [addToCart] = useAddToCartMutation();
-
   const [initiateHdfcPayment] = useInitiateHdfcPaymentMutation();
   const [retryOrder] = useRetryOrderMutation();
 
@@ -1444,19 +1245,6 @@ export default function CheckoutPage() {
     data: paymentGatewaySettings,
     isLoading: isLoadingGatewaySettings,
   } = useGetPaymentGatewaySettingsQuery();
-
-  // ── Profile (can_buy flag) ───────────────────────────────────────────────
-  const {
-    data: profileResponse,
-    refetch: refetchProfile,
-  } = useGetUserProfileQuery();
-
-  // ── Mandatory products ──────────────────────────────────────────────────
-  const {
-    data: mandatoryProductsResponse,
-    isLoading: isLoadingMandatoryProducts,
-    refetch: refetchMandatoryProducts,
-  } = useGetMandatoryProductsQuery();
 
   const [triggerGetCart] = useLazyGetCartQuery();
   const [checkCartStock] = useCheckCartStockMutation();
@@ -1470,148 +1258,13 @@ export default function CheckoutPage() {
     [selectedGatewayId]
   );
 
-  // ── Role-aware mandatory product gating ────────────────────────────────
-  // Customers must NEVER be blocked by mandatory products.
-  // Only distributors (or any non-customer role) may be gated by `can_buy`.
-  const profileUserRole = String(
-    (profileResponse as any)?.user?.account_type || ""
-  ).toLowerCase();
-
-  const isCustomer = profileUserRole === "customer";
-
-  const canBuyRaw = (profileResponse as any)?.can_buy;
-
-  // For customers: always allowed.
-  // For others: 1 = allowed, 0 = blocked, undefined/null = allowed (backward compatible).
-  const canBuy = isCustomer
-    ? true
-    : canBuyRaw === undefined || canBuyRaw === null
-      ? true
-      : Number(canBuyRaw) === 1;
-
-  const mandatoryProducts: MandatoryProduct[] = useMemo(() => {
-    if (isCustomer) return []; // customers never see mandatory products
-    const list = (mandatoryProductsResponse as any)?.data;
-    return Array.isArray(list) ? list : [];
-  }, [mandatoryProductsResponse, isCustomer]);
-
-  const cartProductIds = useMemo(() => {
-    const ids = new Set<number>();
-    cartLines.forEach((line) => {
-      const id = Number(line?.product_id);
-      if (Number.isFinite(id) && id > 0) ids.add(id);
-    });
-    return ids;
-  }, [cartLines]);
-
-  const isMandatorySatisfied = useMemo(() => {
-    if (isCustomer) return true; // customers are always satisfied
-    if (canBuy) return true;
-    if (mandatoryProducts.length === 0) return true;
-    return mandatoryProducts.some((p) => cartProductIds.has(p.id));
-  }, [isCustomer, canBuy, mandatoryProducts, cartProductIds]);
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // Add mandatory product to cart
-  // ─────────────────────────────────────────────────────────────────────────
-  const handleAddMandatoryToCart = async (
-    product: MandatoryProduct
-  ): Promise<boolean> => {
-    if (isCustomer) return false; // safety: customers shouldn't reach here
-    if (!product?.id) return false;
-
-    if (cartProductIds.has(product.id)) {
-      dispatch(
-        showToast({
-          message: "This mandatory product is already in your cart.",
-          type: "info",
-        })
-      );
-      return false;
-    }
-
-    if (product.stock_quantity <= 0) {
-      dispatch(
-        showToast({
-          message: "This mandatory product is out of stock.",
-          type: "error",
-        })
-      );
-      return false;
-    }
-
-    setAddingMandatoryProductId(product.id);
-
-    try {
-      await addToCart({
-        product_id: product.id,
-        quantity: 1,
-      }).unwrap();
-
-      dispatch(
-        showToast({
-          message: `${product.name} added to cart.`,
-          type: "success",
-        })
-      );
-
-      try {
-        const refreshedCart = await triggerGetCart().unwrap();
-        const refreshedItems: any[] = Array.isArray(
-          (refreshedCart as any)?.data?.items
-        )
-          ? (refreshedCart as any).data.items
-          : [];
-        setCartLines(refreshedItems);
-      } catch (cartErr) {
-        console.error("Cart refresh after mandatory add failed:", cartErr);
-      }
-
-      window.dispatchEvent(new CustomEvent("cart:refresh"));
-
-      // Recall checkout summary so totals include the added product
-      try {
-        await refetchCheckoutSummary();
-      } catch (summaryErr) {
-        console.error(
-          "Checkout summary refresh after mandatory add failed:",
-          summaryErr
-        );
-      }
-
-      try {
-        await Promise.all([
-          refetchMandatoryProducts(),
-          refetchProfile(),
-        ]);
-      } catch (profileErr) {
-        console.error(
-          "Profile refresh after mandatory add failed:",
-          profileErr
-        );
-      }
-
-      setIsMandatoryModalOpen(false);
-
-      return true;
-    } catch (error: any) {
-      console.error("Add mandatory product error:", error);
-
-      dispatch(
-        showToast({
-          message: getErrorMessage(
-            error,
-            "Unable to add the mandatory product to cart."
-          ),
-          type: "error",
-        })
-      );
-
-      return false;
-    } finally {
-      setAddingMandatoryProductId(null);
-    }
-  };
+  // Role is still surfaced to the summary for commission display, but no
+  // longer used for any mandatory-product gating.
+  const profileUserRole = useMemo(() => {
+    // Kept intentionally simple — role read from Redux user profile if needed.
+    // (No mandatory gating depends on this.)
+    return "";
+  }, []);
 
   useEffect(() => {
     if (isRetryPaymentFlow) {
@@ -2242,29 +1895,6 @@ export default function CheckoutPage() {
     return latest;
   };
 
-  const fetchLatestSummary = async () => {
-    const latestResponse = await refetchCheckoutSummary();
-
-    if (
-      latestResponse.error ||
-      !latestResponse.data?.data
-    ) {
-      throw new Error(
-        "Could not refresh checkout pricing. Please try again."
-      );
-    }
-
-    const latest = latestResponse.data.data as CheckoutSummaryData;
-
-    const latestTotal = Number(latest.grand_total);
-
-    if (!Number.isFinite(latestTotal) || latestTotal <= 0) {
-      throw new Error("Invalid updated checkout total.");
-    }
-
-    return latest;
-  };
-
   const handleRetryPayment = async () => {
     if (paymentActionInProgress.current) return;
 
@@ -2518,22 +2148,14 @@ export default function CheckoutPage() {
 
     setIsSubmitting(true);
 
-    // true only when this run was triggered right after auto-adding the mandatory product
-    const isAfterMandatoryAdd = afterMandatoryAddRef.current;
-    afterMandatoryAddRef.current = false;
-
     let orderWasCreated = false;
     let createdOrderReference = "";
     let createdOrderId = 0;
 
     try {
-      // After the mandatory product is added the total is expected to change,
-      // so use the fresh summary without comparing with the old total.
-      const latestSummary = isAfterMandatoryAdd
-        ? await fetchLatestSummary()
-        : await refreshAndValidateTotal(
-            Number(summaryData.grand_total)
-          );
+      const latestSummary = await refreshAndValidateTotal(
+        Number(summaryData.grand_total)
+      );
 
       const verifiedType = getCheckoutTypeFromSummary({
         data: latestSummary,
@@ -2805,106 +2427,6 @@ export default function CheckoutPage() {
                 "Your order may already have been created. Please check your orders before trying again.",
               type: "error",
             })
-          );
-        }
-
-        return;
-      }
-
-      // Mandatory backend error — add the mandatory product to cart once,
-      // refresh the summary and send the order forward (non-customer roles only)
-      if (
-        !isCustomer &&
-        !isAfterMandatoryAdd &&
-        isMandatoryBackendError(error)
-      ) {
-        let mandatoryList: MandatoryProduct[] = mandatoryProducts;
-
-        try {
-          const refreshed = await refetchMandatoryProducts();
-          const freshList = (refreshed.data as any)?.data;
-
-          if (Array.isArray(freshList)) mandatoryList = freshList;
-        } catch (listErr) {
-          console.error("Mandatory products refresh failed:", listErr);
-        }
-
-        const target = mandatoryList.find(
-          (product) =>
-            !cartProductIds.has(product.id) &&
-            Number(product.stock_quantity) > 0
-        );
-
-        if (target) {
-          const added = await handleAddMandatoryToCart(target);
-
-          if (added) {
-            // Buy Now: the product being bought is not in the cart, so put it
-            // there too and continue as a normal cart checkout (2 items).
-            if (isDirectCheckout) {
-              try {
-                await addToCart({
-                  product_id: productId,
-                  quantity,
-                  ...(variantId > 0 ? { variant_id: variantId } : {}),
-                } as any).unwrap();
-
-                window.dispatchEvent(new CustomEvent("cart:refresh"));
-
-                dispatch(
-                  showToast({
-                    message:
-                      "Mandatory product added. Both items are in your cart — please review and place your order.",
-                    type: "info",
-                  })
-                );
-
-                router.replace("/checkout?checkout_type=cart", {
-                  scroll: false,
-                });
-              } catch (buyNowAddError: any) {
-                dispatch(
-                  showToast({
-                    message: getErrorMessage(
-                      buyNowAddError,
-                      "Unable to add your product to the cart."
-                    ),
-                    type: "error",
-                  })
-                );
-              }
-
-              return;
-            }
-
-            // Cart checkout: items are in the cart now, send the order again.
-            afterMandatoryAddRef.current = true;
-            paymentActionInProgress.current = false;
-
-            await handlePlaceOrder();
-
-            return;
-          }
-        }
-
-        // Fallback: auto-add not possible, let the user pick manually
-        dispatch(
-          showToast({
-            message:
-              error?.data?.message ||
-              "The product is mandatory for your first purchase. Please add it to your order to continue.",
-            type: "error",
-          })
-        );
-
-        setIsMandatoryModalOpen(true);
-
-        try {
-          await refetchProfile();
-        } catch (refreshErr) {
-          console.error(
-            "Refresh after mandatory backend error failed:",
-            refreshErr
           );
         }
 
@@ -3244,64 +2766,49 @@ export default function CheckoutPage() {
         </div>
 
         {/* Sticky mobile bottom bar */}
-        {(
-          <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[#E4EBE6] bg-white/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-12px_30px_-18px_rgba(15,45,30,0.35)] backdrop-blur lg:hidden">
-            <div className="mx-auto flex max-w-[520px] items-center gap-3">
-              <div className="shrink-0">
-                <span className="block text-[9px] uppercase tracking-wide text-[#89928B]">
-                  {isRetryPaymentFlow ? "Payment" : "Total"}
-                </span>
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[#E4EBE6] bg-white/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-12px_30px_-18px_rgba(15,45,30,0.35)] backdrop-blur lg:hidden">
+          <div className="mx-auto flex max-w-[520px] items-center gap-3">
+            <div className="shrink-0">
+              <span className="block text-[9px] uppercase tracking-wide text-[#89928B]">
+                {isRetryPaymentFlow ? "Payment" : "Total"}
+              </span>
 
-                <span className="block text-[15px] font-bold leading-tight tracking-[-0.03em] text-[#17251B]">
-                  {summaryData
-                    ? formatPrice(summaryData.grand_total)
-                    : "Pending"}
-                </span>
-              </div>
-
-              <div className="min-w-0 flex-1">
-                <PlaceOrderButton
-                  onClick={
-                    isRetryPaymentFlow
-                      ? handleRetryPayment
-                      : handlePlaceOrder
-                  }
-                  isSubmitting={isSubmitting}
-                  gatewayLoading={isLoadingGatewaySettings}
-                  disabled={placeOrderDisabled}
-                  total={summaryData?.grand_total}
-                  compact
-                  retryMode={isRetryPaymentFlow}
-                />
-              </div>
+              <span className="block text-[15px] font-bold leading-tight tracking-[-0.03em] text-[#17251B]">
+                {summaryData
+                  ? formatPrice(summaryData.grand_total)
+                  : "Pending"}
+              </span>
             </div>
 
-            {isRetryPaymentFlow && (
-              <button
-                type="button"
-                onClick={handleExitPayment}
-                disabled={isSubmitting}
-                className="mx-auto mt-2 flex min-h-[34px] w-full max-w-[520px] items-center justify-center gap-2 rounded-lg border border-[#D8E1DB] bg-white px-4 py-1.5 text-[11px] font-semibold text-[#526258] transition hover:bg-[#F7FAF8] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <X className="h-3.5 w-3.5" />
-                Exit Payment
-              </button>
-            )}
+            <div className="min-w-0 flex-1">
+              <PlaceOrderButton
+                onClick={
+                  isRetryPaymentFlow
+                    ? handleRetryPayment
+                    : handlePlaceOrder
+                }
+                isSubmitting={isSubmitting}
+                gatewayLoading={isLoadingGatewaySettings}
+                disabled={placeOrderDisabled}
+                total={summaryData?.grand_total}
+                compact
+                retryMode={isRetryPaymentFlow}
+              />
+            </div>
           </div>
-        )}
 
-        {/* Mandatory product popup — hidden for customers */}
-        {!isCustomer && (
-          <MandatoryProductModal
-            isOpen={isMandatoryModalOpen && !isMandatorySatisfied}
-            products={mandatoryProducts}
-            isLoading={isLoadingMandatoryProducts}
-            onAddToCart={handleAddMandatoryToCart}
-            cartProductIds={cartProductIds}
-            addingProductId={addingMandatoryProductId}
-            onClose={() => setIsMandatoryModalOpen(false)}
-          />
-        )}
+          {isRetryPaymentFlow && (
+            <button
+              type="button"
+              onClick={handleExitPayment}
+              disabled={isSubmitting}
+              className="mx-auto mt-2 flex min-h-[34px] w-full max-w-[520px] items-center justify-center gap-2 rounded-lg border border-[#D8E1DB] bg-white px-4 py-1.5 text-[11px] font-semibold text-[#526258] transition hover:bg-[#F7FAF8] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <X className="h-3.5 w-3.5" />
+              Exit Payment
+            </button>
+          )}
+        </div>
 
         {/* Address form modal */}
         <AddressFormModal
