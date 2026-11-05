@@ -1842,7 +1842,7 @@ function HeaderInner({
       setIsEmptyCartDrawerOpen(true);
       return;
     }
-    router.push("/checkout");
+    router.push("/cart");
     closeHeaderOverlays();
   };
 

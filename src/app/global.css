@@ -455,3 +455,32 @@ html {
   width: 0 !important;
   height: 0 !important;
 }
+
+
+
+/* Disclaimer modal consent list scrollbar */
+
+.consent-scroll-area {
+  scrollbar-width: thin !important;
+  scrollbar-color: #09254b #e5e7eb !important;
+  overscroll-behavior: contain !important;
+}
+
+.consent-scroll-area::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.consent-scroll-area::-webkit-scrollbar-track {
+  background: #e5e7eb;
+  border-radius: 20px;
+}
+
+.consent-scroll-area::-webkit-scrollbar-thumb {
+  background: #09254b;
+  border-radius: 20px;
+}
+
+.consent-scroll-area::-webkit-scrollbar-thumb:hover {
+  background: #164477;
+}

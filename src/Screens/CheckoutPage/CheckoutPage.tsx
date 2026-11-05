@@ -8,9 +8,7 @@ import {
   AlertTriangle,
   BadgePercent,
   Check,
-  ChevronDown,
   ChevronRight,
-  Coins,
   CreditCard,
   Info,
   Loader2,
@@ -21,7 +19,6 @@ import {
   Plus,
   ShieldCheck,
   ShoppingCart,
-  Tag,
   X,
 } from "lucide-react";
 import { SiAxisbank, SiHdfcbank, SiRazorpay } from "react-icons/si";
@@ -39,18 +36,14 @@ import {
   useGetCheckoutSummaryQuery,
   usePlaceOrderMutation,
   useInitiateHdfcPaymentMutation,
-  useApplyCoinsMutation,
   useGetMandatoryProductsQuery,
   type HdfcApiResult,
   type MandatoryProduct,
 } from "@/lib/redux/api/checkoutApi";
 
 import {
-  useGetCouponsQuery,
   useLazyGetCartQuery,
   useCheckCartStockMutation,
-  useRemoveFromCartMutation,
-  useUpdateCartItemMutation,
   useAddToCartMutation,
 } from "@/lib/redux/api/cartApi";
 
@@ -62,7 +55,6 @@ import Footer from "@/components/Footer/Footer";
 import AddressFormModal from "./AddressFormModal";
 
 import { useRetryOrderMutation } from "@/lib/redux/api/order/orderApi";
-import { useGetUserDashboardQuery } from "@/lib/redux/api/distributor/userDashboardApi";
 import { useGetUserProfileQuery } from "@/lib/redux/api/authApi";
 
 export interface Address {
@@ -146,25 +138,10 @@ interface CheckoutSummaryData {
   checkout_type?: "cart" | "buy_now";
   subtotal: number;
   coupon_discount: number;
-  coupon?: {
-    code: string;
-    title: string;
-    type: string;
-    value: string;
-    discount_amount: number;
-  } | null;
   subtotal_after_discount: number;
   total_tax: number;
   shipping_cost: number;
   subtotal_after_discount_and_tax: number;
-  coin_balance: number;
-  yellow_bal?: number;
-  blue_bal?: number;
-  sma_balance?: number;
-  coin_balances?: { yellow?: number; blue?: number; sma?: number };
-  max_coins_redeemable: number;
-  coins_used: number;
-  amount_redeemed: number;
   grand_total: number;
   items: CheckoutSummaryItem[];
 
@@ -192,16 +169,6 @@ interface RazorpayOrderData {
   razorpayKey: string;
 }
 
-interface CouponListItem {
-  id?: number;
-  code: string;
-  title?: string;
-  description?: string;
-  type?: string;
-  value?: string | number;
-  is_active?: boolean | number | string;
-}
-
 declare global {
   interface Window {
     Razorpay: any;
@@ -215,12 +182,6 @@ type PaymentGatewayId =
   | "razorpay-axis";
 
 type PaymentGatewayKind = "razorpay" | "hdfc";
-type CoinKind = "yellow" | "blue";
-
-interface CoinBalances {
-  yellow: number;
-  blue: number;
-}
 
 interface PaymentGatewayOption {
   id: PaymentGatewayId;
@@ -238,7 +199,6 @@ interface PaymentGatewayOption {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const INK = "#111827";
-const MAX_CHECKOUT_QUANTITY = 10;
 
 const PAYMENT_GATEWAY_OPTIONS: PaymentGatewayOption[] = [
   {
@@ -330,6 +290,7 @@ const pickCommissionValue = (source: any): number | null => {
 
   const candidates = [
     source.commission_value,
+    source.commision_value,
     source.commission_total,
     source.commission,
     source.commission_amount,
@@ -452,27 +413,6 @@ const getItemImage = (item: {
   item.images?.[0]?.image_url ||
   null;
 
-const getSummaryItemKey = (
-  item: CheckoutSummaryItem,
-  index: number
-): string =>
-  `${item.product_id}-${item.variant_id ?? item.variant?.id ?? "none"}-${index}`;
-
-const getCouponValueLabel = (coupon: CouponListItem): string => {
-  const type = String(coupon.type || "").toLowerCase();
-  const value = coupon.value ?? 0;
-
-  if (type.includes("percent") || type === "%") {
-    return `${value}% OFF`;
-  }
-
-  if (Number(value) > 0) {
-    return `${formatPrice(value)} OFF`;
-  }
-
-  return "Discount";
-};
-
 const getInitialGatewayId = (value: unknown): PaymentGatewayId => {
   const code = String(value || "")
     .trim()
@@ -486,111 +426,6 @@ const getInitialGatewayId = (value: unknown): PaymentGatewayId => {
   if (code.includes("AXIS")) return "razorpay-axis";
 
   return "freecharge-axis";
-};
-
-const getCartLineStock = (cartItem: any): number | null => {
-  const value =
-    cartItem?.variant?.stock_quantity ??
-    cartItem?.product?.available_stock ??
-    cartItem?.product?.stock_quantity;
-
-  if (value === null || value === undefined || value === "") return null;
-
-  const stock = Number(value);
-
-  return Number.isFinite(stock) ? Math.max(0, stock) : null;
-};
-
-const getSummaryStock = (
-  item: CheckoutSummaryItem,
-  cartItem?: any
-): number | null => {
-  const value =
-    item.max_stock ??
-    item.variant?.stock_quantity ??
-    item.variant_stock_quantity ??
-    item.available_stock ??
-    item.stock_quantity ??
-    item.product?.available_stock ??
-    item.product?.stock_quantity ??
-    getCartLineStock(cartItem);
-
-  if (value === null || value === undefined || value === "") return null;
-
-  const stock = Number(value);
-
-  return Number.isFinite(stock) ? Math.max(0, stock) : null;
-};
-
-const getCheckoutMaxQuantity = (stock: number | null): number => {
-  if (stock === null) return MAX_CHECKOUT_QUANTITY;
-  if (stock <= 0) return 1;
-
-  return Math.floor(stock);
-};
-
-const findMatchingCartLine = (
-  summaryItem: CheckoutSummaryItem,
-  cartItems: any[]
-): any | undefined => {
-  const productId = Number(summaryItem.product_id);
-
-  const explicitCartItemId = Number(
-    summaryItem.cart_item_id ??
-      summaryItem.cartItemId ??
-      summaryItem.cart_item?.id ??
-      0
-  );
-
-  if (explicitCartItemId > 0) {
-    const exactMatch = cartItems.find(
-      (item) =>
-        Number(item?.id) === explicitCartItemId &&
-        Number(item?.product_id) === productId
-    );
-
-    if (exactMatch) return exactMatch;
-  }
-
-  let candidates = cartItems.filter(
-    (item) => Number(item?.product_id) === productId
-  );
-
-  const variantId = Number(
-    summaryItem.variant_id ?? summaryItem.variant?.id ?? 0
-  );
-
-  if (variantId > 0) {
-    candidates = candidates.filter(
-      (item) =>
-        Number(item?.variant_id ?? item?.variant?.id ?? 0) === variantId
-    );
-  }
-
-  if (candidates.length === 1) return candidates[0];
-
-  if (candidates.length > 1) {
-    const targetName = String(summaryItem.product_name || "")
-      .trim()
-      .toLowerCase();
-
-    const targetQuantity = Number(summaryItem.quantity || 1);
-
-    const matchingCandidates = candidates.filter((item) => {
-      const name = String(item?.product?.name ?? item?.product_name ?? "")
-        .trim()
-        .toLowerCase();
-
-      return (
-        (!targetName || name === targetName) &&
-        Number(item?.quantity || 1) === targetQuantity
-      );
-    });
-
-    if (matchingCandidates.length === 1) return matchingCandidates[0];
-  }
-
-  return undefined;
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -676,192 +511,6 @@ function PlaceOrderButton({
         </>
       )}
     </button>
-  );
-}
-
-function CouponListPanel({
-  coupons,
-  isLoading,
-  appliedCode,
-  onApply,
-}: {
-  coupons: CouponListItem[];
-  isLoading: boolean;
-  appliedCode: string | null;
-  onApply: (code: string) => void;
-}) {
-  if (isLoading) {
-    return (
-      <div className="space-y-2 rounded-xl border border-[#E2E8E4] bg-white p-3">
-        <div className="h-14 animate-pulse rounded-lg bg-[#EEEEEC]" />
-        <div className="h-14 animate-pulse rounded-lg bg-[#EEEEEC]" />
-      </div>
-    );
-  }
-
-  if (!coupons.length) {
-    return (
-      <div className="rounded-xl border border-[#E2E8E4] bg-white p-4 text-center">
-        <p className="text-[11px] text-[#888888]">
-          No coupons available right now
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="max-h-[200px] space-y-2 overflow-y-auto rounded-xl border border-[#E2E8E4] bg-white p-2">
-      {coupons.map((coupon, index) => {
-        const isApplied =
-          appliedCode &&
-          appliedCode.toUpperCase() === String(coupon.code).toUpperCase();
-
-        return (
-          <div
-            key={`${coupon.id ?? coupon.code}-${index}`}
-            className="flex items-center gap-3 rounded-lg border border-dashed border-[#DDE5DF] p-2.5"
-          >
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#EAF6EF] text-[#16845B]">
-              <BadgePercent className="h-4 w-4" />
-            </div>
-
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <p className="truncate text-[11px] font-semibold uppercase text-[#171717]">
-                  {coupon.code}
-                </p>
-
-                <span className="shrink-0 text-[10px] font-semibold text-[#16845B]">
-                  {getCouponValueLabel(coupon)}
-                </span>
-              </div>
-
-              {(coupon.title || coupon.description) && (
-                <p className="mt-0.5 truncate text-[10px] text-[#888888]">
-                  {coupon.title || coupon.description}
-                </p>
-              )}
-            </div>
-
-            <button
-              type="button"
-              onClick={() => onApply(coupon.code)}
-              disabled={Boolean(isApplied)}
-              className="shrink-0 rounded-lg border border-[#CBD5CE] px-3 py-1.5 text-[10px] font-semibold text-[#1F513B] transition hover:border-[#16845B] hover:bg-[#EAF6EF] disabled:cursor-not-allowed disabled:text-[#AAAAAA]"
-            >
-              {isApplied ? "Applied" : "Apply"}
-            </button>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function QuantitySelect({
-  value,
-  options,
-  disabled,
-  isLoading,
-  onChange,
-  ariaLabel,
-}: {
-  value: number;
-  options: number[];
-  disabled: boolean;
-  isLoading: boolean;
-  onChange: (value: number) => void;
-  ariaLabel: string;
-}) {
-  const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (!open) return;
-
-    const handleClickOutside = (event: globalThis.MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
-      ) {
-        setOpen(false);
-      }
-    };
-
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("keydown", handleEscape);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleEscape);
-    };
-  }, [open]);
-
-  const handleSelect = (qty: number) => {
-    if (disabled || isLoading) return;
-
-    setOpen(false);
-    onChange(qty);
-  };
-
-  return (
-    <div ref={containerRef} className="relative inline-block">
-      <button
-        type="button"
-        aria-label={ariaLabel}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        disabled={disabled}
-        onClick={() => setOpen((prev) => !prev)}
-        className="inline-flex h-7 min-w-[56px] items-center justify-between gap-1.5 rounded-md border border-[#DDE7DF] bg-[#F8FBF8] px-2 text-[11px] font-semibold text-[#173E2B] transition hover:border-[#B9CFC1] disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        <span className="tabular-nums">{value}</span>
-
-        {isLoading ? (
-          <Loader2 className="h-3 w-3 animate-spin text-[#16845B]" />
-        ) : (
-          <ChevronDown
-            className={`h-3 w-3 text-[#748078] transition-transform ${
-              open ? "rotate-180" : ""
-            }`}
-          />
-        )}
-      </button>
-
-      {open && !disabled && (
-        <div
-          role="listbox"
-          aria-label={ariaLabel}
-          className="absolute left-0 top-[calc(100%+4px)] z-[100] max-h-[180px] w-[85px] overflow-y-auto overscroll-contain rounded-lg border border-[#DDE7DF] bg-white py-1 shadow-[0_10px_28px_-14px_rgba(15,45,30,0.4)] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#C7D6CC] [&::-webkit-scrollbar-track]:bg-transparent"
-        >
-          {options.map((qty) => {
-            const isSelected = qty === value;
-
-            return (
-              <button
-                key={qty}
-                type="button"
-                role="option"
-                aria-selected={isSelected}
-                onClick={() => handleSelect(qty)}
-                className={`flex w-full items-center justify-between px-2.5 py-1.5 text-left text-[11px] font-semibold transition ${
-                  isSelected
-                    ? "bg-[#EAF6EF] text-[#16845B]"
-                    : "text-[#37473C] hover:bg-[#F4F8F5]"
-                }`}
-              >
-                <span className="tabular-nums">{qty}</span>
-                {isSelected && <Check className="h-3 w-3" />}
-              </button>
-            );
-          })}
-        </div>
-      )}
-    </div>
   );
 }
 
@@ -1167,360 +816,16 @@ function MandatoryProductModal({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Coin redemption UI
-// ─────────────────────────────────────────────────────────────────────────────
-
-function CoinRedemption({
-  role,
-  balances,
-  maxRedeemable,
-  selected,
-  amount,
-  onSelect,
-  onAmountChange,
-  onApply,
-  onRemove,
-  isApplying,
-  redemptionId,
-  appliedAmount,
-  busy,
-  retryMode,
-}: {
-  role: string;
-  balances: CoinBalances;
-  maxRedeemable: number;
-  selected: CoinKind | null;
-  amount: string;
-  onSelect: (kind: CoinKind | null) => void;
-  onAmountChange: (value: string) => void;
-  onApply: () => void;
-  onRemove: () => void;
-  isApplying: boolean;
-  redemptionId: number | string | null;
-  appliedAmount: number;
-  busy: boolean;
-  retryMode: boolean;
-}) {
-  const [open, setOpen] = useState(false);
-
-  const isApplied = redemptionId !== null && redemptionId !== "";
-  const isDistributor = role === "distributor";
-
-  if (retryMode || !isDistributor) return null;
-
-  const maximum = Math.max(0, Math.floor(Number(maxRedeemable || 0)));
-
-  const coins = [
-    {
-      id: "yellow" as const,
-      title: "Yellow Coins",
-      balance: balances.yellow,
-      pointType: "yellow_bal",
-      iconBg: "bg-amber-50",
-      iconColor: "text-amber-600",
-      selectedBg: "border-amber-300 bg-amber-50/70",
-    },
-    {
-      id: "blue" as const,
-      title: "Blue Coins",
-      balance: balances.blue,
-      pointType: "blue_bal",
-      iconBg: "bg-blue-50",
-      iconColor: "text-blue-600",
-      selectedBg: "border-blue-300 bg-blue-50/70",
-    },
-  ];
-
-  const getMaximumForCoin = (kind: CoinKind) =>
-    Math.min(
-      Math.max(0, Math.floor(Number(balances[kind] || 0))),
-      maximum
-    );
-
-  const selectedMaximum = selected ? getMaximumForCoin(selected) : 0;
-  const parsedAmount = Number(amount);
-
-  const canApply =
-    !!selected &&
-    Number.isInteger(parsedAmount) &&
-    parsedAmount >= 1 &&
-    parsedAmount <= selectedMaximum &&
-    !isApplied &&
-    !isApplying &&
-    !busy;
-
-  return (
-    <div className="mx-4 my-3 overflow-hidden rounded-xl border border-[#E2E8E4] bg-white sm:mx-5">
-      <button
-        type="button"
-        onClick={() => setOpen((previous) => !previous)}
-        disabled={busy || isApplied}
-        className="flex w-full items-center justify-between gap-3 px-3.5 py-3 text-left transition hover:bg-[#F8FBF8] disabled:cursor-not-allowed"
-      >
-        <div className="flex min-w-0 items-center gap-2.5">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#FFF7E6] text-[#D69A19]">
-            <Coins className="h-4.5 w-4.5" />
-          </span>
-
-          <span className="min-w-0">
-            <span className="flex items-center gap-2">
-              <span className="text-[12px] font-semibold text-[#173E2B]">
-                Apply Coins
-              </span>
-
-              {isApplied && (
-                <span className="rounded-full bg-[#EAF6EF] px-2 py-0.5 text-[9px] font-semibold text-[#16845B]">
-                  Applied
-                </span>
-              )}
-            </span>
-
-            <span className="mt-0.5 block text-[10px] text-[#849087]">
-              Yellow: {balances.yellow.toLocaleString("en-IN")} · Blue:{" "}
-              {balances.blue.toLocaleString("en-IN")}
-            </span>
-          </span>
-        </div>
-
-        <div className="flex shrink-0 items-center gap-2">
-          {isApplied ? (
-            <Check className="h-4 w-4 text-[#16845B]" />
-          ) : (
-            <ChevronDown
-              className={`h-4 w-4 text-[#748078] transition-transform ${
-                open ? "rotate-180" : ""
-              }`}
-            />
-          )}
-        </div>
-      </button>
-
-      {open && !isApplied && (
-        <div className="border-t border-[#EDF1EE] bg-[#FAFCFA] p-3">
-          <div className="mb-3">
-            <p className="text-[11px] font-semibold text-[#25362A]">
-              Select coin type
-            </p>
-            <p className="mt-0.5 text-[10px] text-[#89928B]">
-              Choose which coins you want to redeem.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            {coins.map((coin) => {
-              const isSelected = selected === coin.id;
-              const balance = Math.max(0, Number(coin.balance || 0));
-              const coinMaximum = getMaximumForCoin(coin.id);
-
-              const disabled =
-                balance <= 0 || coinMaximum <= 0 || busy || isApplying;
-
-              return (
-                <button
-                  key={coin.id}
-                  type="button"
-                  disabled={disabled}
-                  onClick={() => {
-                    if (isSelected) {
-                      onSelect(null);
-                      onAmountChange("");
-                    } else {
-                      onSelect(coin.id);
-                      onAmountChange(String(coinMaximum));
-                    }
-                  }}
-                  className={`relative flex min-w-0 items-center gap-2 rounded-xl border p-2.5 text-left transition-all ${
-                    isSelected
-                      ? coin.selectedBg
-                      : "border-[#E5EBE6] bg-white hover:border-[#BCCFC1]"
-                  } ${
-                    disabled
-                      ? "cursor-not-allowed opacity-50"
-                      : "cursor-pointer"
-                  }`}
-                >
-                  <span
-                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${coin.iconBg} ${coin.iconColor}`}
-                  >
-                    <Coins className="h-4 w-4" />
-                  </span>
-
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[10.5px] font-semibold text-[#263329]">
-                      {coin.title}
-                    </span>
-                    <span className="mt-0.5 block text-[10px] text-[#89928B]">
-                      {balance.toLocaleString("en-IN")} available
-                    </span>
-                  </span>
-
-                  <span
-                    className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${
-                      isSelected
-                        ? "border-[#16845B] bg-[#16845B]"
-                        : "border-[#CFD9D1] bg-white"
-                    }`}
-                  >
-                    {isSelected && (
-                      <Check className="h-2.5 w-2.5 text-white" />
-                    )}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          {selected && (
-            <div className="mt-3 rounded-xl border border-[#E2EAE4] bg-white p-3">
-              <div className="mb-2 flex items-center justify-between gap-2">
-                <div>
-                  <p className="text-[11px] font-semibold text-[#263329]">
-                    Coins to redeem
-                  </p>
-                  <p className="mt-0.5 text-[10px] text-[#89928B]">
-                    Maximum allowed: {selectedMaximum}
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  disabled={selectedMaximum <= 0 || busy || isApplying}
-                  onClick={() =>
-                    onAmountChange(String(selectedMaximum))
-                  }
-                  className="rounded-lg border border-[#CDE4D5] bg-[#F1FAF4] px-2.5 py-1.5 text-[10px] font-semibold text-[#16845B] transition hover:bg-[#E4F5E9] disabled:opacity-50"
-                >
-                  Use Max
-                </button>
-              </div>
-
-              <div className="flex h-10 items-center rounded-lg border border-[#DDE7DF] bg-[#FAFCFA] px-3 transition focus-within:border-[#16845B] focus-within:ring-2 focus-within:ring-[#16845B]/10">
-                <Coins className="mr-2 h-4 w-4 shrink-0 text-[#A78A42]" />
-
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  autoComplete="off"
-                  value={amount}
-                  disabled={busy || isApplying}
-                  onChange={(event) =>
-                    onAmountChange(event.target.value.replace(/\D/g, ""))
-                  }
-                  placeholder="Enter coins"
-                  aria-label="Number of coins to redeem"
-                  className="w-full min-w-0 bg-transparent text-[13px] font-semibold text-[#25362A] outline-none placeholder:font-normal placeholder:text-[#A0AAA3] disabled:opacity-60"
-                />
-
-                <span className="ml-2 shrink-0 text-[10px] font-medium text-[#89928B]">
-                  Coins
-                </span>
-              </div>
-
-              <p className="mt-1.5 text-[9.5px] text-[#89928B]">
-                You can redeem up to {selectedMaximum} coins for this order.
-              </p>
-
-              <button
-                type="button"
-                onClick={onApply}
-                disabled={!canApply}
-                className="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#173E2B] to-[#16845B] px-4 text-[11px] font-semibold text-white transition hover:brightness-105 disabled:cursor-not-allowed disabled:from-[#AAB9AE] disabled:to-[#AAB9AE]"
-              >
-                {isApplying ? (
-                  <>
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    Applying Coins...
-                  </>
-                ) : (
-                  <>
-                    <Coins className="h-3.5 w-3.5" />
-                    Apply {amount || 0} Coins
-                  </>
-                )}
-              </button>
-            </div>
-          )}
-
-          {!selected && (
-            <p className="mt-3 rounded-lg bg-[#F1F5F2] px-3 py-2 text-[10px] text-[#748078]">
-              Select Yellow Coins or Blue Coins to continue.
-            </p>
-          )}
-
-          {maximum <= 0 && (
-            <p className="mt-2 text-[10px] font-medium text-[#B7791F]">
-              No coins are currently redeemable for this order.
-            </p>
-          )}
-        </div>
-      )}
-
-      {isApplied && (
-        <div className="flex items-center justify-between gap-3 border-t border-[#E2EAE4] bg-[#F1FAF4] px-3.5 py-2.5">
-          <div className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#D9F0E1] text-[#16845B]">
-              <Check className="h-4 w-4" />
-            </span>
-
-            <div>
-              <p className="text-[11px] font-semibold text-[#20543A]">
-                Coins applied successfully
-              </p>
-              <p className="text-[10px] text-[#64816D]">
-                {appliedAmount} {selected === "yellow" ? "Yellow" : "Blue"}{" "}
-                Coins
-              </p>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={onRemove}
-            disabled={busy || isApplying}
-            aria-label="Remove applied coins"
-            title="Remove applied coins"
-            className="ml-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[#748078] transition hover:bg-white hover:text-[#B64339] disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <X className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // Cart summary
 // ─────────────────────────────────────────────────────────────────────────────
 
 function CartSummary({
   summaryData,
-  coinRole,
-  coinBalances,
-  selectedCoin,
-  onSelectCoin,
-  coinAmount,
-  onCoinAmountChange,
-  onApplyCoins,
-  onRemoveCoins,
-  isApplyingCoins,
-  redemptionId,
-  appliedCoinAmount,
+  userRole,
   loading,
   onPlaceOrder,
   isSubmitting,
   disabled,
-  couponInput,
-  setCouponInput,
-  appliedCoupon,
-  onApplyCoupon,
-  onRemoveCoupon,
-  isApplyingCoupon,
-  coupons,
-  isLoadingCoupons,
-  showCouponList,
-  setShowCouponList,
   unavailableProductIds,
   checkoutType,
   selectedGateway,
@@ -1528,38 +833,14 @@ function CartSummary({
   retryMode = false,
   retryOrderReference = "",
   onExitPayment,
-  onRemoveCartItem,
-  removingSummaryItemKey,
   cartLines,
-  quantityUpdatingKey,
-  onUpdateQuantity,
 }: {
   summaryData?: CheckoutSummaryData;
-  coinRole: string;
-  coinBalances: CoinBalances;
-  selectedCoin: CoinKind | null;
-  onSelectCoin: (kind: CoinKind | null) => void;
-  coinAmount: string;
-  onCoinAmountChange: (value: string) => void;
-  onApplyCoins: () => void;
-  onRemoveCoins: () => void;
-  isApplyingCoins: boolean;
-  redemptionId: number | string | null;
-  appliedCoinAmount: number;
+  userRole: string;
   loading: boolean;
   onPlaceOrder: () => void;
   isSubmitting: boolean;
   disabled: boolean;
-  couponInput: string;
-  setCouponInput: (value: string) => void;
-  appliedCoupon: string | null;
-  onApplyCoupon: (codeOverride?: string) => void;
-  onRemoveCoupon: () => void;
-  isApplyingCoupon: boolean;
-  coupons: CouponListItem[];
-  isLoadingCoupons: boolean;
-  showCouponList: boolean;
-  setShowCouponList: (value: boolean) => void;
   unavailableProductIds: Set<number>;
   checkoutType: "cart" | "buy_now";
   selectedGateway: PaymentGatewayOption;
@@ -1567,15 +848,7 @@ function CartSummary({
   retryMode?: boolean;
   retryOrderReference?: string;
   onExitPayment: () => void;
-  onRemoveCartItem: (item: CheckoutSummaryItem, index: number) => void;
-  removingSummaryItemKey: string | null;
   cartLines: any[];
-  quantityUpdatingKey: string | null;
-  onUpdateQuantity: (
-    item: CheckoutSummaryItem,
-    index: number,
-    quantity: number
-  ) => void;
 }) {
   if (loading) {
     return (
@@ -1605,7 +878,7 @@ function CartSummary({
 
   const items = normalizeSummaryItems(summaryData, cartLines);
 
-  const isDistributor = coinRole === "distributor";
+  const isDistributor = userRole === "distributor";
 
   const itemsCommissionSum = items.reduce((acc, item) => {
     const perItem = Number(
@@ -1633,9 +906,6 @@ function CartSummary({
 
   const hasCommission =
     isDistributor && Number.isFinite(totalCommission) && totalCommission > 0;
-
-  const hasCoupon =
-    !!summaryData.coupon || Number(summaryData.coupon_discount || 0) > 0;
 
   const hasUnavailable = !retryMode && unavailableProductIds.size > 0;
 
@@ -1702,32 +972,6 @@ function CartSummary({
             const isUnavailable =
               !retryMode && unavailableProductIds.has(item.product_id);
 
-            const itemKey = getSummaryItemKey(item, index);
-
-            const matchingCartItem =
-              checkoutType === "cart"
-                ? findMatchingCartLine(item, cartLines)
-                : undefined;
-
-            const stock = getSummaryStock(item, matchingCartItem);
-            const maxQuantity = getCheckoutMaxQuantity(stock);
-
-            const quantityOptions = Array.from(
-              { length: Math.max(1, maxQuantity) },
-              (_, optionIndex) => optionIndex + 1
-            );
-
-            const isUpdatingThisQuantity =
-              quantityUpdatingKey === itemKey;
-
-            const quantityDisabled =
-              retryMode ||
-              isSubmitting ||
-              gatewayLoading ||
-              Boolean(removingSummaryItemKey) ||
-              isUpdatingThisQuantity ||
-              (checkoutType === "cart" && !matchingCartItem);
-
             const perUnitCommission = Number(
               item.commission_value ?? 0
             );
@@ -1786,33 +1030,6 @@ function CartSummary({
                     {item.product_name}
                   </p>
 
-                  <div className="mt-1 flex flex-wrap items-center gap-2">
-                    {!isUnavailable && (
-                      <p className="text-[10px] text-[#89928B]">
-                        {item.tax_category || "Product"}
-                      </p>
-                    )}
-
-                    {!retryMode && (
-                      <label className="inline-flex items-center gap-1.5">
-                        <span className="text-[10px] font-medium text-[#748078]">
-                          Qty:
-                        </span>
-
-                        <QuantitySelect
-                          value={item.quantity}
-                          options={quantityOptions}
-                          disabled={quantityDisabled}
-                          isLoading={isUpdatingThisQuantity}
-                          ariaLabel={`Quantity for ${item.product_name}`}
-                          onChange={(qty) =>
-                            onUpdateQuantity(item, index, qty)
-                          }
-                        />
-                      </label>
-                    )}
-                  </div>
-
                   {showCommission && (
                     <div className="mt-1.5 inline-flex items-center gap-1 rounded-md bg-[#ECF9F1] px-1.5 py-0.5 text-[9.5px] font-semibold text-[#16845B]">
                       <BadgePercent className="h-3 w-3" />
@@ -1827,41 +1044,9 @@ function CartSummary({
                         : "Out of stock — update your cart"}
                     </p>
                   )}
-
-                  {checkoutType === "cart" &&
-                    !matchingCartItem &&
-                    !retryMode && (
-                      <p className="mt-1 text-[10px] text-[#B64339]">
-                        Refresh checkout to update quantity.
-                      </p>
-                    )}
                 </div>
 
                 <div className="flex shrink-0 flex-col items-end justify-between self-stretch">
-                  {!retryMode && checkoutType === "cart" && (
-                    <button
-                      type="button"
-                      aria-label={`Remove ${
-                        item.product_name || "product"
-                      } from cart`}
-                      title="Remove from cart"
-                      onClick={() => onRemoveCartItem(item, index)}
-                      disabled={
-                        Boolean(removingSummaryItemKey) ||
-                        Boolean(quantityUpdatingKey) ||
-                        isSubmitting ||
-                        gatewayLoading
-                      }
-                      className="-mr-1 -mt-1 flex h-7 w-7 items-center justify-center rounded-full text-[#7A877E] transition hover:bg-[#FFF0EF] hover:text-[#B64339] disabled:cursor-not-allowed disabled:opacity-45"
-                    >
-                      {removingSummaryItemKey === itemKey ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <X className="h-4 w-4" strokeWidth={1.8} />
-                      )}
-                    </button>
-                  )}
-
                   <p className="shrink-0 text-[13px] font-semibold text-[#1D2921]">
                     {formatPrice(item.line_total)}
                   </p>
@@ -1876,117 +1061,6 @@ function CartSummary({
         )}
       </div>
 
-      <div className="border-t border-[#EDF1EE] px-4 py-2.5 sm:px-5">
-        <div className="mb-1.5 flex items-center justify-between gap-3">
-          <p className="text-[12px] font-semibold text-[#303B33]">
-            Discount code
-          </p>
-
-          <button
-            type="button"
-            onClick={() => setShowCouponList(!showCouponList)}
-            className="flex shrink-0 items-center gap-1 rounded-md px-1 py-0.5 text-[11px] font-semibold text-[#16845B] transition hover:text-[#0E6242]"
-          >
-            {showCouponList ? "Hide coupons" : "View coupons"}
-            <ChevronDown
-              className={`h-3 w-3 transition-transform ${
-                showCouponList ? "rotate-180" : ""
-              }`}
-            />
-          </button>
-        </div>
-
-        {showCouponList && (
-          <div className="mb-2">
-            <CouponListPanel
-              coupons={coupons}
-              isLoading={isLoadingCoupons}
-              appliedCode={appliedCoupon}
-              onApply={(code) => {
-                onApplyCoupon(code);
-                setShowCouponList(false);
-              }}
-            />
-          </div>
-        )}
-
-        {!hasCoupon ? (
-          <div className="flex h-[38px] w-full items-center rounded-xl border border-[#DFE7E1] bg-white px-3 transition focus-within:border-[#16845B] focus-within:ring-2 focus-within:ring-[#16845B]/10">
-            <Tag className="mr-2 h-[14px] w-[14px] shrink-0 text-[#839087]" />
-
-            <input
-              type="text"
-              value={couponInput}
-              onChange={(event) => setCouponInput(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && !isApplyingCoupon) {
-                  onApplyCoupon();
-                }
-              }}
-              placeholder="Enter discount code"
-              disabled={isApplyingCoupon}
-              className="min-w-0 flex-1 bg-transparent text-[12px] uppercase text-[#333333] outline-none placeholder:normal-case placeholder:text-[#999999]"
-            />
-
-            <button
-              type="button"
-              onClick={() => onApplyCoupon()}
-              disabled={!couponInput.trim() || isApplyingCoupon}
-              className="ml-2 flex h-[26px] min-w-[56px] shrink-0 items-center justify-center rounded-lg bg-[#173E2B] px-3 text-[11px] font-semibold text-white transition hover:bg-[#20543A] disabled:cursor-not-allowed disabled:bg-[#D5D5D3]"
-            >
-              {isApplyingCoupon ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                "Apply"
-              )}
-            </button>
-          </div>
-        ) : (
-          <div className="flex min-h-[38px] items-center justify-between rounded-xl border border-[#CDE4D5] bg-[#F1FAF4] px-3">
-            <div className="flex min-w-0 items-center gap-2">
-              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#D9F0E1]">
-                <Check className="h-3.5 w-3.5 text-[#16845B]" />
-              </div>
-
-              <div className="min-w-0">
-                <p className="truncate text-[11px] font-semibold uppercase text-[#263C2D]">
-                  {summaryData.coupon?.code || appliedCoupon}
-                </p>
-                <p className="text-[10px] text-[#64816D]">
-                  Coupon applied successfully
-                </p>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={onRemoveCoupon}
-              className="ml-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[#777777] transition hover:bg-white hover:text-[#111111]"
-              aria-label="Remove coupon"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        )}
-      </div>
-
-      <CoinRedemption
-        role={coinRole}
-        balances={coinBalances}
-        maxRedeemable={summaryData.max_coins_redeemable}
-        selected={selectedCoin}
-        amount={coinAmount}
-        onSelect={onSelectCoin}
-        onAmountChange={onCoinAmountChange}
-        onApply={onApplyCoins}
-        onRemove={onRemoveCoins}
-        isApplying={isApplyingCoins}
-        redemptionId={redemptionId}
-        appliedAmount={appliedCoinAmount}
-        busy={isSubmitting || loading || gatewayLoading}
-        retryMode={retryMode}
-      />
-
       <div className="space-y-1 border-t border-[#E8EEE9] px-4 py-2.5 sm:px-5">
         <div className="flex items-center justify-between">
           <span className="text-[12px] text-[#667168]">Subtotal</span>
@@ -1994,20 +1068,6 @@ function CartSummary({
             {formatPrice(summaryData.subtotal)}
           </span>
         </div>
-
-        {Number(summaryData.coupon_discount || 0) > 0 && (
-          <div className="flex items-center justify-between">
-            <span className="text-[12px] text-[#667168]">
-              Discount
-              {summaryData.coupon?.code
-                ? ` (${summaryData.coupon.code})`
-                : ""}
-            </span>
-            <span className="text-[12px] font-semibold text-[#16845B]">
-              - {formatPrice(summaryData.coupon_discount)}
-            </span>
-          </div>
-        )}
 
         <div className="flex items-center justify-between">
           <span className="text-[12px] text-[#667168]">Shipping</span>
@@ -2028,15 +1088,6 @@ function CartSummary({
             {formatPrice(summaryData.total_tax)}
           </span>
         </div>
-
-        {Number(summaryData.amount_redeemed || 0) > 0 && (
-          <div className="flex items-center justify-between">
-            <span className="text-[12px] text-[#667168]">Coins</span>
-            <span className="text-[12px] font-semibold text-[#16845B]">
-              - {formatPrice(summaryData.amount_redeemed)}
-            </span>
-          </div>
-        )}
 
         {hasCommission && (
           <div className="mt-1 flex items-center justify-between rounded-lg bg-[#ECF9F1] px-2 py-1.5">
@@ -2108,13 +1159,6 @@ function CartSummary({
             <X className="h-4 w-4" />
             Exit Payment
           </button>
-        )}
-
-        {disabled && !retryMode && !isSubmitting && (
-          <p className="mt-2 text-center text-[10px] leading-4 text-[#888888]">
-            Select a delivery address and finish coupon or coin updates to
-            continue.
-          </p>
         )}
 
         <div className="mt-2.5 rounded-lg border border-[#E5ECE7] bg-white px-2.5 py-1.5">
@@ -2314,8 +1358,6 @@ export default function CheckoutPage() {
     ? "buy_now"
     : "cart";
 
-  const urlCouponCode = searchParams.get("coupon_code") || "";
-
   const retryOrderReference = String(
     searchParams.get("order_reference") || ""
   ).trim();
@@ -2344,13 +1386,6 @@ export default function CheckoutPage() {
   // State
   // ───────────────────────────────────────────────────────────────────────────
 
-  const [selectedCoin, setSelectedCoin] = useState<CoinKind | null>(null);
-  const [coinAmount, setCoinAmount] = useState("");
-  const [redemptionId, setRedemptionId] = useState<number | string | null>(
-    null
-  );
-  const [appliedCoinAmount, setAppliedCoinAmount] = useState(0);
-
   const [selectedDeliveryAddress, setSelectedDeliveryAddress] =
     useState<Address | null>(null);
 
@@ -2361,28 +1396,11 @@ export default function CheckoutPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [removingSummaryItemKey, setRemovingSummaryItemKey] = useState<
-    string | null
-  >(null);
-
-  const [quantityUpdatingKey, setQuantityUpdatingKey] = useState<
-    string | null
-  >(null);
-
   const [cartLines, setCartLines] = useState<any[]>([]);
 
   const [unavailableProductIds, setUnavailableProductIds] = useState<
     Set<number>
   >(new Set());
-
-  const [couponInput, setCouponInput] = useState(urlCouponCode);
-  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(
-    urlCouponCode || null
-  );
-
-  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
-  const [showCouponList, setShowCouponList] = useState(false);
-  const [pendingCoupon, setPendingCoupon] = useState<string | null>(null);
 
   const [selectedGatewayId, setSelectedGatewayId] =
     useState<PaymentGatewayId>("freecharge-axis");
@@ -2396,6 +1414,7 @@ export default function CheckoutPage() {
 
   const paymentActionInProgress = useRef(false);
   const orderCreatedRef = useRef(false);
+  const afterMandatoryAddRef = useRef(false);
 
   const [orderCreatedForCheckout, setOrderCreatedForCheckout] =
     useState(false);
@@ -2416,30 +1435,19 @@ export default function CheckoutPage() {
 
   const [placeOrder] = usePlaceOrderMutation();
 
-  const [applyCoins, { isLoading: isApplyingCoins }] =
-    useApplyCoinsMutation();
-
-  const [removeFromCart] = useRemoveFromCartMutation();
-  const [updateCartItem] = useUpdateCartItemMutation();
   const [addToCart] = useAddToCartMutation();
 
   const [initiateHdfcPayment] = useInitiateHdfcPaymentMutation();
   const [retryOrder] = useRetryOrderMutation();
-
-  const { data: couponsData, isLoading: isLoadingCoupons } =
-    useGetCouponsQuery();
 
   const {
     data: paymentGatewaySettings,
     isLoading: isLoadingGatewaySettings,
   } = useGetPaymentGatewaySettingsQuery();
 
-  const { data: dashboardResponse } = useGetUserDashboardQuery();
-
   // ── Profile (can_buy flag) ───────────────────────────────────────────────
   const {
     data: profileResponse,
-    isLoading: isLoadingProfile,
     refetch: refetchProfile,
   } = useGetUserProfileQuery();
 
@@ -2462,28 +1470,6 @@ export default function CheckoutPage() {
     [selectedGatewayId]
   );
 
-  const dashboardInfo = useMemo(() => {
-    const response = dashboardResponse as any;
-
-    if (response?.data?.ignite) return response.data;
-    if (response?.data?.data?.ignite) return response.data.data;
-    if (response?.ignite) return response;
-
-    return {};
-  }, [dashboardResponse]);
-
-  const coinRole = String(
-    dashboardInfo?.user?.account_type || ""
-  ).toLowerCase();
-
-  const coinBalances: CoinBalances = {
-    yellow: Math.max(
-      0,
-      Number(dashboardInfo?.ignite?.yellow_bal ?? 0)
-    ),
-    blue: Math.max(0, Number(dashboardInfo?.ignite?.blue_bal ?? 0)),
-  };
-
   // ── Role-aware mandatory product gating ────────────────────────────────
   // Customers must NEVER be blocked by mandatory products.
   // Only distributors (or any non-customer role) may be gated by `can_buy`.
@@ -2491,8 +1477,7 @@ export default function CheckoutPage() {
     (profileResponse as any)?.user?.account_type || ""
   ).toLowerCase();
 
-  const isCustomer =
-    profileUserRole === "customer" || coinRole === "customer";
+  const isCustomer = profileUserRole === "customer";
 
   const canBuyRaw = (profileResponse as any)?.can_buy;
 
@@ -2520,7 +1505,7 @@ export default function CheckoutPage() {
   }, [cartLines]);
 
   const isMandatorySatisfied = useMemo(() => {
-    if (isCustomer) return true;         // customers are always satisfied
+    if (isCustomer) return true; // customers are always satisfied
     if (canBuy) return true;
     if (mandatoryProducts.length === 0) return true;
     return mandatoryProducts.some((p) => cartProductIds.has(p.id));
@@ -2529,9 +1514,11 @@ export default function CheckoutPage() {
   // ─────────────────────────────────────────────────────────────────────────
   // Add mandatory product to cart
   // ─────────────────────────────────────────────────────────────────────────
-  const handleAddMandatoryToCart = async (product: MandatoryProduct) => {
-    if (isCustomer) return; // safety: customers shouldn't reach here
-    if (!product?.id) return;
+  const handleAddMandatoryToCart = async (
+    product: MandatoryProduct
+  ): Promise<boolean> => {
+    if (isCustomer) return false; // safety: customers shouldn't reach here
+    if (!product?.id) return false;
 
     if (cartProductIds.has(product.id)) {
       dispatch(
@@ -2540,7 +1527,7 @@ export default function CheckoutPage() {
           type: "info",
         })
       );
-      return;
+      return false;
     }
 
     if (product.stock_quantity <= 0) {
@@ -2550,7 +1537,7 @@ export default function CheckoutPage() {
           type: "error",
         })
       );
-      return;
+      return false;
     }
 
     setAddingMandatoryProductId(product.id);
@@ -2568,11 +1555,6 @@ export default function CheckoutPage() {
         })
       );
 
-      await Promise.all([
-        refetchMandatoryProducts(),
-        refetchProfile(),
-      ]);
-
       try {
         const refreshedCart = await triggerGetCart().unwrap();
         const refreshedItems: any[] = Array.isArray(
@@ -2587,6 +1569,7 @@ export default function CheckoutPage() {
 
       window.dispatchEvent(new CustomEvent("cart:refresh"));
 
+      // Recall checkout summary so totals include the added product
       try {
         await refetchCheckoutSummary();
       } catch (summaryErr) {
@@ -2597,7 +1580,10 @@ export default function CheckoutPage() {
       }
 
       try {
-        await refetchProfile();
+        await Promise.all([
+          refetchMandatoryProducts(),
+          refetchProfile(),
+        ]);
       } catch (profileErr) {
         console.error(
           "Profile refresh after mandatory add failed:",
@@ -2606,6 +1592,8 @@ export default function CheckoutPage() {
       }
 
       setIsMandatoryModalOpen(false);
+
+      return true;
     } catch (error: any) {
       console.error("Add mandatory product error:", error);
 
@@ -2618,6 +1606,8 @@ export default function CheckoutPage() {
           type: "error",
         })
       );
+
+      return false;
     } finally {
       setAddingMandatoryProductId(null);
     }
@@ -2675,22 +1665,6 @@ export default function CheckoutPage() {
     isRetryPaymentFlow,
     retryGatewayParam,
   ]);
-
-  const coupons: CouponListItem[] = useMemo(() => {
-    const list = (couponsData as any)?.data?.data;
-
-    if (!Array.isArray(list)) return [];
-
-    return list.filter((coupon: CouponListItem) => {
-      if (coupon?.is_active === undefined) return true;
-
-      return (
-        coupon.is_active === true ||
-        coupon.is_active === 1 ||
-        coupon.is_active === "1"
-      );
-    });
-  }, [couponsData]);
 
   const addresses: Address[] = Array.isArray(
     (addressesData as any)?.data
@@ -2750,18 +1724,6 @@ export default function CheckoutPage() {
         ? { address_id: selectedDeliveryAddress.id }
         : {}),
 
-      ...(appliedCoupon
-        ? { coupon_code: appliedCoupon.trim() }
-        : {}),
-
-      ...(appliedCoinAmount > 0
-        ? { coins: appliedCoinAmount }
-        : {}),
-
-      ...(redemptionId !== null && redemptionId !== ""
-        ? { redemption_id: redemptionId }
-        : {}),
-
       ...(isDirectCheckout
         ? {
             product_id: productId,
@@ -2772,9 +1734,6 @@ export default function CheckoutPage() {
     }),
     [
       selectedDeliveryAddress?.id,
-      appliedCoupon,
-      appliedCoinAmount,
-      redemptionId,
       isDirectCheckout,
       productId,
       quantity,
@@ -2784,7 +1743,6 @@ export default function CheckoutPage() {
 
   const {
     data: checkoutSummaryResponse,
-    error: checkoutSummaryError,
     isLoading: isLoadingCheckoutSummary,
     isFetching: isFetchingCheckoutSummary,
     refetch: refetchCheckoutSummary,
@@ -2870,614 +1828,9 @@ export default function CheckoutPage() {
     void fetchAndCheckCartStock();
   }, [checkoutType, triggerGetCart, checkCartStock]);
 
-  const handleUpdateSummaryQuantity = async (
-    summaryItem: CheckoutSummaryItem,
-    index: number,
-    requestedQuantity: number
-  ) => {
-    const key = getSummaryItemKey(summaryItem, index);
-
-    if (
-      quantityUpdatingKey ||
-      removingSummaryItemKey ||
-      isSubmitting ||
-      orderCreatedRef.current
-    ) {
-      return;
-    }
-
-    if (isRetryPaymentFlow) {
-      dispatch(
-        showToast({
-          message:
-            "Quantity cannot be changed while retrying an existing payment.",
-          type: "info",
-        })
-      );
-
-      return;
-    }
-
-    const requested = Number(requestedQuantity);
-
-    if (!Number.isInteger(requested) || requested < 1) return;
-
-    if (displayCheckoutType === "buy_now") {
-      if (
-        !Number.isInteger(productId) ||
-        productId <= 0 ||
-        !Number.isInteger(quantity) ||
-        quantity <= 0
-      ) {
-        dispatch(
-          showToast({
-            message: "Invalid Buy Now product or quantity.",
-            type: "error",
-          })
-        );
-
-        return;
-      }
-
-      const stock = getSummaryStock(summaryItem);
-      const maxQuantity = getCheckoutMaxQuantity(stock);
-
-      const newQuantity = Math.max(
-        1,
-        Math.min(requested, Math.max(1, maxQuantity))
-      );
-
-      if (newQuantity === quantity) return;
-
-      setQuantityUpdatingKey(key);
-
-      try {
-        const params = new URLSearchParams(searchParams.toString());
-
-        params.set("quantity", String(newQuantity));
-
-        router.replace(`/checkout?${params.toString()}`);
-      } finally {
-        setQuantityUpdatingKey(null);
-      }
-
-      return;
-    }
-
-    setQuantityUpdatingKey(key);
-
-    try {
-      const cartResponse = await triggerGetCart().unwrap();
-
-      const currentCartItems: any[] = Array.isArray(
-        (cartResponse as any)?.data?.items
-      )
-        ? (cartResponse as any).data.items
-        : [];
-
-      setCartLines(currentCartItems);
-
-      const cartItem = findMatchingCartLine(
-        summaryItem,
-        currentCartItems
-      );
-
-      if (!cartItem?.id) {
-        throw new Error(
-          "Could not identify this cart item. Please refresh checkout and try again."
-        );
-      }
-
-      const currentQuantity = Math.max(
-        1,
-        Number(cartItem.quantity || summaryItem.quantity || 1)
-      );
-
-      if (requested === currentQuantity) return;
-
-      const stock = getSummaryStock(summaryItem, cartItem);
-      const maxQuantity = getCheckoutMaxQuantity(stock);
-
-      const newQuantity = Math.max(
-        1,
-        Math.min(requested, Math.max(1, maxQuantity))
-      );
-
-      if (newQuantity === currentQuantity) return;
-
-      await updateCartItem({
-        itemId: Number(cartItem.id),
-        data: {
-          quantity: newQuantity,
-          action: "set",
-        },
-      }).unwrap();
-
-      const refreshedCart = await triggerGetCart().unwrap();
-
-      const refreshedItems: any[] = Array.isArray(
-        (refreshedCart as any)?.data?.items
-      )
-        ? (refreshedCart as any).data.items
-        : [];
-
-      setCartLines(refreshedItems);
-
-      window.dispatchEvent(new CustomEvent("cart:refresh"));
-
-      const refreshedSummary = await refetchCheckoutSummary();
-
-      if (refreshedSummary.error) {
-        throw new Error(
-          "Quantity updated, but checkout totals could not be refreshed. Please refresh checkout."
-        );
-      }
-
-      dispatch(
-        showToast({
-          message: "Quantity updated successfully",
-          type: "success",
-        })
-      );
-    } catch (error: any) {
-      console.error("Checkout quantity update error:", error);
-
-      dispatch(
-        showToast({
-          message: getErrorMessage(
-            error,
-            "Unable to update quantity"
-          ),
-          type: "error",
-        })
-      );
-    } finally {
-      setQuantityUpdatingKey(null);
-    }
-  };
-
   // ───────────────────────────────────────────────────────────────────────────
-  // Remove cart item
+  // Address handlers
   // ───────────────────────────────────────────────────────────────────────────
-
-  const handleRemoveSummaryItem = async (
-    summaryItem: CheckoutSummaryItem,
-    index: number
-  ) => {
-    const key = getSummaryItemKey(summaryItem, index);
-
-    if (
-      removingSummaryItemKey ||
-      quantityUpdatingKey ||
-      isSubmitting ||
-      orderCreatedRef.current
-    ) {
-      return;
-    }
-
-    if (
-      isRetryPaymentFlow ||
-      displayCheckoutType !== "cart"
-    ) {
-      dispatch(
-        showToast({
-          message:
-            "Items cannot be removed during payment retry or Buy Now checkout.",
-          type: "info",
-        })
-      );
-
-      return;
-    }
-
-    setRemovingSummaryItemKey(key);
-
-    try {
-      const cartResponse = await triggerGetCart().unwrap();
-
-      const cartItems: any[] = Array.isArray(
-        (cartResponse as any)?.data?.items
-      )
-        ? (cartResponse as any).data.items
-        : [];
-
-      const cartItem = findMatchingCartLine(
-        summaryItem,
-        cartItems
-      );
-
-      if (
-        !cartItem?.id ||
-        Number(cartItem?.product_id) !== Number(summaryItem.product_id)
-      ) {
-        throw new Error(
-          "Could not identify this exact cart item. Please open your cart and remove it there."
-        );
-      }
-
-      await removeFromCart(Number(cartItem.id)).unwrap();
-
-      setUnavailableProductIds((previous) => {
-        if (!previous.has(Number(summaryItem.product_id))) {
-          return previous;
-        }
-
-        const next = new Set(previous);
-
-        next.delete(Number(summaryItem.product_id));
-
-        return next;
-      });
-
-      window.dispatchEvent(new CustomEvent("cart:refresh"));
-
-      dispatch(
-        showToast({
-          message: "Item removed from cart",
-          type: "success",
-        })
-      );
-
-      try {
-        const refreshedCart = await triggerGetCart().unwrap();
-
-        const refreshedItems: any[] = Array.isArray(
-          (refreshedCart as any)?.data?.items
-        )
-          ? (refreshedCart as any).data.items
-          : [];
-
-        setCartLines(refreshedItems);
-
-        if (refreshedItems.length === 0) {
-          router.replace("/cart");
-          return;
-        }
-      } catch (refreshError) {
-        console.error(
-          "Cart refreshed after removal, but its latest response was unavailable:",
-          refreshError
-        );
-      }
-
-      await refetchCheckoutSummary();
-    } catch (error: any) {
-      console.error("Remove checkout item error:", error);
-
-      dispatch(
-        showToast({
-          message: getErrorMessage(
-            error,
-            "Unable to remove item from cart"
-          ),
-          type: "error",
-        })
-      );
-    } finally {
-      setRemovingSummaryItemKey(null);
-    }
-  };
-
-  // ───────────────────────────────────────────────────────────────────────────
-  // Apply coupon
-  // ───────────────────────────────────────────────────────────────────────────
-
-  const handleApplyCoupon = (codeOverride?: string) => {
-    const code = (codeOverride ?? couponInput).trim().toUpperCase();
-
-    if (!code || isApplyingCoupon) return;
-
-    setIsApplyingCoupon(true);
-    setCouponInput(code);
-    setPendingCoupon(code);
-    setAppliedCoupon(code);
-  };
-
-  useEffect(() => {
-    if (!pendingCoupon || isFetchingCheckoutSummary) return;
-
-    const responseData = checkoutSummaryResponse as any;
-    const responseError = checkoutSummaryError as any;
-
-    const currentResponse = responseError?.data ?? responseData;
-
-    if (!currentResponse) return;
-
-    if (currentResponse?.success === false) {
-      const backendMessage = currentResponse?.message;
-
-      setAppliedCoupon(null);
-      setCouponInput("");
-      setPendingCoupon(null);
-      setIsApplyingCoupon(false);
-
-      if (backendMessage) {
-        dispatch(
-          showToast({
-            message: backendMessage,
-            type: "error",
-          })
-        );
-      }
-
-      return;
-    }
-
-    if (currentResponse?.success === true) {
-      const responseCouponCode = String(
-        responseData?.data?.coupon?.code || ""
-      )
-        .trim()
-        .toUpperCase();
-
-      if (
-        responseCouponCode &&
-        responseCouponCode !== pendingCoupon
-      ) {
-        return;
-      }
-
-      setPendingCoupon(null);
-      setIsApplyingCoupon(false);
-
-      return;
-    }
-
-    if (responseError) {
-      const backendMessage =
-        responseError?.data?.message ||
-        responseError?.error?.data?.message ||
-        "";
-
-      setAppliedCoupon(null);
-      setCouponInput("");
-      setPendingCoupon(null);
-      setIsApplyingCoupon(false);
-
-      if (backendMessage) {
-        dispatch(
-          showToast({
-            message: backendMessage,
-            type: "error",
-          })
-        );
-      }
-    }
-  }, [
-    pendingCoupon,
-    isFetchingCheckoutSummary,
-    checkoutSummaryResponse,
-    checkoutSummaryError,
-    dispatch,
-  ]);
-
-  const handleRemoveCoupon = () => {
-    setAppliedCoupon(null);
-    setCouponInput("");
-    setPendingCoupon(null);
-    setIsApplyingCoupon(false);
-
-    dispatch(
-      showToast({
-        message: "Coupon removed",
-        type: "success",
-      })
-    );
-  };
-
-  // ───────────────────────────────────────────────────────────────────────────
-  // Coin selection
-  // ───────────────────────────────────────────────────────────────────────────
-
-  const handleSelectCoin = (kind: CoinKind | null) => {
-    if (redemptionId !== null) return;
-
-    if (!kind) {
-      setSelectedCoin(null);
-      setCoinAmount("");
-      return;
-    }
-
-    const balance = Math.floor(Number(coinBalances[kind] || 0));
-    const maximum = Math.floor(
-      Number(summaryData?.max_coins_redeemable || 0)
-    );
-
-    const allowedMaximum = Math.min(balance, maximum);
-
-    setSelectedCoin(kind);
-    setCoinAmount(allowedMaximum > 0 ? String(allowedMaximum) : "");
-  };
-
-  const handleCoinAmountChange = (value: string) => {
-    if (redemptionId !== null || !selectedCoin) return;
-
-    const digitsOnly = value.replace(/\D/g, "");
-
-    if (digitsOnly === "") {
-      setCoinAmount("");
-      return;
-    }
-
-    const numericValue = Number(digitsOnly);
-
-    if (!Number.isInteger(numericValue) || numericValue < 0) {
-      return;
-    }
-
-    const balance = Math.floor(
-      Number(coinBalances[selectedCoin] || 0)
-    );
-
-    const maximum = Math.floor(
-      Number(summaryData?.max_coins_redeemable || 0)
-    );
-
-    const allowedMaximum = Math.min(balance, maximum);
-
-    if (numericValue > allowedMaximum) {
-      setCoinAmount(String(allowedMaximum));
-      return;
-    }
-
-    setCoinAmount(digitsOnly);
-  };
-
-  const handleRemoveCoins = () => {
-    if (isSubmitting || isApplyingCoins) return;
-
-    setRedemptionId(null);
-    setAppliedCoinAmount(0);
-    setSelectedCoin(null);
-    setCoinAmount("");
-
-    dispatch(
-      showToast({
-        message: "Coins removed from checkout",
-        type: "success",
-      })
-    );
-  };
-
-  const handleApplyCoins = async () => {
-    if (isRetryPaymentFlow) return;
-
-    if (redemptionId !== null) {
-      dispatch(
-        showToast({
-          message: "Coins have already been applied.",
-          type: "info",
-        })
-      );
-
-      return;
-    }
-
-    if (!selectedCoin) {
-      dispatch(
-        showToast({
-          message: "Please select Yellow Coins or Blue Coins.",
-          type: "error",
-        })
-      );
-
-      return;
-    }
-
-    if (!summaryData) {
-      dispatch(
-        showToast({
-          message: "Checkout summary is not ready.",
-          type: "error",
-        })
-      );
-
-      return;
-    }
-
-    const balance = Math.floor(
-      Number(coinBalances[selectedCoin] || 0)
-    );
-
-    const maximum = Math.floor(
-      Number(summaryData.max_coins_redeemable || 0)
-    );
-
-    const allowedMaximum = Math.min(balance, maximum);
-
-    const coins = Number(coinAmount);
-
-    if (!Number.isInteger(coins) || coins <= 0) {
-      dispatch(
-        showToast({
-          message: "Please enter a valid number of coins.",
-          type: "error",
-        })
-      );
-
-      return;
-    }
-
-    if (coins > allowedMaximum) {
-      dispatch(
-        showToast({
-          message: `You can apply a maximum of ${allowedMaximum} coins.`,
-          type: "error",
-        })
-      );
-
-      return;
-    }
-
-    try {
-      const response = await applyCoins({
-        coins,
-        point_type:
-          selectedCoin === "yellow" ? "yellow_bal" : "blue_bal",
-      }).unwrap();
-
-      console.log("APPLY COINS RESPONSE:", response);
-
-      const rawResponse = response as any;
-
-      const responseData =
-        rawResponse?.data?.data ??
-        rawResponse?.data ??
-        rawResponse;
-
-      if (
-        rawResponse?.success === false ||
-        responseData?.success === false
-      ) {
-        throw new Error(
-          responseData?.message ||
-            rawResponse?.message ||
-            "Unable to apply coins."
-        );
-      }
-
-      const returnedRedemptionId =
-        responseData?.redemption_id ??
-        responseData?.redemption?.id ??
-        rawResponse?.redemption_id;
-
-      if (
-        returnedRedemptionId === undefined ||
-        returnedRedemptionId === null ||
-        returnedRedemptionId === ""
-      ) {
-        throw new Error(
-          responseData?.message ||
-            "Redemption ID was not returned by the server."
-        );
-      }
-
-      setRedemptionId(returnedRedemptionId);
-      setAppliedCoinAmount(coins);
-      setCoinAmount(String(coins));
-
-      dispatch(
-        showToast({
-          message: `${coins} ${
-            selectedCoin === "yellow" ? "Yellow" : "Blue"
-          } Coins applied successfully!`,
-          type: "success",
-        })
-      );
-    } catch (error: any) {
-      console.error("Apply coins error:", error);
-
-      dispatch(
-        showToast({
-          message: getErrorMessage(
-            error,
-            "Unable to apply coins. Please try again."
-          ),
-          type: "error",
-        })
-      );
-    }
-  };
 
   const handleCreateAddress = async (data: AddressFormData) => {
     try {
@@ -3889,6 +2242,29 @@ export default function CheckoutPage() {
     return latest;
   };
 
+  const fetchLatestSummary = async () => {
+    const latestResponse = await refetchCheckoutSummary();
+
+    if (
+      latestResponse.error ||
+      !latestResponse.data?.data
+    ) {
+      throw new Error(
+        "Could not refresh checkout pricing. Please try again."
+      );
+    }
+
+    const latest = latestResponse.data.data as CheckoutSummaryData;
+
+    const latestTotal = Number(latest.grand_total);
+
+    if (!Number.isFinite(latestTotal) || latestTotal <= 0) {
+      throw new Error("Invalid updated checkout total.");
+    }
+
+    return latest;
+  };
+
   const handleRetryPayment = async () => {
     if (paymentActionInProgress.current) return;
 
@@ -4090,25 +2466,11 @@ export default function CheckoutPage() {
       return;
     }
 
-    // Mandatory product gate — only for non-customer roles
-    if (!isCustomer && !canBuy && !isMandatorySatisfied) {
-      dispatch(
-        showToast({
-          message:
-            "Please purchase the mandatory product first. This is not optional.",
-          type: "error",
-        })
-      );
-
-      setIsMandatoryModalOpen(true);
-
-      return;
-    }
-
     if (!selectedDeliveryAddress?.id) {
       dispatch(
         showToast({
-          message: "Please select a delivery address",
+          message:
+            "Please add a delivery address before placing your order.",
           type: "error",
         })
       );
@@ -4123,18 +2485,6 @@ export default function CheckoutPage() {
       dispatch(
         showToast({
           message: "Checkout summary is not ready yet",
-          type: "error",
-        })
-      );
-
-      return;
-    }
-
-    if (selectedCoin && !redemptionId) {
-      dispatch(
-        showToast({
-          message:
-            "Please apply your selected coins before placing the order.",
           type: "error",
         })
       );
@@ -4168,20 +2518,22 @@ export default function CheckoutPage() {
 
     setIsSubmitting(true);
 
+    // true only when this run was triggered right after auto-adding the mandatory product
+    const isAfterMandatoryAdd = afterMandatoryAddRef.current;
+    afterMandatoryAddRef.current = false;
+
     let orderWasCreated = false;
     let createdOrderReference = "";
     let createdOrderId = 0;
 
     try {
-      const latestSummary = await refreshAndValidateTotal(
-        Number(summaryData.grand_total)
-      );
-
-      if (selectedCoin && !redemptionId) {
-        throw new Error(
-          "Please apply your selected coins before placing the order."
-        );
-      }
+      // After the mandatory product is added the total is expected to change,
+      // so use the fresh summary without comparing with the old total.
+      const latestSummary = isAfterMandatoryAdd
+        ? await fetchLatestSummary()
+        : await refreshAndValidateTotal(
+            Number(summaryData.grand_total)
+          );
 
       const verifiedType = getCheckoutTypeFromSummary({
         data: latestSummary,
@@ -4212,24 +2564,9 @@ export default function CheckoutPage() {
         grand_total: grandTotal,
         payment_gateway: selectedGateway.paymentGateway,
 
-        ...(redemptionId !== null
-          ? { redemption_id: redemptionId }
-          : {}),
-
         summary_data: {
           subtotal: latestSummary.subtotal,
           coupon_discount: latestSummary.coupon_discount || 0,
-          coupon_code: appliedCoupon || null,
-
-          coins_used: Number(
-            latestSummary.coins_used ||
-              appliedCoinAmount ||
-              0
-          ),
-
-          amount_redeemed: Number(
-            latestSummary.amount_redeemed || 0
-          ),
 
           shipping_charge: latestSummary.shipping_cost || 0,
           total_tax: latestSummary.total_tax,
@@ -4474,8 +2811,83 @@ export default function CheckoutPage() {
         return;
       }
 
-      // Mandatory backend error — only relevant for non-customer roles
-      if (!isCustomer && isMandatoryBackendError(error)) {
+      // Mandatory backend error — add the mandatory product to cart once,
+      // refresh the summary and send the order forward (non-customer roles only)
+      if (
+        !isCustomer &&
+        !isAfterMandatoryAdd &&
+        isMandatoryBackendError(error)
+      ) {
+        let mandatoryList: MandatoryProduct[] = mandatoryProducts;
+
+        try {
+          const refreshed = await refetchMandatoryProducts();
+          const freshList = (refreshed.data as any)?.data;
+
+          if (Array.isArray(freshList)) mandatoryList = freshList;
+        } catch (listErr) {
+          console.error("Mandatory products refresh failed:", listErr);
+        }
+
+        const target = mandatoryList.find(
+          (product) =>
+            !cartProductIds.has(product.id) &&
+            Number(product.stock_quantity) > 0
+        );
+
+        if (target) {
+          const added = await handleAddMandatoryToCart(target);
+
+          if (added) {
+            // Buy Now: the product being bought is not in the cart, so put it
+            // there too and continue as a normal cart checkout (2 items).
+            if (isDirectCheckout) {
+              try {
+                await addToCart({
+                  product_id: productId,
+                  quantity,
+                  ...(variantId > 0 ? { variant_id: variantId } : {}),
+                } as any).unwrap();
+
+                window.dispatchEvent(new CustomEvent("cart:refresh"));
+
+                dispatch(
+                  showToast({
+                    message:
+                      "Mandatory product added. Both items are in your cart — please review and place your order.",
+                    type: "info",
+                  })
+                );
+
+                router.replace("/checkout?checkout_type=cart", {
+                  scroll: false,
+                });
+              } catch (buyNowAddError: any) {
+                dispatch(
+                  showToast({
+                    message: getErrorMessage(
+                      buyNowAddError,
+                      "Unable to add your product to the cart."
+                    ),
+                    type: "error",
+                  })
+                );
+              }
+
+              return;
+            }
+
+            // Cart checkout: items are in the cart now, send the order again.
+            afterMandatoryAddRef.current = true;
+            paymentActionInProgress.current = false;
+
+            await handlePlaceOrder();
+
+            return;
+          }
+        }
+
+        // Fallback: auto-add not possible, let the user pick manually
         dispatch(
           showToast({
             message:
@@ -4488,10 +2900,7 @@ export default function CheckoutPage() {
         setIsMandatoryModalOpen(true);
 
         try {
-          await Promise.all([
-            refetchMandatoryProducts(),
-            refetchProfile(),
-          ]);
+          await refetchProfile();
         } catch (refreshErr) {
           console.error(
             "Refresh after mandatory backend error failed:",
@@ -4530,17 +2939,9 @@ export default function CheckoutPage() {
       !retryOrderReference
     : isSubmitting ||
       orderCreatedForCheckout ||
-      !selectedDeliveryAddress?.id ||
-      isApplyingCoupon ||
-      Boolean(pendingCoupon) ||
-      Boolean(quantityUpdatingKey) ||
-      Boolean(removingSummaryItemKey) ||
       hasUnavailable ||
       isLoadingGatewaySettings ||
-      isApplyingCoins ||
-      isFetchingCheckoutSummary ||
-      (!isCustomer && !canBuy && !isMandatorySatisfied) ||
-      (selectedCoin !== null && redemptionId === null);
+      isFetchingCheckoutSummary;
 
   const handleExitPayment = () => {
     orderCreatedRef.current = false;
@@ -4790,17 +3191,7 @@ export default function CheckoutPage() {
             <aside className="lg:sticky lg:top-4">
               <CartSummary
                 summaryData={summaryData}
-                coinRole={coinRole}
-                coinBalances={coinBalances}
-                selectedCoin={selectedCoin}
-                onSelectCoin={handleSelectCoin}
-                coinAmount={coinAmount}
-                onCoinAmountChange={handleCoinAmountChange}
-                onApplyCoins={handleApplyCoins}
-                onRemoveCoins={handleRemoveCoins}
-                isApplyingCoins={isApplyingCoins}
-                redemptionId={redemptionId}
-                appliedCoinAmount={appliedCoinAmount}
+                userRole={profileUserRole}
                 loading={isLoadingCheckoutSummary && !summaryData}
                 onPlaceOrder={
                   isRetryPaymentFlow
@@ -4809,26 +3200,9 @@ export default function CheckoutPage() {
                 }
                 isSubmitting={isSubmitting}
                 disabled={
-                  !selectedDeliveryAddress?.id ||
                   orderCreatedForCheckout ||
-                  isApplyingCoupon ||
-                  Boolean(pendingCoupon) ||
-                  Boolean(quantityUpdatingKey) ||
-                  Boolean(removingSummaryItemKey) ||
-                  isApplyingCoins ||
-                  isFetchingCheckoutSummary ||
-                  (selectedCoin !== null && redemptionId === null)
+                  isFetchingCheckoutSummary
                 }
-                couponInput={couponInput}
-                setCouponInput={setCouponInput}
-                appliedCoupon={appliedCoupon}
-                onApplyCoupon={handleApplyCoupon}
-                onRemoveCoupon={handleRemoveCoupon}
-                isApplyingCoupon={isApplyingCoupon}
-                coupons={coupons}
-                isLoadingCoupons={isLoadingCoupons}
-                showCouponList={showCouponList}
-                setShowCouponList={setShowCouponList}
                 unavailableProductIds={unavailableProductIds}
                 checkoutType={displayCheckoutType}
                 selectedGateway={selectedGateway}
@@ -4836,11 +3210,7 @@ export default function CheckoutPage() {
                 retryMode={isRetryPaymentFlow}
                 retryOrderReference={retryOrderReference}
                 onExitPayment={handleExitPayment}
-                onRemoveCartItem={handleRemoveSummaryItem}
-                removingSummaryItemKey={removingSummaryItemKey}
                 cartLines={cartLines}
-                quantityUpdatingKey={quantityUpdatingKey}
-                onUpdateQuantity={handleUpdateSummaryQuantity}
               />
             </aside>
           </div>
@@ -4874,7 +3244,7 @@ export default function CheckoutPage() {
         </div>
 
         {/* Sticky mobile bottom bar */}
-        {(summaryData || isRetryPaymentFlow) && (
+        {(
           <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[#E4EBE6] bg-white/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-12px_30px_-18px_rgba(15,45,30,0.35)] backdrop-blur lg:hidden">
             <div className="mx-auto flex max-w-[520px] items-center gap-3">
               <div className="shrink-0">

@@ -40,8 +40,41 @@ type NationBlock = {
 };
 
 /* =========================================================
+   HELPERS — strip HTML and check for real text
+========================================================= */
+
+/**
+ * Strip HTML tags and return plain text.
+ * Returns "" if nothing meaningful remains.
+ */
+function stripHtml(html?: string | null): string {
+  if (!html) return "";
+
+  // Remove tags, decode a few common entities, collapse whitespace
+  const text = html
+    .replace(/<[^>]*>/g, " ")           // drop tags
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/\s+/g, " ")               // collapse whitespace
+    .trim();
+
+  return text;
+}
+
+/**
+ * Returns true only if the HTML contains real visible content
+ * (e.g. "<p></p>", "<p> </p>", "<br/>" → false).
+ */
+function hasMeaningfulContent(html?: string | null): boolean {
+  return stripHtml(html).length > 0;
+}
+
+/* =========================================================
    COLUMN DRIFT
-   Keep same visual feel as the existing section
 ========================================================= */
 
 const COLUMN_DRIFTS = [18, 26, 16, 24, 19];
@@ -54,12 +87,7 @@ export function Nation() {
   const reduced = useReducedMotion();
   const ref = useRef<HTMLElement>(null);
 
-  /* =========================================================
-     LANDING PAGE API
-  ========================================================= */
-
-  const { data: landingData } =
-    useGetLandingPageQuery();
+  const { data: landingData } = useGetLandingPageQuery();
 
   /* =========================================================
      CHAPTER ONE
@@ -68,38 +96,39 @@ export function Nation() {
   const chapterOneBlock = useMemo<NationBlock | null>(() => {
     const chapterOnePage = landingData?.data?.find(
       (item: any) =>
-        item?.slug === "chapter-one" ||
-        item?.title === "Chapter One"
+        item?.slug === "chapter-one" || item?.title === "Chapter One"
     );
 
-    const blocks =
-      chapterOnePage?.blocks || [];
+    const blocks = chapterOnePage?.blocks || [];
 
-    return (
-      blocks.find(
-        (block: any) =>
-          block?.sort_order === 0
-      ) || null
-    );
+    return blocks.find((block: any) => block?.sort_order === 0) || null;
   }, [landingData]);
 
   /* =========================================================
-     DYNAMIC CONTENT
+     DYNAMIC CONTENT  (FIXED)
   ========================================================= */
 
-  const chapterHeading =
-    chapterOneBlock?.heading?.trim() ||
-    "Chapter One · The Nation";
+  // Heading: only use API value if it has real text
+  const chapterHeading = useMemo(() => {
+    const apiHeading = chapterOneBlock?.heading;
+    return hasMeaningfulContent(apiHeading)
+      ? stripHtml(apiHeading)
+      : "Chapter One · The Nation";
+  }, [chapterOneBlock]);
 
-  const chapterDescription =
-    chapterOneBlock?.description?.trim() ||
-    "people. One shared ambition. Before IndieKonnect was a brand, it was an observation: India does not lack talent, it lacks doorways.";
+  // Description: strip HTML; fall back if nothing meaningful
+  const chapterDescription = useMemo(() => {
+    const apiDesc =
+      chapterOneBlock?.description ?? chapterOneBlock?.short_description;
+    return hasMeaningfulContent(apiDesc)
+      ? stripHtml(apiDesc)
+      : "people. One shared ambition. Before IndieKonnect was a brand, it was an observation: India does not lack talent, it lacks doorways.";
+  }, [chapterOneBlock]);
 
   const chapterImages = useMemo<NationImage[]>(
     () =>
-      (chapterOneBlock?.images || []).filter(
-        (image: any) =>
-          Boolean(image?.url)
+      (chapterOneBlock?.images || []).filter((image: any) =>
+        Boolean(image?.url)
       ),
     [chapterOneBlock]
   );
@@ -109,106 +138,60 @@ export function Nation() {
   ========================================================= */
 
   const nationColumns = useMemo(() => {
-    const totalColumns =
-      COLUMN_DRIFTS.length;
+    const totalColumns = COLUMN_DRIFTS.length;
 
     if (!chapterImages.length) {
-      return Array.from(
-        { length: totalColumns },
-        (_, index) => ({
-          images: [] as NationImage[],
-          drift:
-            COLUMN_DRIFTS[index],
-        })
-      );
+      return Array.from({ length: totalColumns }, (_, index) => ({
+        images: [] as NationImage[],
+        drift: COLUMN_DRIFTS[index],
+      }));
     }
 
-    const columns: NationImage[][] =
-      Array.from(
-        { length: totalColumns },
-        () => []
-      );
-
-    chapterImages.forEach(
-      (image, index) => {
-        columns[
-          index % totalColumns
-        ].push(image);
-      }
+    const columns: NationImage[][] = Array.from(
+      { length: totalColumns },
+      () => []
     );
 
-    return columns.map(
-      (images, index) => ({
-        images,
-        drift:
-          COLUMN_DRIFTS[index],
-      })
-    );
+    chapterImages.forEach((image, index) => {
+      columns[index % totalColumns].push(image);
+    });
+
+    return columns.map((images, index) => ({
+      images,
+      drift: COLUMN_DRIFTS[index],
+    }));
   }, [chapterImages]);
 
   /* =========================================================
      PIN PROGRESS
   ========================================================= */
 
-  const { scrollYProgress } =
-    useScroll({
-      target: ref,
-      offset: [
-        "start start",
-        "end end",
-      ],
-    });
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start start", "end end"],
+  });
 
-  const p = useSpring(
-    scrollYProgress,
-    scrub.s08
-  );
+  const p = useSpring(scrollYProgress, scrub.s08);
 
   /* =========================================================
      SECTION DRIFT
   ========================================================= */
 
-  const {
-    scrollYProgress: pass,
-  } = useScroll({
+  const { scrollYProgress: pass } = useScroll({
     target: ref,
-    offset: [
-      "start end",
-      "end start",
-    ],
+    offset: ["start end", "end start"],
   });
 
-  const drift = useSpring(
-    pass,
-    scrub.s10
-  );
+  const drift = useSpring(pass, scrub.s10);
 
   /* =========================================================
      CORE ANIMATION
   ========================================================= */
 
-  const value = useTransform(
-    p,
-    (v) => (v * 1.4).toFixed(1)
-  );
-
-  const coreScale = useTransform(
-    p,
-    [0, 1],
-    [0.82, 1]
-  );
-
-  const coreOpacity = useTransform(
-    p,
-    [0, 1],
-    [0.4, 1]
-  );
-
-  const colsOpacity = useTransform(
-    p,
-    [0, 1],
-    [0.1, 0.34]
-  );
+  const value = useTransform(p, (v) => (v * 1.4).toFixed(1));
+  const coreScale = useTransform(p, [0, 1], [0.82, 1]);
+  const coreOpacity = useTransform(p, [0, 1], [0.4, 1]);
+  const colsOpacity = useTransform(p, [0, 1], [0.1, 0.34]);
 
   return (
     <Section
@@ -218,75 +201,41 @@ export function Nation() {
       ref={ref}
     >
       <div className={styles.pin}>
-        {/* =====================================================
-            BACKGROUND IMAGE COLUMNS
-        ====================================================== */}
-
+        {/* BACKGROUND IMAGE COLUMNS */}
         <motion.div
           className={styles.cols}
-          style={{
-            opacity: reduced
-              ? 0.3
-              : colsOpacity,
-          }}
+          style={{ opacity: reduced ? 0.3 : colsOpacity }}
           aria-hidden="true"
         >
-          {nationColumns.map(
-            (column, columnIndex) => (
-              <NationColumn
-                key={columnIndex}
-                drift={drift}
-                amount={column.drift}
-                images={column.images}
-                reduced={Boolean(
-                  reduced
-                )}
-              />
-            )
-          )}
+          {nationColumns.map((column, columnIndex) => (
+            <NationColumn
+              key={columnIndex}
+              drift={drift}
+              amount={column.drift}
+              images={column.images}
+              reduced={Boolean(reduced)}
+            />
+          ))}
         </motion.div>
 
-        {/* =====================================================
-            CENTER CONTENT
-        ====================================================== */}
-
+        {/* CENTER CONTENT */}
         <div className={styles.core}>
-          <Eyebrow
-            center
-            style={{
-              marginBottom: 22,
-            }}
-          >
+          <Eyebrow center style={{ marginBottom: 22 }}>
             {chapterHeading}
           </Eyebrow>
 
           <motion.p
             className={styles.count}
             style={{
-              scale: reduced
-                ? 1
-                : coreScale,
-              opacity: reduced
-                ? 1
-                : coreOpacity,
+              scale: reduced ? 1 : coreScale,
+              opacity: reduced ? 1 : coreOpacity,
             }}
           >
-            <motion.span>
-              {reduced
-                ? "1.4"
-                : value}
-            </motion.span>
-
-            <sup>
-              billion
-            </sup>
+            <motion.span>{reduced ? "1.4" : value}</motion.span>
+            <sup>billion</sup>
           </motion.p>
 
-          <p
-            className={styles.sub}
-          >
-            {chapterDescription}
-          </p>
+          <p className={styles.sub}>{chapterDescription}</p>
         </div>
       </div>
     </Section>
@@ -308,41 +257,23 @@ function NationColumn({
   images: NationImage[];
   reduced: boolean;
 }) {
-  const y = useTransform(
-    drift,
-    [0, 1],
-    [
-      `-${amount}%`,
-      `${amount}%`,
-    ]
-  );
+  const y = useTransform(drift, [0, 1], [`-${amount}%`, `${amount}%`]);
 
   return (
     <motion.div
       className={styles.col}
-      style={
-        reduced
-          ? undefined
-          : { y }
-      }
+      style={reduced ? undefined : { y }}
     >
-      {images.map(
-        (image, index) => (
-          <figure
-            key={`${image.id}-${index}`}
-          >
-            <Image
-              src={image.url}
-              alt={
-                image.alt_text ||
-                ""
-              }
-              fill
-              sizes="20vw"
-            />
-          </figure>
-        )
-      )}
+      {images.map((image, index) => (
+        <figure key={`${image.id}-${index}`}>
+          <Image
+            src={image.url}
+            alt={image.alt_text || ""}
+            fill
+            sizes="20vw"
+          />
+        </figure>
+      ))}
     </motion.div>
   );
 }

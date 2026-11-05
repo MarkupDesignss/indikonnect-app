@@ -29,6 +29,7 @@ export const productApi = baseApi.injectEndpoints({
     getProducts: builder.query<ProductsResponse, GetProductsParams>({
       query: (params) => {
         const queryParams = new URLSearchParams();
+
         if (
           params.brand_ids !== undefined &&
           params.brand_ids !== null &&
@@ -51,8 +52,26 @@ export const productApi = baseApi.injectEndpoints({
           queryParams.append("max_price", params.max_price.toString());
         if (params.is_published !== undefined)
           queryParams.append("is_published", params.is_published.toString());
-        if (params.stock_status)
-          queryParams.append("stock_status", params.stock_status);
+
+        // ----------------------------------------------------------------
+        // STOCK STATUS: supports BOTH
+        //   - string: "low_stock,out_of_stock"
+        //   - array:  ["low_stock", "out_of_stock"]
+        // Sends every value as `stock_status[]=...` (array form)
+        // ----------------------------------------------------------------
+        if (params.stock_status) {
+          const statuses = Array.isArray(params.stock_status)
+            ? params.stock_status
+            : String(params.stock_status)
+                .split(",")
+                .map((s) => s.trim())
+                .filter(Boolean);
+
+          statuses.forEach((status) => {
+            queryParams.append("stock_status[]", status);
+          });
+        }
+
         if (params.search) queryParams.append("search", params.search);
         if (params.sort) queryParams.append("sort", params.sort);
         if (params.sort_by) queryParams.append("sort_by", params.sort_by);
@@ -62,9 +81,11 @@ export const productApi = baseApi.injectEndpoints({
           queryParams.append("per_page", params.per_page.toString());
         if (params.page) queryParams.append("page", params.page.toString());
         if (params.new_arrivals) queryParams.append("new-arrivals", "");
+
         const finalQueryString = queryParams
           .toString()
           .replace("new-arrivals=", "new-arrivals");
+
         return {
           url: `/products${finalQueryString ? `?${finalQueryString}` : ""}`,
           method: "GET",
@@ -72,6 +93,7 @@ export const productApi = baseApi.injectEndpoints({
       },
       providesTags: ["Products"],
     }),
+
     // GET PRODUCTS BY CATEGORY
     getProductsByCategory: builder.query<CategoryProductsResponse, number>({
       query: (categoryId) => ({
@@ -80,6 +102,7 @@ export const productApi = baseApi.injectEndpoints({
       }),
       providesTags: ["Products"],
     }),
+
     // GET PRODUCT BY SLUG
     getProductBySlug: builder.query<SingleProductResponse, string>({
       query: (slug) => ({ url: `/products/slug/${slug}`, method: "GET" }),
@@ -87,19 +110,14 @@ export const productApi = baseApi.injectEndpoints({
         { type: "Products", id: `slug-${slug}` },
       ],
     }),
+
     // GET PRODUCT BY ID
     getProductById: builder.query<Product, number>({
       query: (id) => ({ url: `/products/${id}`, method: "GET" }),
       providesTags: (_result, _error, id) => [{ type: "Products", id }],
     }),
-    // LIVE STOCK: GET network request, invoked as an RTK mutation for on-demand requests.
-    // No RTK Query query cache is reused on successive trigger calls.
-    //
-    // `invalidatesTags: ["Products"]` ensures every subscribed product query
-    // (listing, category, slug detail, by-id, search) automatically refetches
-    // after each stock check, so any UI displaying stock stays synchronized
-    // with the backend — no manual `refetch()` / `dispatch(invalidateTags())`
-    // is required at the component layer.
+
+    // LIVE STOCK
     checkProductStock: builder.mutation<CheckStockResponse, CheckStockParams>({
       query: ({ product_id, quantity = 1 }) => ({
         url: `/products/${encodeURIComponent(String(product_id))}/check-stock`,
@@ -113,11 +131,13 @@ export const productApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ["Products"],
     }),
+
     // NOTIFY PRODUCT
     notifyProduct: builder.mutation<any, { product_id: number }>({
       query: (body) => ({ url: "/notify-me", method: "POST", body }),
       invalidatesTags: ["Products"],
     }),
+
     // SEARCH PRODUCTS
     searchProducts: builder.query<ProductsResponse, string>({
       query: (searchTerm) => ({

@@ -44,7 +44,7 @@ export interface Product {
   stock_quantity: number;
   low_stock_threshold: number;
 
-  stock_status?: string;
+  stock_status?: string | string[];
   status?: string;
 
   is_published: boolean;
@@ -88,6 +88,10 @@ export interface ProductsMeta {
   last_page?: number;
   from?: number;
   to?: number;
+  account_type?: string;
+  price_column?: string;
+  sort?: string | null;
+  search?: string | null;
 }
 
 // =====================================================
@@ -125,7 +129,17 @@ export interface GetProductsParams {
 
   is_published?: boolean | number;
 
-  stock_status?: string;
+  // ===================================================
+  // STOCK STATUS
+  // Supports BOTH:
+  //   - string: "in_stock,out_of_stock"
+  //   - array:  ["in_stock", "out_of_stock"]
+  //
+  // productApi.ts converts either form into:
+  //   stock_status[]=in_stock&stock_status[]=out_of_stock
+  // ===================================================
+
+  stock_status?: string | string[];
 
   search?: string;
 

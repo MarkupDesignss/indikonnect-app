@@ -125,14 +125,11 @@ const numeric = (value: unknown): number => {
   return Number.isFinite(n) ? n : 0;
 };
 
-const keyOf = (value: unknown): string =>
-  String(value ?? "").trim();
+const keyOf = (value: unknown): string => String(value ?? "").trim();
 
-const normalized = (value: unknown): string =>
-  keyOf(value).toLowerCase();
+const normalized = (value: unknown): string => keyOf(value).toLowerCase();
 
-const unique = (items: string[]) =>
-  [...new Set(items.filter(Boolean))];
+const unique = (items: string[]) => [...new Set(items.filter(Boolean))];
 
 const formatPrice = (value: number) =>
   `₹${Math.round(value).toLocaleString("en-IN")}`;
@@ -144,23 +141,16 @@ const formatPrice = (value: number) =>
 function getFamilyMembers(product: ProductLike): ProductLike[] {
   const children = [
     ...(Array.isArray(product.variants) ? product.variants : []),
-    ...(Array.isArray(product.variant_products)
-      ? product.variant_products
-      : []),
-    ...(Array.isArray(product.color_variants)
-      ? product.color_variants
-      : []),
+    ...(Array.isArray(product.variant_products) ? product.variant_products : []),
+    ...(Array.isArray(product.color_variants) ? product.color_variants : []),
   ];
 
   const seen = new Set<string>();
 
   return [product, ...children].filter((item, index) => {
     const id = keyOf(item?.id) || `index-${index}`;
-
     if (seen.has(id)) return false;
-
     seen.add(id);
-
     return true;
   });
 }
@@ -169,9 +159,7 @@ function productBrandId(product: ProductLike): string {
   return keyOf(
     product.brand_id ??
       product.brandId ??
-      (typeof product.brand === "object"
-        ? product.brand?.id
-        : ""),
+      (typeof product.brand === "object" ? product.brand?.id : ""),
   );
 }
 
@@ -197,9 +185,7 @@ function productCategoryName(
       (typeof value === "object" ? value?.id : ""),
   );
 
-  const found = categories.find(
-    (c) => keyOf(c.id) === categoryId,
-  );
+  const found = categories.find((c) => keyOf(c.id) === categoryId);
 
   return (
     found?.title ||
@@ -208,9 +194,7 @@ function productCategoryName(
         product.categoryName ??
         product.category_title ??
         product.collection_name ??
-        (typeof value === "string"
-          ? value
-          : value?.title ?? value?.name),
+        (typeof value === "string" ? value : value?.title ?? value?.name),
     )
   );
 }
@@ -220,9 +204,7 @@ function productSubcategoryId(product: ProductLike): string {
     product.subcategory_id ??
       product.subCategoryId ??
       product.sub_category_id ??
-      (typeof product.subcategory === "object"
-        ? product.subcategory?.id
-        : ""),
+      (typeof product.subcategory === "object" ? product.subcategory?.id : ""),
   );
 }
 
@@ -235,13 +217,9 @@ function productColor(product: ProductLike): string {
     const found = attrs.find((a) =>
       /colou?r/i.test(String(a.name ?? a.attribute ?? "")),
     );
-
     fromAttrs = keyOf(found?.value);
   } else if (attrs && typeof attrs === "object") {
-    const entry = Object.entries(attrs).find(([k]) =>
-      /colou?r/i.test(k),
-    );
-
+    const entry = Object.entries(attrs).find(([k]) => /colou?r/i.test(k));
     fromAttrs = keyOf(entry?.[1]);
   }
 
@@ -267,10 +245,7 @@ function productPrice(product: ProductLike): number {
 /* URL FILTER HELPERS                                                         */
 /* -------------------------------------------------------------------------- */
 
-function readFilters(
-  params: URLSearchParams,
-  ceiling: number,
-): FilterState {
+function readFilters(params: URLSearchParams, ceiling: number): FilterState {
   const csv = (key: string) =>
     unique(
       (params.get(key) || "")
@@ -279,10 +254,7 @@ function readFilters(
     );
 
   const min = numeric(params.get("min_price"));
-
-  const max = params.has("max_price")
-    ? numeric(params.get("max_price"))
-    : ceiling;
+  const max = params.has("max_price") ? numeric(params.get("max_price")) : ceiling;
 
   return {
     brands: csv("brand_ids"),
@@ -293,23 +265,33 @@ function readFilters(
     priceRange: [min, Math.max(min, max)],
 
     availability: (() => {
-      const selectedStatuses = [
-        ...params.getAll("stock_status[]"),
-        ...params.getAll("stock_status"),
-      ];
+      // PRIMARY: comma-separated `stock_status` param (supports MULTIPLE values).
+      const raw = params.get("stock_status") || "";
+      const selectedStatuses = raw
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
 
-      const hasStockStatusParams = selectedStatuses.length > 0;
+      // BACKWARD-COMPAT: legacy `stock_status[]` array + single-flag params.
+      if (selectedStatuses.length === 0) {
+        const legacyArray = [
+          ...params.getAll("stock_status[]"),
+          ...params.getAll("stock_status"),
+        ];
+        if (legacyArray.length) {
+          selectedStatuses.push(...legacyArray);
+        } else {
+          if (params.get("in_stock") === "true") selectedStatuses.push("in_stock");
+          if (params.get("out_of_stock") === "true")
+            selectedStatuses.push("out_of_stock");
+          if (params.get("low_stock") === "true") selectedStatuses.push("low_stock");
+        }
+      }
 
       return {
-        inStock: hasStockStatusParams
-          ? selectedStatuses.includes("in_stock")
-          : params.get("in_stock") === "true",
-        outOfStock: hasStockStatusParams
-          ? selectedStatuses.includes("out_of_stock")
-          : params.get("out_of_stock") === "true",
-        lowStock: hasStockStatusParams
-          ? selectedStatuses.includes("low_stock")
-          : params.get("low_stock") === "true",
+        inStock: selectedStatuses.includes("in_stock"),
+        outOfStock: selectedStatuses.includes("out_of_stock"),
+        lowStock: selectedStatuses.includes("low_stock"),
       };
     })(),
   };
@@ -332,8 +314,7 @@ export default function FilterSidebar({
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const { data: categoriesData, isLoading } =
-    useGetCategoriesQuery({});
+  const { data: categoriesData, isLoading } = useGetCategoriesQuery({});
 
   /* ------------------------------------------------------------------------ */
   /* CATEGORY AND BRAND API DATA                                              */
@@ -356,90 +337,45 @@ export default function FilterSidebar({
   /* BRAND <-> CATEGORY RELATIONSHIP                                          */
   /* ------------------------------------------------------------------------ */
 
-  /*
-   * API relation:
-   *
-   * categories:
-   * {
-   *   id: 6,
-   *   title: "All Watches",
-   *   brands: [
-   *     { id: 1, title: "FABIUS", category_id: 6 }
-   *   ]
-   * }
-   *
-   * Top-level brands:
-   * {
-   *   id: 1,
-   *   title: "FABIUS",
-   *   category_id: 6
-   * }
-   *
-   * Both structures are supported.
-   */
-
   const brandCategoryRelations = useMemo(() => {
     const brandToCategoryId = new Map<string, string>();
-
     const brandToCategoryTitle = new Map<string, string>();
-
     const categoryToBrandIds = new Map<string, string[]>();
-
     const categoryTitleToId = new Map<string, string>();
-
     const categoryIdToTitle = new Map<string, string>();
 
     categories.forEach((category) => {
       const id = keyOf(category.id);
       const title = normalized(category.title);
-
       if (!id || !title) return;
-
       categoryTitleToId.set(title, id);
       categoryIdToTitle.set(id, category.title);
     });
 
-    const addRelation = (
-      brandIdValue: unknown,
-      categoryIdValue: unknown,
-    ) => {
+    const addRelation = (brandIdValue: unknown, categoryIdValue: unknown) => {
       const brandId = keyOf(brandIdValue);
       const categoryId = keyOf(categoryIdValue);
-
       if (!brandId || !categoryId) return;
 
       brandToCategoryId.set(brandId, categoryId);
 
       const categoryTitle = categoryIdToTitle.get(categoryId);
-
       if (categoryTitle) {
-        brandToCategoryTitle.set(
-          brandId,
-          categoryTitle,
-        );
+        brandToCategoryTitle.set(brandId, categoryTitle);
       }
 
       const existing = categoryToBrandIds.get(categoryId) ?? [];
-
       if (!existing.includes(brandId)) {
-        categoryToBrandIds.set(categoryId, [
-          ...existing,
-          brandId,
-        ]);
+        categoryToBrandIds.set(categoryId, [...existing, brandId]);
       }
     };
 
-    // Relationship from categories[].brands[]
     categories.forEach((category) => {
       (category.brands ?? []).forEach((brand) => {
-        addRelation(
-          brand.id,
-          brand.category_id ?? category.id,
-        );
+        addRelation(brand.id, brand.category_id ?? category.id);
       });
     });
 
-    // Relationship from top-level brands[]
     apiBrands.forEach((brand) => {
       addRelation(brand.id, brand.category_id);
     });
@@ -481,8 +417,7 @@ export default function FilterSidebar({
   /* ------------------------------------------------------------------------ */
 
   const complete =
-    productsComplete &&
-    (facetProducts !== undefined || products !== undefined);
+    productsComplete && (facetProducts !== undefined || products !== undefined);
 
   const sourceProducts = useMemo(
     () => facetProducts ?? products ?? [],
@@ -494,51 +429,28 @@ export default function FilterSidebar({
 
     return sourceProducts.filter((p) => {
       const flag = p.is_primary ?? p.isPrimary;
-
-      return (
-        flag == null ||
-        flag === true ||
-        flag === 1 ||
-        flag === "1"
-      );
+      return flag == null || flag === true || flag === 1 || flag === "1";
     });
   }, [sourceProducts, searchActive]);
 
   const familyMembers = useMemo(() => {
     const byId = new Map(
-      sourceProducts
-        .filter((p) => p.id != null)
-        .map((p) => [keyOf(p.id), p]),
+      sourceProducts.filter((p) => p.id != null).map((p) => [keyOf(p.id), p]),
     );
 
     return productFamilies.map((primary) => {
       const primaryId = keyOf(primary.id);
-
       const refs = new Set<string>([primaryId]);
-
       const direct = getFamilyMembers(primary);
 
       for (const variant of direct) {
         const linked = keyOf(
-          (
-            variant as ProductLike & {
-              product_id?: number | string;
-              variant_product_id?: number | string;
-            }
-          ).product_id ??
-            (
-              variant as ProductLike & {
-                variant_product_id?: number | string;
-              }
-            ).variant_product_id,
+          (variant as ProductLike & { product_id?: number | string }).product_id ??
+            (variant as ProductLike & { variant_product_id?: number | string })
+              .variant_product_id,
         );
-
         if (linked) refs.add(linked);
-
-        if (
-          variant.id != null &&
-          byId.has(keyOf(variant.id))
-        ) {
+        if (variant.id != null && byId.has(keyOf(variant.id))) {
           refs.add(keyOf(variant.id));
         }
       }
@@ -550,7 +462,6 @@ export default function FilterSidebar({
             p.parent_id ??
             p.parent_product?.id,
         );
-
         if (primaryId && parent === primaryId) {
           refs.add(keyOf(p.id));
         }
@@ -565,12 +476,8 @@ export default function FilterSidebar({
       ];
 
       const uniqueMembers = new Map<string, ProductLike>();
-
       family.forEach((p, index) =>
-        uniqueMembers.set(
-          keyOf(p.id) || `nested-${index}`,
-          p,
-        ),
+        uniqueMembers.set(keyOf(p.id) || `nested-${index}`, p),
       );
 
       return [...uniqueMembers.values()];
@@ -579,13 +486,9 @@ export default function FilterSidebar({
 
   const members = useMemo(() => {
     const map = new Map<string, ProductLike>();
-
     familyMembers
       .flat()
-      .forEach((p, i) =>
-        map.set(keyOf(p.id) || `row-${i}`, p),
-      );
-
+      .forEach((p, i) => map.set(keyOf(p.id) || `row-${i}`, p));
     return [...map.values()];
   }, [familyMembers]);
 
@@ -610,38 +513,23 @@ export default function FilterSidebar({
           productBrandId(p) ||
           keyOf(
             apiBrands.find(
-              (b) =>
-                normalized(b.title) ===
-                normalized(productBrandName(p)),
+              (b) => normalized(b.title) === normalized(productBrandName(p)),
             )?.id,
           );
-
         if (brand) familyBrands.add(brand);
 
         const category = productCategoryName(p, categories);
-
-        if (category) {
-          familyCategories.add(normalized(category));
-        }
+        if (category) familyCategories.add(normalized(category));
 
         const sub = productSubcategoryId(p);
-
         if (sub) familySubs.add(sub);
 
         highest = Math.max(highest, productPrice(p));
       }
 
-      familyBrands.forEach((v) =>
-        brands.set(v, (brands.get(v) ?? 0) + 1),
-      );
-
-      familyCategories.forEach((v) =>
-        cats.set(v, (cats.get(v) ?? 0) + 1),
-      );
-
-      familySubs.forEach((v) =>
-        subs.set(v, (subs.get(v) ?? 0) + 1),
-      );
+      familyBrands.forEach((v) => brands.set(v, (brands.get(v) ?? 0) + 1));
+      familyCategories.forEach((v) => cats.set(v, (cats.get(v) ?? 0) + 1));
+      familySubs.forEach((v) => subs.set(v, (subs.get(v) ?? 0) + 1));
     }
 
     return { brands, cats, subs, highest };
@@ -670,14 +558,10 @@ export default function FilterSidebar({
   const paramsString = searchParams.toString();
 
   const [filters, setFilters] = useState<FilterState>(() =>
-    readFilters(
-      new URLSearchParams(paramsString),
-      ceiling,
-    ),
+    readFilters(new URLSearchParams(paramsString), ceiling),
   );
 
   const [brandSearch, setBrandSearch] = useState("");
-
   const [showAllBrands, setShowAllBrands] = useState(false);
 
   const [expanded, setExpanded] = useState({
@@ -688,32 +572,24 @@ export default function FilterSidebar({
     availability: false,
   });
 
-  const [expandedCategories, setExpandedCategories] =
-    useState<string[]>([]);
+  const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
 
   const [priceInputs, setPriceInputs] = useState({
     min: "0",
     max: String(ceiling),
   });
 
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(
-    null,
-  );
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /* ------------------------------------------------------------------------ */
   /* URL TO STATE                                                             */
   /* ------------------------------------------------------------------------ */
 
   useEffect(() => {
-    const next = readFilters(
-      new URLSearchParams(paramsString),
-      ceiling,
-    );
+    const next = readFilters(new URLSearchParams(paramsString), ceiling);
 
     setFilters((previous) =>
-      JSON.stringify(previous) === JSON.stringify(next)
-        ? previous
-        : next,
+      JSON.stringify(previous) === JSON.stringify(next) ? previous : next,
     );
 
     setPriceInputs({
@@ -724,9 +600,7 @@ export default function FilterSidebar({
 
   useEffect(
     () => () => {
-      if (timer.current) {
-        clearTimeout(timer.current);
-      }
+      if (timer.current) clearTimeout(timer.current);
     },
     [],
   );
@@ -736,9 +610,7 @@ export default function FilterSidebar({
   /* ------------------------------------------------------------------------ */
 
   const colorOptions = useMemo(() => {
-    const values = new Set<string>(
-      (availableColors ?? []).filter(Boolean),
-    );
+    const values = new Set<string>((availableColors ?? []).filter(Boolean));
 
     members.forEach((p) => {
       const c = productColor(p);
@@ -747,9 +619,7 @@ export default function FilterSidebar({
 
     (filters.colors ?? []).forEach((c) => values.add(c));
 
-    return [...values].sort((a, b) =>
-      a.localeCompare(b),
-    );
+    return [...values].sort((a, b) => a.localeCompare(b));
   }, [availableColors, members, filters.colors]);
 
   /* ------------------------------------------------------------------------ */
@@ -758,20 +628,15 @@ export default function FilterSidebar({
 
   const brandOptions = useMemo(() => {
     const options = [...apiBrands];
-
-    const known = new Set(
-      options.map((b) => keyOf(b.id)),
-    );
+    const known = new Set(options.map((b) => keyOf(b.id)));
 
     for (const p of members) {
       const id = productBrandId(p);
-
       if (id && !known.has(id)) {
         options.push({
           id: Number(id),
           title: productBrandName(p) || `Brand ${id}`,
         });
-
         known.add(id);
       }
     }
@@ -781,9 +646,7 @@ export default function FilterSidebar({
     );
   }, [apiBrands, members, brandSearch]);
 
-  const visibleBrands = showAllBrands
-    ? brandOptions
-    : brandOptions.slice(0, 7);
+  const visibleBrands = showAllBrands ? brandOptions : brandOptions.slice(0, 7);
 
   /* ------------------------------------------------------------------------ */
   /* CATEGORY OPTIONS                                                         */
@@ -791,14 +654,10 @@ export default function FilterSidebar({
 
   const categoryOptions = useMemo(() => {
     const options = [...categories];
-
-    const known = new Set(
-      options.map((c) => normalized(c.title)),
-    );
+    const known = new Set(options.map((c) => normalized(c.title)));
 
     for (const p of members) {
       const title = productCategoryName(p, categories);
-
       if (title && !known.has(normalized(title))) {
         options.push({
           id: -(options.length + 1),
@@ -807,7 +666,6 @@ export default function FilterSidebar({
           subcategories: [],
           brands: [],
         });
-
         known.add(normalized(title));
       }
     }
@@ -820,49 +678,25 @@ export default function FilterSidebar({
   /* ------------------------------------------------------------------------ */
 
   const subcategoryRelations = useMemo(() => {
-    const selectedSubcategoryIds = new Set(
-      filters.subCategories,
-    );
-
-    const selectedCategoryTitles = new Set(
-      filters.categories.map(normalized),
-    );
+    const selectedSubcategoryIds = new Set(filters.subCategories);
+    const selectedCategoryTitles = new Set(filters.categories.map(normalized));
 
     const categoryBySubcategory = new Map<string, string>();
-
-    const brandsBySubcategory = new Map<
-      string,
-      Set<string>
-    >();
-
-    const categoriesByBrand = new Map<
-      string,
-      Set<string>
-    >();
-
+    const brandsBySubcategory = new Map<string, Set<string>>();
+    const categoriesByBrand = new Map<string, Set<string>>();
     const inferredCategoryTitles = new Set<string>();
-
     const inferredBrandIds = new Set<string>();
 
     categories.forEach((category) => {
       const categoryTitle = normalized(category.title);
-
-      (category.subcategories ?? []).forEach(
-        (subcategory) => {
-          const subcategoryId = keyOf(subcategory.id);
-
-          if (!subcategoryId || !categoryTitle) return;
-
-          categoryBySubcategory.set(
-            subcategoryId,
-            categoryTitle,
-          );
-
-          if (selectedSubcategoryIds.has(subcategoryId)) {
-            inferredCategoryTitles.add(categoryTitle);
-          }
-        },
-      );
+      (category.subcategories ?? []).forEach((subcategory) => {
+        const subcategoryId = keyOf(subcategory.id);
+        if (!subcategoryId || !categoryTitle) return;
+        categoryBySubcategory.set(subcategoryId, categoryTitle);
+        if (selectedSubcategoryIds.has(subcategoryId)) {
+          inferredCategoryTitles.add(categoryTitle);
+        }
+      });
     });
 
     for (const family of familyMembers) {
@@ -870,46 +704,29 @@ export default function FilterSidebar({
       const familyBrandIds = new Set<string>();
 
       for (const product of family) {
-        const subcategoryId =
-          productSubcategoryId(product);
-
-        const categoryTitle =
-          productCategoryName(product, categories);
+        const subcategoryId = productSubcategoryId(product);
+        const categoryTitle = productCategoryName(product, categories);
 
         if (subcategoryId && categoryTitle) {
-          const normalizedTitle =
-            normalized(categoryTitle);
-
+          const normalizedTitle = normalized(categoryTitle);
           if (!categoryBySubcategory.has(subcategoryId)) {
-            categoryBySubcategory.set(
-              subcategoryId,
-              normalizedTitle,
-            );
+            categoryBySubcategory.set(subcategoryId, normalizedTitle);
           }
-
-          if (
-            selectedSubcategoryIds.has(subcategoryId)
-          ) {
+          if (selectedSubcategoryIds.has(subcategoryId)) {
             inferredCategoryTitles.add(normalizedTitle);
           }
         }
 
-        if (
-          subcategoryId &&
-          selectedSubcategoryIds.has(subcategoryId)
-        ) {
+        if (subcategoryId && selectedSubcategoryIds.has(subcategoryId)) {
           familySubcategories.add(subcategoryId);
         }
 
         const brandName = productBrandName(product);
-
         const brandId =
           productBrandId(product) ||
           keyOf(
             apiBrands.find(
-              (brand) =>
-                normalized(brand.title) ===
-                normalized(brandName),
+              (brand) => normalized(brand.title) === normalized(brandName),
             )?.id,
           );
 
@@ -918,33 +735,18 @@ export default function FilterSidebar({
 
       familySubcategories.forEach((subcategoryId) => {
         const existing =
-          brandsBySubcategory.get(subcategoryId) ??
-          new Set<string>();
-
-        familyBrandIds.forEach((brandId) =>
-          existing.add(brandId),
-        );
-
-        brandsBySubcategory.set(
-          subcategoryId,
-          existing,
-        );
+          brandsBySubcategory.get(subcategoryId) ?? new Set<string>();
+        familyBrandIds.forEach((brandId) => existing.add(brandId));
+        brandsBySubcategory.set(subcategoryId, existing);
       });
     }
 
     selectedSubcategoryIds.forEach((subcategoryId) => {
-      const parentTitle =
-        categoryBySubcategory.get(subcategoryId);
-
-      if (parentTitle) {
-        inferredCategoryTitles.add(parentTitle);
-      }
-
-      brandsBySubcategory
-        .get(subcategoryId)
-        ?.forEach((brandId) => {
-          inferredBrandIds.add(brandId);
-        });
+      const parentTitle = categoryBySubcategory.get(subcategoryId);
+      if (parentTitle) inferredCategoryTitles.add(parentTitle);
+      brandsBySubcategory.get(subcategoryId)?.forEach((brandId) => {
+        inferredBrandIds.add(brandId);
+      });
     });
 
     const visibleSelectedCategoryTitles = new Set([
@@ -954,99 +756,56 @@ export default function FilterSidebar({
 
     categories.forEach((category) => {
       const categoryTitle = normalized(category.title);
-
-      if (
-        !visibleSelectedCategoryTitles.has(categoryTitle)
-      ) {
-        return;
-      }
+      if (!visibleSelectedCategoryTitles.has(categoryTitle)) return;
 
       const categoryId = keyOf(category.id);
 
-      /*
-       * If a category has an individually selected brand,
-       * do not automatically visually check its other brands.
-       * This allows individual brands to be unchecked.
-       */
-
       const hasSelectedBrand = filters.brands.some(
-        (brandId) =>
-          brandToCategoryId.get(brandId) === categoryId,
+        (brandId) => brandToCategoryId.get(brandId) === categoryId,
       );
 
       if (!hasSelectedBrand) {
         (category.brands ?? []).forEach((brand) => {
           const brandId = keyOf(brand.id);
-
-          if (brandId) {
-            inferredBrandIds.add(brandId);
-          }
+          if (brandId) inferredBrandIds.add(brandId);
         });
-
         apiBrands
-          .filter(
-            (brand) =>
-              keyOf(brand.category_id) === categoryId,
-          )
-          .forEach((brand) => {
-            inferredBrandIds.add(keyOf(brand.id));
-          });
+          .filter((brand) => keyOf(brand.category_id) === categoryId)
+          .forEach((brand) => inferredBrandIds.add(keyOf(brand.id)));
       }
 
       const linkedBrandIds = new Set<string>([
-        ...(category.brands ?? []).map((brand) =>
-          keyOf(brand.id),
-        ),
+        ...(category.brands ?? []).map((brand) => keyOf(brand.id)),
         ...apiBrands
-          .filter(
-            (brand) =>
-              keyOf(brand.category_id) === categoryId,
-          )
+          .filter((brand) => keyOf(brand.category_id) === categoryId)
           .map((brand) => keyOf(brand.id)),
       ]);
 
       linkedBrandIds.forEach((brandId) => {
         if (!brandId) return;
-
-        const titles =
-          categoriesByBrand.get(brandId) ??
-          new Set<string>();
-
+        const titles = categoriesByBrand.get(brandId) ?? new Set<string>();
         titles.add(categoryTitle);
-
         categoriesByBrand.set(brandId, titles);
       });
     });
 
-    // Product-derived brand/category associations.
     for (const family of familyMembers) {
       for (const product of family) {
         const categoryTitle = normalized(
           productCategoryName(product, categories),
         );
-
-        if (
-          !categoryTitle ||
-          !visibleSelectedCategoryTitles.has(categoryTitle)
-        ) {
+        if (!categoryTitle || !visibleSelectedCategoryTitles.has(categoryTitle)) {
           continue;
         }
 
-        const categoryId =
-          categoryTitleToId.get(categoryTitle);
-
+        const categoryId = categoryTitleToId.get(categoryTitle);
         const hasSelectedBrand = categoryId
           ? filters.brands.some(
-              (brandId) =>
-                brandToCategoryId.get(brandId) ===
-                categoryId,
+              (brandId) => brandToCategoryId.get(brandId) === categoryId,
             )
           : false;
 
-        if (
-          selectedCategoryTitles.has(categoryTitle) &&
-          hasSelectedBrand
-        ) {
+        if (selectedCategoryTitles.has(categoryTitle) && hasSelectedBrand) {
           continue;
         }
 
@@ -1061,15 +820,10 @@ export default function FilterSidebar({
           );
 
         if (!brandId) continue;
-
         inferredBrandIds.add(brandId);
 
-        const titles =
-          categoriesByBrand.get(brandId) ??
-          new Set<string>();
-
+        const titles = categoriesByBrand.get(brandId) ?? new Set<string>();
         titles.add(categoryTitle);
-
         categoriesByBrand.set(brandId, titles);
       }
     }
@@ -1111,28 +865,18 @@ export default function FilterSidebar({
     ]);
 
     const categoriesToOpen = categories
-      .filter((category) =>
-        selectedTitles.has(normalized(category.title)),
-      )
+      .filter((category) => selectedTitles.has(normalized(category.title)))
       .map((category) => keyOf(category.id));
 
     if (!categoriesToOpen.length) return;
 
     setExpanded((previous) =>
-      previous.categories
-        ? previous
-        : { ...previous, categories: true },
+      previous.categories ? previous : { ...previous, categories: true },
     );
 
     setExpandedCategories((previous) => {
-      const next = unique([
-        ...previous,
-        ...categoriesToOpen,
-      ]);
-
-      return next.length === previous.length
-        ? previous
-        : next;
+      const next = unique([...previous, ...categoriesToOpen]);
+      return next.length === previous.length ? previous : next;
     });
   }, [
     filters.categories,
@@ -1150,42 +894,29 @@ export default function FilterSidebar({
       const params = new URLSearchParams(paramsString);
 
       const csv = (key: string, value: string[]) => {
-        if (value.length) {
-          params.set(key, value.join(","));
-        } else {
-          params.delete(key);
-        }
+        if (value.length) params.set(key, value.join(","));
+        else params.delete(key);
       };
 
-      // Empty selections are completely removed from the URL.
       csv("brand_ids", next.brands);
-
       csv("category", next.categories);
-
       csv("subcategory_ids", next.subCategories);
-
       csv("color", next.colors ?? []);
 
       if (next.priceRange[0] > 0) {
-        params.set(
-          "min_price",
-          String(next.priceRange[0]),
-        );
+        params.set("min_price", String(next.priceRange[0]));
       } else {
         params.delete("min_price");
       }
 
       if (next.priceRange[1] < ceiling) {
-        params.set(
-          "max_price",
-          String(next.priceRange[1]),
-        );
+        params.set("max_price", String(next.priceRange[1]));
       } else {
         params.delete("max_price");
       }
 
-      // Remove old and current stock params first so unchecked values
-      // never remain in the URL after a filter change.
+      // Remove every stock-param format first so stale values
+      // never survive a filter change.
       [
         "stock_status[]",
         "stock_status",
@@ -1194,23 +925,18 @@ export default function FilterSidebar({
         "low_stock",
       ].forEach((key) => params.delete(key));
 
+      // MULTIPLE selections allowed: in_stock + out_of_stock + low_stock
       const selectedStatuses: string[] = [];
+      if (next.availability.inStock) selectedStatuses.push("in_stock");
+      if (next.availability.outOfStock) selectedStatuses.push("out_of_stock");
+      if (next.availability.lowStock) selectedStatuses.push("low_stock");
 
-      if (next.availability.inStock) {
-        selectedStatuses.push("in_stock");
+      // SINGLE comma-separated param — consistent across the app.
+      if (selectedStatuses.length) {
+        selectedStatuses.forEach((status) => {
+          params.append("stock_status[]", status);
+        });
       }
-
-      if (next.availability.outOfStock) {
-        selectedStatuses.push("out_of_stock");
-      }
-
-      if (next.availability.lowStock) {
-        selectedStatuses.push("low_stock");
-      }
-
-      selectedStatuses.forEach((status) => {
-        params.append("stock_status[]", status);
-      });
 
       // Every filter change starts from page 1.
       params.delete("page");
@@ -1221,9 +947,7 @@ export default function FilterSidebar({
         ? `${PRODUCTS_ROUTE}?${query}`
         : PRODUCTS_ROUTE;
 
-      router.replace(nextUrl, {
-        scroll: false,
-      });
+      router.replace(nextUrl, { scroll: false });
     },
     [router, paramsString, ceiling],
   );
@@ -1255,12 +979,7 @@ export default function FilterSidebar({
         }
       }
     },
-    [
-      applyUrl,
-      mobile,
-      onFilterChange,
-      onMobileClose,
-    ],
+    [applyUrl, mobile, onFilterChange, onMobileClose],
   );
 
   /* ------------------------------------------------------------------------ */
@@ -1269,13 +988,9 @@ export default function FilterSidebar({
 
   const getRelatedCategoryTitle = useCallback(
     (brandId: string): string => {
-      // First use the API relationship.
-      const apiTitle =
-        brandToCategoryTitle.get(brandId);
-
+      const apiTitle = brandToCategoryTitle.get(brandId);
       if (apiTitle) return apiTitle;
 
-      // Fallback: use product family data.
       const product = members.find((item) => {
         const id =
           productBrandId(item) ||
@@ -1286,28 +1001,17 @@ export default function FilterSidebar({
                 normalized(productBrandName(item)),
             )?.id,
           );
-
         return id === brandId;
       });
 
       if (product) {
-        return normalized(
-          productCategoryName(product, categories),
-        );
+        return normalized(productCategoryName(product, categories));
       }
 
-      // Fallback: use existing inferred associations.
       const mapped = categoriesByBrand.get(brandId);
-
       return mapped?.values().next().value ?? "";
     },
-    [
-      brandToCategoryTitle,
-      members,
-      apiBrands,
-      categories,
-      categoriesByBrand,
-    ],
+    [brandToCategoryTitle, members, apiBrands, categories, categoriesByBrand],
   );
 
   /* ------------------------------------------------------------------------ */
@@ -1316,26 +1020,21 @@ export default function FilterSidebar({
 
   const getRelatedBrandIds = useCallback(
     (categoryTitle: string): string[] => {
-      const categoryId = categoryTitleToId.get(
-        normalized(categoryTitle),
-      );
-
+      const categoryId = categoryTitleToId.get(normalized(categoryTitle));
       const result = new Set<string>();
 
       if (categoryId) {
-        (
-          categoryToBrandIds.get(categoryId) ?? []
-        ).forEach((id) => result.add(id));
+        (categoryToBrandIds.get(categoryId) ?? []).forEach((id) =>
+          result.add(id),
+        );
       }
 
-      // Include brands associated from product family data.
       const normalizedTitle = normalized(categoryTitle);
 
       members.forEach((product) => {
         const productCategory = normalized(
           productCategoryName(product, categories),
         );
-
         if (productCategory !== normalizedTitle) return;
 
         const brandId =
@@ -1353,13 +1052,7 @@ export default function FilterSidebar({
 
       return [...result];
     },
-    [
-      categoryTitleToId,
-      categoryToBrandIds,
-      members,
-      categories,
-      apiBrands,
-    ],
+    [categoryTitleToId, categoryToBrandIds, members, categories, apiBrands],
   );
 
   /* ------------------------------------------------------------------------ */
@@ -1380,80 +1073,39 @@ export default function FilterSidebar({
       const categoryKey = normalized(value);
 
       const isChecked =
-        old.some(
-          (item) => normalized(item) === categoryKey,
-        ) ||
+        old.some((item) => normalized(item) === categoryKey) ||
         inferredCategoryTitles.has(categoryKey);
 
-      const relatedBrandIds = new Set(
-        getRelatedBrandIds(value),
-      );
-
-      const currentCategoryId =
-        categoryTitleToId.get(categoryKey);
-
-      /*
-       * CATEGORY UNCHECKED:
-       *
-       * Remove:
-       * 1. Category
-       * 2. All related brands
-       * 3. Related subcategories
-       * 4. Their URL parameters
-       */
+      const relatedBrandIds = new Set(getRelatedBrandIds(value));
+      const currentCategoryId = categoryTitleToId.get(categoryKey);
 
       if (isChecked) {
-        const subcategoriesToRemove =
-          filters.subCategories.filter(
-            (subcategoryId) =>
-              categoryBySubcategory.get(subcategoryId) ===
-              categoryKey,
-          );
-
-        const removeSubcategoryIds = new Set(
-          subcategoriesToRemove,
+        const subcategoriesToRemove = filters.subCategories.filter(
+          (subcategoryId) =>
+            categoryBySubcategory.get(subcategoryId) === categoryKey,
         );
+
+        const removeSubcategoryIds = new Set(subcategoriesToRemove);
 
         commit({
           ...filters,
-
           categories: filters.categories.filter(
             (item) => normalized(item) !== categoryKey,
           ),
-
-          brands: filters.brands.filter(
-            (brandId) =>
-              !relatedBrandIds.has(brandId),
+          brands: filters.brands.filter((brandId) => !relatedBrandIds.has(brandId)),
+          subCategories: filters.subCategories.filter(
+            (id) => !removeSubcategoryIds.has(id),
           ),
-
-          subCategories:
-            filters.subCategories.filter(
-              (id) => !removeSubcategoryIds.has(id),
-            ),
         });
 
         return;
       }
 
-      /*
-       * CATEGORY CHECKED:
-       *
-       * Automatically select all related brands.
-       */
-
-      const nextBrands = unique([
-        ...filters.brands,
-        ...relatedBrandIds,
-      ]);
+      const nextBrands = unique([...filters.brands, ...relatedBrandIds]);
 
       commit({
         ...filters,
-
-        categories: unique([
-          ...filters.categories,
-          value,
-        ]),
-
+        categories: unique([...filters.categories, value]),
         brands: nextBrands,
       });
 
@@ -1465,59 +1117,32 @@ export default function FilterSidebar({
     /* ---------------------------------------------------------------------- */
 
     if (key === "brands") {
-      const isChecked =
-        old.includes(value) ||
-        inferredBrandIds.has(value);
-
-      /*
-       * BRAND UNCHECKED:
-       *
-       * Remove the brand.
-       * Remove its parent category when no other selected
-       * brand belongs to that category.
-       */
+      const isChecked = old.includes(value) || inferredBrandIds.has(value);
 
       if (isChecked) {
-        const nextBrands = filters.brands.filter(
-          (item) => item !== value,
-        );
+        const nextBrands = filters.brands.filter((item) => item !== value);
 
         const linkedCategoryTitles = new Set<string>();
-
-        const categoryTitle =
-          getRelatedCategoryTitle(value);
+        const categoryTitle = getRelatedCategoryTitle(value);
 
         if (categoryTitle) {
-          linkedCategoryTitles.add(
-            normalized(categoryTitle),
-          );
+          linkedCategoryTitles.add(normalized(categoryTitle));
         }
 
-        categoriesByBrand
-          .get(value)
-          ?.forEach((title) => {
-            linkedCategoryTitles.add(
-              normalized(title),
-            );
-          });
+        categoriesByBrand.get(value)?.forEach((title) => {
+          linkedCategoryTitles.add(normalized(title));
+        });
 
         const categoryTitlesToRemove = new Set<string>();
 
         linkedCategoryTitles.forEach((title) => {
-          const categoryId =
-            categoryTitleToId.get(title);
-
-          /*
-           * Preserve a category if another brand from
-           * the same category is still selected.
-           */
+          const categoryId = categoryTitleToId.get(title);
 
           const hasOtherSelectedBrand = categoryId
             ? nextBrands.some(
                 (brandId) =>
                   brandId !== value &&
-                  brandToCategoryId.get(brandId) ===
-                    categoryId,
+                  brandToCategoryId.get(brandId) === categoryId,
               )
             : false;
 
@@ -1526,86 +1151,48 @@ export default function FilterSidebar({
           }
         });
 
-        /*
-         * Remove subcategories belonging to the removed
-         * brand or removed parent category.
-         */
+        const removeSubcategoryIds = new Set<string>();
 
-        const removeSubcategoryIds =
-          new Set<string>();
+        filters.subCategories.forEach((subcategoryId) => {
+          const parentTitle = categoryBySubcategory.get(subcategoryId);
 
-        filters.subCategories.forEach(
-          (subcategoryId) => {
-            const parentTitle =
-              categoryBySubcategory.get(subcategoryId);
+          const belongsToBrand = brandsBySubcategory
+            .get(subcategoryId)
+            ?.has(value);
 
-            const belongsToBrand =
-              brandsBySubcategory
-                .get(subcategoryId)
-                ?.has(value);
+          const belongsToRemovedCategory =
+            parentTitle !== undefined && categoryTitlesToRemove.has(parentTitle);
 
-            const belongsToRemovedCategory =
-              parentTitle !== undefined &&
-              categoryTitlesToRemove.has(parentTitle);
+          if (belongsToBrand || belongsToRemovedCategory) {
+            removeSubcategoryIds.add(subcategoryId);
+          }
+        });
 
-            if (
-              belongsToBrand ||
-              belongsToRemovedCategory
-            ) {
-              removeSubcategoryIds.add(subcategoryId);
-            }
-          },
+        const nextCategories = filters.categories.filter(
+          (title) => !categoryTitlesToRemove.has(normalized(title)),
         );
-
-        const nextCategories =
-          filters.categories.filter(
-            (title) =>
-              !categoryTitlesToRemove.has(
-                normalized(title),
-              ),
-          );
 
         commit({
           ...filters,
-
           brands: nextBrands,
-
           categories: nextCategories,
-
-          subCategories:
-            filters.subCategories.filter(
-              (id) => !removeSubcategoryIds.has(id),
-            ),
+          subCategories: filters.subCategories.filter(
+            (id) => !removeSubcategoryIds.has(id),
+          ),
         });
 
         return;
       }
 
-      /*
-       * BRAND CHECKED:
-       *
-       * Automatically select its parent category.
-       * Keep the other selected filters unchanged.
-       */
-
-      const parentCategoryTitle =
-        getRelatedCategoryTitle(value);
+      const parentCategoryTitle = getRelatedCategoryTitle(value);
 
       const nextCategories = parentCategoryTitle
-        ? unique([
-            ...filters.categories,
-            parentCategoryTitle,
-          ])
+        ? unique([...filters.categories, parentCategoryTitle])
         : filters.categories;
 
       commit({
         ...filters,
-
-        brands: unique([
-          ...filters.brands,
-          value,
-        ]),
-
+        brands: unique([...filters.brands, value]),
         categories: nextCategories,
       });
 
@@ -1618,7 +1205,6 @@ export default function FilterSidebar({
 
     commit({
       ...filters,
-
       [key]: old.includes(value)
         ? old.filter((item) => item !== value)
         : [...old, value],
@@ -1632,7 +1218,6 @@ export default function FilterSidebar({
   const toggleStock = (key: keyof Availability) =>
     commit({
       ...filters,
-
       availability: {
         ...filters.availability,
         [key]: !filters.availability[key],
@@ -1654,9 +1239,7 @@ export default function FilterSidebar({
       categories: [],
       subCategories: [],
       colors: [],
-
       priceRange: [0, ceiling],
-
       availability: {
         inStock: false,
         outOfStock: false,
@@ -1664,27 +1247,13 @@ export default function FilterSidebar({
       },
     };
 
-    // Clear component state.
     setFilters(reset);
-
     setBrandSearch("");
-
     setShowAllBrands(false);
-
-    setPriceInputs({
-      min: "0",
-      max: String(ceiling),
-    });
-
+    setPriceInputs({ min: "0", max: String(ceiling) });
     setExpandedCategories([]);
 
-    // Update parent state.
     onFilterChange?.(reset);
-
-    /*
-     * Remove every filter-related parameter.
-     * Keep unrelated parameters such as search and sort.
-     */
 
     const params = new URLSearchParams(paramsString);
 
@@ -1704,14 +1273,9 @@ export default function FilterSidebar({
     ].forEach((key) => params.delete(key));
 
     const query = params.toString();
+    const nextUrl = query ? `${PRODUCTS_ROUTE}?${query}` : PRODUCTS_ROUTE;
 
-    const nextUrl = query
-      ? `${PRODUCTS_ROUTE}?${query}`
-      : PRODUCTS_ROUTE;
-
-    router.replace(nextUrl, {
-      scroll: false,
-    });
+    router.replace(nextUrl, { scroll: false });
 
     if (mobile) {
       onMobileClose?.();
@@ -1723,25 +1287,17 @@ export default function FilterSidebar({
   /* ------------------------------------------------------------------------ */
 
   const applyPrice = () => {
-    const min = Math.max(
-      0,
-      Math.min(ceiling, numeric(priceInputs.min)),
-    );
+    const min = Math.max(0, Math.min(ceiling, numeric(priceInputs.min)));
 
     const max = Math.max(
       min,
       Math.min(
         ceiling,
-        priceInputs.max.trim() === ""
-          ? ceiling
-          : numeric(priceInputs.max),
+        priceInputs.max.trim() === "" ? ceiling : numeric(priceInputs.max),
       ),
     );
 
-    commit({
-      ...filters,
-      priceRange: [min, max],
-    });
+    commit({ ...filters, priceRange: [min, max] });
   };
 
   /* ------------------------------------------------------------------------ */
@@ -1764,10 +1320,7 @@ export default function FilterSidebar({
     filters.subCategories.length +
     (filters.colors?.length ?? 0) +
     Object.values(filters.availability).filter(Boolean).length +
-    Number(
-      filters.priceRange[0] > 0 ||
-        filters.priceRange[1] < ceiling,
-    );
+    Number(filters.priceRange[0] > 0 || filters.priceRange[1] < ceiling);
 
   /* ------------------------------------------------------------------------ */
   /* SECTION COMPONENT                                                        */
@@ -1782,10 +1335,7 @@ export default function FilterSidebar({
       <button
         type="button"
         onClick={() =>
-          setExpanded((s) => ({
-            ...s,
-            [name]: !s[name],
-          }))
+          setExpanded((s) => ({ ...s, [name]: !s[name] }))
         }
         className="flex w-full items-center justify-between bg-white px-5 py-4 text-left transition-colors hover:bg-[#f5f5f5] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-black"
       >
@@ -1793,11 +1343,7 @@ export default function FilterSidebar({
           {title}
         </span>
 
-        {expanded[name] ? (
-          <ChevronUp size={16} />
-        ) : (
-          <ChevronDown size={16} />
-        )}
+        {expanded[name] ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
       </button>
 
       <AnimatePresence initial={false}>
@@ -1809,9 +1355,7 @@ export default function FilterSidebar({
             transition={{ duration: 0.18 }}
             className="overflow-hidden"
           >
-            <div className="space-y-3 bg-white px-5 pb-5">
-              {children}
-            </div>
+            <div className="space-y-3 bg-white px-5 pb-5">{children}</div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -1852,9 +1396,7 @@ export default function FilterSidebar({
 
       <span
         className={`min-w-0 flex-1 truncate ${
-          checked
-            ? "font-semibold text-black"
-            : "text-[#454545]"
+          checked ? "font-semibold text-black" : "text-[#454545]"
         }`}
       >
         {label}
@@ -1884,7 +1426,6 @@ export default function FilterSidebar({
       }`}
     >
       {/* HEADER */}
-
       <div className="flex items-center justify-between border-b border-[#e5e5e5] bg-white px-5 py-4">
         <div
           style={{ color: "#000000" }}
@@ -1922,9 +1463,7 @@ export default function FilterSidebar({
 
       <div
         className={
-          mobile
-            ? "max-h-[calc(90dvh-65px)] overflow-y-auto"
-            : ""
+          mobile ? "max-h-[calc(90dvh-65px)] overflow-y-auto" : ""
         }
       >
         {/* -------------------------------------------------------------- */}
@@ -1945,18 +1484,14 @@ export default function FilterSidebar({
                 style={{ color: "#000000" }}
                 type="text"
                 value={brandSearch}
-                onChange={(e) =>
-                  setBrandSearch(e.target.value)
-                }
+                onChange={(e) => setBrandSearch(e.target.value)}
                 placeholder="Search brands"
                 className="w-full rounded-full border border-[#e8e8e8] bg-[#fafafa] py-2 pl-9 pr-3 text-[12px] outline-none focus:border-black"
               />
             </div>
 
             {isLoading && !products ? (
-              <p className="text-xs text-gray-400">
-                Loading brands...
-              </p>
+              <p className="text-xs text-gray-400">Loading brands...</p>
             ) : visibleBrands.length ? (
               visibleBrands.map((b) => {
                 const id = keyOf(b.id);
@@ -1966,32 +1501,23 @@ export default function FilterSidebar({
                     key={id}
                     label={b.title}
                     checked={
-                      filters.brands.includes(id) ||
-                      inferredBrandIds.has(id)
+                      filters.brands.includes(id) || inferredBrandIds.has(id)
                     }
-                    onChange={() =>
-                      toggleArray("brands", id)
-                    }
+                    onChange={() => toggleArray("brands", id)}
                   />
                 );
               })
             ) : (
-              <p className="text-xs text-gray-400">
-                No matching brands
-              </p>
+              <p className="text-xs text-gray-400">No matching brands</p>
             )}
 
             {brandOptions.length > 7 && (
               <button
                 type="button"
-                onClick={() =>
-                  setShowAllBrands((v) => !v)
-                }
+                onClick={() => setShowAllBrands((v) => !v)}
                 className="text-[12px] font-medium underline underline-offset-2"
               >
-                {showAllBrands
-                  ? "Show less"
-                  : `+ ${brandOptions.length - 7} more`}
+                {showAllBrands ? "Show less" : `+ ${brandOptions.length - 7} more`}
               </button>
             )}
           </>,
@@ -2011,35 +1537,23 @@ export default function FilterSidebar({
 
                 const checked =
                   filters.categories.some(
-                    (title) =>
-                      normalized(title) === categoryKey,
-                  ) ||
-                  inferredCategoryTitles.has(categoryKey);
+                    (title) => normalized(title) === categoryKey,
+                  ) || inferredCategoryTitles.has(categoryKey);
 
-                const subcategories = (
-                  c.subcategories ?? []
-                ).filter((s) => s.status !== false);
-
-                const isOpen = expandedCategories.includes(
-                  keyOf(c.id),
+                const subcategories = (c.subcategories ?? []).filter(
+                  (s) => s.status !== false,
                 );
 
+                const isOpen = expandedCategories.includes(keyOf(c.id));
+
                 return (
-                  <div
-                    key={c.id}
-                    className="space-y-2"
-                  >
+                  <div key={c.id} className="space-y-2">
                     <div className="flex items-center gap-1">
                       <div className="min-w-0 flex-1">
                         <CheckRow
                           label={c.title}
                           checked={checked}
-                          onChange={() =>
-                            toggleArray(
-                              "categories",
-                              c.title,
-                            )
-                          }
+                          onChange={() => toggleArray("categories", c.title)}
                         />
                       </div>
 
@@ -2050,23 +1564,15 @@ export default function FilterSidebar({
                           onClick={() =>
                             setExpandedCategories((old) =>
                               isOpen
-                                ? old.filter(
-                                    (v) =>
-                                      v !== keyOf(c.id),
-                                  )
-                                : [
-                                    ...old,
-                                    keyOf(c.id),
-                                  ],
+                                ? old.filter((v) => v !== keyOf(c.id))
+                                : [...old, keyOf(c.id)],
                             )
                           }
                           className="rounded p-1 hover:bg-gray-100"
                         >
                           <ChevronDown
                             size={15}
-                            className={
-                              isOpen ? "rotate-180" : ""
-                            }
+                            className={isOpen ? "rotate-180" : ""}
                           />
                         </button>
                       )}
@@ -2081,15 +1587,8 @@ export default function FilterSidebar({
                             key={id}
                             indent
                             label={s.name}
-                            checked={filters.subCategories.includes(
-                              id,
-                            )}
-                            onChange={() =>
-                              toggleArray(
-                                "subCategories",
-                                id,
-                              )
-                            }
+                            checked={filters.subCategories.includes(id)}
+                            onChange={() => toggleArray("subCategories", id)}
                           />
                         );
                       })}
@@ -2097,9 +1596,7 @@ export default function FilterSidebar({
                 );
               })
             ) : (
-              <p className="text-xs text-gray-400">
-                No matching categories
-              </p>
+              <p className="text-xs text-gray-400">No matching categories</p>
             )}
           </>,
         )}
@@ -2117,12 +1614,8 @@ export default function FilterSidebar({
                 <CheckRow
                   key={color}
                   label={color}
-                  checked={(filters.colors ?? []).includes(
-                    color,
-                  )}
-                  onChange={() =>
-                    toggleArray("colors", color)
-                  }
+                  checked={(filters.colors ?? []).includes(color)}
+                  onChange={() => toggleArray("colors", color)}
                 />
               ))}
             </>,
@@ -2136,25 +1629,15 @@ export default function FilterSidebar({
           "price",
           "Price",
           <>
-            <p
-              style={{ color: "#000000" }}
-              className="text-[12px] font-semibold"
-            >
+            <p style={{ color: "#000000" }} className="text-[12px] font-semibold">
               {formatPrice(filters.priceRange[0])} –{" "}
               {formatPrice(filters.priceRange[1])}
             </p>
 
             <div className="grid grid-cols-2 gap-2">
               {(["min", "max"] as const).map((key) => (
-                <label
-                  key={key}
-                  className="space-y-1 text-[10px] text-[#777]"
-                >
-                  <span>
-                    {key === "min"
-                      ? "Min price"
-                      : "Max price"}
-                  </span>
+                <label key={key} className="space-y-1 text-[10px] text-[#777]">
+                  <span>{key === "min" ? "Min price" : "Max price"}</span>
 
                   <input
                     type="number"
@@ -2168,17 +1651,13 @@ export default function FilterSidebar({
                       }))
                     }
                     onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        applyPrice();
-                      }
+                      if (e.key === "Enter") applyPrice();
                     }}
                     className="w-full rounded-md border border-[#e5e1dc] px-2 py-2 text-[12px] text-black outline-none focus:border-black"
                   />
                 </label>
               ))}
             </div>
-
-            {/* DUAL PRICE RANGE */}
 
             <div className="relative flex h-9 w-full items-center">
               <div className="absolute inset-x-0 h-1.5 rounded-full bg-[#e5e5e5]" />
@@ -2187,22 +1666,11 @@ export default function FilterSidebar({
                 className="pointer-events-none absolute h-1.5 rounded-full bg-black"
                 style={{
                   left: `${
-                    (Math.min(
-                      ceiling,
-                      filters.priceRange[0],
-                    ) /
-                      ceiling) *
-                    100
+                    (Math.min(ceiling, filters.priceRange[0]) / ceiling) * 100
                   }%`,
-
                   right: `${
                     100 -
-                    (Math.min(
-                      ceiling,
-                      filters.priceRange[1],
-                    ) /
-                      ceiling) *
-                      100
+                    (Math.min(ceiling, filters.priceRange[1]) / ceiling) * 100
                   }%`,
                 }}
               />
@@ -2213,10 +1681,7 @@ export default function FilterSidebar({
                 min={0}
                 max={ceiling}
                 step={1}
-                value={Math.min(
-                  ceiling,
-                  filters.priceRange[0],
-                )}
+                value={Math.min(ceiling, filters.priceRange[0])}
                 onChange={(e) => {
                   const min = Math.min(
                     Number(e.target.value),
@@ -2231,20 +1696,14 @@ export default function FilterSidebar({
                   commit(
                     {
                       ...filters,
-                      priceRange: [
-                        min,
-                        filters.priceRange[1],
-                      ],
+                      priceRange: [min, filters.priceRange[1]],
                     },
                     true,
                   );
                 }}
                 className="dual-price-range pointer-events-none absolute inset-x-0 w-full appearance-none bg-transparent"
                 style={{
-                  zIndex:
-                    filters.priceRange[0] >= ceiling - 1
-                      ? 5
-                      : 3,
+                  zIndex: filters.priceRange[0] >= ceiling - 1 ? 5 : 3,
                 }}
               />
 
@@ -2254,10 +1713,7 @@ export default function FilterSidebar({
                 min={0}
                 max={ceiling}
                 step={1}
-                value={Math.min(
-                  ceiling,
-                  filters.priceRange[1],
-                )}
+                value={Math.min(ceiling, filters.priceRange[1])}
                 onChange={(e) => {
                   const max = Math.max(
                     Number(e.target.value),
@@ -2272,10 +1728,7 @@ export default function FilterSidebar({
                   commit(
                     {
                       ...filters,
-                      priceRange: [
-                        filters.priceRange[0],
-                        max,
-                      ],
+                      priceRange: [filters.priceRange[0], max],
                     },
                     true,
                   );
