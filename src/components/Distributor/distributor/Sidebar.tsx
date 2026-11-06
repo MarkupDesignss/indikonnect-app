@@ -94,11 +94,7 @@ const menuGroups: NavGroup[] = [
             icon: IdCard,
             href: "/distributor/profile",
           },
-          {
-            label: "BA Board",
-            icon: LayoutGrid,
-            href: "/distributor/profile/ba-board",
-          },
+         
           {
             label: "Rank information",
             icon: Trophy,
@@ -187,11 +183,7 @@ const menuGroups: NavGroup[] = [
         icon: BadgePercent,
         href: "/distributor/commissions",
       },
-      {
-        label: "Bank details",
-        icon: Building2,
-        href: "/distributor/kyc/bank-details",
-      },
+      
     ],
   },
 ];
