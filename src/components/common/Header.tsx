@@ -969,11 +969,15 @@ function HeaderInner({
   const { data: productsData, isLoading: isProductsLoading } =
     useGetProductsQuery(
       {
+        is_published: 1,
         search:
-          debouncedSearchQuery.length >= 1 ? debouncedSearchQuery : undefined,
-        limit: 5,
+          debouncedSearchQuery.trim().length >= 1
+            ? debouncedSearchQuery.trim()
+            : undefined,
+        per_page: 5,
+        page: 1,
       },
-      { skip: debouncedSearchQuery.length < 1 },
+      { skip: debouncedSearchQuery.trim().length < 1 },
     );
 
   /* SMOOTH SCROLL LISTENER (rAF + hysteresis) */
@@ -2189,9 +2193,8 @@ function HeaderInner({
 
       <header
         ref={headerRef}
-        className={`premium-header premium-header-fixed font-lato ${
-          isScrolled ? "premium-header-compact" : ""
-        } ${DIWALI_MODE ? "premium-header--festive" : ""}`}
+        className={`premium-header premium-header-fixed font-lato ${isScrolled ? "premium-header-compact" : ""
+          } ${DIWALI_MODE ? "premium-header--festive" : ""}`}
         style={{
           position: "fixed",
           top: 0,
@@ -2212,9 +2215,8 @@ function HeaderInner({
             style={{ position: "relative" }}
           >
             <div
-              className={`premium-benefits premium-benefits-refreshed ${
-                DIWALI_MODE ? "ik-festive-benefits" : ""
-              }`}
+              className={`premium-benefits premium-benefits-refreshed ${DIWALI_MODE ? "ik-festive-benefits" : ""
+                }`}
             >
               {DIWALI_MODE && <FestiveCrackers />}
               {DIWALI_MODE ? (
@@ -2275,9 +2277,8 @@ function HeaderInner({
                 type="button"
                 onClick={handleCheckAvailability}
                 disabled={locationLoading}
-                className={`premium-deliver premium-deliver-refreshed ${
-                  DIWALI_MODE ? "ik-festive-deliver" : ""
-                }`}
+                className={`premium-deliver premium-deliver-refreshed ${DIWALI_MODE ? "ik-festive-deliver" : ""
+                  }`}
                 title={locationError || "Detect delivery location"}
                 tabIndex={isScrolled ? -1 : 0}
               >
@@ -2643,9 +2644,8 @@ function HeaderInner({
                           isNavItemActive(item) ? "page" : undefined
                         }
                         tabIndex={isNavCollapsed ? -1 : 0}
-                        className={`${navClass} ${
-                          isNavItemActive(item) ? "premium-nav-active" : ""
-                        }`}
+                        className={`${navClass} ${isNavItemActive(item) ? "premium-nav-active" : ""
+                          }`}
                       >
                         {item.label}
                       </button>
@@ -2754,9 +2754,8 @@ function HeaderInner({
                     isParentCategoryActive(item)) &&
                   item.subcategories?.map((sub: any) => (
                     <button
-                      className={`premium-mobile-sub ${
-                        isSubmenuActive(sub) ? "premium-submenu-active" : ""
-                      }`}
+                      className={`premium-mobile-sub ${isSubmenuActive(sub) ? "premium-submenu-active" : ""
+                        }`}
                       aria-current={isSubmenuActive(sub) ? "page" : undefined}
                       key={sub.id}
                       onClick={() => {

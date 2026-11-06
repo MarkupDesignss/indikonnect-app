@@ -121,6 +121,9 @@ export interface Product {
 
   stockQuantity?: string | number | null;
 
+  /** API flag: 1 allows purchase regardless of stock. */
+  allowed_purchsed?: boolean | number | string | null;
+
   low_stock_threshold?: string | number | null;
 
   lowStockThreshold?: string | number | null;
@@ -238,6 +241,14 @@ const num = (value: unknown): number => {
   const n = Number(value);
 
   return Number.isFinite(n) ? n : 0;
+};
+
+// Backend uses the exact field name `allowed_purchsed` (including spelling).
+// Only explicit true/1 values override stock checks; absent/false keeps normal behavior.
+const isPurchaseAllowedWithoutStock = (item: any): boolean => {
+  const value = item?.allowed_purchsed ?? item?.product?.allowed_purchsed;
+  return value === true || value === 1 ||
+    (typeof value === "string" && ["1", "true"].includes(value.trim().toLowerCase()));
 };
 
 const money = (value: unknown): string => {
@@ -361,27 +372,27 @@ const detectColor = (value: unknown): string => {
 const variantLabel = (v: any): string =>
   String(
     v?.color?.name ??
-      v?.variant_attributes?.color ??
-      v?.attributes?.color ??
-      v?.color_name ??
-      v?.colour ??
-      v?.color ??
-      v?.attribute_value ??
-      v?.value ??
-      v?.name ??
-      v?.title ??
-      "",
+    v?.variant_attributes?.color ??
+    v?.attributes?.color ??
+    v?.color_name ??
+    v?.colour ??
+    v?.color ??
+    v?.attribute_value ??
+    v?.value ??
+    v?.name ??
+    v?.title ??
+    "",
   ).trim();
 
 const getVariantImage = (v: any): string =>
   normalizeImageUrl(
     v?.image_url ??
-      v?.variant_image_url ??
-      v?.primary_image_url ??
-      v?.image ??
-      v?.images?.[0]?.image_url ??
-      v?.images?.[0]?.url ??
-      "",
+    v?.variant_image_url ??
+    v?.primary_image_url ??
+    v?.image ??
+    v?.images?.[0]?.image_url ??
+    v?.images?.[0]?.url ??
+    "",
   );
 
 // =========================================================    PRODUCT CARD   =========================================================
@@ -658,6 +669,7 @@ function ProductCardInner({
   }
 
   const lowStock =
+    !isPurchaseAllowedWithoutStock(product) &&
     inStock &&
     stockQuantity > 0 &&
     (rawStatus === "low_stock" ||
@@ -901,11 +913,11 @@ function ProductCardInner({
 
       const apiHex = String(
         v?.hax_color ??
-          v?.hex_color ??
-          v?.hex_code ??
-          v?.color_hex ??
-          v?.hex ??
-          "",
+        v?.hex_color ??
+        v?.hex_code ??
+        v?.color_hex ??
+        v?.hex ??
+        "",
       ).trim();
 
       // API color code is authoritative; use a name-based fallback only if absent.
@@ -949,6 +961,7 @@ function ProductCardInner({
 
         distributorMrp: v?.distributor_mrp,
         offerSource: v,
+        allowed_purchsed: v?.allowed_purchsed,
 
         stockStatus: v?.stock_status ?? v?.stockStatus,
       };
@@ -1032,9 +1045,9 @@ function ProductCardInner({
     selectedVariant && !selectedVariant.isCurrent
       ? isDistributor && selectedDistributorPrice > 0
         ? distributorOfferPrice(
-            selectedVariant?.offerSource,
-            selectedDistributorPrice,
-          )
+          selectedVariant?.offerSource,
+          selectedDistributorPrice,
+        )
         : selectedRetailPrice
       : price;
 
@@ -1050,11 +1063,23 @@ function ProductCardInner({
       ? Math.round(((displayedMrp - displayedPrice) / displayedMrp) * 100)
       : 0;
 
+  // For a selected linked variant, use that sibling product’s own purchase flag.
+  // Never inherit the parent flag for a different product.
+  const selectedPurchaseSource = selectedVariant && !selectedVariant.isCurrent
+    ? [
+      ...(Array.isArray(allProducts) ? allProducts : []),
+      ...similarApiList,
+      ...Array.from(listedProducts.values()),
+    ].find((entry: any) => String(entry?.id) === String(selectedVariant.productId))
+    ?? selectedVariant.offerSource
+    : product;
+  const purchaseWithoutStock = isPurchaseAllowedWithoutStock(selectedPurchaseSource);
+
   const selectedStockStatus = String(
     selectedVariant?.stockStatus ?? "",
   ).toLowerCase();
   const displayedStock =
-    selectedVariant && !selectedVariant.isCurrent
+    purchaseWithoutStock ? true : selectedVariant && !selectedVariant.isCurrent
       ? selectedStockStatus === "out_of_stock" ||
         selectedStockStatus === "inactive"
         ? false
@@ -1108,14 +1133,14 @@ function ProductCardInner({
           isDistributor && distributorMrp > 0 ? distributorMrp : retailMrp;
         const galleryImage = Array.isArray(full?.images)
           ? full.images
-              .map((entry: any) =>
-                normalizeImageUrl(
-                  typeof entry === "string"
-                    ? entry
-                    : (entry?.image_url ?? entry?.url),
-                ),
-              )
-              .find(Boolean)
+            .map((entry: any) =>
+              normalizeImageUrl(
+                typeof entry === "string"
+                  ? entry
+                  : (entry?.image_url ?? entry?.url),
+              ),
+            )
+            .find(Boolean)
           : "";
         const image =
           normalizeImageUrl(variant.image) ||
@@ -1124,7 +1149,7 @@ function ProductCardInner({
           PLACEHOLDER;
         const status = String(full?.stock_status ?? "").toLowerCase();
         const stock =
-          full?.stock_quantity != null
+          isPurchaseAllowedWithoutStock(full ?? variant.offerSource) ? true : full?.stock_quantity != null
             ? num(full.stock_quantity) > 0 && status !== "out_of_stock"
             : true;
         const rawBrand =
@@ -1152,13 +1177,13 @@ function ProductCardInner({
               : 0,
           rating: num(
             full?.reviews_summary?.average_rating ??
-              full?.reviews?.summary?.average_rating ??
-              full?.rating,
+            full?.reviews?.summary?.average_rating ??
+            full?.rating,
           ),
           reviews: num(
             full?.reviews_summary?.total_reviews ??
-              full?.reviews?.summary?.total_reviews ??
-              full?.reviews,
+            full?.reviews?.summary?.total_reviews ??
+            full?.reviews,
           ),
           inStock: stock,
         };
@@ -1211,8 +1236,8 @@ function ProductCardInner({
       .map((candidate) => {
         const retail = num(
           candidate.retail_price ??
-            candidate.effective_price ??
-            candidate.price,
+          candidate.effective_price ??
+          candidate.price,
         );
         const distributor = num(candidate.distributor_price);
         const sellingPrice =
@@ -1221,22 +1246,22 @@ function ProductCardInner({
             : retail;
         const retailMrp = num(
           candidate.retail_mrp ??
-            candidate.effective_mrp ??
-            candidate.originalPrice,
+          candidate.effective_mrp ??
+          candidate.originalPrice,
         );
         const distributorMrp = num(candidate.distributor_mrp);
         const originalPrice =
           isDistributor && distributorMrp > 0 ? distributorMrp : retailMrp;
         const galleryImage = Array.isArray(candidate.images)
           ? candidate.images
-              .map((image: any) =>
-                normalizeImageUrl(
-                  typeof image === "string"
-                    ? image
-                    : (image?.image_url ?? image?.url),
-                ),
-              )
-              .find(Boolean)
+            .map((image: any) =>
+              normalizeImageUrl(
+                typeof image === "string"
+                  ? image
+                  : (image?.image_url ?? image?.url),
+              ),
+            )
+            .find(Boolean)
           : "";
         const rawBrand =
           candidate.brand_name ?? candidate.brandName ?? candidate.brand;
@@ -1245,7 +1270,7 @@ function ProductCardInner({
         ).toLowerCase();
         const quantity = candidate.stock_quantity ?? candidate.stockQuantity;
         const inStock =
-          typeof candidate.inStock === "boolean"
+          isPurchaseAllowedWithoutStock(candidate) ? true : typeof candidate.inStock === "boolean"
             ? candidate.inStock
             : ["out_of_stock", "sold_out", "inactive"].includes(stockStatus)
               ? false
@@ -1272,8 +1297,8 @@ function ProductCardInner({
           discount:
             sellingPrice > 0 && originalPrice > sellingPrice
               ? Math.round(
-                  ((originalPrice - sellingPrice) / originalPrice) * 100,
-                )
+                ((originalPrice - sellingPrice) / originalPrice) * 100,
+              )
               : 0,
           rating: num(
             candidate.reviews_summary?.average_rating ?? candidate.rating,
@@ -1348,9 +1373,8 @@ function ProductCardInner({
 
   const requireLogin = (): boolean => {
     if (hasToken !== true) {
-      const loginPath = `/auth/${
-        isDistributor ? "distributor" : "customer"
-      }/login`;
+      const loginPath = `/auth/${isDistributor ? "distributor" : "customer"
+        }/login`;
 
       router.push(loginPath);
 
@@ -1506,6 +1530,10 @@ function ProductCardInner({
         "Invalid product or quantity. Please refresh and try again.",
       );
     }
+
+    // `allowed_purchsed` is an explicit bypass of stock verification ONLY.
+    // Login, valid product ID and real add-to-cart API still apply.
+    if (purchaseWithoutStock) return true;
 
     // Reusable RTK Query endpoint: HTTP GET with `cache: no-store`.
     // Uses the selected sibling PRODUCT id; no variant_id is passed.
@@ -1739,7 +1767,7 @@ function ProductCardInner({
             {isDistributor ? (
               <div className="flex flex-wrap gap-x-3 gap-y-1 pt-1 text-[11px]">
                 <span>
-                  BA Value <strong>₹{money(item.price)}</strong>
+                  BA Price <strong>₹{money(item.price)}</strong>
                 </span>
                 {item.originalPrice > 0 && (
                   <span className="text-[#767D85]">
@@ -2068,6 +2096,7 @@ function ProductCardInner({
             </p>
           )}
           {lowStock &&
+            !purchaseWithoutStock &&
             displayedStock &&
             selectedVariant?.isCurrent !== false && (
               <p className="mt-[5px] text-[11px] font-semibold leading-[14px] text-[#B84460]">

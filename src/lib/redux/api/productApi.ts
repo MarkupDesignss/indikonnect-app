@@ -53,12 +53,7 @@ export const productApi = baseApi.injectEndpoints({
         if (params.is_published !== undefined)
           queryParams.append("is_published", params.is_published.toString());
 
-        // ----------------------------------------------------------------
-        // STOCK STATUS: supports BOTH
-        //   - string: "low_stock,out_of_stock"
-        //   - array:  ["low_stock", "out_of_stock"]
-        // Sends every value as `stock_status[]=...` (array form)
-        // ----------------------------------------------------------------
+        // Supports comma-separated statuses or an array of statuses.
         if (params.stock_status) {
           const statuses = Array.isArray(params.stock_status)
             ? params.stock_status
@@ -138,11 +133,17 @@ export const productApi = baseApi.injectEndpoints({
       invalidatesTags: ["Products"],
     }),
 
-    // SEARCH PRODUCTS
+    // SEARCH PRODUCTS: Only published products; cap suggestions at 5.
     searchProducts: builder.query<ProductsResponse, string>({
       query: (searchTerm) => ({
-        url: `/products?search=${encodeURIComponent(searchTerm)}`,
+        url: "/products",
         method: "GET",
+        params: {
+          is_published: 1,
+          search: searchTerm.trim(),
+          per_page: 5,
+          page: 1,
+        },
       }),
       providesTags: ["Products"],
     }),

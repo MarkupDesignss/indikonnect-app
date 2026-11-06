@@ -49,7 +49,7 @@ import {
   useGetCouponsQuery,
 } from "@/lib/redux/api/cartApi";
 
-import { useGetProductsQuery } from "@/lib/redux/api/productApi";
+import { useGetProductsQuery, useCheckProductStockMutation } from "@/lib/redux/api/productApi";
 
 import { useGetCheckoutSummaryQuery } from "@/lib/redux/api/checkoutApi";
 
@@ -64,6 +64,12 @@ import {
 import { useGetUserDashboardQuery } from "@/lib/redux/api/distributor/userDashboardApi";
 import { useGetUserProfileQuery } from "@/lib/redux/api/authApi";
 import AddressFormModal from "@/Screens/CheckoutPage/AddressFormModal";
+
+// API spelling is intentionally `allowed_purchsed` (not `allowed_purchased`).
+// A flag of 1 bypasses inventory restrictions only; cart/order API rules still apply.
+const isPurchaseWithoutStockAllowed = (value: unknown): boolean =>
+  value === true || value === 1 || String(value ?? "").trim().toLowerCase() === "1" ||
+  String(value ?? "").trim().toLowerCase() === "true";
 
 const PAGE_BG = "#FFFFFF";
 const PLACEHOLDER_IMAGE = "/indiekonnect-web/images/placeholder.jpg";
@@ -140,6 +146,7 @@ interface CartProduct {
   commission_value?: string | number | null;
   stock_quantity?: number | null;
   available_stock?: number | null;
+  allowed_purchsed?: number | boolean | string | null;
   category?: ProductTaxonomy | null;
   subcategory?: ProductTaxonomy | null;
   brand?: ProductTaxonomy | null;
@@ -180,6 +187,7 @@ interface CartItemView {
   variantAttributes: Record<string, string>;
   quantity: number;
   stockQuantity: number | null;
+  allowedPurchase: boolean;
   priceType: string;
   commissionPoints: number;
 }
@@ -323,8 +331,8 @@ const getOriginalPrice = (item: CartItemApi, currentPrice: number) => {
 
   const productPrice = isDistributor
     ? parsePrice(
-        item.product?.distributor_mrp ?? item.product?.distributor_price,
-      )
+      item.product?.distributor_mrp ?? item.product?.distributor_price,
+    )
     : parsePrice(item.product?.retail_mrp ?? item.product?.retail_price);
 
   const candidate =
@@ -475,23 +483,20 @@ function AddressSelectorModal({
               <div
                 key={address.id}
                 onClick={() => !isDeleting && onSelect(address)}
-                className={`relative rounded-xl border p-4 transition-all duration-200 ${
-                  isDeleting
+                className={`relative rounded-xl border p-4 transition-all duration-200 ${isDeleting
                     ? "pointer-events-none opacity-50"
                     : "cursor-pointer"
-                } ${
-                  isSelected
+                  } ${isSelected
                     ? "border-[#16845B] bg-[#F5FBF6] shadow-sm ring-1 ring-[#16845B]"
                     : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
-                }`}
+                  }`}
               >
                 <div className="flex items-start gap-3">
                   <div
-                    className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
-                      isSelected
+                    className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${isSelected
                         ? "border-[#16845B] bg-[#16845B]"
                         : "border-gray-300"
-                    }`}
+                      }`}
                   >
                     {isSelected && <Check className="h-3.5 w-3.5 text-white" />}
                   </div>
@@ -670,12 +675,14 @@ function CartProductItem({
   const originalPrice = item.originalPrice;
   const discountAmount = originalPrice ? originalPrice - item.price : 0;
 
-  const maxQuantity = Math.min(
-    MAX_CART_QUANTITY,
-    item.stockQuantity !== null && item.stockQuantity > 0
-      ? item.stockQuantity
-      : MAX_CART_QUANTITY,
-  );
+  const maxQuantity = item.allowedPurchase
+    ? MAX_CART_QUANTITY
+    : Math.min(
+      MAX_CART_QUANTITY,
+      item.stockQuantity !== null
+        ? Math.max(0, item.stockQuantity)
+        : MAX_CART_QUANTITY,
+    );
 
   const [qtyOpen, setQtyOpen] = useState(false);
   const qtyRef = useRef<HTMLDivElement>(null);
@@ -695,7 +702,7 @@ function CartProductItem({
   }, [qtyOpen]);
 
   const quantityOptions = Array.from(
-    { length: Math.max(maxQuantity, item.quantity) },
+    { length: Math.max(1, maxQuantity, item.quantity) },
     (_, index) => index + 1,
   );
 
@@ -725,9 +732,8 @@ function CartProductItem({
     >
       <Link
         href={`/product/${item.slug}`}
-        className={`relative block h-[112px] w-[88px] self-center overflow-hidden bg-[#F3F3F3] sm:h-[150px] sm:w-[112px] ${
-          isUnavailable ? "opacity-65" : ""
-        }`}
+        className={`relative block h-[112px] w-[88px] self-center overflow-hidden bg-[#F3F3F3] sm:h-[150px] sm:w-[112px] ${isUnavailable ? "opacity-65" : ""
+          }`}
       >
         <img
           src={item.image}
@@ -803,7 +809,7 @@ function CartProductItem({
             <span className="inline-flex h-6 max-w-full items-center gap-1 rounded-[3px] bg-[#F4F4F4] px-1.5 text-[9.5px] font-semibold text-[#252525] sm:text-[11px]">
               <span className="max-w-[140px] truncate">
                 {item.variantLabel.toLowerCase().startsWith("size") ||
-                item.variantLabel.includes(":")
+                  item.variantLabel.includes(":")
                   ? item.variantLabel
                   : `Size: ${item.variantLabel}`}
               </span>
@@ -820,17 +826,15 @@ function CartProductItem({
               aria-expanded={qtyOpen}
               disabled={isUpdating || isUnavailable}
               onClick={() => setQtyOpen((value) => !value)}
-              className={`inline-flex h-6 items-center gap-1 rounded-[3px] border bg-[#F4F4F4] pl-2 pr-1.5 text-[10px] font-semibold text-[#252525] transition hover:border-[#FF3E69]/60 disabled:cursor-not-allowed disabled:opacity-60 sm:text-[11px] ${
-                qtyOpen ? "border-[#FF3E69]" : "border-transparent"
-              }`}
+              className={`inline-flex h-6 items-center gap-1 rounded-[3px] border bg-[#F4F4F4] pl-2 pr-1.5 text-[10px] font-semibold text-[#252525] transition hover:border-[#FF3E69]/60 disabled:cursor-not-allowed disabled:opacity-60 sm:text-[11px] ${qtyOpen ? "border-[#FF3E69]" : "border-transparent"
+                }`}
             >
               <span className="text-[#8A8A8A]">Qty:</span>
               <span className="min-w-[12px] text-center">{item.quantity}</span>
 
               <ChevronDown
-                className={`h-3 w-3 shrink-0 text-[#555] transition-transform ${
-                  qtyOpen ? "rotate-180" : ""
-                }`}
+                className={`h-3 w-3 shrink-0 text-[#555] transition-transform ${qtyOpen ? "rotate-180" : ""
+                  }`}
               />
             </button>
 
@@ -854,11 +858,10 @@ function CartProductItem({
                           role="option"
                           aria-selected={active}
                           onClick={() => handleQtySelect(quantity)}
-                          className={`flex w-full items-center justify-between px-2 py-[5px] text-[11px] font-medium transition ${
-                            active
+                          className={`flex w-full items-center justify-between px-2 py-[5px] text-[11px] font-medium transition ${active
                               ? "bg-[#FFF1F4] text-[#E43D5C]"
                               : "text-[#252525] hover:bg-[#F5F5F5]"
-                          }`}
+                            }`}
                         >
                           {quantity}
 
@@ -956,7 +959,7 @@ function TaxBreakdownPopup({
 
   const categories =
     Array.isArray(summaryData.tax_by_category) &&
-    summaryData.tax_by_category.length > 0
+      summaryData.tax_by_category.length > 0
       ? summaryData.tax_by_category
       : [];
 
@@ -1227,6 +1230,14 @@ function RecommendedSection({
       >
         {recommended.map((product: any) => {
           const isAdding = addingProductId === product.id;
+          const explicitlyOutOfStock =
+            !isPurchaseWithoutStockAllowed(product?.allowed_purchsed) &&
+            (product?.in_stock === false ||
+              product?.is_in_stock === false ||
+              ["out_of_stock", "sold_out", "inactive", "disabled"].includes(
+                String(product?.stock_status ?? "").toLowerCase(),
+              ) ||
+              (product?.stock_quantity != null && Number(product.stock_quantity) <= 0));
 
           return (
             <div
@@ -1266,7 +1277,7 @@ function RecommendedSection({
                   onClick={(event) =>
                     handleRecommendedAddToCart(product, event)
                   }
-                  disabled={isAdding}
+                  disabled={isAdding || explicitlyOutOfStock}
                   className="mt-1.5 flex h-9 w-full items-center justify-center gap-1.5 rounded-[5px] bg-black text-[9px] font-semibold uppercase tracking-wide text-white transition hover:bg-[#333] disabled:opacity-50"
                 >
                   {isAdding ? (
@@ -1275,7 +1286,7 @@ function RecommendedSection({
                     <ShoppingBag className="h-3 w-3" />
                   )}
 
-                  {isAdding ? "Adding..." : "Add"}
+                  {isAdding ? "Adding..." : explicitlyOutOfStock ? "Out of stock" : "Add"}
                 </button>
               </div>
             </div>
@@ -1369,9 +1380,8 @@ function OrderSummary({
             {showCouponList ? "Hide coupons" : "View coupons"}
 
             <ChevronDown
-              className={`h-3 w-3 transition-transform ${
-                showCouponList ? "rotate-180" : ""
-              }`}
+              className={`h-3 w-3 transition-transform ${showCouponList ? "rotate-180" : ""
+                }`}
             />
           </button>
         </div>
@@ -1664,6 +1674,7 @@ export default function CartPage() {
   const [updateCartItem] = useUpdateCartItemMutation();
   const [addToCart] = useAddToCartMutation();
   const [checkCartStock] = useCheckCartStockMutation();
+  const [checkProductStock] = useCheckProductStockMutation();
 
   // ── Address APIs ──────────────────────────────────────────────────────────
 
@@ -1804,9 +1815,9 @@ export default function CartPage() {
 
   const profileUserRole = String(
     profileUser?.account_type ||
-      profilePayload?.user?.account_type ||
-      profilePayload?.data?.user?.account_type ||
-      "",
+    profilePayload?.user?.account_type ||
+    profilePayload?.data?.user?.account_type ||
+    "",
   )
     .trim()
     .toLowerCase();
@@ -1852,6 +1863,7 @@ export default function CartPage() {
         variantAttributes,
         quantity: Math.max(1, Number(item.quantity || 1)),
         stockQuantity: stockQuantity === null ? null : Number(stockQuantity),
+        allowedPurchase: isPurchaseWithoutStockAllowed(item.product?.allowed_purchsed),
         priceType:
           item.current_price_type || cartData?.data?.price_type || "retail",
         commissionPoints: Math.max(
@@ -2192,6 +2204,14 @@ export default function CartPage() {
       return false;
     }
 
+    // Products marked allowed_purchsed=1 can be purchased regardless of stock.
+    // If the entire cart is exempt, do not call the stock endpoint at all.
+    const stockControlledItems = freshItems.filter((line) => !line.allowedPurchase);
+    if (stockControlledItems.length === 0) {
+      setUnavailableProductIds(new Set());
+      return true;
+    }
+
     try {
       const response: any = await checkCartStock({ cartId }).unwrap();
       if (
@@ -2200,7 +2220,7 @@ export default function CartPage() {
       ) {
         throw new Error(
           response?.message ||
-            "Stock API returned an invalid response. Please retry.",
+          "Stock API returned an invalid response. Please retry.",
         );
       }
       const stockRows: any[] = response.data.items;
@@ -2213,7 +2233,7 @@ export default function CartPage() {
 
       const unavailableIds = new Set<number>();
       const reasons: string[] = [];
-      for (const line of freshItems) {
+      for (const line of stockControlledItems) {
         // Prefer cart-item ID: several variants of one product can appear in a cart.
         const stock =
           stockRows.find(
@@ -2458,10 +2478,14 @@ export default function CartPage() {
       return;
     }
 
-    const availableLimit = Math.min(
-      MAX_CART_QUANTITY,
-      item.stockQuantity ?? MAX_CART_QUANTITY,
-    );
+    const availableLimit = item.allowedPurchase
+      ? MAX_CART_QUANTITY
+      : Math.min(MAX_CART_QUANTITY, item.stockQuantity ?? MAX_CART_QUANTITY);
+
+    if (!item.allowedPurchase && availableLimit < 1 && requestedQuantity > item.quantity) {
+      toast.error("This item is out of stock. Quantity cannot be increased.");
+      return;
+    }
 
     const newQuantity = Math.max(
       1,
@@ -2567,6 +2591,29 @@ export default function CartPage() {
     try {
       setAddingProductId(product.id);
 
+      // No stock verification for API-approved stock-independent purchases.
+      // Other products retain normal live stock verification.
+      if (!isPurchaseWithoutStockAllowed(product?.allowed_purchsed)) {
+        const productId = Number(product?.id);
+        if (!Number.isInteger(productId) || productId <= 0) {
+          throw new Error("Invalid product. Please refresh and try again.");
+        }
+        const response: any = await checkProductStock({
+          product_id: productId,
+          quantity: 1,
+        }).unwrap();
+        const stock = response?.data;
+        if (
+          response?.success !== true ||
+          Number(stock?.product_id) !== productId ||
+          stock?.available !== true ||
+          !Number.isFinite(Number(stock?.stock_quantity)) ||
+          Number(stock.stock_quantity) < 1
+        ) {
+          throw new Error("This product is currently out of stock or its stock could not be verified.");
+        }
+      }
+
       await addToCart({
         product_id: product.id,
         quantity: 1,
@@ -2654,8 +2701,8 @@ export default function CartPage() {
           cartCount={0}
           cartSubtotal={0}
           wishlistCount={0}
-          onRemoveFromCart={() => {}}
-          onClearCart={() => {}}
+          onRemoveFromCart={() => { }}
+          onClearCart={() => { }}
         />
 
         <main className="mx-auto flex min-h-[65vh] w-full max-w-[1200px] items-center justify-center px-4">
@@ -2875,9 +2922,9 @@ export default function CartPage() {
                         item={item}
                         isUpdating={isUpdating === item.id}
                         isRemoving={isRemoving}
-                        isUnavailable={unavailableProductIds.has(
-                          item.productId,
-                        )}
+                        isUnavailable={
+                          !item.allowedPurchase && unavailableProductIds.has(item.productId)
+                        }
                         updateQuantity={updateQuantity}
                         removeItem={removeItem}
                         isDistributor={isDistributor}

@@ -191,9 +191,13 @@ const getDistributorOfferPrice = (product: any, base: number): number => {
     product?.distributor_offer_price,
     product?.offer_price_distributor,
     product?.distributor_final_price,
-  ].find((value) =>
-    value !== null && value !== undefined && value !== "" &&
-    Number.isFinite(Number(value)) && Number(value) > 0,
+  ].find(
+    (value) =>
+      value !== null &&
+      value !== undefined &&
+      value !== "" &&
+      Number.isFinite(Number(value)) &&
+      Number(value) > 0,
   );
   if (explicitFinalPrice !== undefined) return Number(explicitFinalPrice);
 
@@ -203,9 +207,12 @@ const getDistributorOfferPrice = (product: any, base: number): number => {
     product?.offer_percentage,
     product?.offer?.discount_percentage,
     product?.offer?.percentage,
-  ].find((value) =>
-    value !== null && value !== undefined && value !== "" &&
-    Number.isFinite(Number(value)),
+  ].find(
+    (value) =>
+      value !== null &&
+      value !== undefined &&
+      value !== "" &&
+      Number.isFinite(Number(value)),
   );
   const percentage = Number(rawPercentage ?? 0);
   if (percentage <= 0 || percentage > 100) return base;
@@ -219,9 +226,9 @@ const getProductPrice = (product: any, userType?: string) => {
   if (userType === "distributor") {
     const basePrice = Number(
       product.distributor_price ||
-      product.current_price ||
-      product.retail_price ||
-      0,
+        product.current_price ||
+        product.retail_price ||
+        0,
     );
     return getDistributorOfferPrice(product, basePrice);
   }
@@ -235,9 +242,9 @@ const getProductMrp = (product: any, userType?: string) => {
   if (userType === "distributor") {
     return Number(
       product.distributor_mrp ||
-      product.original_price ||
-      product.retail_mrp ||
-      0,
+        product.original_price ||
+        product.retail_mrp ||
+        0,
     );
   }
 
@@ -257,6 +264,12 @@ const getDiscountPercentage = (product: any, userType?: string) => {
 
   return 0;
 };
+
+/** The API intentionally spells this field `allowed_purchsed`. */
+const isPurchaseAllowedWithoutStock = (product: any): boolean =>
+  product?.allowed_purchsed === true ||
+  product?.allowed_purchsed === 1 ||
+  product?.allowed_purchsed === "1";
 
 const getProductImage = (product: any) => {
   if (!product) {
@@ -643,8 +656,9 @@ function ProductRail({
 
   return (
     <div
-      className={`mx-auto flex w-full max-w-[min(100%,1400px)] flex-wrap items-stretch ${railGapClass} ${isFewProducts ? "justify-center" : "justify-start"
-        }`}
+      className={`mx-auto flex w-full max-w-[min(100%,1400px)] flex-wrap items-stretch ${railGapClass} ${
+        isFewProducts ? "justify-center" : "justify-start"
+      }`}
     >
       {visibleProducts.map((product: any, index: number) => {
         const images = Array.isArray(product?.images) ? product.images : [];
@@ -738,17 +752,24 @@ function ProductCard({
 
   const isWishlisted = wish?.[product?.id] || false;
 
+  // Explicit purchase permission bypasses stock quantity and stock status only.
+  const allowsPurchaseWithoutStock = isPurchaseAllowedWithoutStock(product);
   const inStock =
-    !stockUnavailable &&
-    product?.in_stock !== false &&
-    !["out_of_stock", "inactive", "disabled"].includes(
-      String(product?.stock_status ?? "").toLowerCase(),
-    ) &&
-    (product?.stock_quantity == null || Number(product.stock_quantity) > 0);
+    allowsPurchaseWithoutStock ||
+    (!stockUnavailable &&
+      product?.in_stock !== false &&
+      !["out_of_stock", "inactive", "disabled"].includes(
+        String(product?.stock_status ?? "").toLowerCase(),
+      ) &&
+      (product?.stock_quantity == null || Number(product.stock_quantity) > 0));
 
   const stockQty = Number(product?.stock_quantity);
   const lowStock =
-    inStock && Number.isFinite(stockQty) && stockQty > 0 && stockQty <= 5;
+    !allowsPurchaseWithoutStock &&
+    inStock &&
+    Number.isFinite(stockQty) &&
+    stockQty > 0 &&
+    stockQty <= 5;
 
   useEffect(() => {
     setStockUnavailable(false);
@@ -759,6 +780,9 @@ function ProductCard({
     if (!Number.isInteger(id) || id <= 0) {
       throw new Error("Invalid product. Please refresh and try again.");
     }
+
+    // Do not call stock API when the product explicitly permits purchases.
+    if (allowsPurchaseWithoutStock) return;
 
     const response = await checkProductStock({
       product_id: id,
@@ -882,8 +906,9 @@ function ProductCard({
             e.currentTarget.dataset.fallback = "1";
             e.currentTarget.src = getPlaceholderImage();
           }}
-          className={`absolute inset-0 h-full w-full cursor-pointer object-cover object-center transition-transform duration-700 ease-out group-hover/card:scale-[1.05] motion-reduce:transition-none motion-reduce:group-hover/card:scale-100 ${inStock ? "" : "opacity-60 grayscale"
-            }`}
+          className={`absolute inset-0 h-full w-full cursor-pointer object-cover object-center transition-transform duration-700 ease-out group-hover/card:scale-[1.05] motion-reduce:transition-none motion-reduce:group-hover/card:scale-100 ${
+            inStock ? "" : "opacity-60 grayscale"
+          }`}
         />
 
         {/* soft bottom fade so rating/dots stay readable */}
@@ -959,10 +984,11 @@ function ProductCard({
                 className="flex h-5 w-4 items-center justify-center"
               >
                 <span
-                  className={`block rounded-full transition-all duration-300 ${i === imageIndex
+                  className={`block rounded-full transition-all duration-300 ${
+                    i === imageIndex
                       ? "h-1.5 w-3 bg-white"
                       : "h-1.5 w-1.5 bg-white/60"
-                    }`}
+                  }`}
                 />
               </button>
             ))}
@@ -1017,7 +1043,9 @@ function ProductCard({
             </div>
             {mrp > 0 && (
               <div className="min-w-0 pb-0.5 text-right">
-                <p className="text-[10px] font-medium uppercase tracking-wide text-[#737d79]">MRP</p>
+                <p className="text-[10px] font-medium uppercase tracking-wide text-[#737d79]">
+                  MRP
+                </p>
                 <p className="text-[12px] font-medium leading-tight text-[#929b95] line-through decoration-[#929b95] decoration-[1.5px] sm:text-[13px]">
                   ₹{mrp.toLocaleString("en-IN")}
                 </p>
@@ -1051,12 +1079,13 @@ function ProductCard({
               disabled={!inStock || isAddingToCart || isBuyingNow}
               aria-label="Add to cart"
               title={inStock ? "Add to cart" : "Out of stock"}
-              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition-all duration-200 active:scale-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#111] sm:h-10 sm:w-10 ${!inStock
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition-all duration-200 active:scale-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#111] sm:h-10 sm:w-10 ${
+                !inStock
                   ? "cursor-not-allowed border-[#eeeeee] bg-[#f7f7f7] text-[#cccccc]"
                   : justAdded
                     ? "border-[#1a8a3f] bg-[#eafaf0] text-[#1a8a3f]"
                     : "border-[#d9d9d9] bg-white text-[#111111] hover:border-[#111111]"
-                }`}
+              }`}
             >
               {isAddingToCart ? (
                 <Loader2 className="h-[15px] w-[15px] animate-spin" />
@@ -1072,12 +1101,13 @@ function ProductCard({
               onClick={handleBuyNow}
               disabled={!inStock || isBuyingNow || isAddingToCart}
               aria-label="Buy now"
-              className={`flex h-9 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-full px-2 text-[11.5px] font-medium tracking-tight transition-all duration-200 active:scale-[0.97] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#111] sm:h-10 sm:text-xs ${!inStock
+              className={`flex h-9 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-full px-2 text-[11.5px] font-medium tracking-tight transition-all duration-200 active:scale-[0.97] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#111] sm:h-10 sm:text-xs ${
+                !inStock
                   ? "cursor-not-allowed bg-[#f0f0f0] text-[#bbbbbb]"
                   : isBuyingNow
                     ? "cursor-wait bg-[#252525] text-white"
                     : "bg-[#111111] text-white hover:bg-[#2a2a2a]"
-                }`}
+              }`}
             >
               {isBuyingNow ? (
                 <>
@@ -1680,8 +1710,9 @@ export default function IndieKonnectHome() {
         </div>
 
         <div style="flex:1;min-width:0;">
-          ${productName
-        ? `
+          ${
+            productName
+              ? `
               <div style="
                 font-size:13px;
                 font-weight:600;
@@ -1690,8 +1721,8 @@ export default function IndieKonnectHome() {
                 ${productName}
               </div>
             `
-        : ""
-      }
+              : ""
+          }
 
           <div style="
             font-size:12px;
@@ -1777,6 +1808,20 @@ export default function IndieKonnectHome() {
     }, 4000);
   };
 
+  // Look up stock-bypass flags in all product sources displayed on Home.
+  // Default to normal stock checks when the field is absent.
+  const findHomeProduct = (id: number): any => {
+    const sources = [
+      ...(Array.isArray(products) ? products : []),
+      ...(Array.isArray(bestSellers) ? bestSellers : []),
+      ...(Array.isArray(bestOffers) ? bestOffers : []),
+      ...(Array.isArray(dealProducts) ? dealProducts : []),
+    ];
+    return sources
+      .map((row: any) => row?.product ?? row)
+      .find((row: any) => Number(row?.id) === id);
+  };
+
   /* =======================================================
      ADD TO CART
   ======================================================= */
@@ -1796,17 +1841,19 @@ export default function IndieKonnectHome() {
       const requiredQuantity =
         (cartItems.find((item) => Number(item.product_id) === id)?.quantity ??
           0) + 1;
-      const stockResponse = await checkParentProductStock({
-        product_id: id,
-        quantity: requiredQuantity,
-      }).unwrap();
-      if (
-        stockResponse?.success !== true ||
-        Number(stockResponse?.data?.product_id) !== id ||
-        stockResponse?.data?.available !== true ||
-        Number(stockResponse?.data?.stock_quantity) < requiredQuantity
-      ) {
-        throw new Error("Insufficient stock for the requested quantity.");
+      if (!isPurchaseAllowedWithoutStock(findHomeProduct(id))) {
+        const stockResponse = await checkParentProductStock({
+          product_id: id,
+          quantity: requiredQuantity,
+        }).unwrap();
+        if (
+          stockResponse?.success !== true ||
+          Number(stockResponse?.data?.product_id) !== id ||
+          stockResponse?.data?.available !== true ||
+          Number(stockResponse?.data?.stock_quantity) < requiredQuantity
+        ) {
+          throw new Error("Insufficient stock for the requested quantity.");
+        }
       }
       const response = await addToCartMutation({
         product_id: productId,
@@ -1831,9 +1878,9 @@ export default function IndieKonnectHome() {
             return prev.map((item) =>
               item.product_id === productId
                 ? {
-                  ...item,
-                  quantity: item.quantity + 1,
-                }
+                    ...item,
+                    quantity: item.quantity + 1,
+                  }
                 : item,
             );
           }
@@ -1968,7 +2015,10 @@ export default function IndieKonnectHome() {
     }
 
     try {
-      if (action === "increment") {
+      if (
+        action === "increment" &&
+        !isPurchaseAllowedWithoutStock(findHomeProduct(Number(productId)))
+      ) {
         const requiredQuantity = Number(currentItem.quantity) + 1;
         const stockResponse = await checkParentProductStock({
           product_id: Number(productId),
@@ -1998,9 +2048,9 @@ export default function IndieKonnectHome() {
         prev.map((item) =>
           item.product_id === productId
             ? {
-              ...item,
-              quantity: item.quantity + change,
-            }
+                ...item,
+                quantity: item.quantity + change,
+              }
             : item,
         ),
       );
@@ -2424,9 +2474,10 @@ export default function IndieKonnectHome() {
                 flex
                 w-full
                 flex-col
-                ${bestSellers?.length <= 2
-                  ? "items-center text-center"
-                  : "items-start text-left"
+                ${
+                  bestSellers?.length <= 2
+                    ? "items-center text-center"
+                    : "items-start text-left"
                 }
               `}
             >
@@ -2581,10 +2632,11 @@ export default function IndieKonnectHome() {
                     type="button"
                     aria-label={`Go to slide ${index + 1}`}
                     onClick={() => scrollToIndex(index)}
-                    className={`h-2 rounded-full transition-all duration-300 ${activeIndex === index
+                    className={`h-2 rounded-full transition-all duration-300 ${
+                      activeIndex === index
                         ? "w-6 bg-gray-800"
                         : "w-2 bg-gray-300"
-                      }`}
+                    }`}
                   />
                 ))}
               </div>
@@ -2638,9 +2690,10 @@ export default function IndieKonnectHome() {
                 flex
                 w-full
                 flex-col
-                ${bestOffers?.length <= 2
-                  ? "items-center text-center"
-                  : "items-start text-left"
+                ${
+                  bestOffers?.length <= 2
+                    ? "items-center text-center"
+                    : "items-start text-left"
                 }
               `}
             >
