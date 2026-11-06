@@ -180,16 +180,50 @@ const sectionContainerClass = `
    HELPERS
 ========================================================= */
 
+/** Distributor-only BA offer price. Explicit final price wins; otherwise
+ * apply the API's offer percentage once to the distributor base price.
+ * Never alter the customer price calculation.
+ */
+const getDistributorOfferPrice = (product: any, base: number): number => {
+  if (!Number.isFinite(base) || base <= 0) return base;
+
+  const explicitFinalPrice = [
+    product?.distributor_offer_price,
+    product?.offer_price_distributor,
+    product?.distributor_final_price,
+  ].find((value) =>
+    value !== null && value !== undefined && value !== "" &&
+    Number.isFinite(Number(value)) && Number(value) > 0,
+  );
+  if (explicitFinalPrice !== undefined) return Number(explicitFinalPrice);
+
+  const rawPercentage = [
+    product?.distributor_offer_percentage,
+    product?.offer_discount_percentage,
+    product?.offer_percentage,
+    product?.offer?.discount_percentage,
+    product?.offer?.percentage,
+  ].find((value) =>
+    value !== null && value !== undefined && value !== "" &&
+    Number.isFinite(Number(value)),
+  );
+  const percentage = Number(rawPercentage ?? 0);
+  if (percentage <= 0 || percentage > 100) return base;
+
+  return Math.round(base * (1 - percentage / 100) * 100) / 100;
+};
+
 const getProductPrice = (product: any, userType?: string) => {
   if (!product) return 0;
 
   if (userType === "distributor") {
-    return Number(
+    const basePrice = Number(
       product.distributor_price ||
-        product.current_price ||
-        product.retail_price ||
-        0,
+      product.current_price ||
+      product.retail_price ||
+      0,
     );
+    return getDistributorOfferPrice(product, basePrice);
   }
 
   return Number(product.current_price || product.retail_price || 0);
@@ -201,9 +235,9 @@ const getProductMrp = (product: any, userType?: string) => {
   if (userType === "distributor") {
     return Number(
       product.distributor_mrp ||
-        product.original_price ||
-        product.retail_mrp ||
-        0,
+      product.original_price ||
+      product.retail_mrp ||
+      0,
     );
   }
 
@@ -609,9 +643,8 @@ function ProductRail({
 
   return (
     <div
-      className={`mx-auto flex w-full max-w-[min(100%,1400px)] flex-wrap items-stretch ${railGapClass} ${
-        isFewProducts ? "justify-center" : "justify-start"
-      }`}
+      className={`mx-auto flex w-full max-w-[min(100%,1400px)] flex-wrap items-stretch ${railGapClass} ${isFewProducts ? "justify-center" : "justify-start"
+        }`}
     >
       {visibleProducts.map((product: any, index: number) => {
         const images = Array.isArray(product?.images) ? product.images : [];
@@ -849,9 +882,8 @@ function ProductCard({
             e.currentTarget.dataset.fallback = "1";
             e.currentTarget.src = getPlaceholderImage();
           }}
-          className={`absolute inset-0 h-full w-full cursor-pointer object-cover object-center transition-transform duration-700 ease-out group-hover/card:scale-[1.05] motion-reduce:transition-none motion-reduce:group-hover/card:scale-100 ${
-            inStock ? "" : "opacity-60 grayscale"
-          }`}
+          className={`absolute inset-0 h-full w-full cursor-pointer object-cover object-center transition-transform duration-700 ease-out group-hover/card:scale-[1.05] motion-reduce:transition-none motion-reduce:group-hover/card:scale-100 ${inStock ? "" : "opacity-60 grayscale"
+            }`}
         />
 
         {/* soft bottom fade so rating/dots stay readable */}
@@ -927,11 +959,10 @@ function ProductCard({
                 className="flex h-5 w-4 items-center justify-center"
               >
                 <span
-                  className={`block rounded-full transition-all duration-300 ${
-                    i === imageIndex
+                  className={`block rounded-full transition-all duration-300 ${i === imageIndex
                       ? "h-1.5 w-3 bg-white"
                       : "h-1.5 w-1.5 bg-white/60"
-                  }`}
+                    }`}
                 />
               </button>
             ))}
@@ -973,17 +1004,38 @@ function ProductCard({
           {fullTitle}
         </p>
 
-        {/* PRICE */}
-        <div className="flex min-h-[22px] flex-wrap items-baseline gap-x-2">
-          <span className="text-[15px] font-bold tracking-tight text-[#111111] sm:text-base">
-            ₹{price.toLocaleString("en-IN")}
-          </span>
-          {mrp > price && (
-            <span className="text-[11px] text-gray-400 line-through sm:text-xs">
-              ₹{mrp.toLocaleString("en-IN")}
+        {/* PRICE — distributor BA Price + crossed-out MRP; customer unchanged */}
+        {userType === "distributor" ? (
+          <div className="mt-1 flex min-w-0 flex-wrap items-end justify-between gap-x-3 gap-y-1.5 rounded-xl border border-[#e4eee6] bg-[#f7fbf8] px-2.5 py-2 sm:px-3">
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-[#29764b] sm:text-[11px]">
+                BA Price
+              </p>
+              <p className="mt-0.5 text-[17px] font-bold leading-tight tracking-tight text-[#166534] sm:text-[19px]">
+                {price > 0 ? `₹${price.toLocaleString("en-IN")}` : "View price"}
+              </p>
+            </div>
+            {mrp > 0 && (
+              <div className="min-w-0 pb-0.5 text-right">
+                <p className="text-[10px] font-medium uppercase tracking-wide text-[#737d79]">MRP</p>
+                <p className="text-[12px] font-medium leading-tight text-[#929b95] line-through decoration-[#929b95] decoration-[1.5px] sm:text-[13px]">
+                  ₹{mrp.toLocaleString("en-IN")}
+                </p>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="flex min-h-[22px] flex-wrap items-baseline gap-x-2">
+            <span className="text-[15px] font-bold tracking-tight text-[#111111] sm:text-base">
+              ₹{price.toLocaleString("en-IN")}
             </span>
-          )}
-        </div>
+            {mrp > price && (
+              <span className="text-[11px] text-gray-400 line-through sm:text-xs">
+                ₹{mrp.toLocaleString("en-IN")}
+              </span>
+            )}
+          </div>
+        )}
 
         {/* LOW STOCK hint */}
         <p className="mt-0.5 min-h-[14px] text-[11px] font-medium text-[#c2410c]">
@@ -999,13 +1051,12 @@ function ProductCard({
               disabled={!inStock || isAddingToCart || isBuyingNow}
               aria-label="Add to cart"
               title={inStock ? "Add to cart" : "Out of stock"}
-              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition-all duration-200 active:scale-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#111] sm:h-10 sm:w-10 ${
-                !inStock
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition-all duration-200 active:scale-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#111] sm:h-10 sm:w-10 ${!inStock
                   ? "cursor-not-allowed border-[#eeeeee] bg-[#f7f7f7] text-[#cccccc]"
                   : justAdded
                     ? "border-[#1a8a3f] bg-[#eafaf0] text-[#1a8a3f]"
                     : "border-[#d9d9d9] bg-white text-[#111111] hover:border-[#111111]"
-              }`}
+                }`}
             >
               {isAddingToCart ? (
                 <Loader2 className="h-[15px] w-[15px] animate-spin" />
@@ -1021,13 +1072,12 @@ function ProductCard({
               onClick={handleBuyNow}
               disabled={!inStock || isBuyingNow || isAddingToCart}
               aria-label="Buy now"
-              className={`flex h-9 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-full px-2 text-[11.5px] font-medium tracking-tight transition-all duration-200 active:scale-[0.97] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#111] sm:h-10 sm:text-xs ${
-                !inStock
+              className={`flex h-9 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-full px-2 text-[11.5px] font-medium tracking-tight transition-all duration-200 active:scale-[0.97] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#111] sm:h-10 sm:text-xs ${!inStock
                   ? "cursor-not-allowed bg-[#f0f0f0] text-[#bbbbbb]"
                   : isBuyingNow
                     ? "cursor-wait bg-[#252525] text-white"
                     : "bg-[#111111] text-white hover:bg-[#2a2a2a]"
-              }`}
+                }`}
             >
               {isBuyingNow ? (
                 <>
@@ -1630,9 +1680,8 @@ export default function IndieKonnectHome() {
         </div>
 
         <div style="flex:1;min-width:0;">
-          ${
-            productName
-              ? `
+          ${productName
+        ? `
               <div style="
                 font-size:13px;
                 font-weight:600;
@@ -1641,8 +1690,8 @@ export default function IndieKonnectHome() {
                 ${productName}
               </div>
             `
-              : ""
-          }
+        : ""
+      }
 
           <div style="
             font-size:12px;
@@ -1782,9 +1831,9 @@ export default function IndieKonnectHome() {
             return prev.map((item) =>
               item.product_id === productId
                 ? {
-                    ...item,
-                    quantity: item.quantity + 1,
-                  }
+                  ...item,
+                  quantity: item.quantity + 1,
+                }
                 : item,
             );
           }
@@ -1949,9 +1998,9 @@ export default function IndieKonnectHome() {
         prev.map((item) =>
           item.product_id === productId
             ? {
-                ...item,
-                quantity: item.quantity + change,
-              }
+              ...item,
+              quantity: item.quantity + change,
+            }
             : item,
         ),
       );
@@ -2375,10 +2424,9 @@ export default function IndieKonnectHome() {
                 flex
                 w-full
                 flex-col
-                ${
-                  bestSellers?.length <= 2
-                    ? "items-center text-center"
-                    : "items-start text-left"
+                ${bestSellers?.length <= 2
+                  ? "items-center text-center"
+                  : "items-start text-left"
                 }
               `}
             >
@@ -2533,11 +2581,10 @@ export default function IndieKonnectHome() {
                     type="button"
                     aria-label={`Go to slide ${index + 1}`}
                     onClick={() => scrollToIndex(index)}
-                    className={`h-2 rounded-full transition-all duration-300 ${
-                      activeIndex === index
+                    className={`h-2 rounded-full transition-all duration-300 ${activeIndex === index
                         ? "w-6 bg-gray-800"
                         : "w-2 bg-gray-300"
-                    }`}
+                      }`}
                   />
                 ))}
               </div>
@@ -2591,10 +2638,9 @@ export default function IndieKonnectHome() {
                 flex
                 w-full
                 flex-col
-                ${
-                  bestOffers?.length <= 2
-                    ? "items-center text-center"
-                    : "items-start text-left"
+                ${bestOffers?.length <= 2
+                  ? "items-center text-center"
+                  : "items-start text-left"
                 }
               `}
             >

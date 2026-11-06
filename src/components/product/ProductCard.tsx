@@ -42,6 +42,34 @@ import Fallback from "../../../public/indiekonnect-web/images/test.jpg";
 
 import { getAppType } from "@/lib/appConfig";
 
+/* Distributor-only offer pricing. Customer pricing is untouched.
+ * An explicit offer percentage is applied to the distributor base price.
+ * If the API already supplies an offer/final price, prefer that value.
+ * Do not infer an extra discount from the MRP/price difference.
+ */
+const distributorOfferPrice = (item: any, base: number): number => {
+  if (!Number.isFinite(base) || base <= 0) return base;
+  const finalPrice = [
+    item?.distributor_offer_price,
+    item?.offer_price_distributor,
+    item?.distributor_final_price,
+  ].find((v) => v !== null && v !== undefined && v !== "" && Number(v) > 0);
+  if (finalPrice !== undefined) return Number(finalPrice);
+  const rawPercent = [
+    item?.distributor_offer_percentage,
+    item?.offer_discount_percentage,
+    item?.offer_percentage,
+    item?.offer?.discount_percentage,
+    item?.offer?.percentage,
+  ].find(
+    (v) =>
+      v !== null && v !== undefined && v !== "" && Number.isFinite(Number(v)),
+  );
+  const percent = Number(rawPercent ?? 0);
+  if (percent <= 0 || percent > 100) return base;
+  return Math.round(base * (1 - percent / 100) * 100) / 100;
+};
+
 // =========================================================    TYPES   =========================================================
 
 interface ProductImage {
@@ -595,7 +623,9 @@ function ProductCardInner({
   );
   const distributorPrice = num(product?.distributor_price);
   const price =
-    isDistributor && distributorPrice > 0 ? distributorPrice : retailPrice;
+    isDistributor && distributorPrice > 0
+      ? distributorOfferPrice(product, distributorPrice)
+      : retailPrice;
 
   const retailMrp = num(
     product?.retail_mrp ?? product?.effective_mrp ?? product?.originalPrice,
@@ -918,6 +948,7 @@ function ProductCardInner({
         distributorPrice: v?.distributor_price,
 
         distributorMrp: v?.distributor_mrp,
+        offerSource: v,
 
         stockStatus: v?.stock_status ?? v?.stockStatus,
       };
@@ -1000,7 +1031,10 @@ function ProductCardInner({
   const displayedPrice =
     selectedVariant && !selectedVariant.isCurrent
       ? isDistributor && selectedDistributorPrice > 0
-        ? selectedDistributorPrice
+        ? distributorOfferPrice(
+            selectedVariant?.offerSource,
+            selectedDistributorPrice,
+          )
         : selectedRetailPrice
       : price;
 
@@ -1064,7 +1098,10 @@ function ProductCardInner({
         const full = pool.get(String(variant.productId));
         const retail = num(full?.retail_price ?? variant.price ?? 0);
         const distributor = num(full?.distributor_price);
-        const price = isDistributor && distributor > 0 ? distributor : retail;
+        const price =
+          isDistributor && distributor > 0
+            ? distributorOfferPrice(full ?? variant, distributor)
+            : retail;
         const retailMrp = num(full?.retail_mrp ?? variant.mrp);
         const distributorMrp = num(full?.distributor_mrp);
         const originalPrice =
@@ -1179,7 +1216,9 @@ function ProductCardInner({
         );
         const distributor = num(candidate.distributor_price);
         const sellingPrice =
-          isDistributor && distributor > 0 ? distributor : retail;
+          isDistributor && distributor > 0
+            ? distributorOfferPrice(candidate, distributor)
+            : retail;
         const retailMrp = num(
           candidate.retail_mrp ??
             candidate.effective_mrp ??
@@ -1697,16 +1736,32 @@ function ProductCardInner({
                 <span className="text-[#98938c]">({item.reviews})</span>
               </div>
             )}
-            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 pt-1">
-              <strong className="text-[14px] font-bold leading-[20px] tracking-[-0.01em] text-[#141414]">
-                {item.price > 0 ? `₹${money(item.price)}` : "View price"}
-              </strong>
-              {item.price > 0 && item.originalPrice > item.price && (
-                <span className="text-[10px] text-[#9d9994] line-through">
-                  ₹{money(item.originalPrice)}
+            {isDistributor ? (
+              <div className="flex flex-wrap gap-x-3 gap-y-1 pt-1 text-[11px]">
+                <span>
+                  BA Value <strong>₹{money(item.price)}</strong>
                 </span>
-              )}
-            </div>
+                {item.originalPrice > 0 && (
+                  <span className="text-[#767D85]">
+                    MRP{" "}
+                    <strong className="font-medium line-through decoration-[#9AA1A9] decoration-[1.5px]">
+                      ₹{money(item.originalPrice)}
+                    </strong>
+                  </span>
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 pt-1">
+                <strong className="text-[14px] font-bold leading-[20px] tracking-[-0.01em] text-[#141414]">
+                  {item.price > 0 ? `₹${money(item.price)}` : "View price"}
+                </strong>
+                {item.price > 0 && item.originalPrice > item.price && (
+                  <span className="text-[10px] text-[#9d9994] line-through">
+                    ₹{money(item.originalPrice)}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </Link>
         <Link
@@ -1963,28 +2018,50 @@ function ProductCardInner({
             </div>
           )}
 
-          <div className="mt-[7px] flex min-w-0 flex-wrap items-baseline gap-x-[6px] gap-y-[2px]">
-            {displayedPrice > 0 ? (
-              <span className="text-[14px] font-bold leading-[20px] tracking-[-0.01em] text-[#141414]">
-                ₹{money(displayedPrice)}
-              </span>
-            ) : (
-              <span className="text-[11px] font-semibold leading-[20px] text-[#555]">
-                View price
-              </span>
-            )}
-            {displayedPrice > 0 && displayedMrp > displayedPrice && (
-              <span className="text-[11px] leading-[16px] text-[#999] line-through">
-                ₹{money(displayedMrp)}
-              </span>
-            )}
-            {displayedDiscount > 0 && (
-              <span className="rounded-[4px] bg-[#EFF9F1] px-[5px] py-[2px] text-[10px] font-bold leading-[16px] text-[#16803A]">
-                {displayedDiscount}% OFF
-              </span>
-            )}
-          </div>
-
+          {isDistributor ? (
+            <div className="mt-[7px] flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              {displayedPrice > 0 ? (
+                <span className="text-[12px] text-[#555]">
+                  BA Price{" "}
+                  <strong className="text-[14px] text-[#141414]">
+                    ₹{money(displayedPrice)}
+                  </strong>
+                </span>
+              ) : (
+                <span className="text-[11px] text-[#555]">View price</span>
+              )}
+              {displayedMrp > 0 && (
+                <span className="text-[12px] text-[#7B838B]">
+                  MRP{" "}
+                  <strong className="text-[13px] font-medium text-[#7B838B] line-through decoration-[#9AA1A9] decoration-[1.5px]">
+                    ₹{money(displayedMrp)}
+                  </strong>
+                </span>
+              )}
+            </div>
+          ) : (
+            <div className="mt-[7px] flex min-w-0 flex-wrap items-baseline gap-x-[6px] gap-y-[2px]">
+              {displayedPrice > 0 ? (
+                <span className="text-[14px] font-bold leading-[20px] tracking-[-0.01em] text-[#141414]">
+                  ₹{money(displayedPrice)}
+                </span>
+              ) : (
+                <span className="text-[11px] font-semibold leading-[20px] text-[#555]">
+                  View price
+                </span>
+              )}
+              {displayedPrice > 0 && displayedMrp > displayedPrice && (
+                <span className="text-[11px] leading-[16px] text-[#999] line-through">
+                  ₹{money(displayedMrp)}
+                </span>
+              )}
+              {displayedDiscount > 0 && (
+                <span className="rounded-[4px] bg-[#EFF9F1] px-[5px] py-[2px] text-[10px] font-bold leading-[16px] text-[#16803A]">
+                  {displayedDiscount}% OFF
+                </span>
+              )}
+            </div>
+          )}
           {peopleBought > 0 && (
             <p className="mt-[5px] truncate text-[10px] font-normal leading-[14px] text-[#444]">
               {peopleBought} people bought this week

@@ -53,6 +53,7 @@ import Footer from "@/components/Footer/Footer";
 import AddressFormModal from "./AddressFormModal";
 
 import { useRetryOrderMutation } from "@/lib/redux/api/order/orderApi";
+import { useGetUserProfileQuery } from "@/lib/redux/api/authApi";
 
 export interface Address {
   id: number;
@@ -173,10 +174,7 @@ declare global {
 }
 
 type PaymentGatewayId =
-  | "freecharge-axis"
-  | "hdfc-ie"
-  | "hdfc-sg"
-  | "razorpay-axis";
+  "freecharge-axis" | "hdfc-ie" | "hdfc-sg" | "razorpay-axis";
 
 type PaymentGatewayKind = "razorpay" | "hdfc";
 
@@ -258,6 +256,9 @@ const formatPrice = (value: any): string => {
   })}`;
 };
 
+const formatPoints = (value: number): string =>
+  Number(value || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 });
+
 const getErrorMessage = (error: any, fallback: string): string =>
   error?.data?.message ||
   error?.error?.data?.message ||
@@ -271,7 +272,6 @@ const pickCommissionValue = (source: any): number | null => {
   const candidates = [
     source.commission_value,
     source.commision_value,
-    source.commission_total,
     source.commission,
     source.commission_amount,
     source.product?.commission_value,
@@ -292,7 +292,7 @@ const pickCommissionValue = (source: any): number | null => {
 
 const normalizeSummaryItems = (
   summaryData?: CheckoutSummaryData,
-  cartLines?: any[]
+  cartLines?: any[],
 ): CheckoutSummaryItem[] => {
   if (!summaryData) return [];
 
@@ -300,15 +300,13 @@ const normalizeSummaryItems = (
 
   const findBreakdownForProduct = (productId: number) => {
     return Object.values(breakdown).find(
-      (b: any) => Number(b?.product_id) === Number(productId)
+      (b: any) => Number(b?.product_id) === Number(productId),
     ) as any;
   };
 
   const findCartLineForProduct = (productId: number) => {
     if (!Array.isArray(cartLines)) return undefined;
-    return cartLines.find(
-      (l) => Number(l?.product_id) === Number(productId)
-    );
+    return cartLines.find((l) => Number(l?.product_id) === Number(productId));
   };
 
   if (Array.isArray(summaryData.items) && summaryData.items.length > 0) {
@@ -326,9 +324,7 @@ const normalizeSummaryItems = (
       const quantity = Number(raw?.quantity || 1);
 
       const commissionTotal =
-        commissionValue !== null
-          ? commissionValue * quantity
-          : null;
+        commissionValue !== null ? commissionValue * quantity : null;
 
       return {
         ...raw,
@@ -373,9 +369,7 @@ const normalizeSummaryItems = (
       sgst: 0,
       igst: 0,
       total_tax: product.tax_amount || 0,
-      line_total:
-        product.line_total_after_tax ||
-        product.unit_price * quantity,
+      line_total: product.line_total_after_tax || product.unit_price * quantity,
       commission_value: commissionValue,
       commission_total: commissionTotal,
       primary_image: product.primary_image,
@@ -459,7 +453,7 @@ function PlaceOrderButton({
     <button
       type="button"
       onClick={onClick}
-      disabled={disabled}
+      disabled={isSubmitting}
       aria-busy={isSubmitting}
       className={`group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-[#173E2B] via-[#1B5538] to-[#16845B] px-4 text-[13px] font-semibold text-white ring-1 ring-inset ring-white/10 transition-all duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#16845B]/30 active:translate-y-0 active:scale-[0.99] disabled:cursor-not-allowed disabled:from-[#9DB2A5] disabled:via-[#9DB2A5] disabled:to-[#9DB2A5] disabled:hover:translate-y-0 ${
         compact ? "min-h-[44px] py-2" : "min-h-[46px] py-2.5"
@@ -478,11 +472,6 @@ function PlaceOrderButton({
           <span>
             {retryMode ? "Processing payment..." : "Processing order..."}
           </span>
-        </>
-      ) : gatewayLoading ? (
-        <>
-          <Loader2 className="h-4 w-4 animate-spin" />
-          <span>Loading payment...</span>
         </>
       ) : (
         <>
@@ -680,8 +669,15 @@ function CartSummary({
     return (
       <div className="rounded-2xl border border-[#E6ECE8] bg-white p-8">
         <p className="text-center text-[13px] text-[#777777]">
-          Order summary unavailable
+          Order summary unavailable. Please check your cart or refresh the page.
         </p>
+        <button
+          type="button"
+          onClick={onPlaceOrder}
+          className="mt-4 w-full rounded-lg bg-[#173E2B] px-4 py-3 text-sm font-semibold text-white"
+        >
+          Check checkout requirements
+        </button>
       </div>
     );
   }
@@ -693,10 +689,9 @@ function CartSummary({
   const itemsCommissionSum = items.reduce((acc, item) => {
     const perItem = Number(
       item.commission_total ??
-        (item.commission_value !== null &&
-        item.commission_value !== undefined
+        (item.commission_value !== null && item.commission_value !== undefined
           ? Number(item.commission_value) * Number(item.quantity || 1)
-          : 0)
+          : 0),
     );
 
     return acc + (Number.isFinite(perItem) ? perItem : 0);
@@ -714,14 +709,13 @@ function CartSummary({
     ? apiTotalCommission
     : itemsCommissionSum;
 
-  const hasCommission =
-    isDistributor && Number.isFinite(totalCommission) && totalCommission > 0;
+  const hasCommission = isDistributor && Number.isFinite(totalCommission);
 
   const hasUnavailable = !retryMode && unavailableProductIds.size > 0;
 
-  const buttonDisabled = retryMode
-    ? isSubmitting || gatewayLoading || !retryOrderReference
-    : isSubmitting || disabled || hasUnavailable || gatewayLoading;
+  // Do not disable a button due to missing user input or recoverable validation.
+  // Handler explains what is missing and routes user to the fix.
+  const buttonDisabled = isSubmitting;
 
   return (
     <div className="rounded-2xl border border-[#E4EBE6] bg-white shadow-[0_16px_45px_-32px_rgba(15,45,30,0.28)]">
@@ -782,14 +776,12 @@ function CartSummary({
             const isUnavailable =
               !retryMode && unavailableProductIds.has(item.product_id);
 
-            const perUnitCommission = Number(
-              item.commission_value ?? 0
-            );
+            const perUnitCommission = Number(item.commission_value ?? 0);
             const lineCommission = Number(
               item.commission_total ??
                 (Number.isFinite(perUnitCommission)
                   ? perUnitCommission * Number(item.quantity || 1)
-                  : 0)
+                  : 0),
             );
 
             const showCommission =
@@ -843,7 +835,7 @@ function CartSummary({
                   {showCommission && (
                     <div className="mt-1.5 inline-flex items-center gap-1 rounded-md bg-[#ECF9F1] px-1.5 py-0.5 text-[9.5px] font-semibold text-[#16845B]">
                       <BadgePercent className="h-3 w-3" />
-                       CV {formatPrice(lineCommission)}
+                      CV {formatPoints(lineCommission)} pts
                     </div>
                   )}
 
@@ -890,7 +882,7 @@ function CartSummary({
 
         <div className="flex items-center justify-between">
           <span className="flex items-center gap-1 text-[12px] text-[#667168]">
-            Estimated taxes
+            Taxes
             <TaxBreakdownPopup summaryData={summaryData} />
           </span>
 
@@ -903,10 +895,10 @@ function CartSummary({
           <div className="mt-1 flex items-center justify-between rounded-lg bg-[#ECF9F1] px-2 py-1.5">
             <span className="flex items-center gap-1 text-[11.5px] font-semibold text-[#16845B]">
               <BadgePercent className="h-3 w-3" />
-              Your total commission Value
+              Total CV (Commission Points)
             </span>
             <span className="text-[12px] font-bold text-[#16845B]">
-              {formatPrice(totalCommission)}
+              {formatPoints(totalCommission)} pts
             </span>
           </div>
         )}
@@ -1079,9 +1071,7 @@ function AddressSelectorModal({
                         : "border-gray-300"
                     }`}
                   >
-                    {isSelected && (
-                      <Check className="h-3.5 w-3.5 text-white" />
-                    )}
+                    {isSelected && <Check className="h-3.5 w-3.5 text-white" />}
                   </div>
 
                   <div className="flex-1">
@@ -1198,9 +1188,7 @@ function DeleteConfirmModal({
           <Trash2 className="h-6 w-6 text-red-600" />
         </div>
 
-        <h3 className="text-lg font-semibold text-gray-900">
-          Delete Address
-        </h3>
+        <h3 className="text-lg font-semibold text-gray-900">Delete Address</h3>
         <p className="mt-2 text-sm text-gray-500">
           Are you sure you want to delete this address? This action cannot be
           undone.
@@ -1260,18 +1248,14 @@ export default function CheckoutPage() {
     : "cart";
 
   const retryOrderReference = String(
-    searchParams.get("order_reference") || ""
+    searchParams.get("order_reference") || "",
   ).trim();
 
-  const retryGatewayParam = String(
-    searchParams.get("gateway") || ""
-  )
+  const retryGatewayParam = String(searchParams.get("gateway") || "")
     .trim()
     .toLowerCase();
 
-  const retryPaymentStatus = String(
-    searchParams.get("payment_status") || ""
-  )
+  const retryPaymentStatus = String(searchParams.get("payment_status") || "")
     .trim()
     .toLowerCase();
 
@@ -1279,9 +1263,7 @@ export default function CheckoutPage() {
     searchParams.get("cancelled") === "true" &&
     searchParams.get("show_repay") === "true" &&
     Boolean(retryOrderReference) &&
-    ["pending", "failed", "cancelled", "unpaid"].includes(
-      retryPaymentStatus
-    );
+    ["pending", "failed", "cancelled", "unpaid"].includes(retryPaymentStatus);
 
   // ───────────────────────────────────────────────────────────────────────────
   // State
@@ -1294,7 +1276,9 @@ export default function CheckoutPage() {
   const [isSelectorModalOpen, setIsSelectorModalOpen] = useState(false);
 
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
-  const [deletingAddressId, setDeletingAddressId] = useState<number | null>(null);
+  const [deletingAddressId, setDeletingAddressId] = useState<number | null>(
+    null,
+  );
 
   // New state for delete confirmation popup
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
@@ -1303,6 +1287,8 @@ export default function CheckoutPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [cartLines, setCartLines] = useState<any[]>([]);
+  const [cartUserType, setCartUserType] = useState("");
+  const [checkoutNotice, setCheckoutNotice] = useState("");
 
   const [unavailableProductIds, setUnavailableProductIds] = useState<
     Set<number>
@@ -1317,8 +1303,7 @@ export default function CheckoutPage() {
   const paymentActionInProgress = useRef(false);
   const orderCreatedRef = useRef(false);
 
-  const [orderCreatedForCheckout, setOrderCreatedForCheckout] =
-    useState(false);
+  const [orderCreatedForCheckout, setOrderCreatedForCheckout] = useState(false);
 
   const {
     data: addressesData,
@@ -1326,14 +1311,11 @@ export default function CheckoutPage() {
     refetch: refetchAddresses,
   } = useGetAddressesQuery();
 
-  const [createAddress, { isLoading: isCreating }] =
-    useCreateAddressMutation();
+  const [createAddress, { isLoading: isCreating }] = useCreateAddressMutation();
 
-  const [updateAddress, { isLoading: isUpdating }] =
-    useUpdateAddressMutation();
+  const [updateAddress, { isLoading: isUpdating }] = useUpdateAddressMutation();
 
-  const [deleteAddress, { isLoading: isDeleting }] =
-    useDeleteAddressMutation();
+  const [deleteAddress, { isLoading: isDeleting }] = useDeleteAddressMutation();
 
   const [setDefaultAddress] = useSetDefaultAddressMutation();
 
@@ -1342,10 +1324,8 @@ export default function CheckoutPage() {
   const [initiateHdfcPayment] = useInitiateHdfcPaymentMutation();
   const [retryOrder] = useRetryOrderMutation();
 
-  const {
-    data: paymentGatewaySettings,
-    isLoading: isLoadingGatewaySettings,
-  } = useGetPaymentGatewaySettingsQuery();
+  const { data: paymentGatewaySettings, isLoading: isLoadingGatewaySettings } =
+    useGetPaymentGatewaySettingsQuery();
 
   const [triggerGetCart] = useLazyGetCartQuery();
   const [checkCartStock] = useCheckCartStockMutation();
@@ -1354,18 +1334,30 @@ export default function CheckoutPage() {
   const selectedGateway = useMemo(
     () =>
       PAYMENT_GATEWAY_OPTIONS.find(
-        (option) => option.id === selectedGatewayId
+        (option) => option.id === selectedGatewayId,
       ) || PAYMENT_GATEWAY_OPTIONS[0],
-    [selectedGatewayId]
+    [selectedGatewayId],
   );
 
-  // Role is still surfaced to the summary for commission display, but no
-  // longer used for any mandatory-product gating.
+  const { data: checkoutProfile } = useGetUserProfileQuery();
   const profileUserRole = useMemo(() => {
-    // Kept intentionally simple — role read from Redux user profile if needed.
-    // (No mandatory gating depends on this.)
-    return "";
-  }, []);
+    const profile: any = checkoutProfile;
+    const candidates = [
+      profile?.data?.user?.account_type,
+      profile?.data?.account_type,
+      profile?.user?.account_type,
+      profile?.account_type,
+      profile?.data?.user?.user_type,
+      profile?.data?.user_type,
+      profile?.user_type,
+      cartUserType,
+    ];
+    return candidates.some(
+      (value) => String(value || "").toLowerCase() === "distributor",
+    )
+      ? "distributor"
+      : "retail";
+  }, [checkoutProfile, cartUserType]);
 
   useEffect(() => {
     if (isRetryPaymentFlow) {
@@ -1375,25 +1367,20 @@ export default function CheckoutPage() {
   }, [isRetryPaymentFlow]);
 
   useEffect(() => {
-    if (
-      isLoadingGatewaySettings ||
-      hasManuallySelectedGateway
-    ) {
+    if (isLoadingGatewaySettings || hasManuallySelectedGateway) {
       return;
     }
 
-    const configuredGateway = (paymentGatewaySettings as any)
-      ?.active_gateway;
+    const configuredGateway = (paymentGatewaySettings as any)?.active_gateway;
 
     const configuredGatewayId = getInitialGatewayId(configuredGateway);
 
     if (isRetryPaymentFlow && retryGatewayParam) {
       if (retryGatewayParam.includes("hdfc")) {
         setSelectedGatewayId(
-          configuredGatewayId === "hdfc-ie" ||
-            configuredGatewayId === "hdfc-sg"
+          configuredGatewayId === "hdfc-ie" || configuredGatewayId === "hdfc-sg"
             ? configuredGatewayId
-            : getInitialGatewayId(retryGatewayParam)
+            : getInitialGatewayId(retryGatewayParam),
         );
 
         return;
@@ -1403,9 +1390,7 @@ export default function CheckoutPage() {
         retryGatewayParam.includes("razorpay") ||
         retryGatewayParam.includes("axis")
       ) {
-        setSelectedGatewayId(
-          getInitialGatewayId(retryGatewayParam)
-        );
+        setSelectedGatewayId(getInitialGatewayId(retryGatewayParam));
 
         return;
       }
@@ -1420,14 +1405,12 @@ export default function CheckoutPage() {
     retryGatewayParam,
   ]);
 
-  const addresses: Address[] = Array.isArray(
-    (addressesData as any)?.data
-  )
+  const addresses: Address[] = Array.isArray((addressesData as any)?.data)
     ? (addressesData as any).data
     : [];
 
   const deliveryAddresses = addresses.filter(
-    (address) => address?.is_delivery === true
+    (address) => address?.is_delivery === true,
   );
 
   const availableDeliveryAddresses =
@@ -1446,20 +1429,20 @@ export default function CheckoutPage() {
     setSelectedDeliveryAddress((current) => {
       if (current?.id) {
         const stillExists = availableDeliveryAddresses.find(
-          (address) => address?.id === current.id
+          (address) => address?.id === current.id,
         );
 
         if (stillExists) return stillExists;
       }
 
       const defaultAddress = availableDeliveryAddresses.find(
-        (address) => address?.is_default === true
+        (address) => address?.is_default === true,
       );
 
       if (defaultAddress) return defaultAddress;
 
       const deliveryAddress = availableDeliveryAddresses.find(
-        (address) => address?.is_delivery === true
+        (address) => address?.is_delivery === true,
       );
 
       if (deliveryAddress) return deliveryAddress;
@@ -1492,7 +1475,7 @@ export default function CheckoutPage() {
       productId,
       quantity,
       variantId,
-    ]
+    ],
   );
 
   const {
@@ -1512,15 +1495,10 @@ export default function CheckoutPage() {
       ? summaryData.checkout_type
       : checkoutType;
 
-  const getCheckoutTypeFromSummary = (
-    response: any
-  ): "cart" | "buy_now" => {
-    const apiType =
-      response?.data?.checkout_type ?? response?.checkout_type;
+  const getCheckoutTypeFromSummary = (response: any): "cart" | "buy_now" => {
+    const apiType = response?.data?.checkout_type ?? response?.checkout_type;
 
-    return apiType === "buy_now" || apiType === "cart"
-      ? apiType
-      : checkoutType;
+    return apiType === "buy_now" || apiType === "cart" ? apiType : checkoutType;
   };
 
   useEffect(() => {
@@ -1549,13 +1527,18 @@ export default function CheckoutPage() {
       try {
         const cartResp = await triggerGetCart().unwrap();
 
-        const items: any[] = Array.isArray(
-          (cartResp as any)?.data?.items
-        )
+        const items: any[] = Array.isArray((cartResp as any)?.data?.items)
           ? (cartResp as any).data.items
           : [];
 
         setCartLines(items);
+        setCartUserType(
+          String(
+            (cartResp as any)?.user_type ??
+              (cartResp as any)?.data?.user_type ??
+              "",
+          ),
+        );
 
         const cartId = Number((cartResp as any)?.data?.id);
 
@@ -1602,7 +1585,7 @@ export default function CheckoutPage() {
           showToast({
             message: "Address added successfully!",
             type: "success",
-          })
+          }),
         );
 
         await refetchAddresses();
@@ -1617,7 +1600,7 @@ export default function CheckoutPage() {
         showToast({
           message: getErrorMessage(error, "Failed to add address"),
           type: "error",
-        })
+        }),
       );
     }
   };
@@ -1639,7 +1622,7 @@ export default function CheckoutPage() {
           showToast({
             message: "Address updated successfully!",
             type: "success",
-          })
+          }),
         );
 
         await refetchAddresses();
@@ -1654,7 +1637,7 @@ export default function CheckoutPage() {
         showToast({
           message: getErrorMessage(error, "Failed to update address"),
           type: "error",
-        })
+        }),
       );
     }
   };
@@ -1670,22 +1653,20 @@ export default function CheckoutPage() {
     try {
       setDeletingAddressId(addressToDelete.id);
 
-      const result = await deleteAddress({ 
-        id: addressToDelete.id, 
-        data: {} as any 
+      const result = await deleteAddress({
+        id: addressToDelete.id,
+        data: {} as any,
       }).unwrap();
 
       if ((result as any)?.status === false) {
-        throw new Error(
-          (result as any)?.message || "Failed to delete address"
-        );
+        throw new Error((result as any)?.message || "Failed to delete address");
       }
 
       dispatch(
         showToast({
           message: "Address deleted successfully!",
           type: "success",
-        })
+        }),
       );
 
       if (selectedDeliveryAddress?.id === addressToDelete.id) {
@@ -1703,7 +1684,7 @@ export default function CheckoutPage() {
         showToast({
           message: getErrorMessage(error, "Failed to delete address"),
           type: "error",
-        })
+        }),
       );
     } finally {
       setDeletingAddressId(null);
@@ -1721,7 +1702,7 @@ export default function CheckoutPage() {
           showToast({
             message: "Default address updated!",
             type: "success",
-          })
+          }),
         );
 
         await refetchAddresses();
@@ -1731,12 +1712,9 @@ export default function CheckoutPage() {
     } catch (error: any) {
       dispatch(
         showToast({
-          message: getErrorMessage(
-            error,
-            "Failed to set default address"
-          ),
+          message: getErrorMessage(error, "Failed to set default address"),
           type: "error",
-        })
+        }),
       );
     }
   };
@@ -1746,10 +1724,7 @@ export default function CheckoutPage() {
     setIsAddressModalOpen(true);
   };
 
-  const goToOrderConfirmation = (
-    orderId: number,
-    orderReference: string
-  ) => {
+  const goToOrderConfirmation = (orderId: number, orderReference: string) => {
     const params = new URLSearchParams();
 
     if (orderReference) {
@@ -1765,7 +1740,7 @@ export default function CheckoutPage() {
 
   const enablePaymentRetry = (
     orderReference: string,
-    paymentStatus: "pending" | "failed" | "cancelled" = "pending"
+    paymentStatus: "pending" | "failed" | "cancelled" = "pending",
   ) => {
     const normalizedReference = String(orderReference || "").trim();
 
@@ -1775,7 +1750,7 @@ export default function CheckoutPage() {
           message:
             "Payment was not completed. Please check your orders before trying again.",
           type: "error",
-        })
+        }),
       );
 
       return;
@@ -1799,8 +1774,7 @@ export default function CheckoutPage() {
 
   const openRazorpay = (nextOrderData: RazorpayOrderData) =>
     new Promise<any>((resolve, reject) => {
-      const launch = () =>
-        initRazorpay(nextOrderData, resolve, reject);
+      const launch = () => initRazorpay(nextOrderData, resolve, reject);
 
       if (typeof window === "undefined") {
         reject(new Error("Razorpay not available"));
@@ -1817,8 +1791,7 @@ export default function CheckoutPage() {
       script.src = "https://checkout.razorpay.com/v1/checkout.js";
       script.async = true;
       script.onload = launch;
-      script.onerror = () =>
-        reject(new Error("Failed to load Razorpay SDK"));
+      script.onerror = () => reject(new Error("Failed to load Razorpay SDK"));
 
       document.body.appendChild(script);
     });
@@ -1826,7 +1799,7 @@ export default function CheckoutPage() {
   const initRazorpay = (
     nextOrderData: RazorpayOrderData,
     resolve: (value: any) => void,
-    reject: (reason: any) => void
+    reject: (reason: any) => void,
   ) => {
     if (typeof window === "undefined" || !window.Razorpay) {
       reject(new Error("Razorpay SDK unavailable"));
@@ -1862,12 +1835,12 @@ export default function CheckoutPage() {
           showToast({
             message: "Payment successful!",
             type: "success",
-          })
+          }),
         );
 
         goToOrderConfirmation(
           nextOrderData.orderId,
-          nextOrderData.orderReference
+          nextOrderData.orderReference,
         );
 
         resolve(response);
@@ -1877,17 +1850,14 @@ export default function CheckoutPage() {
         ondismiss: function () {
           setIsSubmitting(false);
 
-          enablePaymentRetry(
-            nextOrderData.orderReference,
-            "pending"
-          );
+          enablePaymentRetry(nextOrderData.orderReference, "pending");
 
           dispatch(
             showToast({
               message:
                 "Payment cancelled. You can retry payment for this order.",
               type: "info",
-            })
+            }),
           );
 
           resolve({
@@ -1907,14 +1877,13 @@ export default function CheckoutPage() {
         setIsSubmitting(false);
 
         const errorMessage =
-          response?.error?.description ||
-          "Payment failed. Please try again.";
+          response?.error?.description || "Payment failed. Please try again.";
 
         dispatch(
           showToast({
             message: errorMessage,
             type: "error",
-          })
+          }),
         );
 
         reject(new Error(errorMessage));
@@ -1927,9 +1896,7 @@ export default function CheckoutPage() {
     }
   };
 
-  const validateCheckoutStock = async (
-    activeType: "cart" | "buy_now"
-  ) => {
+  const validateCheckoutStock = async (activeType: "cart" | "buy_now") => {
     if (activeType === "buy_now") {
       if (
         !Number.isInteger(productId) ||
@@ -1952,9 +1919,7 @@ export default function CheckoutPage() {
       ) {
         setUnavailableProductIds(new Set([productId]));
 
-        throw new Error(
-          "Product is out of stock or insufficient quantity."
-        );
+        throw new Error("Product is out of stock or insufficient quantity.");
       }
 
       setUnavailableProductIds(new Set());
@@ -1964,9 +1929,7 @@ export default function CheckoutPage() {
 
     const cartResponse = await triggerGetCart().unwrap();
 
-    const cartItems: any[] = Array.isArray(
-      (cartResponse as any)?.data?.items
-    )
+    const cartItems: any[] = Array.isArray((cartResponse as any)?.data?.items)
       ? (cartResponse as any).data.items
       : [];
 
@@ -1975,22 +1938,15 @@ export default function CheckoutPage() {
     const cartId = Number((cartResponse as any)?.data?.id);
 
     if (!Number.isInteger(cartId) || cartId <= 0) {
-      throw new Error(
-        "Unable to verify your cart. Please reload the page."
-      );
+      throw new Error("Unable to verify your cart. Please reload the page.");
     }
 
     const stockResponse = await checkCartStock({
       cartId,
     }).unwrap();
 
-    if (
-      !stockResponse?.data ||
-      !Array.isArray(stockResponse.data.items)
-    ) {
-      throw new Error(
-        "Unable to verify cart stock. Please try again."
-      );
+    if (!stockResponse?.data || !Array.isArray(stockResponse.data.items)) {
+      throw new Error("Unable to verify cart stock. Please try again.");
     }
 
     const unavailable = new Set<number>();
@@ -2003,28 +1959,18 @@ export default function CheckoutPage() {
 
     setUnavailableProductIds(unavailable);
 
-    if (
-      !stockResponse.data.all_available ||
-      unavailable.size > 0
-    ) {
+    if (!stockResponse.data.all_available || unavailable.size > 0) {
       throw new Error(
-        "Some items in your cart are out of stock. Please update your cart."
+        "Some items in your cart are out of stock. Please update your cart.",
       );
     }
   };
 
-  const refreshAndValidateTotal = async (
-    previousTotal: number
-  ) => {
+  const refreshAndValidateTotal = async (previousTotal: number) => {
     const latestResponse = await refetchCheckoutSummary();
 
-    if (
-      latestResponse.error ||
-      !latestResponse.data?.data
-    ) {
-      throw new Error(
-        "Could not refresh checkout pricing. Please try again."
-      );
+    if (latestResponse.error || !latestResponse.data?.data) {
+      throw new Error("Could not refresh checkout pricing. Please try again.");
     }
 
     const latest = latestResponse.data.data as CheckoutSummaryData;
@@ -2035,12 +1981,9 @@ export default function CheckoutPage() {
       throw new Error("Invalid updated checkout total.");
     }
 
-    if (
-      Math.round(latestTotal * 100) !==
-      Math.round(previousTotal * 100)
-    ) {
+    if (Math.round(latestTotal * 100) !== Math.round(previousTotal * 100)) {
       throw new Error(
-        "Your order total has changed. Please review the updated total and click Place Order again."
+        "Your order total has changed. Please review the updated total and click Place Order again.",
       );
     }
 
@@ -2056,7 +1999,7 @@ export default function CheckoutPage() {
           message:
             "Order reference is missing. Please reopen the payment retry link.",
           type: "error",
-        })
+        }),
       );
 
       return;
@@ -2065,9 +2008,12 @@ export default function CheckoutPage() {
     if (isLoadingGatewaySettings) {
       dispatch(
         showToast({
-          message: "Please wait while payment settings load",
+          message: "Payment settings are still loading. Please try again.",
           type: "info",
-        })
+        }),
+      );
+      setCheckoutNotice(
+        "Payment settings are still loading. Please try again.",
       );
 
       return;
@@ -2078,7 +2024,7 @@ export default function CheckoutPage() {
         showToast({
           message: "Please choose a payment method",
           type: "error",
-        })
+        }),
       );
 
       return;
@@ -2095,26 +2041,22 @@ export default function CheckoutPage() {
 
       if (!response?.success || !response?.data) {
         throw new Error(
-          response?.message ||
-            "Unable to retry payment. Please try again."
+          response?.message || "Unable to retry payment. Please try again.",
         );
       }
 
       const data = response.data;
 
-      const returnedGateway =
-        data.gateway || selectedGateway.paymentGateway;
+      const returnedGateway = data.gateway || selectedGateway.paymentGateway;
 
-      if (
-        returnedGateway !== selectedGateway.paymentGateway
-      ) {
+      if (returnedGateway !== selectedGateway.paymentGateway) {
         throw new Error(
-          `The server returned ${returnedGateway} instead of the selected ${selectedGateway.paymentGateway} gateway. Please select the correct payment method and retry.`
+          `The server returned ${returnedGateway} instead of the selected ${selectedGateway.paymentGateway} gateway. Please select the correct payment method and retry.`,
         );
       }
 
       const returnedOrderReference = String(
-        data.order_reference || retryOrderReference
+        data.order_reference || retryOrderReference,
       ).trim();
 
       const databaseOrderId = Number(data.order_id || 0);
@@ -2122,40 +2064,31 @@ export default function CheckoutPage() {
       const amount = Number(data.total_amount || 0);
 
       if (selectedGateway.paymentGateway === "razorpay") {
-        if (
-          !Number.isSafeInteger(databaseOrderId) ||
-          databaseOrderId <= 0
-        ) {
+        if (!Number.isSafeInteger(databaseOrderId) || databaseOrderId <= 0) {
           throw new Error(
-            "A valid order ID was not returned by the retry API."
+            "A valid order ID was not returned by the retry API.",
           );
         }
 
-        const razorpayOrderId = String(
-          data.razorpay_order_id || ""
-        ).trim();
+        const razorpayOrderId = String(data.razorpay_order_id || "").trim();
 
-        const razorpayKey = String(
-          data.razorpay_key || ""
-        ).trim();
+        const razorpayKey = String(data.razorpay_key || "").trim();
 
         if (!razorpayOrderId || !razorpayKey) {
           throw new Error(
-            "Razorpay retry details were not returned by the server."
+            "Razorpay retry details were not returned by the server.",
           );
         }
 
         if (!Number.isFinite(amount) || amount <= 0) {
-          throw new Error(
-            "Invalid payment amount returned by the server."
-          );
+          throw new Error("Invalid payment amount returned by the server.");
         }
 
         dispatch(
           showToast({
             message: "Opening secure payment checkout...",
             type: "info",
-          })
+          }),
         );
 
         await openRazorpay({
@@ -2173,50 +2106,43 @@ export default function CheckoutPage() {
         selectedGateway.paymentGateway === "hdfc_sg" ||
         selectedGateway.paymentGateway === "hdfc_ie"
       ) {
-        const paymentLink = String(
-          data.hdfc_payment_link || ""
-        ).trim();
+        const paymentLink = String(data.hdfc_payment_link || "").trim();
 
         if (paymentLink) {
           dispatch(
             showToast({
               message: "Redirecting to secure HDFC payment...",
               type: "info",
-            })
+            }),
           );
 
-          window.location.assign(
-            getSafeHdfcUrl(paymentLink)
-          );
+          window.location.assign(getSafeHdfcUrl(paymentLink));
 
           return;
         }
 
         if (data.hdfc_sdk_payload) {
           throw new Error(
-            "HDFC retry details were returned without a payment link. Please check the HDFC retry SDK response handling."
+            "HDFC retry details were returned without a payment link. Please check the HDFC retry SDK response handling.",
           );
         }
 
         throw new Error(
-          "HDFC payment link was not returned by the retry API. Please try again or contact support."
+          "HDFC payment link was not returned by the retry API. Please try again or contact support.",
         );
       }
 
       throw new Error(
-        "The selected payment gateway is not supported for retry."
+        "The selected payment gateway is not supported for retry.",
       );
     } catch (error: any) {
       console.error("Retry payment error:", error);
 
       dispatch(
         showToast({
-          message: getErrorMessage(
-            error,
-            "Failed to retry payment"
-          ),
+          message: getErrorMessage(error, "Failed to retry payment"),
           type: "error",
-        })
+        }),
       );
     } finally {
       paymentActionInProgress.current = false;
@@ -2229,46 +2155,58 @@ export default function CheckoutPage() {
   // ───────────────────────────────────────────────────────────────────────────
 
   const handlePlaceOrder = async () => {
+    setCheckoutNotice("");
     if (paymentActionInProgress.current) {
       return;
     }
 
-    if (
-      orderCreatedRef.current ||
-      orderCreatedForCheckout
-    ) {
+    if (orderCreatedRef.current || orderCreatedForCheckout) {
       dispatch(
         showToast({
           message:
             "An order has already been created. Please retry payment for the existing order.",
           type: "info",
-        })
+        }),
       );
 
+      return;
+    }
+
+    if (isLoadingAddresses) {
+      setCheckoutNotice(
+        "Delivery addresses are still loading. Please try again.",
+      );
+      dispatch(
+        showToast({
+          message: "Delivery addresses are still loading.",
+          type: "info",
+        }),
+      );
       return;
     }
 
     if (!selectedDeliveryAddress?.id) {
-      dispatch(
-        showToast({
-          message:
-            "Please add a delivery address before placing your order.",
-          type: "error",
-        })
-      );
-
+      const message =
+        availableDeliveryAddresses.length === 0
+          ? "Delivery address missing. Please add your delivery address to continue."
+          : "Please select a delivery address to continue.";
+      setCheckoutNotice(message);
+      dispatch(showToast({ message, type: "error" }));
+      if (availableDeliveryAddresses.length === 0) openAddAddress();
+      else setIsSelectorModalOpen(true);
       return;
     }
 
-    if (
-      !summaryData ||
-      Number(summaryData.grand_total) <= 0
-    ) {
+    if (!summaryData || Number(summaryData.grand_total) <= 0) {
+      setCheckoutNotice(
+        "Order summary is unavailable. Please refresh and check your cart.",
+      );
       dispatch(
         showToast({
-          message: "Checkout summary is not ready yet",
+          message:
+            "Order summary is unavailable. Please refresh and check your cart.",
           type: "error",
-        })
+        }),
       );
 
       return;
@@ -2277,9 +2215,12 @@ export default function CheckoutPage() {
     if (isLoadingGatewaySettings) {
       dispatch(
         showToast({
-          message: "Please wait while payment settings load",
+          message: "Payment settings are still loading. Please try again.",
           type: "info",
-        })
+        }),
+      );
+      setCheckoutNotice(
+        "Payment settings are still loading. Please try again.",
       );
 
       return;
@@ -2290,9 +2231,18 @@ export default function CheckoutPage() {
         showToast({
           message: "Please choose a payment gateway",
           type: "error",
-        })
+        }),
       );
+      setCheckoutNotice("Please choose a payment gateway.");
 
+      return;
+    }
+
+    if (unavailableProductIds.size > 0) {
+      const message =
+        "One or more products are out of stock. Please return to your cart and update them.";
+      setCheckoutNotice(message);
+      dispatch(showToast({ message, type: "error" }));
       return;
     }
 
@@ -2306,7 +2256,7 @@ export default function CheckoutPage() {
 
     try {
       const latestSummary = await refreshAndValidateTotal(
-        Number(summaryData.grand_total)
+        Number(summaryData.grand_total),
       );
 
       const verifiedType = getCheckoutTypeFromSummary({
@@ -2321,7 +2271,7 @@ export default function CheckoutPage() {
         }) !== verifiedType
       ) {
         throw new Error(
-          "Checkout mode changed. Please review your order again."
+          "Checkout mode changed. Please review your order again.",
         );
       }
 
@@ -2348,9 +2298,7 @@ export default function CheckoutPage() {
 
           tax_breakdown: latestSummary.tax_breakdown || [],
 
-          ...(verifiedType === "buy_now"
-            ? { items: buyNowItems }
-            : {}),
+          ...(verifiedType === "buy_now" ? { items: buyNowItems } : {}),
         },
       };
 
@@ -2363,10 +2311,7 @@ export default function CheckoutPage() {
         }
       }
 
-      console.log(
-        "FINAL PLACE ORDER PAYLOAD:",
-        orderPayload
-      );
+      console.log("FINAL PLACE ORDER PAYLOAD:", orderPayload);
 
       const response = await placeOrder(orderPayload).unwrap();
 
@@ -2378,14 +2323,10 @@ export default function CheckoutPage() {
           : rawResponse;
 
       const responseSuccess =
-        "success" in rawResponse
-          ? rawResponse.success
-          : true;
+        "success" in rawResponse ? rawResponse.success : true;
 
       if (responseSuccess === false) {
-        throw new Error(
-          rawResponse.message || "Unable to place order"
-        );
+        throw new Error(rawResponse.message || "Unable to place order");
       }
 
       orderWasCreated = true;
@@ -2396,15 +2337,11 @@ export default function CheckoutPage() {
 
       void triggerGetCart();
 
-      window.dispatchEvent(
-        new CustomEvent("cart:refresh")
-      );
+      window.dispatchEvent(new CustomEvent("cart:refresh"));
 
       const anyData = responseData as any;
 
-      const orderReferences = Array.isArray(
-        anyData?.order_references
-      )
+      const orderReferences = Array.isArray(anyData?.order_references)
         ? anyData.order_references
         : [];
 
@@ -2412,38 +2349,27 @@ export default function CheckoutPage() {
         ? anyData.order_ids
         : [];
 
-      const orders = Array.isArray(anyData?.orders)
-        ? anyData.orders
-        : [];
+      const orders = Array.isArray(anyData?.orders) ? anyData.orders : [];
 
       const firstOrder = orders[0];
 
       const orderId = Number(
-        firstOrder?.order_id ??
-          anyData?.order_id ??
-          orderIds[0] ??
-          0
+        firstOrder?.order_id ?? anyData?.order_id ?? orderIds[0] ?? 0,
       );
 
       const orderReference = String(
         firstOrder?.order_reference ??
           anyData?.order_reference ??
           orderReferences[0] ??
-          ""
+          "",
       ).trim();
 
-      const razorpayOrderId = String(
-        anyData?.razorpay_order_id || ""
-      ).trim();
+      const razorpayOrderId = String(anyData?.razorpay_order_id || "").trim();
 
-      const razorpayKey = String(
-        anyData?.razorpay_key || ""
-      ).trim();
+      const razorpayKey = String(anyData?.razorpay_key || "").trim();
 
       const amount = Number(
-        anyData?.total_amount ??
-          firstOrder?.total_payable ??
-          grandTotal
+        anyData?.total_amount ?? firstOrder?.total_payable ?? grandTotal,
       );
 
       createdOrderId = orderId;
@@ -2455,13 +2381,8 @@ export default function CheckoutPage() {
             [
               ...orderIds.map(Number),
 
-              ...orders.map((order: any) =>
-                Number(order.order_id)
-              ),
-            ].filter(
-              (id) =>
-                Number.isSafeInteger(id) && id > 0
-            )
+              ...orders.map((order: any) => Number(order.order_id)),
+            ].filter((id) => Number.isSafeInteger(id) && id > 0),
           ),
         ];
 
@@ -2471,68 +2392,56 @@ export default function CheckoutPage() {
               message:
                 "Your order has been created, but combined HDFC payment is not supported for multiple seller orders. Please check your orders.",
               type: "error",
-            })
+            }),
           );
 
           if (orderId > 0) {
-            goToOrderConfirmation(
-              orderId,
-              orderReference
-            );
+            goToOrderConfirmation(orderId, orderReference);
           }
 
           return;
         }
 
-        if (
-          !Number.isSafeInteger(orderId) ||
-          orderId <= 0
-        ) {
+        if (!Number.isSafeInteger(orderId) || orderId <= 0) {
           throw new Error(
-            "Place Order did not return a valid database order_id."
+            "Place Order did not return a valid database order_id.",
           );
         }
 
         const initiation = unwrapHdfc(
-          await initiateHdfcPayment(orderId).unwrap()
+          await initiateHdfcPayment(orderId).unwrap(),
         );
 
         if (!initiation.success) {
-          throw new Error(
-            initiation.message || "HDFC initiation failed"
-          );
+          throw new Error(initiation.message || "HDFC initiation failed");
         }
 
-        window.location.assign(
-          getSafeHdfcUrl(initiation.payment_url)
-        );
+        window.location.assign(getSafeHdfcUrl(initiation.payment_url));
 
         return;
       }
 
       if (!orderReference) {
         throw new Error(
-          "Order was created, but order reference was not returned."
+          "Order was created, but order reference was not returned.",
         );
       }
 
       if (!razorpayOrderId || !razorpayKey) {
         throw new Error(
-          "Razorpay order details were not returned by the server."
+          "Razorpay order details were not returned by the server.",
         );
       }
 
       if (!Number.isFinite(amount) || amount <= 0) {
-        throw new Error(
-          "Invalid payment amount returned by the server."
-        );
+        throw new Error("Invalid payment amount returned by the server.");
       }
 
       dispatch(
         showToast({
           message: "Opening secure payment checkout...",
           type: "info",
-        })
+        }),
       );
 
       await openRazorpay({
@@ -2547,30 +2456,24 @@ export default function CheckoutPage() {
 
       if (orderWasCreated) {
         if (createdOrderReference) {
-          enablePaymentRetry(
-            createdOrderReference,
-            "pending"
-          );
+          enablePaymentRetry(createdOrderReference, "pending");
 
           dispatch(
             showToast({
               message:
                 "Your order has been created, but payment was not completed. Please retry payment for the same order.",
               type: "info",
-            })
+            }),
           );
         } else if (createdOrderId > 0) {
-          goToOrderConfirmation(
-            createdOrderId,
-            ""
-          );
+          goToOrderConfirmation(createdOrderId, "");
 
           dispatch(
             showToast({
               message:
                 "Your order has already been created. Please check its payment status in your orders.",
               type: "error",
-            })
+            }),
           );
         } else {
           dispatch(
@@ -2578,22 +2481,16 @@ export default function CheckoutPage() {
               message:
                 "Your order may already have been created. Please check your orders before trying again.",
               type: "error",
-            })
+            }),
           );
         }
 
         return;
       }
 
-      dispatch(
-        showToast({
-          message: getErrorMessage(
-            error,
-            "Failed to place order"
-          ),
-          type: "error",
-        })
-      );
+      const message = getErrorMessage(error, "Failed to place order");
+      setCheckoutNotice(message);
+      dispatch(showToast({ message, type: "error" }));
     } finally {
       paymentActionInProgress.current = false;
 
@@ -2607,15 +2504,7 @@ export default function CheckoutPage() {
 
   const hasUnavailable = unavailableProductIds.size > 0;
 
-  const placeOrderDisabled = isRetryPaymentFlow
-    ? isSubmitting ||
-      isLoadingGatewaySettings ||
-      !retryOrderReference
-    : isSubmitting ||
-      orderCreatedForCheckout ||
-      hasUnavailable ||
-      isLoadingGatewaySettings ||
-      isFetchingCheckoutSummary;
+  const placeOrderDisabled = isSubmitting;
 
   const handleExitPayment = () => {
     orderCreatedRef.current = false;
@@ -2642,10 +2531,9 @@ export default function CheckoutPage() {
 
     dispatch(
       showToast({
-        message:
-          "Exited payment retry. You can now place a new order.",
+        message: "Exited payment retry. You can now place a new order.",
         type: "info",
-      })
+      }),
     );
   };
 
@@ -2682,11 +2570,25 @@ export default function CheckoutPage() {
 
             <ChevronRight className="h-3 w-3" />
 
-            <span className="font-semibold text-[#173E2B]">
-              Checkout
-            </span>
+            <span className="font-semibold text-[#173E2B]">Checkout</span>
           </nav>
 
+          {checkoutNotice && (
+            <div
+              role="alert"
+              className="mb-3 flex items-start gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-[12px] text-amber-900"
+            >
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span className="flex-1">{checkoutNotice}</span>
+              <button
+                type="button"
+                onClick={() => setCheckoutNotice("")}
+                aria-label="Dismiss checkout message"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          )}
           <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-6">
             <div className="space-y-4">
               {!isRetryPaymentFlow &&
@@ -2743,7 +2645,7 @@ export default function CheckoutPage() {
                             type="button"
                             onClick={() =>
                               handleSetDefaultAddress(
-                                selectedDeliveryAddress.id
+                                selectedDeliveryAddress.id,
                               )
                             }
                             className="text-[12px] font-medium text-[#718077] underline underline-offset-4 transition hover:text-[#173E2B]"
@@ -2800,8 +2702,7 @@ export default function CheckoutPage() {
 
                 <div className="space-y-2.5 p-3.5 sm:p-4">
                   {PAYMENT_GATEWAY_OPTIONS.map((option) => {
-                    const isSelected =
-                      selectedGatewayId === option.id;
+                    const isSelected = selectedGatewayId === option.id;
 
                     const iconColor =
                       option.icon === "hdfc"
@@ -2870,15 +2771,10 @@ export default function CheckoutPage() {
                 userRole={profileUserRole}
                 loading={isLoadingCheckoutSummary && !summaryData}
                 onPlaceOrder={
-                  isRetryPaymentFlow
-                    ? handleRetryPayment
-                    : handlePlaceOrder
+                  isRetryPaymentFlow ? handleRetryPayment : handlePlaceOrder
                 }
                 isSubmitting={isSubmitting}
-                disabled={
-                  orderCreatedForCheckout ||
-                  isFetchingCheckoutSummary
-                }
+                disabled={orderCreatedForCheckout || isFetchingCheckoutSummary}
                 unavailableProductIds={unavailableProductIds}
                 checkoutType={displayCheckoutType}
                 selectedGateway={selectedGateway}
@@ -2900,9 +2796,7 @@ export default function CheckoutPage() {
               </div>
 
               <h1 className="text-[18px] font-semibold tracking-[-0.04em] text-[#17251B] sm:text-[22px]">
-                {isRetryPaymentFlow
-                  ? "Complete Your Payment"
-                  : "Checkout"}
+                {isRetryPaymentFlow ? "Complete Your Payment" : "Checkout"}
               </h1>
 
               <p className="mt-0.5 hidden text-[11px] leading-5 text-[#78847C] sm:block">
@@ -2928,18 +2822,14 @@ export default function CheckoutPage() {
               </span>
 
               <span className="block text-[15px] font-bold leading-tight tracking-[-0.03em] text-[#17251B]">
-                {summaryData
-                  ? formatPrice(summaryData.grand_total)
-                  : "Pending"}
+                {summaryData ? formatPrice(summaryData.grand_total) : "Pending"}
               </span>
             </div>
 
             <div className="min-w-0 flex-1">
               <PlaceOrderButton
                 onClick={
-                  isRetryPaymentFlow
-                    ? handleRetryPayment
-                    : handlePlaceOrder
+                  isRetryPaymentFlow ? handleRetryPayment : handlePlaceOrder
                 }
                 isSubmitting={isSubmitting}
                 gatewayLoading={isLoadingGatewaySettings}
@@ -2974,11 +2864,7 @@ export default function CheckoutPage() {
               setEditingAddress(null);
             }
           }}
-          onSubmit={
-            editingAddress
-              ? handleUpdateAddress
-              : handleCreateAddress
-          }
+          onSubmit={editingAddress ? handleUpdateAddress : handleCreateAddress}
           initialData={editingAddress}
           isLoading={isCreating || isUpdating}
         />
@@ -3034,9 +2920,7 @@ export default function CheckoutPage() {
 
 function getSafeHdfcUrl(value: unknown): string {
   if (typeof value !== "string" || !value.trim()) {
-    throw new Error(
-      "HDFC payment URL is unavailable. Please try again."
-    );
+    throw new Error("HDFC payment URL is unavailable. Please try again.");
   }
 
   const url = new URL(value);
@@ -3052,7 +2936,5 @@ function getSafeHdfcUrl(value: unknown): string {
 }
 
 function unwrapHdfc(result: HdfcApiResult): HdfcApiResult {
-  return result.data && typeof result.data === "object"
-    ? result.data
-    : result;
+  return result.data && typeof result.data === "object" ? result.data : result;
 }

@@ -60,6 +60,34 @@ import { getAppType } from "@/lib/appConfig";
 import { useTokenCheck } from "@/hooks/useTokenCheck";
 import Loding from "../common/Loding";
 
+/* Distributor-only offer pricing. Customer pricing is untouched.
+ * An explicit offer percentage is applied to the distributor base price.
+ * If the API already supplies an offer/final price, prefer that value.
+ * Do not infer an extra discount from the MRP/price difference.
+ */
+const distributorOfferPrice = (item: any, base: number): number => {
+  if (!Number.isFinite(base) || base <= 0) return base;
+  const finalPrice = [
+    item?.distributor_offer_price,
+    item?.offer_price_distributor,
+    item?.distributor_final_price,
+  ].find((v) => v !== null && v !== undefined && v !== "" && Number(v) > 0);
+  if (finalPrice !== undefined) return Number(finalPrice);
+  const rawPercent = [
+    item?.distributor_offer_percentage,
+    item?.offer_discount_percentage,
+    item?.offer_percentage,
+    item?.offer?.discount_percentage,
+    item?.offer?.percentage,
+  ].find(
+    (v) =>
+      v !== null && v !== undefined && v !== "" && Number.isFinite(Number(v)),
+  );
+  const percent = Number(rawPercent ?? 0);
+  if (percent <= 0 || percent > 100) return base;
+  return Math.round(base * (1 - percent / 100) * 100) / 100;
+};
+
 /* =========================================================
    FONT
 ========================================================= */
@@ -208,9 +236,7 @@ function popHeart(e: React.MouseEvent<HTMLElement>) {
    ACCOUNT TYPE
 ========================================================= */
 
-const getUserAccountType = (
-  profileData: any,
-): "retail" | "distributor" => {
+const getUserAccountType = (profileData: any): "retail" | "distributor" => {
   if (!profileData) return "retail";
 
   const accountType =
@@ -301,17 +327,12 @@ const getVariantImageUrl = (variant: any): string | null => {
   if (!variant) return null;
 
   if (variant.primary_image_url || variant.image_url || variant.image) {
-    return (
-      variant.primary_image_url ||
-      variant.image_url ||
-      variant.image
-    );
+    return variant.primary_image_url || variant.image_url || variant.image;
   }
 
   if (Array.isArray(variant.images) && variant.images.length > 0) {
     const primary =
-      variant.images.find((img: any) => img?.is_primary) ||
-      variant.images[0];
+      variant.images.find((img: any) => img?.is_primary) || variant.images[0];
 
     return primary?.image_url || primary?.image || null;
   }
@@ -359,14 +380,11 @@ const generateSlugFromName = (name: string): string => {
    COMPONENT
 ========================================================= */
 
-export default function ProductDetail({
-  productSlug,
-}: ProductDetailProps) {
+export default function ProductDetail({ productSlug }: ProductDetailProps) {
   const router = useRouter();
   const pathname = usePathname();
 
-  const [activeProductSlug, setActiveProductSlug] =
-    useState(productSlug);
+  const [activeProductSlug, setActiveProductSlug] = useState(productSlug);
 
   const lastLoadedProductRef = useRef<any>(null);
 
@@ -382,8 +400,7 @@ export default function ProductDetail({
 
   const { hasToken, appType } = useTokenCheck();
 
-  const currentAppType =
-    typeof window !== "undefined" ? getAppType() : appType;
+  const currentAppType = typeof window !== "undefined" ? getAppType() : appType;
 
   const isDistributorApp = currentAppType === "distributor";
   const isCustomerApp = currentAppType === "customer";
@@ -434,9 +451,9 @@ export default function ProductDetail({
 
   const [isWishlistLoading, setIsWishlistLoading] = useState(false);
 
-  const [wishlistState, setWishlistState] = useState<
-    Record<number, boolean>
-  >({});
+  const [wishlistState, setWishlistState] = useState<Record<number, boolean>>(
+    {},
+  );
 
   const mainImageBoxRef = useRef<HTMLDivElement>(null);
 
@@ -448,8 +465,9 @@ export default function ProductDetail({
 
   const [fullscreenImageIndex, setFullscreenImageIndex] = useState(0);
 
-  const [selectedVariantAttributes, setSelectedVariantAttributes] =
-    useState<Record<string, string>>({});
+  const [selectedVariantAttributes, setSelectedVariantAttributes] = useState<
+    Record<string, string>
+  >({});
 
   const [reviewName, setReviewName] = useState("");
 
@@ -578,12 +596,12 @@ export default function ProductDetail({
      PROTECTED QUERIES
   ========================================================= */
 
-  const {
-    data: wishlistData,
-    refetch: refetchWishlist,
-  } = useGetWishlistQuery(undefined, {
-    skip: hasToken !== true,
-  });
+  const { data: wishlistData, refetch: refetchWishlist } = useGetWishlistQuery(
+    undefined,
+    {
+      skip: hasToken !== true,
+    },
+  );
 
   const { data: userProfileData } = useGetUserProfileQuery(undefined, {
     skip: hasToken !== true,
@@ -598,9 +616,7 @@ export default function ProductDetail({
       return getUserAccountType(userProfileData);
     }
 
-    return currentAppType === "distributor"
-      ? "distributor"
-      : "retail";
+    return currentAppType === "distributor" ? "distributor" : "retail";
   }, [userProfileData, currentAppType]);
 
   const currentUserId = getUserId(userProfileData);
@@ -622,14 +638,14 @@ export default function ProductDetail({
   ========================================================= */
 
   const categoryId =
-    productData?.data?.category_id ??
-    productData?.category_id ??
-    null;
+    productData?.data?.category_id ?? productData?.category_id ?? null;
 
-  const { data: categoryProductsData } =
-    useGetProductsByCategoryQuery(categoryId, {
+  const { data: categoryProductsData } = useGetProductsByCategoryQuery(
+    categoryId,
+    {
       skip: !categoryId,
-    });
+    },
+  );
 
   /* =========================================================
      MUTATIONS
@@ -675,15 +691,11 @@ export default function ProductDetail({
       ),
 
       manufacturedBy: String(
-        spec["Manufactured By:"] ??
-        spec["Manufactured By"] ??
-        "Not available",
+        spec["Manufactured By:"] ?? spec["Manufactured By"] ?? "Not available",
       ),
 
       marketedBy: String(
-        spec["Marketed By:"] ??
-        spec["Marketed By"] ??
-        "Not available",
+        spec["Marketed By:"] ?? spec["Marketed By"] ?? "Not available",
       ),
     };
   }, [apiProduct?.specification]);
@@ -696,9 +708,7 @@ export default function ProductDetail({
   ========================================================= */
 
   const reviewsSummary =
-    apiProduct?.reviews_summary ??
-    apiProduct?.reviews?.summary ??
-    null;
+    apiProduct?.reviews_summary ?? apiProduct?.reviews?.summary ?? null;
 
   const reviewsList: any[] = Array.isArray(apiProduct?.reviews?.data)
     ? apiProduct.reviews.data
@@ -716,9 +726,7 @@ export default function ProductDetail({
 
       name: apiProduct.name,
 
-      slug:
-        apiProduct.slug ||
-        generateSlugFromName(apiProduct.name),
+      slug: apiProduct.slug || generateSlugFromName(apiProduct.name),
 
       description: apiProduct.description,
 
@@ -726,8 +734,7 @@ export default function ProductDetail({
 
       category: apiProduct.category?.name || "Uncategorized",
 
-      categoryId:
-        apiProduct.category_id || apiProduct.category?.id,
+      categoryId: apiProduct.category_id || apiProduct.category?.id,
 
       productCode: apiProduct.product_code,
 
@@ -739,46 +746,47 @@ export default function ProductDetail({
 
       distributorPrice: Number(apiProduct.distributor_price || 0),
 
+      commissionValue:
+        apiProduct.commission_value !== null &&
+          apiProduct.commission_value !== undefined &&
+          Number.isFinite(Number(apiProduct.commission_value))
+          ? Math.max(0, Number(apiProduct.commission_value))
+          : null,
+
       price:
         userAccountType === "distributor"
-          ? Number(
-            apiProduct.distributor_price ||
-            apiProduct.retail_price ||
-            0,
+          ? distributorOfferPrice(
+            apiProduct,
+            Number(
+              apiProduct.distributor_price || apiProduct.retail_price || 0,
+            ),
           )
           : Number(apiProduct.retail_price || 0),
 
       mrp:
         userAccountType === "distributor"
-          ? Number(
-            apiProduct.distributor_mrp ||
-            apiProduct.retail_mrp ||
-            0,
-          )
+          ? Number(apiProduct.distributor_mrp || apiProduct.retail_mrp || 0)
           : Number(apiProduct.retail_mrp || 0),
 
       originalPrice:
         userAccountType === "distributor"
-          ? Number(
-            apiProduct.distributor_mrp ||
-            apiProduct.retail_mrp ||
-            0,
-          )
+          ? Number(apiProduct.distributor_mrp || apiProduct.retail_mrp || 0)
           : Number(apiProduct.retail_mrp || 0),
 
       discount:
         userAccountType === "distributor"
           ? (() => {
             const mrp = Number(
-              apiProduct.distributor_mrp ||
-              apiProduct.retail_mrp ||
-              0,
+              apiProduct.distributor_mrp || apiProduct.retail_mrp || 0,
             );
 
-            const price = Number(
-              apiProduct.distributor_price ||
-              apiProduct.retail_price ||
-              0,
+            const price = distributorOfferPrice(
+              apiProduct,
+              Number(
+                apiProduct.distributor_price ||
+                apiProduct.retail_price ||
+                0,
+              ),
             );
 
             return mrp > price && price > 0
@@ -817,9 +825,7 @@ export default function ProductDetail({
         Number(apiProduct.stock_quantity ?? 0) <=
         Number(apiProduct.low_stock_threshold ?? 10),
 
-      lowStockThreshold: Number(
-        apiProduct.low_stock_threshold || 10,
-      ),
+      lowStockThreshold: Number(apiProduct.low_stock_threshold || 10),
     }
     : null;
 
@@ -865,9 +871,7 @@ export default function ProductDetail({
 
     Object.entries(apiAvailableAttributes).forEach(([key, values]) => {
       if (Array.isArray(values)) {
-        result[key] = values
-          .map((value) => String(value))
-          .filter(Boolean);
+        result[key] = values.map((value) => String(value)).filter(Boolean);
       }
     });
 
@@ -882,10 +886,7 @@ export default function ProductDetail({
 
           const stringValue = String(value);
 
-          if (
-            stringValue &&
-            !result[key].includes(stringValue)
-          ) {
+          if (stringValue && !result[key].includes(stringValue)) {
             result[key].push(stringValue);
           }
         });
@@ -946,8 +947,7 @@ export default function ProductDetail({
 
     return (
       variantEntries.find(
-        (variant: any) =>
-          String(variant.id) === String(selectedVariantId),
+        (variant: any) => String(variant.id) === String(selectedVariantId),
       ) || null
     );
   }, [isMainProductSelected, selectedVariantId, variantEntries]);
@@ -969,10 +969,7 @@ export default function ProductDetail({
   const gallery = useMemo(() => {
     if (!product) return [];
 
-    if (
-      !isMainProductSelected &&
-      selectedVariantGallery.length > 0
-    ) {
+    if (!isMainProductSelected && selectedVariantGallery.length > 0) {
       return selectedVariantGallery;
     }
 
@@ -1026,24 +1023,19 @@ export default function ProductDetail({
   ========================================================= */
 
   const handleSelectVariant = (variant: any) => {
-    if (
-      variant?.isMainProduct ||
-      variant?.id === "main-product"
-    ) {
+    if (variant?.isMainProduct || variant?.id === "main-product") {
       handleSelectMainProduct();
       return;
     }
 
     if (
       variant?.slug &&
-      String(variant?.product_id ?? variant?.id) !==
-      String(product?.id)
+      String(variant?.product_id ?? variant?.id) !== String(product?.id)
     ) {
       setSelectedVariantId(variant.id);
 
       setSelectedVariantAttributes(
-        variant?.parsedAttributes ||
-        parseJsonObject(variant?.attributes),
+        variant?.parsedAttributes || parseJsonObject(variant?.attributes),
       );
 
       setActiveImage(0);
@@ -1061,8 +1053,7 @@ export default function ProductDetail({
     setSelectedVariantId(variant.id);
 
     const attrs =
-      variant?.parsedAttributes ||
-      parseJsonObject(variant?.attributes);
+      variant?.parsedAttributes || parseJsonObject(variant?.attributes);
 
     setSelectedVariantAttributes({
       ...attrs,
@@ -1075,10 +1066,7 @@ export default function ProductDetail({
      ATTRIBUTE SELECT
   ========================================================= */
 
-  const handleAttributeSelect = (
-    attributeKey: string,
-    value: string,
-  ) => {
+  const handleAttributeSelect = (attributeKey: string, value: string) => {
     const nextAttributes = {
       ...selectedVariantAttributes,
       [attributeKey]: value,
@@ -1086,17 +1074,14 @@ export default function ProductDetail({
 
     setSelectedVariantAttributes(nextAttributes);
 
-    const matchingVariant = variantEntries.find(
-      (variant: any) => {
-        const attrs = variant?.parsedAttributes || {};
+    const matchingVariant = variantEntries.find((variant: any) => {
+      const attrs = variant?.parsedAttributes || {};
 
-        return Object.entries(nextAttributes).every(
-          ([key, selectedValue]) =>
-            String(attrs?.[key] ?? "") ===
-            String(selectedValue),
-        );
-      },
-    );
+      return Object.entries(nextAttributes).every(
+        ([key, selectedValue]) =>
+          String(attrs?.[key] ?? "") === String(selectedValue),
+      );
+    });
 
     if (matchingVariant) {
       setSelectedVariantId(matchingVariant.id);
@@ -1117,8 +1102,7 @@ export default function ProductDetail({
 
     if (wishlistData?.data && product?.id) {
       const exists = wishlistData.data.some(
-        (item: any) =>
-          String(item.product_id) === String(product.id),
+        (item: any) => String(item.product_id) === String(product.id),
       );
 
       setIsWishlisted(exists);
@@ -1141,9 +1125,7 @@ export default function ProductDetail({
      MAIN WISHLIST
   ========================================================= */
 
-  const handleWishlistToggle = async (
-    e?: React.MouseEvent<HTMLElement>,
-  ) => {
+  const handleWishlistToggle = async (e?: React.MouseEvent<HTMLElement>) => {
     if (!product || isWishlistLoading) return;
 
     if (hasToken !== true) {
@@ -1188,9 +1170,7 @@ export default function ProductDetail({
     } catch (error: any) {
       dispatch(
         showToast({
-          message:
-            error?.data?.message ||
-            "Failed to update wishlist",
+          message: error?.data?.message || "Failed to update wishlist",
           type: "error",
         }),
       );
@@ -1250,9 +1230,7 @@ export default function ProductDetail({
     } catch (error: any) {
       dispatch(
         showToast({
-          message:
-            error?.data?.message ||
-            "Failed to update wishlist",
+          message: error?.data?.message || "Failed to update wishlist",
           type: "error",
         }),
       );
@@ -1323,8 +1301,7 @@ export default function ProductDetail({
       }).unwrap();
     } catch (error: any) {
       throw new Error(
-        error?.data?.message ||
-        "Unable to verify live stock. Please retry.",
+        error?.data?.message || "Unable to verify live stock. Please retry.",
       );
     }
 
@@ -1337,15 +1314,10 @@ export default function ProductDetail({
       !Number.isFinite(stock?.stock_quantity) ||
       stock.stock_quantity < 0
     ) {
-      throw new Error(
-        "Invalid stock API response. Please retry.",
-      );
+      throw new Error("Invalid stock API response. Please retry.");
     }
 
-    if (
-      !stock.available ||
-      stock.stock_quantity < quantityToCheck
-    ) {
+    if (!stock.available || stock.stock_quantity < quantityToCheck) {
       throw new Error(
         "This product is currently out of stock or the requested quantity is unavailable.",
       );
@@ -1358,9 +1330,7 @@ export default function ProductDetail({
      ADD CART
   ========================================================= */
 
-  const handleAddToCart = async (
-    e?: React.MouseEvent<HTMLElement>,
-  ) => {
+  const handleAddToCart = async (e?: React.MouseEvent<HTMLElement>) => {
     if (!product || !product.inStock) return;
 
     if (hasToken !== true) {
@@ -1451,8 +1421,7 @@ export default function ProductDetail({
       !isMainProductSelected &&
         selectedVariant &&
         selectedVariantProductId === productId
-        ? selectedVariant.product_variant_id ??
-        selectedVariant.variant_id
+        ? (selectedVariant.product_variant_id ?? selectedVariant.variant_id)
         : undefined;
 
     if (!Number.isFinite(productId) || productId <= 0) {
@@ -1465,10 +1434,7 @@ export default function ProductDetail({
       return;
     }
 
-    const purchaseQty = Math.max(
-      1,
-      Math.floor(Number(quantity) || 1),
-    );
+    const purchaseQty = Math.max(1, Math.floor(Number(quantity) || 1));
 
     setIsBuyingNow(true);
 
@@ -1543,15 +1509,10 @@ export default function ProductDetail({
      QUANTITY
   ========================================================= */
 
-  const handleQuantityChange = (
-    type: "increment" | "decrement",
-  ) => {
+  const handleQuantityChange = (type: "increment" | "decrement") => {
     if (type === "increment") {
       setQuantity((prev) =>
-        Math.min(
-          prev + 1,
-          Math.min(product?.stockQuantity || 10, 10),
-        ),
+        Math.min(prev + 1, Math.min(product?.stockQuantity || 10, 10)),
       );
     } else {
       setQuantity((prev) => Math.max(prev - 1, 1));
@@ -1593,10 +1554,7 @@ export default function ProductDetail({
      REVIEW VIEWER
   ========================================================= */
 
-  const openReviewViewer = (
-    images: string[],
-    index: number,
-  ) => {
+  const openReviewViewer = (images: string[], index: number) => {
     if (!images.length) return;
 
     setReviewViewerImages(images);
@@ -1659,17 +1617,13 @@ export default function ProductDetail({
 
         if (e.key === "ArrowLeft") {
           setReviewViewerIndex((prev) =>
-            prev === 0
-              ? reviewViewerImages.length - 1
-              : prev - 1,
+            prev === 0 ? reviewViewerImages.length - 1 : prev - 1,
           );
         }
 
         if (e.key === "ArrowRight") {
           setReviewViewerIndex((prev) =>
-            prev === reviewViewerImages.length - 1
-              ? 0
-              : prev + 1,
+            prev === reviewViewerImages.length - 1 ? 0 : prev + 1,
           );
         }
       }
@@ -1691,9 +1645,7 @@ export default function ProductDetail({
      ZOOM
   ========================================================= */
 
-  const handleMouseMove = (
-    e: React.MouseEvent<HTMLDivElement>,
-  ) => {
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!isZoomed) return;
 
     const rect = e.currentTarget.getBoundingClientRect();
@@ -1719,8 +1671,7 @@ export default function ProductDetail({
     if (!currentUserId) return false;
 
     return reviewsList.some(
-      (review: any) =>
-        String(review?.user?.id ?? "") === String(currentUserId),
+      (review: any) => String(review?.user?.id ?? "") === String(currentUserId),
     );
   }, [reviewsList, currentUserId]);
 
@@ -1738,16 +1689,9 @@ export default function ProductDetail({
     const collectLine = (item: any, parent: any = null) => {
       if (!item || typeof item !== "object") return;
 
-      const lineId =
-        item?.line_id ??
-        item?.order_line_id ??
-        item?.id ??
-        null;
+      const lineId = item?.line_id ?? item?.order_line_id ?? item?.id ?? null;
 
-      const productId =
-        item?.product_id ??
-        item?.product?.id ??
-        null;
+      const productId = item?.product_id ?? item?.product?.id ?? null;
 
       const orderId =
         item?.order_id ??
@@ -1756,25 +1700,16 @@ export default function ProductDetail({
         parent?.id ??
         null;
 
-      if (
-        lineId != null &&
-        productId != null &&
-        orderId != null
-      ) {
+      if (lineId != null && productId != null && orderId != null) {
         lines.push({
           ...item,
           line_id: lineId,
           order_line_id: lineId,
           product_id: productId,
           order_id: orderId,
-          order_status:
-            item?.order_status ??
-            parent?.order_status ??
-            null,
+          order_status: item?.order_status ?? parent?.order_status ?? null,
           delivery_status:
-            item?.delivery_status ??
-            parent?.delivery_status ??
-            null,
+            item?.delivery_status ?? parent?.delivery_status ?? null,
         });
       }
 
@@ -1793,8 +1728,7 @@ export default function ProductDetail({
     myOrdersData.data.forEach((item: any) => collectLine(item));
 
     const matching = lines.filter(
-      (line) =>
-        String(line.product_id) === String(apiProduct.id),
+      (line) => String(line.product_id) === String(apiProduct.id),
     );
 
     const delivered = matching.find(
@@ -1807,17 +1741,13 @@ export default function ProductDetail({
     return delivered || matching[0] || null;
   }, [myOrdersData, apiProduct?.id]);
 
-  const canReview = Boolean(
-    currentUserId && reviewableOrderLine,
-  );
+  const canReview = Boolean(currentUserId && reviewableOrderLine);
 
   /* =========================================================
      REVIEW SUBMIT
   ========================================================= */
 
-  const handleReviewSubmit = async (
-    e: React.FormEvent<HTMLFormElement>,
-  ) => {
+  const handleReviewSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (!reviewTitle.trim()) {
@@ -1843,9 +1773,7 @@ export default function ProductDetail({
         review_text: reviewTitle.trim(),
         order_id: Number(reviewableOrderLine.order_id),
         order_line_id: Number(reviewableOrderLine.line_id),
-        product_id: Number(
-          reviewableOrderLine.product_id || product.id,
-        ),
+        product_id: Number(reviewableOrderLine.product_id || product.id),
         images: reviewImages,
       };
 
@@ -1853,9 +1781,7 @@ export default function ProductDetail({
 
       dispatch(
         showToast({
-          message:
-            result?.message ||
-            "Review submitted successfully.",
+          message: result?.message || "Review submitted successfully.",
           type: "success",
         }),
       );
@@ -1871,9 +1797,7 @@ export default function ProductDetail({
     } catch (error: any) {
       dispatch(
         showToast({
-          message:
-            error?.data?.message ||
-            "Failed to submit review.",
+          message: error?.data?.message || "Failed to submit review.",
           type: "error",
         }),
       );
@@ -1886,25 +1810,18 @@ export default function ProductDetail({
      REVIEW IMAGE UPLOAD
   ========================================================= */
 
-  const handleReviewImageUpload = (
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => {
+  const handleReviewImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
 
     const files = Array.from(e.target.files);
 
-    setReviewImages((prev) => [
-      ...prev,
-      ...files.slice(0, 5 - prev.length),
-    ]);
+    setReviewImages((prev) => [...prev, ...files.slice(0, 5 - prev.length)]);
 
     e.target.value = "";
   };
 
   const removeReviewImage = (index: number) => {
-    setReviewImages((prev) =>
-      prev.filter((_, i) => i !== index),
-    );
+    setReviewImages((prev) => prev.filter((_, i) => i !== index));
   };
 
   /* =========================================================
@@ -1921,9 +1838,7 @@ export default function ProductDetail({
      reviews_summary.total_reviews
   ========================================================= */
 
-  const categoryProductList: any[] = Array.isArray(
-    categoryProductsData?.data,
-  )
+  const categoryProductList: any[] = Array.isArray(categoryProductsData?.data)
     ? categoryProductsData.data
     : Array.isArray(categoryProductsData?.data?.data)
       ? categoryProductsData.data.data
@@ -1932,27 +1847,20 @@ export default function ProductDetail({
         : [];
 
   const similarProducts = categoryProductList
-    .filter(
-      (p: any) => String(p.id) !== String(product?.id),
-    )
+    .filter((p: any) => String(p.id) !== String(product?.id))
     .slice(0, 10)
     .map((p: any) => {
       const distributor = userAccountType === "distributor";
 
       const price = distributor
-        ? Number(
-          p.distributor_price ||
-          p.retail_price ||
-          0,
+        ? distributorOfferPrice(
+          p,
+          Number(p.distributor_price || p.retail_price || 0),
         )
         : Number(p.retail_price || 0);
 
       const mrp = distributor
-        ? Number(
-          p.distributor_mrp ||
-          p.retail_mrp ||
-          0,
-        )
+        ? Number(p.distributor_mrp || p.retail_mrp || 0)
         : Number(p.retail_mrp || 0);
 
       /*
@@ -1960,10 +1868,7 @@ export default function ProductDetail({
        * Category API returns reviews_summary directly.
        * Do not rely only on reviews.summary.
        */
-      const reviewSummary =
-        p?.reviews_summary ??
-        p?.reviews?.summary ??
-        {};
+      const reviewSummary = p?.reviews_summary ?? p?.reviews?.summary ?? {};
 
       const rating = getAverageRating(reviewSummary);
 
@@ -1974,36 +1879,20 @@ export default function ProductDetail({
 
         name: p.name,
 
-        slug:
-          p.slug ||
-          generateSlugFromName(p.name),
+        slug: p.slug || generateSlugFromName(p.name),
 
-        category:
-          p.category?.name ||
-          p.category_name ||
-          "",
+        category: p.category?.name || p.category_name || "",
 
-        brand:
-          p.brand_name ||
-          p.brandName ||
-          p.brand ||
-          "",
+        brand: p.brand_name || p.brandName || p.brand || "",
 
-        description:
-          p.short_description ||
-          p.description ||
-          "",
+        description: p.short_description || p.description || "",
 
         stockQuantity: Number(p.stock_quantity || 0),
 
-        lowStockThreshold: Number(
-          p.low_stock_threshold || 0,
-        ),
+        lowStockThreshold: Number(p.low_stock_threshold || 0),
 
         peopleBought: Number(
-          p.people_bought_this_week ||
-          p.peopleBoughtThisWeek ||
-          0,
+          p.people_bought_this_week || p.peopleBoughtThisWeek || 0,
         ),
 
         badge:
@@ -2016,6 +1905,13 @@ export default function ProductDetail({
 
         price,
 
+        commissionValue:
+          p.commission_value !== null &&
+            p.commission_value !== undefined &&
+            Number.isFinite(Number(p.commission_value))
+            ? Math.max(0, Number(p.commission_value))
+            : null,
+
         originalPrice: mrp,
 
         discount:
@@ -2025,9 +1921,7 @@ export default function ProductDetail({
 
         image:
           p.primary_image_url ||
-          p.images?.find(
-            (img: any) => img?.is_primary,
-          )?.image_url ||
+          p.images?.find((img: any) => img?.is_primary)?.image_url ||
           p.images?.[0]?.image_url ||
           PLACEHOLDER,
 
@@ -2039,10 +1933,7 @@ export default function ProductDetail({
 
         inStock: Number(p.stock_quantity || 0) > 0,
 
-        createdAt:
-          p.created_at ||
-          p.createdAt ||
-          null,
+        createdAt: p.created_at || p.createdAt || null,
       };
     });
 
@@ -2062,13 +1953,9 @@ export default function ProductDetail({
 
       case "newest":
         return list.sort((a, b) => {
-          const aTime = a.createdAt
-            ? new Date(a.createdAt).getTime()
-            : 0;
+          const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
 
-          const bTime = b.createdAt
-            ? new Date(b.createdAt).getTime()
-            : 0;
+          const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
 
           return bTime - aTime;
         });
@@ -2078,16 +1965,13 @@ export default function ProductDetail({
     }
   }, [similarProducts, relatedSortOption]);
 
-  const visibleSimilarProducts =
-    sortedSimilarProducts.slice(0, 12);
+  const visibleSimilarProducts = sortedSimilarProducts.slice(0, 12);
 
   /* =========================================================
      RELATED CARD BUSY STATE
   ========================================================= */
 
-  const [relatedBusyId, setRelatedBusyId] = useState<
-    string | null
-  >(null);
+  const [relatedBusyId, setRelatedBusyId] = useState<string | null>(null);
 
   /* =========================================================
      ADD RELATED TO CART
@@ -2155,31 +2039,23 @@ export default function ProductDetail({
     index: number,
   ) => {
     const url = buildProductPath(
-      item.slug ||
-      generateSlugFromName(item.name) ||
-      String(item.id),
+      item.slug || generateSlugFromName(item.name) || String(item.id),
     );
 
-    const discounted =
-      item.originalPrice > item.price &&
-      item.price > 0;
+    const discounted = item.originalPrice > item.price && item.price > 0;
 
     const discountPercent = discounted
-      ? Math.round(
-        (1 - item.price / item.originalPrice) * 100,
-      )
+      ? Math.round((1 - item.price / item.originalPrice) * 100)
       : 0;
 
     const lowStock =
       item.inStock &&
       item.stockQuantity > 0 &&
-      item.stockQuantity <=
-      (item.lowStockThreshold || 10);
+      item.stockQuantity <= (item.lowStockThreshold || 10);
 
     // A zero/missing rating must not display a rating row.
     const hasRating =
-      Number.isFinite(Number(item.rating)) &&
-      Number(item.rating) > 0;
+      Number.isFinite(Number(item.rating)) && Number(item.rating) > 0;
 
     return (
       <motion.article
@@ -2236,8 +2112,8 @@ export default function ProductDetail({
           >
             <Heart
               className={`h-4 w-4 ${wishlistState[Number(item.id)]
-                ? "fill-red-500 text-red-500"
-                : "text-[#222]"
+                  ? "fill-red-500 text-red-500"
+                  : "text-[#222]"
                 }`}
             />
           </button>
@@ -2251,7 +2127,6 @@ export default function ProductDetail({
 
         {/* PRODUCT CONTENT */}
         <div className="flex min-w-0 flex-1 flex-col px-2.5 pb-3 pt-2.5 sm:px-3">
-
           {/* RATING - GREEN */}
           {hasRating && (
             <div className="mb-1.5 flex items-center gap-1.5">
@@ -2266,9 +2141,7 @@ export default function ProductDetail({
                   <>
                     <span className="text-[#bbb]">|</span>
 
-                    <span className="text-[#777]">
-                      {item.reviews}
-                    </span>
+                    <span className="text-[#777]">{item.reviews}</span>
                   </>
                 )}
               </span>
@@ -2285,9 +2158,7 @@ export default function ProductDetail({
                 {item.brand || item.name}
               </span>
 
-              {item.category
-                ? ` | ${item.category}`
-                : ""}
+              {item.category ? ` | ${item.category}` : ""}
             </p>
 
             <p
@@ -2299,26 +2170,71 @@ export default function ProductDetail({
           </Link>
 
           {/* PRICE */}
-          <div className="mt-2 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
-            <span className="text-[13px] font-bold text-[#161616]">
-              ₹{Number(item.price || 0).toLocaleString("en-IN")}
-            </span>
-
-            {discounted && (
-              <span className="text-[10px] text-[#939393] line-through">
-                ₹
-                {Number(item.originalPrice).toLocaleString(
-                  "en-IN",
+          {isDistributorApp && userAccountType === "distributor" ? (
+            <div className="mt-3 rounded-xl border border-[#E4E9E6] bg-gradient-to-br from-[#F6FBF8] to-white p-3">
+              <div className="flex flex-wrap items-end justify-between gap-x-3 gap-y-2">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-semibold tracking-wide text-[#49745A]">
+                    BA Price
+                  </p>
+                  <p className="mt-1 text-[19px] font-bold leading-none tracking-tight text-[#146C43]">
+                    ₹
+                    {Number(item.price || 0).toLocaleString("en-IN", {
+                      maximumFractionDigits: 2,
+                    })}
+                  </p>
+                </div>
+                {item.originalPrice > 0 && (
+                  <div className="min-w-0 text-right">
+                    <p className="text-[10px] font-medium uppercase tracking-wide text-[#78828A]">
+                      MRP
+                    </p>
+                    <p className="mt-1 text-[14px] font-medium leading-none text-[#89939B] line-through decoration-[#89939B] decoration-[1.5px]">
+                      ₹
+                      {Number(item.originalPrice).toLocaleString("en-IN", {
+                        maximumFractionDigits: 2,
+                      })}
+                    </p>
+                  </div>
                 )}
+              </div>
+            </div>
+          ) : (
+            <div className="mt-2 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+              <span className="text-[13px] font-bold text-[#161616]">
+                ₹{Number(item.price || 0).toLocaleString("en-IN")}
               </span>
-            )}
 
-            {discountPercent > 0 && (
-              <span className="text-[10px] font-semibold text-[#16803c]">
-                {discountPercent}% off
-              </span>
+              {discounted && (
+                <span className="text-[10px] text-[#939393] line-through">
+                  ₹{Number(item.originalPrice).toLocaleString("en-IN")}
+                </span>
+              )}
+
+              {discountPercent > 0 && (
+                <span className="text-[10px] font-semibold text-[#16803c]">
+                  {discountPercent}% off
+                </span>
+              )}
+            </div>
+          )}
+          {/* DISTRIBUTOR-ONLY COMMISSION (category API) */}
+          {isDistributorApp &&
+            userAccountType === "distributor" &&
+            item.commissionValue !== null && (
+              <div className="mt-2 flex items-center justify-between gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-2">
+                <span className="text-[10px] font-semibold text-emerald-900">
+                  Commission Value
+                </span>
+                <span className="whitespace-nowrap text-[12px] font-bold text-emerald-800">
+                  {item.commissionValue.toLocaleString("en-IN", {
+                    maximumFractionDigits: 2,
+                  })}{" "}
+                  pts
+                  <span className="ml-1 text-[9px] font-medium">/unit</span>
+                </span>
+              </div>
             )}
-          </div>
 
           {/* STOCK */}
           {lowStock && (
@@ -2337,24 +2253,16 @@ export default function ProductDetail({
           <div className="mt-auto grid grid-cols-2 gap-1.5 pt-2.5">
             <button
               type="button"
-              disabled={
-                !item.inStock ||
-                relatedBusyId !== null
-              }
+              disabled={!item.inStock || relatedBusyId !== null}
               onClick={() => addRelatedToCart(item, true)}
               className="min-h-9 rounded-lg bg-[#171717] px-1 text-[10px] font-semibold text-white transition hover:bg-[#333] disabled:cursor-not-allowed disabled:opacity-40"
             >
-              {relatedBusyId === String(item.id)
-                ? "Please wait..."
-                : "Buy Now"}
+              {relatedBusyId === String(item.id) ? "Please wait..." : "Buy Now"}
             </button>
 
             <button
               type="button"
-              disabled={
-                !item.inStock ||
-                relatedBusyId !== null
-              }
+              disabled={!item.inStock || relatedBusyId !== null}
               onClick={() => addRelatedToCart(item, false)}
               className="flex min-h-9 items-center justify-center gap-1 rounded-lg border border-[#dedbd4] px-1 text-[10px] font-semibold text-[#222] transition hover:border-[#111] disabled:cursor-not-allowed disabled:opacity-40"
             >
@@ -2382,13 +2290,7 @@ export default function ProductDetail({
 
       router.push("/products");
     }
-  }, [
-    isProductLoading,
-    product,
-    error,
-    router,
-    dispatch,
-  ]);
+  }, [isProductLoading, product, error, router, dispatch]);
 
   if (isProductLoading && !product) {
     return (
@@ -2404,9 +2306,7 @@ export default function ProductDetail({
         <div className="max-w-md px-4 text-center">
           <div className="mb-4 text-6xl">🔍</div>
 
-          <h2 className="mb-3 text-2xl font-bold">
-            Product Not Found
-          </h2>
+          <h2 className="mb-3 text-2xl font-bold">Product Not Found</h2>
 
           <p className="mb-6 text-sm text-[#777]">
             The product you're looking for doesn't exist or has been removed.
@@ -2436,27 +2336,18 @@ export default function ProductDetail({
      SPECIFICATIONS
   ========================================================= */
 
-  const specification = parseJsonObject(
-    product.specification,
-  );
+  const specification = parseJsonObject(product.specification);
 
   const specRows =
     Object.keys(specification).length > 0
-      ? Object.entries(specification).map(
-        ([key, value]) => [
-          key
-            .replace(/_/g, " ")
-            .replace(/\b\w/g, (char) => char.toUpperCase()),
-          String(value),
-        ],
-      )
+      ? Object.entries(specification).map(([key, value]) => [
+        key.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase()),
+        String(value),
+      ])
       : [
         ["Product Type", product.category],
         ["Product Code", product.productCode || "N/A"],
-        [
-          "Availability",
-          product.inStock ? "In Stock" : "Out of Stock",
-        ],
+        ["Availability", product.inStock ? "In Stock" : "Out of Stock"],
         ["Stock Quantity", product.stockQuantity],
         ["UOM", apiProduct?.uom || "NOS"],
         ["HSN Code", apiProduct?.hsn_code || "N/A"],
@@ -2475,30 +2366,21 @@ export default function ProductDetail({
       <Header />
 
       <main className="mx-auto w-full max-w-[1440px] px-3 py-3 sm:px-5 sm:py-4 lg:px-7 xl:px-10">
-
         {/* BREADCRUMB */}
         <nav className="mb-3 flex items-center gap-1.5 overflow-x-auto whitespace-nowrap text-[11px] text-[#8A8A8A] sm:text-[12px]">
-          <Link
-            href="/home"
-            className="transition hover:text-[#111]"
-          >
+          <Link href="/home" className="transition hover:text-[#111]">
             Home
           </Link>
 
           <ChevronRight className="h-3 w-3 flex-shrink-0 text-[#CFCFCF]" />
 
-          <Link
-            href="/products"
-            className="transition hover:text-[#111]"
-          >
+          <Link href="/products" className="transition hover:text-[#111]">
             Products
           </Link>
 
           <ChevronRight className="h-3 w-3 flex-shrink-0 text-[#CFCFCF]" />
 
-          <span className="font-medium text-[#555]">
-            {product.category}
-          </span>
+          <span className="font-medium text-[#555]">{product.category}</span>
 
           <ChevronRight className="h-3 w-3 flex-shrink-0 text-[#CFCFCF]" />
 
@@ -2509,71 +2391,64 @@ export default function ProductDetail({
 
         {/* HERO */}
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-[0.92fr_1.08fr] xl:gap-5">
-
           {/* IMAGE AREA */}
           <div className="flex flex-col gap-2.5 lg:flex-row">
-
             {/* THUMBNAILS */}
             <div className="order-last flex w-full flex-row gap-2 overflow-x-auto pb-1 lg:order-first lg:w-[62px] lg:flex-shrink-0 lg:flex-col lg:gap-2 lg:overflow-visible lg:pb-0 xl:w-[76px]">
-              {gallery
-                .slice(0, MAX_VISIBLE_THUMBS)
-                .map((img, index) => {
-                  const isLastVisible =
-                    index === MAX_VISIBLE_THUMBS - 1;
+              {gallery.slice(0, MAX_VISIBLE_THUMBS).map((img, index) => {
+                const isLastVisible = index === MAX_VISIBLE_THUMBS - 1;
 
-                  const hasMore =
-                    gallery.length > MAX_VISIBLE_THUMBS;
+                const hasMore = gallery.length > MAX_VISIBLE_THUMBS;
 
-                  return (
-                    <button
-                      key={`${img}-${index}`}
-                      type="button"
-                      onClick={() =>
-                        isLastVisible && hasMore
-                          ? setShowAllThumbnails(true)
-                          : setActiveImage(index)
+                return (
+                  <button
+                    key={`${img}-${index}`}
+                    type="button"
+                    onClick={() =>
+                      isLastVisible && hasMore
+                        ? setShowAllThumbnails(true)
+                        : setActiveImage(index)
+                    }
+                    onMouseEnter={() => {
+                      if (!(isLastVisible && hasMore)) {
+                        setActiveImage(index);
                       }
-                      onMouseEnter={() => {
-                        if (!(isLastVisible && hasMore)) {
-                          setActiveImage(index);
-                        }
-                      }}
-                      className={`relative h-[62px] w-[62px] flex-shrink-0 overflow-hidden rounded-[7px] border-2 bg-white transition sm:h-[70px] sm:w-[70px] lg:h-[74px] lg:w-[74px] ${activeImage === index
+                    }}
+                    className={`relative h-[62px] w-[62px] flex-shrink-0 overflow-hidden rounded-[7px] border-2 bg-white transition sm:h-[70px] sm:w-[70px] lg:h-[74px] lg:w-[74px] ${activeImage === index
                         ? "border-[#111]"
                         : "border-[#E4E4E4] hover:border-[#999]"
-                        }`}
-                    >
-                      <Image
-                        src={img || PLACEHOLDER}
-                        alt={`${product.name} ${index + 1}`}
-                        fill
-                        sizes="74px"
-                        className="object-cover transition duration-300 hover:scale-105"
-                      />
+                      }`}
+                  >
+                    <Image
+                      src={img || PLACEHOLDER}
+                      alt={`${product.name} ${index + 1}`}
+                      fill
+                      sizes="74px"
+                      className="object-cover transition duration-300 hover:scale-105"
+                    />
 
-                      {activeImage === index &&
-                        !(isLastVisible && hasMore) && (
-                          <span className="absolute inset-0 flex items-center justify-center bg-black/25">
-                            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white shadow-sm">
-                              <CheckCircle className="h-3.5 w-3.5 text-[#111]" />
-                            </span>
-                          </span>
-                        )}
-
-                      {isLastVisible && hasMore && (
-                        <span className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 text-white backdrop-blur-[1px]">
-                          <span className="text-[15px] font-bold leading-none">
-                            +{gallery.length - MAX_VISIBLE_THUMBS}
-                          </span>
-
-                          <span className="mt-0.5 text-[8px] font-semibold uppercase tracking-wide">
-                            More
-                          </span>
+                    {activeImage === index && !(isLastVisible && hasMore) && (
+                      <span className="absolute inset-0 flex items-center justify-center bg-black/25">
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white shadow-sm">
+                          <CheckCircle className="h-3.5 w-3.5 text-[#111]" />
                         </span>
-                      )}
-                    </button>
-                  );
-                })}
+                      </span>
+                    )}
+
+                    {isLastVisible && hasMore && (
+                      <span className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 text-white backdrop-blur-[1px]">
+                        <span className="text-[15px] font-bold leading-none">
+                          +{gallery.length - MAX_VISIBLE_THUMBS}
+                        </span>
+
+                        <span className="mt-0.5 text-[8px] font-semibold uppercase tracking-wide">
+                          More
+                        </span>
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
 
             {/* MAIN IMAGE */}
@@ -2608,9 +2483,7 @@ export default function ProductDetail({
                     >
                       <Image
                         src={
-                          gallery[activeImage] ||
-                          product.image ||
-                          PLACEHOLDER
+                          gallery[activeImage] || product.image || PLACEHOLDER
                         }
                         alt={product.name}
                         fill
@@ -2648,15 +2521,11 @@ export default function ProductDetail({
                     disabled={isWishlistLoading}
                     className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/95 shadow-sm backdrop-blur"
                     aria-label={
-                      isWishlisted
-                        ? "Remove from wishlist"
-                        : "Add to wishlist"
+                      isWishlisted ? "Remove from wishlist" : "Add to wishlist"
                     }
                   >
                     <Heart
-                      className={`h-4 w-4 ${isWishlisted
-                        ? "fill-[#111] text-[#111]"
-                        : "text-[#111]"
+                      className={`h-4 w-4 ${isWishlisted ? "fill-[#111] text-[#111]" : "text-[#111]"
                         }`}
                     />
                   </button>
@@ -2706,9 +2575,7 @@ export default function ProductDetail({
                       <div
                         className="absolute inset-0 bg-cover bg-no-repeat"
                         style={{
-                          backgroundImage: `url(${gallery[activeImage] ||
-                            product.image ||
-                            PLACEHOLDER
+                          backgroundImage: `url(${gallery[activeImage] || product.image || PLACEHOLDER
                             })`,
                           backgroundPosition: `${zoomPosition.x}% ${zoomPosition.y}%`,
                           backgroundSize: "250%",
@@ -2743,8 +2610,8 @@ export default function ProductDetail({
                     <Star
                       key={n}
                       className={`h-3.5 w-3.5 ${n <= Math.floor(product.rating)
-                        ? "fill-[#188447] text-[#188447]"
-                        : "fill-[#188447]/10 text-[#D1D5DB]"
+                          ? "fill-[#188447] text-[#188447]"
+                          : "fill-[#188447]/10 text-[#D1D5DB]"
                         }`}
                     />
                   ))}
@@ -2757,36 +2624,107 @@ export default function ProductDetail({
                 {product.reviews > 0 && (
                   <span className="text-[11px] text-[#888]">
                     {product.reviews}{" "}
-                    {product.reviews === 1
-                      ? "Rating"
-                      : "Ratings"}
+                    {product.reviews === 1 ? "Rating" : "Ratings"}
                   </span>
                 )}
               </div>
             )}
 
-            {/* PRICE */}
-            <div className="mt-3 flex items-end gap-2.5">
-              <span className="text-[26px] font-bold tracking-[-0.02em] text-[#111]">
-                ₹{product.price.toLocaleString("en-IN")}
-              </span>
+            {/* PRICE: BA Price and MRP only on distributor portal */}
+            {isDistributorApp && userAccountType === "distributor" ? (
+              <div className="mt-4 overflow-hidden rounded-2xl border border-[#DCE9E0] bg-gradient-to-br from-[#F3FAF5] via-white to-[#F8FBF9] shadow-[0_4px_20px_rgba(22,101,52,0.055)]">
+                <div className="flex flex-wrap items-stretch gap-0">
+                  <div className="min-w-[160px] flex-1 px-4 py-4 sm:px-5">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#377450]">
+                      BA Price
+                    </p>
+                  
+                    <p className="mt-2 break-words text-[clamp(1.55rem,3vw,2.1rem)] font-bold leading-tight tracking-[-0.035em] text-[#126B40]">
+                      ₹
+                      {product.price.toLocaleString("en-IN", {
+                        maximumFractionDigits: 2,
+                      })}
+                    </p>
+                  </div>
+                  {product.mrp > 0 && (
+                    <div className="flex min-w-[125px] flex-1 flex-col justify-center border-t border-[#E5ECE7] px-4 py-4 sm:border-l sm:border-t-0 sm:px-5">
+                      <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#818B92]">
+                        MRP
+                      </p>
+                      <p className="mt-2 break-words text-[clamp(1.15rem,2vw,1.4rem)] font-medium leading-tight tracking-tight text-[#89939B] line-through decoration-[#89939B] decoration-[1.5px]">
+                        ₹
+                        {product.mrp.toLocaleString("en-IN", {
+                          maximumFractionDigits: 2,
+                        })}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="mt-3 flex items-end gap-2.5">
+                <span className="text-[26px] font-bold tracking-[-0.02em] text-[#111]">
+                  ₹{product.price.toLocaleString("en-IN")}
+                </span>
 
-              {product.mrp > product.price && (
-                <>
-                  <span className="pb-0.5 text-[15px] text-[#A7A7A7] line-through">
-                    ₹{product.mrp.toLocaleString("en-IN")}
-                  </span>
+                {product.mrp > product.price && (
+                  <>
+                    <span className="pb-0.5 text-[15px] text-[#A7A7A7] line-through">
+                      ₹{product.mrp.toLocaleString("en-IN")}
+                    </span>
 
-                  <span className="text-[12px] font-semibold text-[#E25858]">
-                    ({product.discount}% OFF)
-                  </span>
-                </>
-              )}
-            </div>
-
+                    <span className="text-[12px] font-semibold text-[#E25858]">
+                      ({product.discount}% OFF)
+                    </span>
+                  </>
+                )}
+              </div>
+            )}
             <p className="mt-0.5 text-[11px] text-[#777]">
               inclusive of all taxes
             </p>
+
+            {/* DISTRIBUTOR-ONLY COMMISSION (product detail API) */}
+            {isDistributorApp &&
+              userAccountType === "distributor" &&
+              product.commissionValue !== null && (
+                <section
+                  aria-label="Distributor commission value"
+                  className="mt-4 rounded-xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-white px-4 py-3 sm:px-5"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-800">
+                        Distributor Commission Value
+                      </p>
+                      <p className="mt-1 text-[24px] font-bold text-emerald-900">
+                        {product.commissionValue.toLocaleString("en-IN", {
+                          maximumFractionDigits: 2,
+                        })}{" "}
+                        pts
+                        <span className="ml-2 text-[12px] font-medium text-emerald-700">
+                          per unit
+                        </span>
+                      </p>
+                    </div>
+                    {quantity > 1 && (
+                      <div className="text-left sm:text-right">
+                        <p className="text-[11px] text-emerald-800">
+                          Estimated for {quantity} units
+                        </p>
+                        <p className="text-[17px] font-bold text-emerald-900">
+                          {(product.commissionValue * quantity).toLocaleString(
+                            "en-IN",
+                            { maximumFractionDigits: 2 },
+                          )}{" "}
+                          pts
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  
+                </section>
+              )}
 
             {/* LOW STOCK */}
             {product.isLowStock && (
@@ -2840,38 +2778,28 @@ export default function ProductDetail({
                     }
 
                     return (
-                      <div
-                        key={attributeKey}
-                        className="mb-4"
-                      >
+                      <div key={attributeKey} className="mb-4">
                         <p className="mb-2 text-[11px] font-semibold text-[#222]">
                           {attributeKey
                             .replace(/_/g, " ")
-                            .replace(/\b\w/g, (char) =>
-                              char.toUpperCase(),
-                            )}
+                            .replace(/\b\w/g, (char) => char.toUpperCase())}
                         </p>
 
                         <div className="flex flex-wrap gap-2">
                           {values.map((value) => {
                             const selected =
-                              selectedVariantAttributes[
-                              attributeKey
-                              ] === value;
+                              selectedVariantAttributes[attributeKey] === value;
 
                             return (
                               <button
                                 key={`${attributeKey}-${value}`}
                                 type="button"
                                 onClick={() =>
-                                  handleAttributeSelect(
-                                    attributeKey,
-                                    value,
-                                  )
+                                  handleAttributeSelect(attributeKey, value)
                                 }
                                 className={`rounded-full border px-4 py-1.5 text-[11px] font-semibold transition ${selected
-                                  ? "border-[#111] bg-[#111] text-white"
-                                  : "border-[#D7D7D7] bg-white text-[#222] hover:border-[#111]"
+                                    ? "border-[#111] bg-[#111] text-white"
+                                    : "border-[#D7D7D7] bg-white text-[#222] hover:border-[#111]"
                                   }`}
                               >
                                 {value}
@@ -2898,8 +2826,7 @@ export default function ProductDetail({
 
                   <div className="flex flex-wrap items-start gap-3">
                     {displayVariants.map((variant: any) => {
-                      const isMain =
-                        variant?.isMainProduct === true;
+                      const isMain = variant?.isMainProduct === true;
 
                       const image = isMain
                         ? product.image
@@ -2909,54 +2836,37 @@ export default function ProductDetail({
 
                       const isSelected = isMain
                         ? isMainProductSelected
-                        : String(selectedVariantId) ===
-                        String(variant.id);
+                        : String(selectedVariantId) === String(variant.id);
 
                       const colorName =
                         variant?.parsedAttributes?.color1 ||
                         variant?.parsedAttributes?.color ||
                         variant?.parsedAttributes?.Color ||
-                        (/rose[\s-]*gold/i.test(
-                          variant?.name || "",
-                        )
+                        (/rose[\s-]*gold/i.test(variant?.name || "")
                           ? "Rose Gold"
-                          : /steel|silver/i.test(
-                            variant?.name || "",
-                          )
+                          : /steel|silver/i.test(variant?.name || "")
                             ? "Steel"
-                            : /gold/i.test(
-                              variant?.name || "",
-                            )
+                            : /gold/i.test(variant?.name || "")
                               ? "Gold"
                               : variant?.name || "");
 
                       return (
                         <div
-                          key={
-                            isMain
-                              ? "main-product"
-                              : variant.id
-                          }
+                          key={isMain ? "main-product" : variant.id}
                           className="flex w-[60px] flex-col items-center"
                         >
                           <button
                             type="button"
-                            onClick={() =>
-                              handleSelectVariant(variant)
-                            }
+                            onClick={() => handleSelectVariant(variant)}
                             className={`relative h-[58px] w-[58px] overflow-hidden rounded-[8px] border-2 bg-white transition ${isSelected
-                              ? "border-[#111] ring-1 ring-[#111]"
-                              : "border-[#E3E3E3] hover:border-[#999]"
+                                ? "border-[#111] ring-1 ring-[#111]"
+                                : "border-[#E3E3E3] hover:border-[#999]"
                               }`}
-                            aria-label={
-                              colorName || product.name
-                            }
+                            aria-label={colorName || product.name}
                           >
                             <Image
                               src={image}
-                              alt={
-                                colorName || product.name
-                              }
+                              alt={colorName || product.name}
                               fill
                               sizes="58px"
                               className="object-cover transition duration-300 hover:scale-105"
@@ -2965,9 +2875,7 @@ export default function ProductDetail({
 
                           {!isMain && colorName && (
                             <span
-                              className={`mt-1 max-w-[60px] truncate text-center text-[9px] font-medium ${isSelected
-                                ? "text-[#111]"
-                                : "text-[#888]"
+                              className={`mt-1 max-w-[60px] truncate text-center text-[9px] font-medium ${isSelected ? "text-[#111]" : "text-[#888]"
                                 }`}
                               title={colorName}
                             >
@@ -2983,32 +2891,31 @@ export default function ProductDetail({
             )}
 
             {/* SELECTED VARIANT */}
-            {!isMainProductSelected &&
-              selectedVariant && (
-                <div className="mt-3 rounded-[7px] bg-[#F8F8F8] px-3 py-2">
-                  <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-[#777]">
-                    {selectedVariant?.sku && (
-                      <span>
-                        SKU:
-                        <span className="ml-1 font-semibold text-[#111]">
-                          {selectedVariant.sku}
-                        </span>
+            {!isMainProductSelected && selectedVariant && (
+              <div className="mt-3 rounded-[7px] bg-[#F8F8F8] px-3 py-2">
+                <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-[#777]">
+                  {selectedVariant?.sku && (
+                    <span>
+                      SKU:
+                      <span className="ml-1 font-semibold text-[#111]">
+                        {selectedVariant.sku}
                       </span>
-                    )}
+                    </span>
+                  )}
 
-                    {Object.entries(
-                      selectedVariantAttributes,
-                    ).map(([key, value]) => (
+                  {Object.entries(selectedVariantAttributes).map(
+                    ([key, value]) => (
                       <span key={key}>
                         {key}:
                         <span className="ml-1 font-semibold text-[#111]">
                           {value}
                         </span>
                       </span>
-                    ))}
-                  </div>
+                    ),
+                  )}
                 </div>
-              )}
+              </div>
+            )}
 
             {/* ACTIONS */}
             <div className="mt-5 flex items-center gap-2 border-t border-[#E8E8E8] pt-4">
@@ -3080,8 +2987,8 @@ export default function ProductDetail({
                 type="button"
                 onClick={(e) => handleWishlistToggle(e)}
                 className={`flex h-[46px] w-[46px] flex-shrink-0 items-center justify-center rounded-[4px] border-2 ${isWishlisted
-                  ? "border-[#111] bg-[#111] text-white"
-                  : "border-[#D7D7D7] bg-white text-[#111]"
+                    ? "border-[#111] bg-[#111] text-white"
+                    : "border-[#D7D7D7] bg-white text-[#111]"
                   }`}
               >
                 <Heart
@@ -3116,9 +3023,7 @@ export default function ProductDetail({
 
                 <button
                   type="button"
-                  onClick={() =>
-                    setShowManufacturingInfo(true)
-                  }
+                  onClick={() => setShowManufacturingInfo(true)}
                   className="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-[#D9D9D9] bg-white text-[#222] shadow-sm transition hover:border-[#111] hover:bg-[#111] hover:text-white"
                   aria-label="View manufacturing and marketing information"
                 >
@@ -3128,24 +3033,17 @@ export default function ProductDetail({
 
               <div className="mt-2.5 flex flex-wrap gap-x-3 gap-y-1.5 text-[10px] text-[#666]">
                 <span>
-                  <span className="font-bold text-[#4CAF50]">
-                    ✓
-                  </span>{" "}
-                  Pay Secure
+                  <span className="font-bold text-[#4CAF50]">✓</span> Pay Secure
                 </span>
 
                 <span>
-                  <span className="font-bold text-[#4CAF50]">
-                    ✓
-                  </span>{" "}
-                  Quality Assured
+                  <span className="font-bold text-[#4CAF50]">✓</span> Quality
+                  Assured
                 </span>
 
                 <span>
-                  <span className="font-bold text-[#4CAF50]">
-                    ✓
-                  </span>{" "}
-                  100% Original
+                  <span className="font-bold text-[#4CAF50]">✓</span> 100%
+                  Original
                 </span>
               </div>
             </div>
@@ -3176,9 +3074,7 @@ export default function ProductDetail({
                     {label}
                   </p>
 
-                  <p className="text-[8px] text-[#999]">
-                    {sub}
-                  </p>
+                  <p className="text-[8px] text-[#999]">{sub}</p>
                 </div>
               ))}
             </div>
@@ -3206,18 +3102,15 @@ export default function ProductDetail({
                 type="button"
                 onClick={() => setActiveTab(key)}
                 className={`relative pb-3 text-[12px] font-semibold transition ${activeTab === key
-                  ? "text-[#111]"
-                  : "text-[#999] hover:text-[#333]"
+                    ? "text-[#111]"
+                    : "text-[#999] hover:text-[#333]"
                   }`}
               >
                 {label}
 
-                {key === "reviews" &&
-                  product.reviews > 0 && (
-                    <span className="ml-1 text-[9px]">
-                      ({product.reviews})
-                    </span>
-                  )}
+                {key === "reviews" && product.reviews > 0 && (
+                  <span className="ml-1 text-[9px]">({product.reviews})</span>
+                )}
 
                 {activeTab === key && (
                   <span className="absolute inset-x-0 bottom-0 h-[2px] bg-[#111]" />
@@ -3227,7 +3120,6 @@ export default function ProductDetail({
           </div>
 
           <AnimatePresence mode="wait">
-
             {/* DETAILS */}
             {activeTab === "details" && (
               <motion.div
@@ -3260,21 +3152,14 @@ export default function ProductDetail({
                     <div className="grid md:grid-cols-2">
                       {specRows
                         .slice(0, 8)
-                        .filter(
-                          ([label]) =>
-                            label !== "Manufactured By:",
-                        )
+                        .filter(([label]) => label !== "Manufactured By:")
                         .map(([label, value], index) => (
                           <div
                             key={label}
-                            className={`flex justify-between gap-4 border-b border-[#EFEFEF] px-4 py-2.5 text-[10px] ${index % 2 === 0
-                              ? "bg-white"
-                              : "bg-[#FCFCFC]"
+                            className={`flex justify-between gap-4 border-b border-[#EFEFEF] px-4 py-2.5 text-[10px] ${index % 2 === 0 ? "bg-white" : "bg-[#FCFCFC]"
                               }`}
                           >
-                            <span className="text-[#888]">
-                              {label}
-                            </span>
+                            <span className="text-[#888]">{label}</span>
 
                             <span className="text-right font-semibold text-[#2A2A2A]">
                               {value}
@@ -3353,9 +3238,7 @@ export default function ProductDetail({
                       >
                         <input
                           value={reviewName}
-                          onChange={(e) =>
-                            setReviewName(e.target.value)
-                          }
+                          onChange={(e) => setReviewName(e.target.value)}
                           placeholder="Name"
                           className="h-10 rounded-[6px] border border-[#D8D8D8] px-3 text-sm outline-none focus:border-[#111]"
                         />
@@ -3363,9 +3246,7 @@ export default function ProductDetail({
                         <input
                           type="email"
                           value={reviewEmail}
-                          onChange={(e) =>
-                            setReviewEmail(e.target.value)
-                          }
+                          onChange={(e) => setReviewEmail(e.target.value)}
                           placeholder="Email"
                           className="h-10 rounded-[6px] border border-[#D8D8D8] px-3 text-sm outline-none focus:border-[#111]"
                         />
@@ -3379,14 +3260,12 @@ export default function ProductDetail({
                             <button
                               type="button"
                               key={star}
-                              onClick={() =>
-                                setReviewRating(star)
-                              }
+                              onClick={() => setReviewRating(star)}
                             >
                               <Star
                                 className={`h-5 w-5 ${star <= reviewRating
-                                  ? "fill-[#188447] text-[#188447]"
-                                  : "text-[#D1D5DB]"
+                                    ? "fill-[#188447] text-[#188447]"
+                                    : "text-[#D1D5DB]"
                                   }`}
                               />
                             </button>
@@ -3395,9 +3274,7 @@ export default function ProductDetail({
 
                         <textarea
                           value={reviewTitle}
-                          onChange={(e) =>
-                            setReviewTitle(e.target.value)
-                          }
+                          onChange={(e) => setReviewTitle(e.target.value)}
                           rows={4}
                           placeholder="Write your review..."
                           className="resize-none rounded-[6px] border border-[#D8D8D8] p-3 text-sm outline-none focus:border-[#111] md:col-span-2"
@@ -3417,7 +3294,6 @@ export default function ProductDetail({
                               onChange={handleReviewImageUpload}
                               className="hidden"
                             />
-
                             Upload Images
                           </label>
 
@@ -3427,31 +3303,27 @@ export default function ProductDetail({
 
                           {reviewImages.length > 0 && (
                             <div className="mt-2 flex gap-2">
-                              {reviewImages.map(
-                                (file, index) => (
-                                  <div
-                                    key={`${file.name}-${index}`}
-                                    className="relative h-14 w-14 overflow-hidden rounded-[6px] border"
-                                  >
-                                    <Image
-                                      src={URL.createObjectURL(file)}
-                                      alt="review"
-                                      fill
-                                      className="object-cover"
-                                    />
+                              {reviewImages.map((file, index) => (
+                                <div
+                                  key={`${file.name}-${index}`}
+                                  className="relative h-14 w-14 overflow-hidden rounded-[6px] border"
+                                >
+                                  <Image
+                                    src={URL.createObjectURL(file)}
+                                    alt="review"
+                                    fill
+                                    className="object-cover"
+                                  />
 
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        removeReviewImage(index)
-                                      }
-                                      className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-black text-[10px] text-white"
-                                    >
-                                      ×
-                                    </button>
-                                  </div>
-                                ),
-                              )}
+                                  <button
+                                    type="button"
+                                    onClick={() => removeReviewImage(index)}
+                                    className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-black text-[10px] text-white"
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+                              ))}
                             </div>
                           )}
                         </div>
@@ -3479,9 +3351,7 @@ export default function ProductDetail({
 
                   {/* ALL REVIEWS */}
                   <div className="pt-6">
-                    <h3 className="text-sm font-semibold">
-                      All Reviews
-                    </h3>
+                    <h3 className="text-sm font-semibold">All Reviews</h3>
 
                     {reviewsList.length === 0 ? (
                       <p className="mt-4 text-xs text-[#999]">
@@ -3490,24 +3360,21 @@ export default function ProductDetail({
                     ) : (
                       <div className="mt-4 space-y-5">
                         {reviewsList.map((review: any) => {
-                          const reviewImageUrls =
-                            Array.isArray(review.images)
-                              ? review.images
-                                .map(
-                                  (img: any) =>
-                                    img?.image_url,
-                                )
-                                .filter(Boolean)
-                              : [];
+                          const reviewImageUrls = Array.isArray(review.images)
+                            ? review.images
+                              .map((img: any) => img?.image_url)
+                              .filter(Boolean)
+                            : [];
 
-                          const visibleReviewImages =
-                            reviewImageUrls.slice(0, 5);
+                          const visibleReviewImages = reviewImageUrls.slice(
+                            0,
+                            5,
+                          );
 
-                          const extraReviewImageCount =
-                            Math.max(
-                              reviewImageUrls.length - 5,
-                              0,
-                            );
+                          const extraReviewImageCount = Math.max(
+                            reviewImageUrls.length - 5,
+                            0,
+                          );
 
                           return (
                             <div
@@ -3517,9 +3384,7 @@ export default function ProductDetail({
                               <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#EEE] text-[10px] font-bold">
                                 {review.user?.profile_picture ? (
                                   <Image
-                                    src={
-                                      review.user.profile_picture
-                                    }
+                                    src={review.user.profile_picture}
                                     alt=""
                                     width={32}
                                     height={32}
@@ -3550,10 +3415,9 @@ export default function ProductDetail({
                                     {[1, 2, 3, 4, 5].map((n) => (
                                       <Star
                                         key={n}
-                                        className={`h-3 w-3 ${n <=
-                                          Number(review.rating)
-                                          ? "fill-[#188447] text-[#188447]"
-                                          : "text-[#D1D5DB]"
+                                        className={`h-3 w-3 ${n <= Number(review.rating)
+                                            ? "fill-[#188447] text-[#188447]"
+                                            : "text-[#D1D5DB]"
                                           }`}
                                       />
                                     ))}
@@ -3566,40 +3430,35 @@ export default function ProductDetail({
 
                                 {visibleReviewImages.length > 0 && (
                                   <div className="mt-2 flex flex-wrap gap-2">
-                                    {visibleReviewImages.map(
-                                      (img, index) => (
-                                        <button
-                                          key={`${img}-${index}`}
-                                          type="button"
-                                          onClick={() =>
-                                            openReviewViewer(
-                                              reviewImageUrls,
-                                              index,
-                                            )
-                                          }
-                                          className="group relative h-16 w-16 overflow-hidden rounded-[6px] border border-[#DDD] bg-[#F5F5F5]"
-                                        >
-                                          <Image
-                                            src={img}
-                                            alt=""
-                                            fill
-                                            className="object-cover transition duration-300 group-hover:scale-105"
-                                            sizes="64px"
-                                          />
+                                    {visibleReviewImages.map((img, index) => (
+                                      <button
+                                        key={`${img}-${index}`}
+                                        type="button"
+                                        onClick={() =>
+                                          openReviewViewer(
+                                            reviewImageUrls,
+                                            index,
+                                          )
+                                        }
+                                        className="group relative h-16 w-16 overflow-hidden rounded-[6px] border border-[#DDD] bg-[#F5F5F5]"
+                                      >
+                                        <Image
+                                          src={img}
+                                          alt=""
+                                          fill
+                                          className="object-cover transition duration-300 group-hover:scale-105"
+                                          sizes="64px"
+                                        />
 
-                                          <span className="absolute inset-0 bg-black/0 transition group-hover:bg-black/10" />
-                                        </button>
-                                      ),
-                                    )}
+                                        <span className="absolute inset-0 bg-black/0 transition group-hover:bg-black/10" />
+                                      </button>
+                                    ))}
 
                                     {extraReviewImageCount > 0 && (
                                       <button
                                         type="button"
                                         onClick={() =>
-                                          openReviewViewer(
-                                            reviewImageUrls,
-                                            5,
-                                          )
+                                          openReviewViewer(reviewImageUrls, 5)
                                         }
                                         className="relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-[6px] border border-[#DDD] bg-[#111] text-white transition hover:bg-[#222]"
                                       >
@@ -3632,17 +3491,15 @@ export default function ProductDetail({
                       {product.rating.toFixed(1)}
                     </div>
 
-                    <div className="mt-1 text-xs text-[#777]">
-                      out of 5
-                    </div>
+                    <div className="mt-1 text-xs text-[#777]">out of 5</div>
 
                     <div className="mt-2 flex justify-center gap-0.5">
                       {[1, 2, 3, 4, 5].map((n) => (
                         <Star
                           key={n}
                           className={`h-4 w-4 ${n <= Math.round(product.rating)
-                            ? "fill-[#188447] text-[#188447]"
-                            : "text-[#D1D5DB]"
+                              ? "fill-[#188447] text-[#188447]"
+                              : "text-[#D1D5DB]"
                             }`}
                         />
                       ))}
@@ -3650,26 +3507,19 @@ export default function ProductDetail({
 
                     <p className="mt-2 text-xs text-[#777]">
                       {product.reviews}{" "}
-                      {product.reviews === 1
-                        ? "review"
-                        : "reviews"}
+                      {product.reviews === 1 ? "review" : "reviews"}
                     </p>
 
                     {reviewsSummary?.rating_distribution && (
                       <div className="mt-4 space-y-1.5 text-left">
                         {[5, 4, 3, 2, 1].map((star) => {
                           const count = Number(
-                            reviewsSummary.rating_distribution?.[
-                            star
-                            ] || 0,
+                            reviewsSummary.rating_distribution?.[star] || 0,
                           );
 
                           const pct =
                             product.reviews > 0
-                              ? Math.round(
-                                (count / product.reviews) *
-                                100,
-                              )
+                              ? Math.round((count / product.reviews) * 100)
                               : 0;
 
                           return (
@@ -3677,9 +3527,7 @@ export default function ProductDetail({
                               key={star}
                               className="flex items-center gap-2 text-[9px] text-[#777]"
                             >
-                              <span className="w-5">
-                                {star}★
-                              </span>
+                              <span className="w-5">{star}★</span>
 
                               <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#EDEDED]">
                                 <div
@@ -3690,9 +3538,7 @@ export default function ProductDetail({
                                 />
                               </div>
 
-                              <span className="w-5 text-right">
-                                {count}
-                              </span>
+                              <span className="w-5 text-right">{count}</span>
                             </div>
                           );
                         })}
@@ -3701,9 +3547,7 @@ export default function ProductDetail({
                   </aside>
                 ) : (
                   <aside className="h-fit rounded-[10px] border border-[#E5E5E5] p-5 text-center">
-                    <p className="text-xs text-[#777]">
-                      No ratings yet
-                    </p>
+                    <p className="text-xs text-[#777]">No ratings yet</p>
 
                     <p className="mt-1 text-[10px] text-[#999]">
                       Be the first to review this product
@@ -3725,9 +3569,7 @@ export default function ProductDetail({
 
               <span className="text-[#CFCFCF]">|</span>
 
-              <span>
-                Elegant picks curated for every occasion
-              </span>
+              <span>Elegant picks curated for every occasion</span>
             </div>
 
             {/* PROMO BANNER */}
@@ -3774,28 +3616,20 @@ export default function ProductDetail({
                   }
                   className="rounded-[6px] border border-[#D8D8D8] bg-white px-3 py-1.5 text-[11px] font-semibold text-[#111] outline-none focus:border-[#111]"
                 >
-                  <option value="recommended">
-                    Recommended
-                  </option>
+                  <option value="recommended">Recommended</option>
 
-                  <option value="price_asc">
-                    Price: Low to High
-                  </option>
+                  <option value="price_asc">Price: Low to High</option>
 
-                  <option value="price_desc">
-                    Price: High to Low
-                  </option>
+                  <option value="price_desc">Price: High to Low</option>
 
-                  <option value="newest">
-                    Newest
-                  </option>
+                  <option value="newest">Newest</option>
                 </select>
               </div>
 
               <p className="text-[11px] text-[#888]">
                 Showing 1-
-                {visibleSimilarProducts.length} of{" "}
-                {similarProducts.length} Products
+                {visibleSimilarProducts.length} of {similarProducts.length}{" "}
+                Products
               </p>
             </div>
 
@@ -3853,10 +3687,7 @@ export default function ProductDetail({
               onClick={(e) => e.stopPropagation()}
             >
               <Image
-                src={
-                  gallery[fullscreenImageIndex] ||
-                  product.image
-                }
+                src={gallery[fullscreenImageIndex] || product.image}
                 alt={product.name}
                 fill
                 className="object-contain"
@@ -3896,8 +3727,8 @@ export default function ProductDetail({
                     setFullscreenImageIndex(index);
                   }}
                   className={`relative h-10 w-10 flex-shrink-0 overflow-hidden rounded border-2 ${fullscreenImageIndex === index
-                    ? "border-white"
-                    : "border-transparent opacity-50"
+                      ? "border-white"
+                      : "border-transparent opacity-50"
                     }`}
                   aria-label={`Open image ${index + 1}`}
                 >
@@ -3916,102 +3747,98 @@ export default function ProductDetail({
 
       {/* REVIEW IMAGE VIEWER */}
       <AnimatePresence>
-        {isReviewViewerOpen &&
-          reviewViewerImages.length > 0 && (
-            <motion.div
-              initial={{
-                opacity: 0,
-              }}
-              animate={{
-                opacity: 1,
-              }}
-              exit={{
-                opacity: 0,
-              }}
-              className="fixed inset-0 z-[10001] flex items-center justify-center bg-black/95 px-4"
+        {isReviewViewerOpen && reviewViewerImages.length > 0 && (
+          <motion.div
+            initial={{
+              opacity: 0,
+            }}
+            animate={{
+              opacity: 1,
+            }}
+            exit={{
+              opacity: 0,
+            }}
+            className="fixed inset-0 z-[10001] flex items-center justify-center bg-black/95 px-4"
+            onClick={closeReviewViewer}
+          >
+            <button
+              type="button"
               onClick={closeReviewViewer}
+              className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
+              aria-label="Close review image viewer"
             >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div className="absolute left-1/2 top-5 -translate-x-1/2 rounded-full bg-white/10 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur">
+              {reviewViewerIndex + 1} / {reviewViewerImages.length}
+            </div>
+
+            <div
+              className="relative h-[78vh] w-[90vw] max-w-5xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Image
+                src={reviewViewerImages[reviewViewerIndex]}
+                alt="Review image"
+                fill
+                className="object-contain"
+                sizes="90vw"
+                priority
+              />
+            </div>
+
+            {reviewViewerImages.length > 1 && (
               <button
                 type="button"
-                onClick={closeReviewViewer}
-                className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
-                aria-label="Close review image viewer"
+                onClick={prevReviewViewerImage}
+                className="absolute left-3 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 sm:left-6"
+                aria-label="Previous review image"
               >
-                <X className="h-5 w-5" />
+                <ChevronLeft className="h-6 w-6" />
               </button>
+            )}
 
-              <div className="absolute left-1/2 top-5 -translate-x-1/2 rounded-full bg-white/10 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur">
-                {reviewViewerIndex + 1} /{" "}
-                {reviewViewerImages.length}
-              </div>
+            {reviewViewerImages.length > 1 && (
+              <button
+                type="button"
+                onClick={nextReviewViewerImage}
+                className="absolute right-3 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 sm:right-6"
+                aria-label="Next review image"
+              >
+                <ChevronRight className="h-6 w-6" />
+              </button>
+            )}
 
+            {reviewViewerImages.length > 1 && (
               <div
-                className="relative h-[78vh] w-[90vw] max-w-5xl"
+                className="absolute bottom-4 left-1/2 flex max-w-[90vw] -translate-x-1/2 gap-2 overflow-x-auto rounded-[10px] bg-black/20 p-2 backdrop-blur"
                 onClick={(e) => e.stopPropagation()}
               >
-                <Image
-                  src={reviewViewerImages[reviewViewerIndex]}
-                  alt="Review image"
-                  fill
-                  className="object-contain"
-                  sizes="90vw"
-                  priority
-                />
-              </div>
-
-              {reviewViewerImages.length > 1 && (
-                <button
-                  type="button"
-                  onClick={prevReviewViewerImage}
-                  className="absolute left-3 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 sm:left-6"
-                  aria-label="Previous review image"
-                >
-                  <ChevronLeft className="h-6 w-6" />
-                </button>
-              )}
-
-              {reviewViewerImages.length > 1 && (
-                <button
-                  type="button"
-                  onClick={nextReviewViewerImage}
-                  className="absolute right-3 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 sm:right-6"
-                  aria-label="Next review image"
-                >
-                  <ChevronRight className="h-6 w-6" />
-                </button>
-              )}
-
-              {reviewViewerImages.length > 1 && (
-                <div
-                  className="absolute bottom-4 left-1/2 flex max-w-[90vw] -translate-x-1/2 gap-2 overflow-x-auto rounded-[10px] bg-black/20 p-2 backdrop-blur"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {reviewViewerImages.map((img, index) => (
-                    <button
-                      type="button"
-                      key={`${img}-${index}`}
-                      onClick={() =>
-                        setReviewViewerIndex(index)
-                      }
-                      className={`relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-[6px] border-2 transition ${reviewViewerIndex === index
+                {reviewViewerImages.map((img, index) => (
+                  <button
+                    type="button"
+                    key={`${img}-${index}`}
+                    onClick={() => setReviewViewerIndex(index)}
+                    className={`relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-[6px] border-2 transition ${reviewViewerIndex === index
                         ? "border-white"
                         : "border-transparent opacity-50 hover:opacity-100"
-                        }`}
-                      aria-label={`Open review image ${index + 1}`}
-                    >
-                      <Image
-                        src={img}
-                        alt=""
-                        fill
-                        className="object-cover"
-                        sizes="48px"
-                      />
-                    </button>
-                  ))}
-                </div>
-              )}
-            </motion.div>
-          )}
+                      }`}
+                    aria-label={`Open review image ${index + 1}`}
+                  >
+                    <Image
+                      src={img}
+                      alt=""
+                      fill
+                      className="object-cover"
+                      sizes="48px"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        )}
       </AnimatePresence>
 
       {/* MANUFACTURING INFO */}
@@ -4028,9 +3855,7 @@ export default function ProductDetail({
               opacity: 0,
             }}
             className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 px-4"
-            onClick={() =>
-              setShowManufacturingInfo(false)
-            }
+            onClick={() => setShowManufacturingInfo(false)}
           >
             <motion.div
               initial={{
@@ -4067,9 +3892,7 @@ export default function ProductDetail({
 
                 <button
                   type="button"
-                  onClick={() =>
-                    setShowManufacturingInfo(false)
-                  }
+                  onClick={() => setShowManufacturingInfo(false)}
                   className="rounded-full p-2 text-[#777] transition hover:bg-[#F3F3F3] hover:text-[#111]"
                   aria-label="Close manufacturing details"
                 >
@@ -4112,9 +3935,7 @@ export default function ProductDetail({
               <div className="border-t border-[#E8E8E8] px-5 py-4 sm:px-6">
                 <button
                   type="button"
-                  onClick={() =>
-                    setShowManufacturingInfo(false)
-                  }
+                  onClick={() => setShowManufacturingInfo(false)}
                   className="h-10 w-full rounded-[7px] bg-[#111] text-[12px] font-bold uppercase tracking-wide text-white transition hover:bg-[#2A2A2A]"
                 >
                   Close
@@ -4176,9 +3997,7 @@ export default function ProductDetail({
 
                 <button
                   type="button"
-                  onClick={() =>
-                    setShowAllThumbnails(false)
-                  }
+                  onClick={() => setShowAllThumbnails(false)}
                   className="rounded-full p-2 text-[#777] transition hover:bg-[#F3F3F3] hover:text-[#111]"
                 >
                   <X className="h-5 w-5" />
@@ -4196,8 +4015,8 @@ export default function ProductDetail({
                         setShowAllThumbnails(false);
                       }}
                       className={`relative aspect-square overflow-hidden rounded-[8px] border-2 bg-[#F3F3F3] transition ${activeImage === index
-                        ? "border-[#111]"
-                        : "border-transparent hover:border-[#999]"
+                          ? "border-[#111]"
+                          : "border-transparent hover:border-[#999]"
                         }`}
                     >
                       <Image
@@ -4281,9 +4100,7 @@ export default function ProductDetail({
 
                 <button
                   type="button"
-                  onClick={() =>
-                    setShowRelatedSheet(false)
-                  }
+                  onClick={() => setShowRelatedSheet(false)}
                   aria-label="Close similar products"
                   className="flex h-9 w-9 items-center justify-center rounded-full border border-[#e9e9e9] hover:bg-[#f5f5f5]"
                 >
@@ -4307,21 +4124,13 @@ export default function ProductDetail({
                     }
                     className="max-w-[185px] rounded-lg border border-[#e5e5e5] bg-white px-2 py-2 text-[11px] text-[#333] outline-none focus:border-[#222]"
                   >
-                    <option value="recommended">
-                      Recommended
-                    </option>
+                    <option value="recommended">Recommended</option>
 
-                    <option value="price_asc">
-                      Price: Low to High
-                    </option>
+                    <option value="price_asc">Price: Low to High</option>
 
-                    <option value="price_desc">
-                      Price: High to Low
-                    </option>
+                    <option value="price_desc">Price: High to Low</option>
 
-                    <option value="newest">
-                      Newest
-                    </option>
+                    <option value="newest">Newest</option>
                   </select>
                 </div>
 
@@ -4331,9 +4140,8 @@ export default function ProductDetail({
                   </p>
                 ) : (
                   <div className="grid grid-cols-2 items-stretch gap-2.5 sm:gap-3">
-                    {sortedSimilarProducts.map(
-                      (item, index) =>
-                        renderSimilarCard(item, index),
+                    {sortedSimilarProducts.map((item, index) =>
+                      renderSimilarCard(item, index),
                     )}
                   </div>
                 )}

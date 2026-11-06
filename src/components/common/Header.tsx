@@ -27,7 +27,6 @@ import {
   Loader2,
   Home,
   Tag,
-  UserCircle as UserCircleIcon,
   MapPin,
   LifeBuoy,
   ChevronRight,
@@ -521,7 +520,6 @@ const FESTIVE_CSS = `
 }
 `;
 
-
 /* CSS-only, decorative fireworks. No timers, no canvas, no overlays. */
 const IK_FIREWORKS = [
   { x: "7%", y: "51%", color: "#ffd995", delay: "-1.5s" },
@@ -530,10 +528,14 @@ const IK_FIREWORKS = [
   { x: "78%", y: "52%", color: "#ffe8bb", delay: "-3.0s" },
 ];
 const IK_GLINTS = [
-  ["2%", "28%", "-2.2s"], ["15%", "68%", "-1.3s"],
-  ["30%", "18%", "-2.8s"], ["43%", "76%", "-0.6s"],
-  ["56%", "23%", "-1.8s"], ["69%", "67%", "-3.1s"],
-  ["85%", "16%", "-2.6s"], ["98%", "77%", "-0.4s"],
+  ["2%", "28%", "-2.2s"],
+  ["15%", "68%", "-1.3s"],
+  ["30%", "18%", "-2.8s"],
+  ["43%", "76%", "-0.6s"],
+  ["56%", "23%", "-1.8s"],
+  ["69%", "67%", "-3.1s"],
+  ["85%", "16%", "-2.6s"],
+  ["98%", "77%", "-0.4s"],
 ];
 
 function FestiveCrackers() {
@@ -543,12 +545,14 @@ function FestiveCrackers() {
         <span
           key={`firework-${i}`}
           className="ik-cracker-burst"
-          style={{
-            left: firework.x,
-            top: firework.y,
-            "--ik-fire-color": firework.color,
-            "--ik-fire-delay": firework.delay,
-          } as React.CSSProperties}
+          style={
+            {
+              left: firework.x,
+              top: firework.y,
+              "--ik-fire-color": firework.color,
+              "--ik-fire-delay": firework.delay,
+            } as React.CSSProperties
+          }
         >
           <span className="ik-cracker-trail" />
           <span className="ik-cracker-burst-ring" />
@@ -566,12 +570,14 @@ function FestiveCrackers() {
         <span
           className="ik-cracker-glint"
           key={`glint-${i}`}
-          style={{
-            "--ik-glint-x": x,
-            "--ik-glint-y": y,
-            "--ik-glint-delay": delay,
-            "--ik-glint-time": `${2.8 + (i % 3) * .6}s`,
-          } as React.CSSProperties}
+          style={
+            {
+              "--ik-glint-x": x,
+              "--ik-glint-y": y,
+              "--ik-glint-delay": delay,
+              "--ik-glint-time": `${2.8 + (i % 3) * 0.6}s`,
+            } as React.CSSProperties
+          }
         />
       ))}
       <span className="ik-cracker-lightline" />
@@ -581,13 +587,44 @@ function FestiveCrackers() {
 
 function FestiveDiyaMark() {
   return (
-    <svg width="28" height="28" viewBox="0 0 36 36" fill="none" aria-hidden="true">
-      <path d="M18 5.3c-3.9 4.5-3.5 7.6-.3 9.1 3.4-1.3 3.8-4.6.3-9.1Z" fill="#F7D69B" />
-      <path d="M17.8 10.6c-1.7 2.2-1.4 3.6.1 4.5 1.8-.9 1.9-2.6-.1-4.5Z" fill="#EAA763" />
-      <path d="M7 19.2h22c-.9 7.2-5 10.9-11 10.9S7.9 26.4 7 19.2Z" stroke="#F1CC88" strokeWidth="1.6" />
-      <path d="M5.3 18.8c4.2 2.1 21.3 2.1 25.4 0" stroke="#F1CC88" strokeWidth="1.6" strokeLinecap="round" />
-      <path d="M13 25.3c3.3 1.7 6.7 1.7 10 0" stroke="#F1CC88" strokeWidth="1.1" strokeLinecap="round" />
-      <path d="M9.5 32.3h17" stroke="#F1CC88" strokeWidth="1.5" strokeLinecap="round" />
+    <svg
+      width="28"
+      height="28"
+      viewBox="0 0 36 36"
+      fill="none"
+      aria-hidden="true"
+    >
+      <path
+        d="M18 5.3c-3.9 4.5-3.5 7.6-.3 9.1 3.4-1.3 3.8-4.6.3-9.1Z"
+        fill="#F7D69B"
+      />
+      <path
+        d="M17.8 10.6c-1.7 2.2-1.4 3.6.1 4.5 1.8-.9 1.9-2.6-.1-4.5Z"
+        fill="#EAA763"
+      />
+      <path
+        d="M7 19.2h22c-.9 7.2-5 10.9-11 10.9S7.9 26.4 7 19.2Z"
+        stroke="#F1CC88"
+        strokeWidth="1.6"
+      />
+      <path
+        d="M5.3 18.8c4.2 2.1 21.3 2.1 25.4 0"
+        stroke="#F1CC88"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+      <path
+        d="M13 25.3c3.3 1.7 6.7 1.7 10 0"
+        stroke="#F1CC88"
+        strokeWidth="1.1"
+        strokeLinecap="round"
+      />
+      <path
+        d="M9.5 32.3h17"
+        stroke="#F1CC88"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
@@ -1221,51 +1258,6 @@ function HeaderInner({
     });
   };
 
-  const getSubcategoryType = (s: any) => {
-    const n = String(s?.name || "")
-      .trim()
-      .toLowerCase();
-    if (
-      n.includes("for her") ||
-      n === "woman" ||
-      n === "women" ||
-      n.includes("women") ||
-      n.includes("girl")
-    )
-      return "women";
-    if (
-      n.includes("for him") ||
-      n === "man" ||
-      n === "men" ||
-      n.includes("men") ||
-      n.includes("boy")
-    )
-      return "men";
-    return null;
-  };
-
-  const menSubcategory =
-    allSubcategories.find((s: any) => {
-      const t = getSubcategoryType(s);
-      return (
-        t === "men" &&
-        String(s.name || "")
-          .toLowerCase()
-          .includes("for him")
-      );
-    }) || allSubcategories.find((s: any) => getSubcategoryType(s) === "men");
-
-  const womenSubcategory =
-    allSubcategories.find((s: any) => {
-      const t = getSubcategoryType(s);
-      return (
-        t === "women" &&
-        String(s.name || "")
-          .toLowerCase()
-          .includes("for her")
-      );
-    }) || allSubcategories.find((s: any) => getSubcategoryType(s) === "women");
-
   const directCategoryMenus = topFiveCategories.map((c: any) => ({
     label: c.title,
     href: `/products?category=${encodeURIComponent(c.slug || c.title)}`,
@@ -1274,24 +1266,6 @@ function HeaderInner({
     categoryId: c.id,
     subcategories: getCategorySubcategories(c.id),
   }));
-
-  const directSubcategoryMenus: any[] = [];
-  if (menSubcategory)
-    directSubcategoryMenus.push({
-      label: "Men",
-      href: `/products?subcategory_ids=${menSubcategory.id}&nav=men`,
-      icon: UserCircleIcon,
-      isSubcategory: true,
-      subcategoryId: menSubcategory.id,
-    });
-  if (womenSubcategory)
-    directSubcategoryMenus.push({
-      label: "Women",
-      href: `/products?subcategory_ids=${womenSubcategory.id}&nav=women`,
-      icon: UserCircleIcon,
-      isSubcategory: true,
-      subcategoryId: womenSubcategory.id,
-    });
 
   /* CATEGORY HOVER */
   const handleCategoryMouseEnter = (id: number) => {
@@ -1340,13 +1314,6 @@ function HeaderInner({
       )
     )
       menus.push({ label: "Shop", href: "/products", icon: Grid3x3 });
-
-    const menMenu = directSubcategoryMenus.find((i: any) => i.label === "Men");
-    if (menMenu) menus.push(menMenu);
-    const womenMenu = directSubcategoryMenus.find(
-      (i: any) => i.label === "Women",
-    );
-    if (womenMenu) menus.push(womenMenu);
 
     if (
       headerMenus.some(
@@ -2222,8 +2189,9 @@ function HeaderInner({
 
       <header
         ref={headerRef}
-        className={`premium-header premium-header-fixed font-lato ${isScrolled ? "premium-header-compact" : ""
-          } ${DIWALI_MODE ? "premium-header--festive" : ""}`}
+        className={`premium-header premium-header-fixed font-lato ${
+          isScrolled ? "premium-header-compact" : ""
+        } ${DIWALI_MODE ? "premium-header--festive" : ""}`}
         style={{
           position: "fixed",
           top: 0,
@@ -2244,8 +2212,9 @@ function HeaderInner({
             style={{ position: "relative" }}
           >
             <div
-              className={`premium-benefits premium-benefits-refreshed ${DIWALI_MODE ? "ik-festive-benefits" : ""
-                }`}
+              className={`premium-benefits premium-benefits-refreshed ${
+                DIWALI_MODE ? "ik-festive-benefits" : ""
+              }`}
             >
               {DIWALI_MODE && <FestiveCrackers />}
               {DIWALI_MODE ? (
@@ -2257,7 +2226,8 @@ function HeaderInner({
                     <strong className="ik-festive-title">Diwali Dhamaka</strong>
                     <span className="ik-festive-divider" aria-hidden="true" />
                     <span className="ik-festive-subtitle">
-                      Festive finds. Sparkling celebrations. Only at IndieKonnect.
+                      Festive finds. Sparkling celebrations. Only at
+                      IndieKonnect.
                     </span>
                   </div>
                   {/* <button
@@ -2273,7 +2243,10 @@ function HeaderInner({
                   </button> */}
                 </div>
               ) : (
-                <div className="premium-benefits-marquee" aria-label="Store benefits">
+                <div
+                  className="premium-benefits-marquee"
+                  aria-label="Store benefits"
+                >
                   <div className="premium-benefits-track">
                     {[0, 1].map((copy) => (
                       <div
@@ -2302,8 +2275,9 @@ function HeaderInner({
                 type="button"
                 onClick={handleCheckAvailability}
                 disabled={locationLoading}
-                className={`premium-deliver premium-deliver-refreshed ${DIWALI_MODE ? "ik-festive-deliver" : ""
-                  }`}
+                className={`premium-deliver premium-deliver-refreshed ${
+                  DIWALI_MODE ? "ik-festive-deliver" : ""
+                }`}
                 title={locationError || "Detect delivery location"}
                 tabIndex={isScrolled ? -1 : 0}
               >
@@ -2615,8 +2589,14 @@ function HeaderInner({
             aria-hidden={isNavCollapsed}
           >
             <nav className="premium-nav">
-              <div className="premium-shell premium-nav-inner">
-                <div className="premium-nav-category">
+              <div
+                className="premium-shell premium-nav-inner"
+                style={{ justifyContent: "center", gap: "12px" }}
+              >
+                <div
+                  className="premium-nav-category"
+                  style={{ flex: "0 0 auto", margin: 0 }}
+                >
                   <button
                     ref={allCategoriesBtnRef}
                     type="button"
@@ -2629,11 +2609,26 @@ function HeaderInner({
                     <Menu size={22} /> ALL CATEGORIES
                   </button>
                 </div>
-                <span className="premium-nav-separator" />
-                <div className="premium-nav-links">
+                <span
+                  className="premium-nav-separator"
+                  style={{ flex: "0 0 1px", margin: "0 2px" }}
+                />
+                <div
+                  className="premium-nav-links"
+                  style={{
+                    display: "flex",
+                    flex: "0 1 auto",
+                    justifyContent: "flex-start",
+                    alignItems: "center",
+                    columnGap: "clamp(14px, 1.5vw, 24px)",
+                    width: "auto",
+                    minWidth: 0,
+                  }}
+                >
                   {desktopNavItems.map((item: any, index: number) => (
                     <div
                       className="premium-nav-link-wrap"
+                      style={{ flex: "0 0 auto", width: "auto" }}
                       key={`${item.label}-${index}`}
                       onMouseEnter={() =>
                         item.isCategory &&
@@ -2644,10 +2639,13 @@ function HeaderInner({
                       <button
                         type="button"
                         onClick={() => handleNavigation(item)}
-                        aria-current={isNavItemActive(item) ? "page" : undefined}
+                        aria-current={
+                          isNavItemActive(item) ? "page" : undefined
+                        }
                         tabIndex={isNavCollapsed ? -1 : 0}
-                        className={`${navClass} ${isNavItemActive(item) ? "premium-nav-active" : ""
-                          }`}
+                        className={`${navClass} ${
+                          isNavItemActive(item) ? "premium-nav-active" : ""
+                        }`}
                       >
                         {item.label}
                       </button>
@@ -2713,7 +2711,9 @@ function HeaderInner({
                   key={`all-category-${category.id}`}
                   type="button"
                   onClick={() =>
-                    goToProducts(category.slug || category.title || category.name)
+                    goToProducts(
+                      category.slug || category.title || category.name,
+                    )
                   }
                 >
                   {category.title || category.name}
@@ -2754,8 +2754,9 @@ function HeaderInner({
                     isParentCategoryActive(item)) &&
                   item.subcategories?.map((sub: any) => (
                     <button
-                      className={`premium-mobile-sub ${isSubmenuActive(sub) ? "premium-submenu-active" : ""
-                        }`}
+                      className={`premium-mobile-sub ${
+                        isSubmenuActive(sub) ? "premium-submenu-active" : ""
+                      }`}
                       aria-current={isSubmenuActive(sub) ? "page" : undefined}
                       key={sub.id}
                       onClick={() => {

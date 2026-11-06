@@ -137,6 +137,7 @@ interface CartProduct {
   retail_mrp?: string | null;
   distributor_price?: string | null;
   distributor_mrp?: string | null;
+  commission_value?: string | number | null;
   stock_quantity?: number | null;
   available_stock?: number | null;
   category?: ProductTaxonomy | null;
@@ -180,6 +181,7 @@ interface CartItemView {
   quantity: number;
   stockQuantity: number | null;
   priceType: string;
+  commissionPoints: number;
 }
 
 interface TaxCategory {
@@ -284,6 +286,12 @@ const formatPrice = (value: number): string =>
     minimumFractionDigits: 0,
   })}`;
 
+const formatPoints = (value: number): string =>
+  `${Number(value || 0).toLocaleString("en-IN", {
+    maximumFractionDigits: 2,
+    minimumFractionDigits: 0,
+  })} pts`;
+
 const formatAttributeName = (value: string): string =>
   value.replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 
@@ -314,7 +322,9 @@ const getOriginalPrice = (item: CartItemApi, currentPrice: number) => {
     : parsePrice(item.variant?.retail_price);
 
   const productPrice = isDistributor
-    ? parsePrice(item.product?.distributor_mrp ?? item.product?.distributor_price)
+    ? parsePrice(
+        item.product?.distributor_mrp ?? item.product?.distributor_price,
+      )
     : parsePrice(item.product?.retail_mrp ?? item.product?.retail_price);
 
   const candidate =
@@ -483,9 +493,7 @@ function AddressSelectorModal({
                         : "border-gray-300"
                     }`}
                   >
-                    {isSelected && (
-                      <Check className="h-3.5 w-3.5 text-white" />
-                    )}
+                    {isSelected && <Check className="h-3.5 w-3.5 text-white" />}
                   </div>
 
                   <div className="flex-1">
@@ -602,9 +610,7 @@ function DeleteConfirmModal({
           <Trash2 className="h-6 w-6 text-red-600" />
         </div>
 
-        <h3 className="text-lg font-semibold text-gray-900">
-          Delete Address
-        </h3>
+        <h3 className="text-lg font-semibold text-gray-900">Delete Address</h3>
         <p className="mt-2 text-sm text-gray-500">
           Are you sure you want to delete this address? This action cannot be
           undone.
@@ -651,6 +657,7 @@ function CartProductItem({
   isUnavailable,
   updateQuantity,
   removeItem,
+  isDistributor,
 }: {
   item: CartItemView;
   isUpdating: boolean;
@@ -658,6 +665,7 @@ function CartProductItem({
   isUnavailable: boolean;
   updateQuantity: (id: number, quantity: number) => void;
   removeItem: (id: number) => void;
+  isDistributor: boolean;
 }) {
   const originalPrice = item.originalPrice;
   const discountAmount = originalPrice ? originalPrice - item.price : 0;
@@ -817,9 +825,7 @@ function CartProductItem({
               }`}
             >
               <span className="text-[#8A8A8A]">Qty:</span>
-              <span className="min-w-[12px] text-center">
-                {item.quantity}
-              </span>
+              <span className="min-w-[12px] text-center">{item.quantity}</span>
 
               <ChevronDown
                 className={`h-3 w-3 shrink-0 text-[#555] transition-transform ${
@@ -867,12 +873,6 @@ function CartProductItem({
               )}
             </AnimatePresence>
           </div>
-
-          {item.stockQuantity !== null && item.stockQuantity > 0 && (
-            <span className="inline-flex h-[22px] items-center rounded-[3px] border border-[#FF755D] px-1.5 text-[9.5px] font-medium text-[#F04430]">
-              {item.stockQuantity} left
-            </span>
-          )}
         </div>
 
         <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
@@ -895,6 +895,23 @@ function CartProductItem({
             </>
           )}
         </div>
+
+        {isDistributor && item.commissionPoints > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-md border border-[#D7ECDD] bg-[#F1FAF4] px-2.5 py-2">
+            <span className="text-[10.5px] font-semibold text-[#176642]">
+              Commission Value
+            </span>
+            <span className="text-[11.5px] font-bold text-[#176642]">
+              {formatPoints(item.commissionPoints)} / unit
+            </span>
+            {item.quantity > 1 && (
+              <span className="w-full text-right text-[10px] text-[#48765B]">
+                {item.quantity} units ·{" "}
+                {formatPoints(item.commissionPoints * item.quantity)} total
+              </span>
+            )}
+          </div>
+        )}
       </div>
     </motion.article>
   );
@@ -1448,9 +1465,7 @@ function OrderSummary({
           <div className="flex items-center justify-between gap-4">
             <span className="text-[#777]">
               Discount
-              {summaryData?.coupon?.code
-                ? ` (${summaryData.coupon.code})`
-                : ""}
+              {summaryData?.coupon?.code ? ` (${summaryData.coupon.code})` : ""}
             </span>
 
             <span className="font-semibold text-[#28815C]">
@@ -1469,10 +1484,8 @@ function OrderSummary({
 
         <div className="flex items-center justify-between gap-4">
           <span className="flex items-center gap-1 text-[#777]">
-            Estimated taxes
-            {summaryData && (
-              <TaxBreakdownPopup summaryData={summaryData} />
-            )}
+            Taxes
+            {summaryData && <TaxBreakdownPopup summaryData={summaryData} />}
           </span>
 
           <span className="font-medium text-[#282828]">
@@ -1495,11 +1508,11 @@ function OrderSummary({
         <div className="mt-2 flex items-center justify-between rounded-lg bg-[#ECF9F1] px-2 py-1.5">
           <span className="flex items-center gap-1 text-[11.5px] font-semibold text-[#16845B]">
             <BadgePercent className="h-3 w-3" />
-            Your total commission Value
+            Total Commission Value
           </span>
 
           <span className="text-[12px] font-bold text-[#16845B]">
-            {formatPrice(totalCommission)}
+            {formatPoints(totalCommission)}
           </span>
         </div>
       )}
@@ -1508,9 +1521,7 @@ function OrderSummary({
 
       <div className="mb-4 flex items-end justify-between gap-3">
         <div>
-          <p className="text-[13px] font-semibold text-[#222]">
-            Total payable
-          </p>
+          <p className="text-[13px] font-semibold text-[#222]">Total payable</p>
 
           <p className="mt-1 text-[10px] text-[#999]">
             Including taxes and shipping
@@ -1583,17 +1594,25 @@ export default function CartPage() {
   const router = useRouter();
 
   const [isUpdating, setIsUpdating] = useState<number | null>(null);
-  const [addingProductId, setAddingProductId] = useState<number | string | null>(
-    null,
-  );
+  const [addingProductId, setAddingProductId] = useState<
+    number | string | null
+  >(null);
 
   const recommendedScrollRef = useRef<HTMLDivElement>(null);
 
-  const [unavailableProductIds, setUnavailableProductIds] = useState<Set<number>>(
-    new Set(),
-  );
+  const [unavailableProductIds, setUnavailableProductIds] = useState<
+    Set<number>
+  >(new Set());
 
   const [isCheckingStock, setIsCheckingStock] = useState(false);
+  // Persist validation feedback on screen (toast alone can be missed).
+  const [checkoutIssues, setCheckoutIssues] = useState<string[]>([]);
+  const checkoutLockRef = useRef(false);
+
+  const reportCheckoutIssue = (message: string) => {
+    setCheckoutIssues([message]);
+    toast.error(message, { position: "bottom-center", duration: 5000 });
+  };
 
   // ── Coupon state ──────────────────────────────────────────────────────────
 
@@ -1615,7 +1634,9 @@ export default function CartPage() {
   // Delete Address State
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [addressToDelete, setAddressToDelete] = useState<Address | null>(null);
-  const [deletingAddressId, setDeletingAddressId] = useState<number | null>(null);
+  const [deletingAddressId, setDeletingAddressId] = useState<number | null>(
+    null,
+  );
 
   // ── Cart query ────────────────────────────────────────────────────────────
 
@@ -1623,6 +1644,7 @@ export default function CartPage() {
     data: cartData,
     isLoading: isCartLoading,
     isFetching: isFetchingCart,
+    error: cartLoadError,
     refetch: refetchCart,
   } = useGetCartQuery(
     {},
@@ -1648,17 +1670,16 @@ export default function CartPage() {
   const {
     data: addressesData,
     isLoading: isLoadingAddresses,
+    error: addressesLoadError,
     refetch: refetchAddresses,
   } = useGetAddressesQuery();
 
-  const [createAddress, { isLoading: isCreating }] =
-    useCreateAddressMutation();
+  const [createAddress, { isLoading: isCreating }] = useCreateAddressMutation();
 
   const [updateAddress, { isLoading: isUpdatingAddress }] =
     useUpdateAddressMutation();
 
-  const [deleteAddress, { isLoading: isDeleting }] =
-    useDeleteAddressMutation();
+  const [deleteAddress, { isLoading: isDeleting }] = useDeleteAddressMutation();
 
   const [setDefaultAddress] = useSetDefaultAddressMutation();
 
@@ -1791,7 +1812,9 @@ export default function CartPage() {
     .toLowerCase();
 
   const isDistributor =
-    coinRole === "distributor" || profileUserRole === "distributor";
+    coinRole === "distributor" ||
+    profileUserRole === "distributor" ||
+    String((cartData as any)?.user_type || "").toLowerCase() === "distributor";
 
   // ── Cart items mapping ────────────────────────────────────────────────────
 
@@ -1828,10 +1851,13 @@ export default function CartPage() {
         variantLabel: getVariantLabel(item.variant, variantAttributes),
         variantAttributes,
         quantity: Math.max(1, Number(item.quantity || 1)),
-        stockQuantity:
-          stockQuantity === null ? null : Number(stockQuantity),
+        stockQuantity: stockQuantity === null ? null : Number(stockQuantity),
         priceType:
           item.current_price_type || cartData?.data?.price_type || "retail",
+        commissionPoints: Math.max(
+          0,
+          parsePrice(item.product?.commission_value),
+        ),
       };
     });
   }, [cartData]);
@@ -1865,8 +1891,7 @@ export default function CartPage() {
     );
 
     const mrpValue = cartItems.reduce(
-      (sum, item) =>
-        sum + (item.originalPrice || item.price) * item.quantity,
+      (sum, item) => sum + (item.originalPrice || item.price) * item.quantity,
       0,
     );
 
@@ -1879,38 +1904,17 @@ export default function CartPage() {
     };
   }, [cartItems]);
 
-  // ── Commission ────────────────────────────────────────────────────────────
-
+  // ── Commission POINTS (not money) ──────────────────────────────────────
+  // Cart endpoint provides product.commission_value per unit.
+  // Do not use formatPrice or subtract these points from payable totals.
   const totalCommission = useMemo(() => {
     if (!isDistributor) return 0;
 
-    const apiTotal = Number(
-      summaryData?.total_commission ??
-        (summaryData as any)?.total_commission_value ??
-        NaN,
+    return cartItems.reduce(
+      (total, item) => total + item.commissionPoints * item.quantity,
+      0,
     );
-
-    if (Number.isFinite(apiTotal) && apiTotal > 0) {
-      return apiTotal;
-    }
-
-    const items = Array.isArray(summaryData?.items) ? summaryData.items : [];
-
-    return items.reduce((sum, item: any) => {
-      const quantity = Number(item.quantity || 1);
-
-      const commissionValue = Number(
-        item.commission_value ?? item.commission_total ?? 0,
-      );
-
-      return (
-        sum +
-        (Number.isFinite(commissionValue)
-          ? commissionValue * (item.commission_total ? 1 : quantity)
-          : 0)
-      );
-    }, 0);
-  }, [isDistributor, summaryData]);
+  }, [isDistributor, cartItems]);
 
   // ── Coupons filter ────────────────────────────────────────────────────────
 
@@ -2015,7 +2019,15 @@ export default function CartPage() {
 
       const result = await createAddress(payload).unwrap();
 
-      if ((result as any)?.status) {
+      if (
+        (result as any)?.status === false ||
+        (result as any)?.success === false
+      ) {
+        throw new Error(
+          (result as any)?.message || "Address could not be saved.",
+        );
+      }
+      {
         toast.success("Address added successfully!", {
           position: "bottom-center",
         });
@@ -2048,7 +2060,15 @@ export default function CartPage() {
         },
       }).unwrap();
 
-      if ((result as any)?.status) {
+      if (
+        (result as any)?.status === false ||
+        (result as any)?.success === false
+      ) {
+        throw new Error(
+          (result as any)?.message || "Address could not be updated.",
+        );
+      }
+      {
         toast.success("Address updated successfully!", {
           position: "bottom-center",
         });
@@ -2080,15 +2100,13 @@ export default function CartPage() {
     try {
       setDeletingAddressId(addressToDelete.id);
 
-      const result = await deleteAddress({ 
-        id: addressToDelete.id, 
-        data: {} as any 
+      const result = await deleteAddress({
+        id: addressToDelete.id,
+        data: {} as any,
       }).unwrap();
 
       if ((result as any)?.status === false) {
-        throw new Error(
-          (result as any)?.message || "Failed to delete address"
-        );
+        throw new Error((result as any)?.message || "Failed to delete address");
       }
 
       toast.success("Address deleted successfully!", {
@@ -2122,7 +2140,15 @@ export default function CartPage() {
     try {
       const result = await setDefaultAddress(id).unwrap();
 
-      if ((result as any)?.status) {
+      if (
+        (result as any)?.status === false ||
+        (result as any)?.success === false
+      ) {
+        throw new Error(
+          (result as any)?.message || "Failed to set default address.",
+        );
+      }
+      {
         toast.success("Default address updated!", {
           position: "bottom-center",
         });
@@ -2154,108 +2180,267 @@ export default function CartPage() {
     });
   };
 
-  const runCartStockCheck = async (): Promise<{
-    allAvailable: boolean;
-    unavailableIds: Set<number>;
-  }> => {
-    const cartId = cartData?.data?.id;
-
-    if (!cartId) {
-      toast.error("Cart is not ready yet. Please refresh the page.", {
-        position: "bottom-center",
-      });
-
-      return {
-        allAvailable: false,
-        unavailableIds: new Set(),
-      };
+  // A stock validation must either confirm every cart line or block checkout.
+  const runCartStockCheck = async (
+    freshItems: CartItemView[] = cartItems,
+  ): Promise<boolean> => {
+    const cartId = Number(cartData?.data?.id);
+    if (!Number.isInteger(cartId) || cartId <= 0) {
+      reportCheckoutIssue(
+        "Cart ID is missing. Refresh your cart and try again.",
+      );
+      return false;
     }
 
     try {
-      const result = await checkCartStock({
-        cartId,
-      }).unwrap();
-
-      const items = result?.data?.items || [];
+      const response: any = await checkCartStock({ cartId }).unwrap();
+      if (
+        response?.success === false ||
+        !Array.isArray(response?.data?.items)
+      ) {
+        throw new Error(
+          response?.message ||
+            "Stock API returned an invalid response. Please retry.",
+        );
+      }
+      const stockRows: any[] = response.data.items;
+      if (!stockRows.length) {
+        reportCheckoutIssue(
+          "Stock API returned no items. Checkout has been stopped for safety.",
+        );
+        return false;
+      }
 
       const unavailableIds = new Set<number>();
-
-      items.forEach((entry: any) => {
-        if (!entry.available) {
-          unavailableIds.add(Number(entry.product_id));
+      const reasons: string[] = [];
+      for (const line of freshItems) {
+        // Prefer cart-item ID: several variants of one product can appear in a cart.
+        const stock =
+          stockRows.find(
+            (entry: any) =>
+              Number(
+                entry?.cart_item_id ?? entry?.cartItemId ?? entry?.item_id,
+              ) === line.cartItemId,
+          ) ??
+          stockRows.find(
+            (entry: any) =>
+              Number(entry?.product_id) === line.productId &&
+              (entry?.variant_id == null ||
+                Number(entry.variant_id) === Number(line.variantId)),
+          );
+        if (!stock) {
+          unavailableIds.add(line.productId);
+          reasons.push(`${line.name}: stock verification result is missing.`);
+          continue;
         }
-      });
-
+        const qty = Number(line.quantity);
+        const availableQty = stock.available_stock ?? stock.stock_quantity;
+        const availableFlag =
+          stock.available ?? stock.is_available ?? stock.is_in_stock;
+        const denied =
+          availableFlag === false ||
+          availableFlag === 0 ||
+          availableFlag === "false";
+        const insufficient = availableQty != null && Number(availableQty) < qty;
+        const unconfirmed = availableFlag == null && availableQty == null;
+        if (denied || insufficient || unconfirmed) {
+          unavailableIds.add(line.productId);
+          reasons.push(
+            insufficient
+              ? `${line.name}: only ${availableQty} available, but ${qty} requested.`
+              : `${line.name}: ${unconfirmed ? "availability could not be confirmed" : "out of stock"}.`,
+          );
+        }
+      }
       setUnavailableProductIds(unavailableIds);
-
-      await refetchCart();
-
-      const allAvailable = unavailableIds.size === 0;
-
-      return {
-        allAvailable,
-        unavailableIds,
-      };
+      if (reasons.length) {
+        setCheckoutIssues(reasons);
+        toast.error(reasons[0], { position: "bottom-center", duration: 5000 });
+        return false;
+      }
+      return true;
     } catch (error: any) {
-      toast.error(
-        error?.data?.message ||
-          "Unable to verify stock right now. Please try again.",
-        {
-          position: "bottom-center",
-          duration: 4000,
-        },
+      reportCheckoutIssue(
+        getErrorMessage(error, "Stock verification failed. Please retry."),
       );
-
-      return {
-        allAvailable: false,
-        unavailableIds: new Set(),
-      };
+      return false;
     }
   };
 
-  // ── Checkout Handler ──────────────────────────────────────────────────────
-
   const handleCheckout = async () => {
-    if (isCheckingStock) return;
-
+    // Never disable the CTA for missing data: tell the shopper how to fix it.
+    if (checkoutLockRef.current || isCheckingStock) {
+      toast("Checkout verification is already running.", {
+        position: "bottom-center",
+      });
+      return;
+    }
+    setCheckoutIssues([]);
+    if (isCartLoading || isFetchingCart) {
+      reportCheckoutIssue(
+        "Your cart is loading. Please try again once it finishes.",
+      );
+      return;
+    }
+    if (cartLoadError) {
+      reportCheckoutIssue(
+        getErrorMessage(
+          cartLoadError,
+          "Unable to load cart. Refresh and retry.",
+        ),
+      );
+      return;
+    }
+    if (
+      isUpdating !== null ||
+      isRemoving ||
+      isClearing ||
+      addingProductId !== null
+    ) {
+      reportCheckoutIssue(
+        "A cart update is in progress. Please retry after it completes.",
+      );
+      return;
+    }
     if (!cartItems.length) {
-      toast.error("Your cart is empty", {
-        position: "bottom-center",
-      });
-
+      reportCheckoutIssue("Your cart is empty. Add a product to continue.");
       return;
     }
-
+    const invalidLine = cartItems.find(
+      (item) =>
+        !Number.isInteger(Number(item.productId)) ||
+        Number(item.productId) <= 0 ||
+        !Number.isInteger(Number(item.quantity)) ||
+        Number(item.quantity) < 1 ||
+        !Number.isFinite(item.price) ||
+        item.price < 0,
+    );
+    if (invalidLine) {
+      reportCheckoutIssue(
+        `${invalidLine.name}: invalid product, price or quantity. Refresh the cart.`,
+      );
+      return;
+    }
+    if (isLoadingAddresses) {
+      reportCheckoutIssue("Delivery addresses are loading. Please try again.");
+      return;
+    }
+    if (addressesLoadError) {
+      reportCheckoutIssue(
+        getErrorMessage(
+          addressesLoadError,
+          "Delivery addresses could not be loaded. Please retry.",
+        ),
+      );
+      void refetchAddresses();
+      return;
+    }
     if (!selectedDeliveryAddress?.id) {
-      toast.error("Please add an address first to continue checkout.", {
-        position: "bottom-center",
-        duration: 3500,
-      });
-
+      reportCheckoutIssue(
+        "A delivery address is required. Add or select your delivery address.",
+      );
+      if (availableAddresses.length) setIsSelectorModalOpen(true);
+      else openAddAddress();
+      return;
+    }
+    const address = selectedDeliveryAddress;
+    const missing = [
+      ["recipient name", address.recipient_name],
+      ["phone number", address.contact_number],
+      ["address line 1", address.address_line_1],
+      ["city", address.city],
+      ["state", address.state],
+      ["PIN code", address.postcode],
+    ]
+      .filter(([, value]) => !String(value ?? "").trim())
+      .map(([label]) => label);
+    const phone = String(address.contact_number ?? "").replace(/\D/g, "");
+    const pin = String(address.postcode ?? "").trim();
+    if (
+      missing.length ||
+      phone.length < 10 ||
+      (String(address.country || "India")
+        .toLowerCase()
+        .includes("india") &&
+        !/^\d{6}$/.test(pin))
+    ) {
+      const issue = missing.length
+        ? `Delivery address is missing: ${missing.join(", ")}.`
+        : phone.length < 10
+          ? "Delivery phone number must have at least 10 digits."
+          : "Enter a valid 6-digit delivery PIN code.";
+      reportCheckoutIssue(issue);
+      setEditingAddress(address);
+      setIsAddressModalOpen(true);
+      return;
+    }
+    if (isApplyingCoupon || pendingCoupon) {
+      reportCheckoutIssue(
+        "Coupon verification is in progress. Please try again.",
+      );
+      return;
+    }
+    if (checkoutSummaryError) {
+      reportCheckoutIssue(
+        getErrorMessage(
+          checkoutSummaryError,
+          "Could not load checkout totals. Please try again.",
+        ),
+      );
+      return;
+    }
+    if (isFetchingCheckoutSummary) {
+      reportCheckoutIssue(
+        "Order totals are recalculating. Please try again shortly.",
+      );
       return;
     }
 
+    checkoutLockRef.current = true;
     setIsCheckingStock(true);
-
     try {
-      const { allAvailable } = await runCartStockCheck();
-
-      if (!allAvailable) return;
-
-      const params = new URLSearchParams();
-
-      params.set("checkout_type", "cart");
-
-      if (appliedCoupon) {
-        params.set("coupon_code", appliedCoupon);
+      if (!(await runCartStockCheck())) return;
+      const refreshed: any = await refetchCart();
+      if (refreshed?.error) {
+        reportCheckoutIssue(
+          getErrorMessage(
+            refreshed.error,
+            "Cart refresh failed. Please retry.",
+          ),
+        );
+        return;
       }
-
-      if (selectedDeliveryAddress?.id) {
-        params.set("address_id", String(selectedDeliveryAddress.id));
+      const refreshedItems = refreshed?.data?.data?.items;
+      if (!Array.isArray(refreshedItems) || !refreshedItems.length) {
+        reportCheckoutIssue(
+          "Your cart is no longer available. Refresh and review it.",
+        );
+        return;
       }
-
+      if (
+        refreshedItems.length !== cartItems.length ||
+        refreshedItems.some((line: any) => {
+          const prior = cartItems.find(
+            (item) => Number(item.cartItemId) === Number(line.id),
+          );
+          return !prior || Number(prior.quantity) !== Number(line.quantity);
+        })
+      ) {
+        reportCheckoutIssue(
+          "Your cart changed during verification. Please review it and click checkout again.",
+        );
+        return;
+      }
+      const params = new URLSearchParams({ checkout_type: "cart" });
+      if (appliedCoupon) params.set("coupon_code", appliedCoupon);
+      params.set("address_id", String(address.id));
       router.push(`/checkout?${params.toString()}`);
+    } catch (error: any) {
+      reportCheckoutIssue(
+        getErrorMessage(error, "Checkout could not continue. Please retry."),
+      );
     } finally {
+      checkoutLockRef.current = false;
       setIsCheckingStock(false);
     }
   };
@@ -2408,7 +2593,25 @@ export default function CartPage() {
   const handleApplyCoupon = (codeOverride?: string) => {
     const code = (codeOverride ?? couponInput).trim().toUpperCase();
 
-    if (!code || isApplyingCoupon) return;
+    if (isApplyingCoupon) {
+      toast("Coupon validation is already in progress.", {
+        position: "bottom-center",
+      });
+      return;
+    }
+    if (!code) {
+      toast.error("Please enter a coupon code.", { position: "bottom-center" });
+      return;
+    }
+    if (!selectedDeliveryAddress?.id) {
+      toast.error(
+        "Add or select a delivery address before applying a coupon.",
+        { position: "bottom-center" },
+      );
+      if (availableAddresses.length) setIsSelectorModalOpen(true);
+      else openAddAddress();
+      return;
+    }
 
     setIsApplyingCoupon(true);
     setCouponInput(code);
@@ -2495,7 +2698,6 @@ export default function CartPage() {
               <div className="min-w-0">
                 <p className="truncate text-[14px] text-[#526258]">
                   Deliver to:{" "}
-
                   <span className="font-semibold text-[#1B2C20]">
                     {selectedDeliveryAddress.recipient_name},{" "}
                     {selectedDeliveryAddress.postcode}
@@ -2504,11 +2706,9 @@ export default function CartPage() {
 
                 <p className="mt-1 line-clamp-2 text-[12px] text-[#718077] sm:truncate">
                   {selectedDeliveryAddress.address_line_1}
-
                   {selectedDeliveryAddress.address_line_2
                     ? `, ${selectedDeliveryAddress.address_line_2}`
                     : ""}
-
                   , {selectedDeliveryAddress.city},{" "}
                   {selectedDeliveryAddress.state}
                 </p>
@@ -2578,6 +2778,66 @@ export default function CartPage() {
           </div>
         )}
 
+        {checkoutIssues.length > 0 && (
+          <div
+            role="alert"
+            aria-live="assertive"
+            className="mb-4 rounded-xl border border-[#F2B8AF] bg-[#FFF5F2] p-4"
+          >
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-[#B84332]" />
+              <div className="min-w-0 flex-1">
+                <p className="text-[13px] font-bold text-[#8F3023]">
+                  Checkout cannot continue yet
+                </p>
+                <ul className="mt-1 list-disc space-y-1 pl-4 text-[12px] text-[#8F3023]">
+                  {checkoutIssues.map((message, index) => (
+                    <li key={index}>{message}</li>
+                  ))}
+                </ul>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {!selectedDeliveryAddress?.id && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        availableAddresses.length
+                          ? setIsSelectorModalOpen(true)
+                          : openAddAddress()
+                      }
+                      className="rounded-lg bg-[#8F3023] px-3 py-1.5 text-[11px] font-semibold text-white"
+                    >
+                      {availableAddresses.length
+                        ? "Select Address"
+                        : "Add Address"}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void refetchCart();
+                      void refetchAddresses();
+                      if (selectedDeliveryAddress?.id)
+                        void refetchCheckoutSummary();
+                      setCheckoutIssues([]);
+                    }}
+                    className="rounded-lg border border-[#CFA99F] px-3 py-1.5 text-[11px] font-semibold text-[#8F3023]"
+                  >
+                    Refresh &amp; Check Again
+                  </button>
+                </div>
+              </div>
+              <button
+                type="button"
+                aria-label="Dismiss checkout error"
+                onClick={() => setCheckoutIssues([])}
+                className="text-[#8F3023]"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
         {cartItems.length === 0 ? (
           <EmptyCart />
         ) : (
@@ -2602,10 +2862,7 @@ export default function CartPage() {
                     disabled={isClearing}
                     className="flex h-8 shrink-0 items-center gap-1.5 rounded-[4px] border border-[#E5E5E5] bg-white px-2.5 text-[9px] font-semibold uppercase tracking-wide text-[#666] transition hover:bg-[#F7F7F7] disabled:opacity-40 sm:px-3"
                   >
-                    {isClearing && (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    )}
-
+                    {isClearing && <Loader2 className="h-3 w-3 animate-spin" />}
                     Clear Cart
                   </button>
                 </div>
@@ -2623,6 +2880,7 @@ export default function CartPage() {
                         )}
                         updateQuantity={updateQuantity}
                         removeItem={removeItem}
+                        isDistributor={isDistributor}
                       />
                     ))}
                   </AnimatePresence>
