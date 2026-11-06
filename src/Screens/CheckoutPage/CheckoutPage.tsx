@@ -92,12 +92,14 @@ export interface AddressFormData {
 
 interface CheckoutSummaryItem {
   product_id: number;
+  allowed_purchsed?: number | string | boolean | null;
   cart_item_id?: number | null;
   cartItemId?: number | null;
   cart_item?: { id?: number | null } | null;
   variant_id?: number | null;
   variant?: { id?: number | null; stock_quantity?: number | null } | null;
   product?: {
+    allowed_purchsed?: number | string | boolean | null;
     stock_quantity?: number | null;
     available_stock?: number | null;
     commission_value?: string | number | null;
@@ -290,6 +292,47 @@ const pickCommissionValue = (source: any): number | null => {
   return null;
 };
 
+// The backend intentionally names this field `allowed_purchsed`.
+// Only an explicit 1 / true permits bypassing stock checks.
+const allowsPurchaseWithoutStock = (value: unknown): boolean =>
+  value === true || value === 1 || value === "1";
+
+const findSummaryBreakdown = (
+  summaryData: CheckoutSummaryData | undefined,
+  productId: number,
+  variantId?: number | null,
+): any | undefined => {
+  const entries = Object.values(summaryData?.product_tax_breakdown || {});
+  return entries.find((entry: any) =>
+    Number(entry?.product_id) === Number(productId) &&
+    (variantId == null || Number(entry?.variant_id || 0) === Number(variantId || 0)),
+  ) ?? entries.find((entry: any) => Number(entry?.product_id) === Number(productId));
+};
+
+const isStockBypassEnabled = (
+  summaryData: CheckoutSummaryData | undefined,
+  productId: number,
+  cartItems: any[] = [],
+  variantId?: number | null,
+): boolean => {
+  const breakdown = findSummaryBreakdown(summaryData, productId, variantId);
+  if (breakdown?.allowed_purchsed !== undefined && breakdown?.allowed_purchsed !== null) {
+    return allowsPurchaseWithoutStock(breakdown.allowed_purchsed);
+  }
+  const summaryItem = summaryData?.items?.find((item) =>
+    Number(item.product_id) === Number(productId) &&
+    (variantId == null || Number(item.variant_id || 0) === Number(variantId || 0)),
+  );
+  const itemFlag = summaryItem?.allowed_purchsed ?? summaryItem?.product?.allowed_purchsed;
+  if (itemFlag !== undefined && itemFlag !== null) return allowsPurchaseWithoutStock(itemFlag);
+
+  const cartLine = cartItems.find((item: any) =>
+    Number(item?.product_id) === Number(productId) &&
+    (variantId == null || Number(item?.variant_id || 0) === Number(variantId || 0)),
+  );
+  return allowsPurchaseWithoutStock(cartLine?.allowed_purchsed ?? cartLine?.product?.allowed_purchsed);
+};
+
 const normalizeSummaryItems = (
   summaryData?: CheckoutSummaryData,
   cartLines?: any[],
@@ -328,6 +371,13 @@ const normalizeSummaryItems = (
 
       return {
         ...raw,
+        allowed_purchsed:
+          breakdownItem?.allowed_purchsed ??
+          raw?.allowed_purchsed ??
+          raw?.product?.allowed_purchsed ??
+          cartLine?.product?.allowed_purchsed ??
+          cartLine?.allowed_purchsed ??
+          0,
         commission_value: commissionValue,
         commission_total: commissionTotal,
       };
@@ -348,6 +398,11 @@ const normalizeSummaryItems = (
 
     return {
       product_id: product.product_id ?? 0,
+      allowed_purchsed:
+        product.allowed_purchsed ??
+        cartLine?.product?.allowed_purchsed ??
+        cartLine?.allowed_purchsed ??
+        0,
       cart_item_id: product.cart_item_id ?? product.cart_item?.id ?? null,
       cartItemId: product.cartItemId ?? null,
       cart_item: product.cart_item ?? null,
@@ -455,9 +510,8 @@ function PlaceOrderButton({
       onClick={onClick}
       disabled={isSubmitting}
       aria-busy={isSubmitting}
-      className={`group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-[#173E2B] via-[#1B5538] to-[#16845B] px-4 text-[13px] font-semibold text-white ring-1 ring-inset ring-white/10 transition-all duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#16845B]/30 active:translate-y-0 active:scale-[0.99] disabled:cursor-not-allowed disabled:from-[#9DB2A5] disabled:via-[#9DB2A5] disabled:to-[#9DB2A5] disabled:hover:translate-y-0 ${
-        compact ? "min-h-[44px] py-2" : "min-h-[46px] py-2.5"
-      }`}
+      className={`group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-[#173E2B] via-[#1B5538] to-[#16845B] px-4 text-[13px] font-semibold text-white ring-1 ring-inset ring-white/10 transition-all duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#16845B]/30 active:translate-y-0 active:scale-[0.99] disabled:cursor-not-allowed disabled:from-[#9DB2A5] disabled:via-[#9DB2A5] disabled:to-[#9DB2A5] disabled:hover:translate-y-0 ${compact ? "min-h-[44px] py-2" : "min-h-[46px] py-2.5"
+        }`}
     >
       {!disabled && (
         <span
@@ -518,7 +572,7 @@ function TaxBreakdownPopup({
 
   const categories =
     Array.isArray(summaryData.tax_by_category) &&
-    summaryData.tax_by_category.length > 0
+      summaryData.tax_by_category.length > 0
       ? summaryData.tax_by_category
       : [];
 
@@ -689,9 +743,9 @@ function CartSummary({
   const itemsCommissionSum = items.reduce((acc, item) => {
     const perItem = Number(
       item.commission_total ??
-        (item.commission_value !== null && item.commission_value !== undefined
-          ? Number(item.commission_value) * Number(item.quantity || 1)
-          : 0),
+      (item.commission_value !== null && item.commission_value !== undefined
+        ? Number(item.commission_value) * Number(item.quantity || 1)
+        : 0),
     );
 
     return acc + (Number.isFinite(perItem) ? perItem : 0);
@@ -711,7 +765,9 @@ function CartSummary({
 
   const hasCommission = isDistributor && Number.isFinite(totalCommission);
 
-  const hasUnavailable = !retryMode && unavailableProductIds.size > 0;
+  const hasUnavailable = !retryMode && items.some(
+    (item) => !allowsPurchaseWithoutStock(item.allowed_purchsed) && unavailableProductIds.has(item.product_id),
+  );
 
   // Do not disable a button due to missing user input or recoverable validation.
   // Handler explains what is missing and routes user to the fix.
@@ -740,9 +796,8 @@ function CartSummary({
       )}
 
       <div
-        className={`${
-          retryMode ? "" : "rounded-t-2xl"
-        } border-b border-[#EDF1EE] bg-gradient-to-r from-[#F6FBF7] to-white px-4 py-2.5 sm:px-5`}
+        className={`${retryMode ? "" : "rounded-t-2xl"
+          } border-b border-[#EDF1EE] bg-gradient-to-r from-[#F6FBF7] to-white px-4 py-2.5 sm:px-5`}
       >
         <div className="flex items-center justify-between gap-2">
           <div>
@@ -763,25 +818,26 @@ function CartSummary({
       </div>
 
       <div
-        className={`space-y-3 px-4 py-2.5 sm:px-5 ${
-          items.length > 5
+        className={`space-y-3 px-4 py-2.5 sm:px-5 ${items.length > 5
             ? "max-h-[320px] overflow-y-auto overscroll-contain pr-2"
             : ""
-        }`}
+          }`}
       >
         {items.length > 0 ? (
           items.map((item, index) => {
             const imageUrl = getItemImage(item);
 
             const isUnavailable =
-              !retryMode && unavailableProductIds.has(item.product_id);
+              !retryMode &&
+              !allowsPurchaseWithoutStock(item.allowed_purchsed) &&
+              unavailableProductIds.has(item.product_id);
 
             const perUnitCommission = Number(item.commission_value ?? 0);
             const lineCommission = Number(
               item.commission_total ??
-                (Number.isFinite(perUnitCommission)
-                  ? perUnitCommission * Number(item.quantity || 1)
-                  : 0),
+              (Number.isFinite(perUnitCommission)
+                ? perUnitCommission * Number(item.quantity || 1)
+                : 0),
             );
 
             const showCommission =
@@ -793,9 +849,8 @@ function CartSummary({
             return (
               <div
                 key={`${item.product_id}-${item.variant_id ?? "none"}-${index}`}
-                className={`flex items-start gap-3 ${
-                  isUnavailable ? "opacity-70" : ""
-                }`}
+                className={`flex items-start gap-3 ${isUnavailable ? "opacity-70" : ""
+                  }`}
               >
                 <div className="relative mt-0.5 h-[42px] w-[42px] shrink-0">
                   <div className="relative h-full w-full overflow-hidden rounded-lg border border-[#E9EEEA] bg-[#F8FAF8]">
@@ -967,13 +1022,12 @@ function CartSummary({
           <div className="flex items-center justify-center gap-2">
             <GatewayBrandIcon
               icon={selectedGateway.icon}
-              className={`h-3.5 w-3.5 shrink-0 ${
-                selectedGateway.icon === "hdfc"
+              className={`h-3.5 w-3.5 shrink-0 ${selectedGateway.icon === "hdfc"
                   ? "text-[#B51F2B]"
                   : selectedGateway.icon === "razorpay"
                     ? "text-[#2457A7]"
                     : "text-[#2F65B8]"
-              }`}
+                }`}
             />
 
             <p className="text-center text-[11px] text-[#748078]">
@@ -1053,23 +1107,20 @@ function AddressSelectorModal({
               <div
                 key={address.id}
                 onClick={() => !isDeleting && onSelect(address)}
-                className={`relative rounded-xl border p-4 transition-all duration-200 ${
-                  isDeleting
+                className={`relative rounded-xl border p-4 transition-all duration-200 ${isDeleting
                     ? "pointer-events-none opacity-50"
                     : "cursor-pointer"
-                } ${
-                  isSelected
+                  } ${isSelected
                     ? "border-[#16845B] bg-[#F5FBF6] shadow-sm ring-1 ring-[#16845B]"
                     : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
-                }`}
+                  }`}
               >
                 <div className="flex items-start gap-3">
                   <div
-                    className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
-                      isSelected
+                    className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${isSelected
                         ? "border-[#16845B] bg-[#16845B]"
                         : "border-gray-300"
-                    }`}
+                      }`}
                   >
                     {isSelected && <Check className="h-3.5 w-3.5 text-white" />}
                   </div>
@@ -1463,10 +1514,10 @@ export default function CheckoutPage() {
 
       ...(isDirectCheckout
         ? {
-            product_id: productId,
-            quantity,
-            ...(variantId > 0 ? { variant_id: variantId } : {}),
-          }
+          product_id: productId,
+          quantity,
+          ...(variantId > 0 ? { variant_id: variantId } : {}),
+        }
         : {}),
     }),
     [
@@ -1491,7 +1542,7 @@ export default function CheckoutPage() {
 
   const displayCheckoutType: "cart" | "buy_now" =
     summaryData?.checkout_type === "buy_now" ||
-    summaryData?.checkout_type === "cart"
+      summaryData?.checkout_type === "cart"
       ? summaryData.checkout_type
       : checkoutType;
 
@@ -1518,52 +1569,63 @@ export default function CheckoutPage() {
   }, [refetchCheckoutSummary]);
 
   useEffect(() => {
+    let cancelled = false;
     const fetchAndCheckCartStock = async () => {
       if (checkoutType !== "cart") {
         setCartLines([]);
+        setUnavailableProductIds(new Set());
         return;
       }
 
       try {
         const cartResp = await triggerGetCart().unwrap();
+        if (cancelled) return;
 
         const items: any[] = Array.isArray((cartResp as any)?.data?.items)
           ? (cartResp as any).data.items
           : [];
-
         setCartLines(items);
         setCartUserType(
-          String(
-            (cartResp as any)?.user_type ??
-              (cartResp as any)?.data?.user_type ??
-              "",
-          ),
+          String((cartResp as any)?.user_type ?? (cartResp as any)?.data?.user_type ?? ""),
         );
 
-        const cartId = Number((cartResp as any)?.data?.id);
-
-        if (cartId) {
-          const stockRes = await checkCartStock({
-            cartId,
-          }).unwrap();
-
-          const unavailable = new Set<number>();
-
-          (stockRes?.data?.items || []).forEach((item: any) => {
-            if (!item.available) {
-              unavailable.add(Number(item.product_id));
-            }
-          });
-
-          setUnavailableProductIds(unavailable);
+        const normalItems = items.filter((item) =>
+          !isStockBypassEnabled(summaryData, Number(item.product_id), items, item.variant_id),
+        );
+        if (normalItems.length === 0) {
+          setUnavailableProductIds(new Set());
+          return;
         }
+
+        const cartId = Number((cartResp as any)?.data?.id);
+        if (!Number.isInteger(cartId) || cartId <= 0) return;
+        const stockRes = await checkCartStock({ cartId }).unwrap();
+        if (cancelled) return;
+        const stockItems: any[] = Array.isArray(stockRes?.data?.items)
+          ? stockRes.data.items
+          : [];
+        const unavailable = new Set<number>();
+        for (const item of normalItems) {
+          const match = stockItems.find((stock: any) =>
+            Number(stock.product_id) === Number(item.product_id) &&
+            Number(stock.variant_id || 0) === Number(item.variant_id || 0),
+          ) ?? stockItems.find((stock: any) =>
+            Number(stock.product_id) === Number(item.product_id),
+          );
+          if (!match || match.available !== true) {
+            unavailable.add(Number(item.product_id));
+          }
+        }
+        setUnavailableProductIds(unavailable);
       } catch (error) {
         console.error("Failed to check cart stock", error);
+        // The place-order handler runs a fresh, mandatory stock validation.
       }
     };
 
     void fetchAndCheckCartStock();
-  }, [checkoutType, triggerGetCart, checkCartStock]);
+    return () => { cancelled = true; };
+  }, [checkoutType, triggerGetCart, checkCartStock, summaryData]);
 
   // ───────────────────────────────────────────────────────────────────────────
   // Address handlers
@@ -1896,15 +1958,21 @@ export default function CheckoutPage() {
     }
   };
 
-  const validateCheckoutStock = async (activeType: "cart" | "buy_now") => {
+  const validateCheckoutStock = async (
+    activeType: "cart" | "buy_now",
+    latestSummary: CheckoutSummaryData,
+  ) => {
     if (activeType === "buy_now") {
       if (
-        !Number.isInteger(productId) ||
-        productId <= 0 ||
-        !Number.isInteger(quantity) ||
-        quantity <= 0
+        !Number.isInteger(productId) || productId <= 0 ||
+        !Number.isInteger(quantity) || quantity <= 0
       ) {
         throw new Error("Invalid Buy Now product or quantity.");
+      }
+
+      if (isStockBypassEnabled(latestSummary, productId, cartLines, variantId || null)) {
+        setUnavailableProductIds(new Set());
+        return;
       }
 
       const result = await checkProductStock({
@@ -1918,48 +1986,54 @@ export default function CheckoutPage() {
         Number(result.data.stock_quantity ?? 0) < quantity
       ) {
         setUnavailableProductIds(new Set([productId]));
-
         throw new Error("Product is out of stock or insufficient quantity.");
       }
-
       setUnavailableProductIds(new Set());
-
       return;
     }
 
     const cartResponse = await triggerGetCart().unwrap();
-
     const cartItems: any[] = Array.isArray((cartResponse as any)?.data?.items)
       ? (cartResponse as any).data.items
       : [];
-
     setCartLines(cartItems);
 
-    const cartId = Number((cartResponse as any)?.data?.id);
+    const normalItems = cartItems.filter((item) =>
+      !isStockBypassEnabled(latestSummary, Number(item.product_id), cartItems, item.variant_id),
+    );
 
+    if (normalItems.length === 0) {
+      setUnavailableProductIds(new Set());
+      return;
+    }
+
+    const cartId = Number((cartResponse as any)?.data?.id);
     if (!Number.isInteger(cartId) || cartId <= 0) {
       throw new Error("Unable to verify your cart. Please reload the page.");
     }
 
-    const stockResponse = await checkCartStock({
-      cartId,
-    }).unwrap();
-
+    const stockResponse = await checkCartStock({ cartId }).unwrap();
     if (!stockResponse?.data || !Array.isArray(stockResponse.data.items)) {
       throw new Error("Unable to verify cart stock. Please try again.");
     }
 
     const unavailable = new Set<number>();
-
-    stockResponse.data.items.forEach((item: any) => {
-      if (!item.available) {
-        unavailable.add(Number(item.product_id));
+    for (const cartItem of normalItems) {
+      const responseItem = stockResponse.data.items.find((item: any) =>
+        Number(item.product_id) === Number(cartItem.product_id) &&
+        Number(item.variant_id || 0) === Number(cartItem.variant_id || 0),
+      ) ?? stockResponse.data.items.find((item: any) =>
+        Number(item.product_id) === Number(cartItem.product_id),
+      );
+      if (!responseItem || responseItem.available !== true) {
+        unavailable.add(Number(cartItem.product_id));
       }
-    });
+    }
 
     setUnavailableProductIds(unavailable);
-
-    if (!stockResponse.data.all_available || unavailable.size > 0) {
+    // `all_available` can be false because an allowed_purchsed=1 product is
+    // out of stock. Only non-exempt cart items may block checkout.
+    if (unavailable.size > 0) {
       throw new Error(
         "Some items in your cart are out of stock. Please update your cart.",
       );
@@ -2238,7 +2312,10 @@ export default function CheckoutPage() {
       return;
     }
 
-    if (unavailableProductIds.size > 0) {
+    const blockingUnavailable = [...unavailableProductIds].filter((id) =>
+      !isStockBypassEnabled(summaryData, id, cartLines),
+    );
+    if (blockingUnavailable.length > 0) {
       const message =
         "One or more products are out of stock. Please return to your cart and update them.";
       setCheckoutNotice(message);
@@ -2263,7 +2340,7 @@ export default function CheckoutPage() {
         data: latestSummary,
       });
 
-      await validateCheckoutStock(verifiedType);
+      await validateCheckoutStock(verifiedType, latestSummary);
 
       if (
         getCheckoutTypeFromSummary({
@@ -2359,9 +2436,9 @@ export default function CheckoutPage() {
 
       const orderReference = String(
         firstOrder?.order_reference ??
-          anyData?.order_reference ??
-          orderReferences[0] ??
-          "",
+        anyData?.order_reference ??
+        orderReferences[0] ??
+        "",
       ).trim();
 
       const razorpayOrderId = String(anyData?.razorpay_order_id || "").trim();
@@ -2721,11 +2798,10 @@ export default function CheckoutPage() {
                           setSelectedGatewayId(option.id);
                           setHasManuallySelectedGateway(true);
                         }}
-                        className={`group flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left transition-all duration-200 sm:gap-4 sm:px-4 ${
-                          isSelected
+                        className={`group flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left transition-all duration-200 sm:gap-4 sm:px-4 ${isSelected
                             ? "border-[#7CA2E8] bg-[#F8FBFF] shadow-[0_0_0_2px_rgba(59,112,207,0.10),0_6px_18px_-15px_rgba(20,76,160,0.45)]"
                             : "border-[#E5ECF6] bg-white hover:border-[#B9CDED] hover:bg-[#FBFDFF]"
-                        }`}
+                          }`}
                       >
                         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#E8EEF8] bg-[#F0F5FD] sm:h-10 sm:w-10">
                           <GatewayBrandIcon
@@ -2745,11 +2821,10 @@ export default function CheckoutPage() {
                         </span>
 
                         <span
-                          className={`flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full border transition-colors sm:h-[24px] sm:w-[24px] ${
-                            isSelected
+                          className={`flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full border transition-colors sm:h-[24px] sm:w-[24px] ${isSelected
                               ? "border-[#1557AD] bg-[#1557AD] text-white"
                               : "border-[#D6E0EF] bg-white text-transparent group-hover:border-[#9CB7E1]"
-                          }`}
+                            }`}
                         >
                           {isSelected ? (
                             <Check className="h-3 w-3 stroke-[3] sm:h-3.5 sm:w-3.5" />
