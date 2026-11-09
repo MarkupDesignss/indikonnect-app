@@ -55,7 +55,7 @@ import { useGetHeaderQuery } from "@/lib/redux/api/headerApi";
    existing non-festive header. All business logic is unchanged.
 ========================================================= */
 
-const DIWALI_MODE = true;
+const DIWALI_MODE = false;
 
 const FESTIVE_CSS = `
 /* Premium Diwali: handcrafted firework bursts, restrained and non-interactive. */
