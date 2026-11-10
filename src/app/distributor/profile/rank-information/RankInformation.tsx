@@ -22,13 +22,15 @@ import {
   Layers,
   IndianRupee,
 } from "lucide-react";
-import { useGetDistributorStatsQuery } from "../../../lib/redux/api/distributor/distributorStatsApi";
+// import { useGetDistributorStatsQuery } from "../../../lib/redux/api/distributor/distributorStatsApi";
+import { useGetDistributorStatsQuery } from "@/lib/redux/api/distributor/distributorStatsApi";
 import type {
   DistributorRank,
   DistributorStatsData,
   RankCondition,
   RankProgress,
-} from "../../../lib/redux/api/distributor/distributorStatsApi";
+} from "../../../../lib/redux/api/distributor/distributorStatsApi";
+
 import Loding from "@/components/common/Loding";
 
 type Props = { variant?: "cv" | "commission" };
