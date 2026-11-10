@@ -216,15 +216,15 @@ function AccountCard({
       <div className="grid grid-cols-2 gap-3">
         <SmallMetric label="Title rank" value={currentName} />
 
-        <SmallMetric label="Eligible rank" value={eligibleName} />
+        <SmallMetric label="Pay rank" value={eligibleName} />
 
-        <SmallMetric
+        {/* <SmallMetric
           label="Account type"
 
           value={data.account_type ? title(data.account_type) : "—"}
         />
 
-        <SmallMetric label="Total CV" value={`${fmt(data.total_cv)} CV`} />
+        <SmallMetric label="Total CV" value={`${fmt(data.total_cv)} CV`} /> */}
       </div>
     </section>
   );
