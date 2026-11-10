@@ -53,6 +53,13 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { LuReceiptIndianRupee } from "react-icons/lu";
 import { generateInvoicePDF } from "@/Screens/order/invoiceGenerator";
 
+// India Post tracking: authenticated Laravel customer/distributor-owned order endpoint.
+import OrderJourneyTimeline from "@/Screens/order/OrderJourneyTimeline";
+import {
+  useLazyGetIndiaPostOrderTrackingQuery,
+  type IndiaPostOrderTrackingData,
+} from "@/lib/redux/api/indiaPostTrackingApi";
+
 type ReturnMethod = "doorstep" | "courier";
 
 interface ReturnItem {
@@ -1412,6 +1419,11 @@ interface TrackingModalProps {
   isOpen: boolean;
   onClose: () => void;
   order: OrderLineItem | null;
+  tracking: IndiaPostOrderTrackingData | null;
+  loading: boolean;
+  loadFailed: boolean;
+  loadErrorMessage?: string | null;
+  onRefresh: () => void;
 }
 
 type TimelineKey = keyof OrderLineItem["timeline"];
@@ -1463,138 +1475,287 @@ const TRACKING_STEPS: Array<{
   },
 ];
 
-const TrackingModal = ({ isOpen, onClose, order }: TrackingModalProps) => {
-  if (!isOpen || !order) {
-    return null;
-  }
+const indiaPostEventLabel = (raw: string) => {
+  const name = String(raw || "").toLowerCase();
+  if (
+    name.includes("delivered(returned to sender)") ||
+    name.includes("returned to sender")
+  )
+    return "Returned to sender";
+  if (name.includes("delivered(addressee)")) return "Delivered successfully";
+  if (name.includes("taken out for delivery")) return "Out for delivery";
+  if (name.includes("item dispatched")) return "In transit";
+  if (name.includes("item booked")) return "Shipment booked";
+  if (name.includes("picked up") || name.includes("pickedup"))
+    return "Picked up by India Post";
+  if (name.includes("kept on hold")) return "Shipment on hold";
+  return raw || "Shipment update";
+};
+
+const formatIndiaPostTime = (value: string | null | undefined) => {
+  if (!value) return "Time not available";
+  const iso = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(value)
+    ? value.replace(" ", "T") + "+05:30"
+    : value;
+  const time = new Date(iso);
+  if (Number.isNaN(time.getTime())) return value;
+  return time.toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+};
+
+const TrackingModal = ({
+  isOpen,
+  onClose,
+  order,
+  tracking,
+  loading,
+  loadFailed,
+  loadErrorMessage,
+  onRefresh,
+}: TrackingModalProps) => {
+  if (!isOpen || !order) return null;
 
   const timeline = order.timeline || ({} as OrderLineItem["timeline"]);
-
-  const steps = TRACKING_STEPS.filter((step) => !!timeline[step.key]);
+  const shipments = Array.isArray(tracking?.shipments)
+    ? tracking.shipments
+    : [];
+  const returnSteps = TRACKING_STEPS.filter(
+    (step) => step.group === "return" && !!timeline[step.key],
+  );
+  const legacyShippingSteps = TRACKING_STEPS.filter(
+    (step) =>
+      step.group === "forward" &&
+      ["dispatched_at", "shipped_at", "delivered_at"].includes(step.key) &&
+      !!timeline[step.key],
+  );
 
   return (
-    <ModalShell onClose={onClose} maxWidth="max-w-lg">
-      <div className="flex shrink-0 items-center justify-between border-b border-[#E6E6E4] px-5 py-4 sm:px-6">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-[6px] bg-[#eaf7f0]">
-            <Truck className="h-4 w-4" style={{ color: EMERALD }} />
+    <ModalShell onClose={onClose} maxWidth="max-w-xl">
+      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[#E6E6E4] px-4 py-4 sm:px-6">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+            <Truck className="h-4 w-4" />
           </div>
-
-          <div>
-            <h3 className="text-[15px] font-semibold text-[#171717] sm:text-[16px]">
+          <div className="min-w-0">
+            <h3 className="text-[15px] font-bold text-[#171717]">
               Track Order
             </h3>
-
-            <p className="mt-0.5 text-[10px] text-black sm:text-[11px]">
+            <p className="mt-0.5 truncate text-[10px] text-slate-500">
               {order.order_reference}
-
-              {order.line_id && (
-                <span className="ml-1 text-[#AAAAAA]">
-                  • Item #{order.line_id}
-                </span>
-              )}
+              {order.line_id ? ` · Item #${order.line_id}` : ""}
             </p>
           </div>
         </div>
-
-        <button
-          onClick={onClose}
-          className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-[#D7D7D5] bg-white text-[#777777]"
-        >
-          <X className="h-4 w-4" />
-        </button>
-      </div>
-
-      <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6">
-        {timeline.cancelled_at && (
-          <div className="mb-5 flex items-start gap-2 rounded-[7px] border border-[#F0CFCF] bg-[#FDF2F2] p-3">
-            <AlertCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-[#B24C4C]" />
-
-            <div className="text-[11px] leading-4 text-[#B24C4C]">
-              <p className="font-semibold">Order Cancelled</p>
-
-              <p className="mt-0.5">{formatDate(timeline.cancelled_at)}</p>
-            </div>
-          </div>
-        )}
-
-        {steps.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-10 text-center">
-            <Clock className="h-8 w-8 text-[#CCCCCC]" />
-
-            <p className="mt-3 text-[12px] text-[#999999]">
-              Tracking details will appear here once your order is processed.
-            </p>
-          </div>
-        ) : (
-          <div>
-            {steps.map((step, i) => {
-              const isLast = i === steps.length - 1;
-
-              const isRejected = step.key === "return_rejected_at";
-
-              const dotColor = isRejected
-                ? RED
-                : step.group === "return"
-                  ? BRASS
-                  : EMERALD;
-
-              const dotBg = isRejected
-                ? "#FEF2F2"
-                : step.group === "return"
-                  ? "#F8F1E4"
-                  : "#eaf7f0";
-
-              const Icon = step.icon;
-
-              return (
-                <div
-                  key={step.key}
-                  className={`relative pl-11 ${isLast ? "" : "pb-7"}`}
-                >
-                  {!isLast && (
-                    <div
-                      className="absolute left-[15px] top-8 w-[2px] rounded-full"
-                      style={{
-                        height: "calc(100% - 1.75rem)",
-                        backgroundColor: "#E4E4E2",
-                      }}
-                    />
-                  )}
-
-                  <div
-                    className="absolute left-0 top-0 flex h-8 w-8 items-center justify-center rounded-full border-2 border-white shadow-[0_0_0_1px_rgba(0,0,0,0.04)]"
-                    style={{ backgroundColor: dotBg }}
-                  >
-                    <Icon className="h-3.5 w-3.5" style={{ color: dotColor }} />
-                  </div>
-
-                  <div className="pt-0.5">
-                    <p className="text-[12.5px] font-semibold text-[#171717]">
-                      {step.label}
-                    </p>
-
-                    <p className="mt-0.5 text-[11px] text-black">
-                      {formatDate(timeline[step.key])}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      <div className="shrink-0 border-t border-[#E6E6E4] bg-white px-5 py-3.5 sm:px-6">
-        <div className="flex items-center justify-end">
+        <div className="flex shrink-0 items-center gap-2">
+          <button
+            type="button"
+            onClick={onRefresh}
+            disabled={loading}
+            aria-label="Refresh India Post tracking"
+            title="Refresh India Post tracking"
+            className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 text-[11px] font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+          >
+            <RefreshCcw
+              className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`}
+            />
+            <span className="hidden sm:inline">Refresh</span>
+          </button>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-[6px] border border-[#D7D7D5] bg-white px-4 py-2 text-[11px] font-medium text-[#666666]"
+            aria-label="Close tracking"
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50"
           >
-            Close
+            <X className="h-4 w-4" />
           </button>
         </div>
+      </div>
+
+      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-4 py-5 sm:px-6">
+        {/* Same 8-stage component already used by the customer portal. */}
+        <OrderJourneyTimeline order={order} tracking={tracking} />
+
+        {loading && (
+          <div
+            role="status"
+            className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-[11px] text-slate-600"
+          >
+            <Loader2 className="h-4 w-4 animate-spin" /> Fetching the latest
+            India Post tracking details...
+          </div>
+        )}
+
+        {loadFailed && !loading && (
+          <div
+            role="alert"
+            className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-[11px] leading-5 text-amber-900"
+          >
+            {loadErrorMessage ||
+              "Courier tracking is temporarily unavailable. You can try Refresh again."}
+            <p className="mt-1">Order history is still available below.</p>
+          </div>
+        )}
+
+        <section aria-label="India Post shipment updates">
+          <h4 className="mb-3 text-[12px] font-bold text-slate-800">
+            India Post Shipment Updates
+          </h4>
+
+          {!loading && !loadFailed && shipments.length === 0 && (
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-[11px] leading-5 text-slate-600">
+              {tracking?.allocated_awb ? (
+                <>
+                  <p>Tracking number assigned</p>
+                  <p className="mt-1 break-all font-mono text-[13px] font-semibold text-slate-900">
+                    {tracking.allocated_awb}
+                  </p>
+                  <p className="mt-1">
+                    India Post booking is pending. Scan events appear only after
+                    the carrier processes the shipment.
+                  </p>
+                </>
+              ) : (
+                <p>
+                  A tracking number has not been assigned yet. India Post scans
+                  will appear here when available.
+                </p>
+              )}
+            </div>
+          )}
+
+          {tracking?.warning && !loading && (
+            <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-[11px] text-amber-900">
+              {tracking.warning}
+            </div>
+          )}
+
+          {shipments.map((shipment) => (
+            <div
+              key={shipment.barcode}
+              className="mb-3 overflow-hidden rounded-xl border border-slate-200 bg-white"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-2 border-b border-slate-100 bg-slate-50 px-3.5 py-3">
+                <div className="min-w-0">
+                  <p className="text-[10px] text-slate-500">India Post AWB</p>
+                  <p className="break-all font-mono text-[12px] font-bold text-slate-900">
+                    {shipment.barcode}
+                  </p>
+                </div>
+                <span className="rounded-full border border-slate-200 bg-white px-2 py-1 text-[10px] font-medium capitalize text-slate-700">
+                  {String(shipment.status || "pending").replace(/_/g, " ")}
+                </span>
+              </div>
+              {shipment.latest_event && (
+                <p className="px-3.5 pt-3 text-[11px] font-medium text-slate-700">
+                  {indiaPostEventLabel(shipment.latest_event)}
+                  {shipment.latest_event_at && (
+                    <span className="ml-2 text-[10px] font-normal text-slate-500">
+                      {formatIndiaPostTime(shipment.latest_event_at)}
+                    </span>
+                  )}
+                </p>
+              )}
+              {shipment.events.length > 0 ? (
+                <ol className="space-y-3 px-3.5 py-3">
+                  {shipment.events.map((event, i) => (
+                    <li
+                      key={`${shipment.barcode}-${i}-${event.date ?? ""}`}
+                      className="flex gap-2.5"
+                    >
+                      <span
+                        className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${i === 0 ? "bg-emerald-600" : "bg-slate-300"}`}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[11px] font-semibold text-slate-800">
+                          {indiaPostEventLabel(event.event)}
+                        </p>
+                        {event.office && (
+                          <p className="mt-0.5 text-[10px] text-slate-600">
+                            {event.office}
+                          </p>
+                        )}
+                        <p className="mt-0.5 text-[10px] text-slate-500">
+                          {formatIndiaPostTime(event.date)}
+                        </p>
+                        {event.remarks && (
+                          <p className="mt-0.5 text-[10px] leading-4 text-slate-600">
+                            {event.remarks}
+                          </p>
+                        )}
+                        {event.rts && (
+                          <p className="mt-1 text-[10px] font-semibold text-amber-700">
+                            Return-to-sender event
+                          </p>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <p className="px-3.5 py-3 text-[11px] text-slate-500">
+                  No courier movement scans have been reported yet.
+                </p>
+              )}
+            </div>
+          ))}
+        </section>
+
+        {/* Preserve old Laravel order state and return/refund milestones. */}
+        {(timeline.cancelled_at ||
+          returnSteps.length > 0 ||
+          legacyShippingSteps.length > 0) && (
+          <section
+            className="rounded-xl border border-slate-200 bg-white p-3.5"
+            aria-label="IndieKonnect system order history"
+          >
+            <h4 className="text-[12px] font-bold text-slate-800">
+              IndieKonnect Order History
+            </h4>
+            <p className="mt-1 text-[10px] leading-4 text-slate-500">
+              Internal order and return records; may differ from carrier scan
+              history.
+            </p>
+            <div className="mt-3 space-y-3">
+              {timeline.cancelled_at && (
+                <div className="flex gap-2 text-[11px] text-red-700">
+                  <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  <div>
+                    <p className="font-semibold">Order cancelled</p>
+                    <p>{formatDate(timeline.cancelled_at)}</p>
+                  </div>
+                </div>
+              )}
+              {[...legacyShippingSteps, ...returnSteps].map((step) => {
+                const Icon = step.icon;
+                return (
+                  <div
+                    key={step.key}
+                    className="flex gap-2 text-[11px] text-slate-700"
+                  >
+                    <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-500" />
+                    <div>
+                      <p className="font-semibold">{step.label}</p>
+                      <p className="text-slate-500">
+                        {formatDate(timeline[step.key])}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+      </div>
+      <div className="shrink-0 border-t border-slate-100 bg-slate-50 px-4 py-3 text-[10px] text-slate-500 sm:px-6">
+        All shipment stages depend on verified India Post events. AWB allocation
+        does not mean booking or pickup.
       </div>
     </ModalShell>
   );
@@ -4869,6 +5030,34 @@ export default function OrderHistory() {
     useWithdrawCancelRequestMutation();
   const [getInvoice] = useLazyGetInvoiceByOrderIdQuery();
 
+  // Use the same authenticated, owner-scoped Laravel tracking API as customers.
+  const [
+    loadIndiaPostTracking,
+    {
+      data: indiaPostTrackingResponse,
+      isFetching: isIndiaPostTracking,
+      isError: isIndiaPostTrackingError,
+      error: indiaPostTrackingError,
+    },
+  ] = useLazyGetIndiaPostOrderTrackingQuery();
+
+  const trackingErrorMessage = (() => {
+    if (!indiaPostTrackingError) return null;
+    if (
+      "status" in indiaPostTrackingError &&
+      indiaPostTrackingError.status === 404
+    ) {
+      return "This order is not available for tracking with the current login. Check that the distributor owns this order.";
+    }
+    if (
+      "status" in indiaPostTrackingError &&
+      indiaPostTrackingError.status === 401
+    ) {
+      return "Your login session may have expired. Please log in again.";
+    }
+    return "Unable to load India Post tracking right now. Please retry.";
+  })();
+
   const orders: OrderLineItem[] = useMemo(() => {
     if (!data?.data) {
       return [];
@@ -5586,6 +5775,18 @@ export default function OrderHistory() {
   const openTracking = (order: OrderLineItem) => {
     setSelectedOrder(order);
     setTrackingModalOpen(true);
+    const orderId = Number(order?.order_id);
+    if (Number.isSafeInteger(orderId) && orderId > 0) {
+      // false forces a fresh server request instead of reusing cached tracking.
+      void loadIndiaPostTracking(orderId, false);
+    }
+  };
+
+  const refreshIndiaPostTracking = () => {
+    const orderId = Number(selectedOrder?.order_id);
+    if (Number.isSafeInteger(orderId) && orderId > 0) {
+      void loadIndiaPostTracking(orderId, false);
+    }
   };
 
   const openBreakup = (order: OrderLineItem) => {
@@ -6082,6 +6283,16 @@ export default function OrderHistory() {
         isOpen={trackingModalOpen}
         onClose={closeAllModals}
         order={selectedOrder}
+        tracking={
+          Number(indiaPostTrackingResponse?.data?.order_id) ===
+          Number(selectedOrder?.order_id)
+            ? (indiaPostTrackingResponse?.data ?? null)
+            : null
+        }
+        loading={isIndiaPostTracking}
+        loadFailed={isIndiaPostTrackingError}
+        loadErrorMessage={trackingErrorMessage}
+        onRefresh={refreshIndiaPostTracking}
       />
 
       <OrderBreakupModal
