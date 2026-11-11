@@ -380,7 +380,7 @@ function AccountList({
                   />
                 </button>
               </th>
-              <th className="px-3 py-3.5">Rank</th>
+          
               <th className="px-3 py-3.5">Status</th>
               <th className="px-3 py-3.5">Qualified</th>
             </tr>
@@ -416,9 +416,7 @@ function AccountList({
                         </span>
                       </button>
                     </td>
-                    <td className="px-3 py-3 font-semibold text-[#506076]">
-                      {account.rank || "—"}
-                    </td>
+                 
                     <td className="px-3 py-3">
                       <span
                         className={`inline-flex rounded-full border px-2 py-1 text-[10px] font-semibold ${getStatusTone(account.status)}`}
@@ -449,9 +447,7 @@ function AccountList({
                               {tc.account_id}
                             </div>
                           </td>
-                          <td className="px-3 py-3 font-medium text-[#687386]">
-                            {tc.rank || "—"}
-                          </td>
+                     
                           <td className="px-3 py-3">
                             <span
                               className={`inline-flex rounded-full border px-2 py-1 text-[10px] font-semibold ${getStatusTone(tc.status)}`}
