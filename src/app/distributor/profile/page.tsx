@@ -38,19 +38,19 @@ import { showToast } from "@/lib/slices/toastSlice";
 import DistributorPVCSection from "./DistributorPVCSection";
 import Loding from "@/components/common/Loding";
 import { useCreateCorrectionRequestMutation } from "@/lib/redux/api/distributor/userDashboardApi";
-const NAVY = "#141414";
-const EMERALD = "#1f9d6b";
+const NAVY = "#172B4D";
+const EMERALD = "#128364";
 const RED = "#d92d20";
 const stickyColumnClass =
-  "min-w-0 grid grid-cols-1 items-start gap-4 xl:sticky xl:top-[94px] xl:self-start xl:z-10";
+  "min-w-0 grid grid-cols-1 items-start gap-5 lg:sticky lg:top-[104px] lg:self-start";
 const inputClass =
-  "box-border h-[46px] min-w-0 w-full rounded-[12px] border border-[#E3E5E8] bg-white px-3.5 text-[13px] font-medium text-[#282C34] outline-none placeholder:font-normal placeholder:text-[#A1A5AE] transition-[border-color,box-shadow,background-color] duration-150 hover:border-[#C7CAD1] focus:border-[#141414] focus:ring-[3px] focus:ring-black/[0.07] disabled:cursor-not-allowed disabled:opacity-60 sm:px-4";
+  "box-border h-[50px] min-w-0 w-full rounded-[13px] border border-[#DDE5F0] bg-white px-4 text-[14px] font-medium text-[#1F3048] outline-none placeholder:font-normal placeholder:text-[#98A6B9] transition-all duration-150 hover:border-[#AFC2DF] focus:border-[#3869C8] focus:ring-[4px] focus:ring-[#3869C8]/10 disabled:cursor-not-allowed disabled:opacity-60";
 const readOnlyClass =
-  "box-border h-[46px] min-w-0 w-full rounded-[12px] border border-[#ECEDEF] bg-[#F7F7F8] px-3.5 text-[12.5px] font-medium text-[#737782] outline-none cursor-not-allowed sm:px-4 sm:text-[13px]";
+  "box-border h-[50px] min-w-0 w-full rounded-[13px] border border-[#EDF1F6] bg-[#F6F8FC] px-4 text-[13px] font-medium text-[#64748B] outline-none cursor-not-allowed";
 const labelClass =
-  "mb-2 block break-words text-[12px] font-semibold leading-5 text-[#3B3F48] sm:text-[12.5px]";
+  "mb-2 block break-words text-[13px] font-bold leading-5 text-[#334155]";
 const sectionClass =
-  "min-w-0 w-full rounded-[20px] border border-[#E9EAED] bg-white p-[18px] shadow-[0_3px_16px_-9px_rgba(19,24,35,0.12)] sm:p-[22px] 2xl:p-6";
+  "min-w-0 w-full rounded-[22px] border border-[#E2EAF4] bg-white p-5 shadow-[0_10px_35px_-18px_rgba(23,43,77,0.20)] sm:p-6 2xl:p-7";
 const MAX_PHONE_CHANGE_REASON_WORDS = 150;
 const MIN_PHONE_CHANGE_REASON_CHARACTERS = 10;
 const getWordCount = (value: string) =>
@@ -131,16 +131,16 @@ function SectionHeader({
                 ? Landmark
                 : CircleUserRound;
   return (
-    <div className="mb-5 flex min-w-0 items-start gap-3 border-b border-[#F0F0F1] pb-[17px]">
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] border border-[#ECECEE] bg-[#F7F7F8] text-[#222222]">
+    <div className="mb-6 flex min-w-0 items-start gap-3.5 border-b border-[#EAF0F7] pb-5">
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px] border border-[#DCE8FA] bg-[#EDF4FF] text-[#315FAE]">
         <HeaderIcon size={17} strokeWidth={1.8} />
       </span>
       <div className="min-w-0 flex-1 pt-0.5">
-        <h3 className="break-words text-[15px] font-bold leading-5 tracking-[-0.02em] text-[#1A1B1E] sm:text-[16px]">
+        <h3 className="break-words text-[17px] font-extrabold leading-6 tracking-[-0.025em] text-[#172B4D] sm:text-[19px]">
           {title}
         </h3>
         {subtitle && (
-          <p className="mt-1 break-words text-[11.5px] leading-[18px] text-[#858A94]">
+          <p className="mt-1 break-words text-[12.5px] leading-5 text-[#64748B]">
             {subtitle}
           </p>
         )}
@@ -167,7 +167,7 @@ function SaveButton({
       type={type}
       onClick={onClick}
       disabled={unavailable}
-      className="inline-flex min-h-[43px] shrink-0 items-center justify-center gap-2 rounded-[11px] border border-[#141414] bg-[#141414] px-5 text-[12.5px] font-bold tracking-[-0.01em] text-white shadow-[0_4px_10px_-6px_rgba(0,0,0,0.35)] transition-all duration-150 hover:border-black hover:bg-black hover:shadow-[0_6px_15px_-7px_rgba(0,0,0,0.42)] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-black/15 active:scale-[0.99] disabled:cursor-not-allowed disabled:border-[#DDDEE1] disabled:bg-[#DDDEE1] disabled:text-[#888B91] disabled:shadow-none"
+      className="inline-flex min-h-[43px] shrink-0 items-center justify-center gap-2 rounded-[12px] border border-[#2957A8] bg-[#2957A8] px-5 text-[13px] font-bold tracking-[-0.01em] text-white shadow-[0_4px_10px_-6px_rgba(0,0,0,0.35)] transition-all duration-150 hover:border-[#1D468D] hover:bg-[#1D468D] hover:shadow-[0_6px_15px_-7px_rgba(0,0,0,0.42)] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-black/15 active:scale-[0.99] disabled:cursor-not-allowed disabled:border-[#DDDEE1] disabled:bg-[#DDDEE1] disabled:text-[#888B91] disabled:shadow-none"
     >
       {loading && <Loader2 size={15} className="shrink-0 animate-spin" />}
       {text}
@@ -185,7 +185,7 @@ function GhostButton({
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex min-h-[43px] shrink-0 items-center justify-center rounded-[11px] border border-[#E4E5E8] bg-white px-5 text-[12.5px] font-semibold text-[#484B53] transition-all duration-150 hover:border-[#C8CAD0] hover:bg-[#F8F8F9] hover:text-[#171717] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-black/[0.07]"
+      className="inline-flex min-h-[43px] shrink-0 items-center justify-center rounded-[12px] border border-[#CBD9EB] bg-white px-5 text-[13px] font-semibold text-[#484B53] transition-all duration-150 hover:border-[#C8CAD0] hover:bg-[#F8F8F9] hover:text-[#171717] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-black/[0.07]"
     >
       {text}
     </button>
@@ -194,16 +194,16 @@ function GhostButton({
 function ProfileSummary({ user }: { user: any }) {
   const initials = user?.full_name
     ? user.full_name
-      .split(" ")
-      .filter(Boolean)
-      .map((part: string) => part[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2)
+        .split(" ")
+        .filter(Boolean)
+        .map((part: string) => part[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2)
     : "U";
   return (
     <div className={sectionClass}>
-      <div className="mb-4 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[#848790]">
+      <div className="mb-5 flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.13em] text-[#4770AE]">
         <ShieldCheck size={13} className="text-[#161616]" />
         Account overview
       </div>
@@ -223,7 +223,7 @@ function ProfileSummary({ user }: { user: any }) {
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="break-words text-[13px] font-bold leading-5 tracking-[-0.01em] text-[#202125] sm:text-[14px]">
+          <p className="break-words text-[16px] font-extrabold leading-6 tracking-[-0.02em] text-[#172B4D] sm:text-[17px]">
             {user?.full_name?.toUpperCase() || "—"}
           </p>
           <p className="break-all text-[11px] leading-4 text-[#8A8E97] sm:truncate sm:text-[11.5px]">
@@ -238,17 +238,17 @@ function ProfileSummary({ user }: { user: any }) {
           title={user?.is_active ? "Active" : "Inactive"}
         />
       </div>
-      <div className="mt-5 space-y-0 divide-y divide-[#F1F1F2] border-t border-[#F0F0F1]">
+      <div className="mt-6 space-y-0 divide-y divide-[#EAF0F7] border-t border-[#EAF0F7]">
         <div className="py-3.5 first:pt-4 last:pb-0">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-[#92969D] sm:text-[11.5px]">
+          <p className="text-[11px] font-bold uppercase tracking-wide text-[#71819A] sm:text-[12px]">
             Account ID
           </p>
-          <p className="mt-1 break-all text-[12px] font-semibold text-[#282A30] sm:text-[13px]">
+          <p className="mt-1 break-all text-[14px] font-bold text-[#253858]">
             {user?.distributor_id || "—"}
           </p>
         </div>
         <div className="py-3.5 first:pt-4 last:pb-0">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-[#92969D] sm:text-[11.5px]">
+          <p className="text-[11px] font-bold uppercase tracking-wide text-[#71819A] sm:text-[12px]">
             Account Type
           </p>
           <p className="mt-1 break-words text-[12px] font-semibold capitalize text-[#4B4D56] sm:text-[13px]">
@@ -256,7 +256,7 @@ function ProfileSummary({ user }: { user: any }) {
           </p>
         </div>
         <div className="py-3.5 first:pt-4 last:pb-0">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-[#92969D] sm:text-[11.5px]">
+          <p className="text-[11px] font-bold uppercase tracking-wide text-[#71819A] sm:text-[12px]">
             Status
           </p>
           <p
@@ -362,7 +362,7 @@ function ProfileImageCard({
             onClick={() => !loading && fileInputRef.current?.click()}
             disabled={loading}
             aria-label="Edit profile image"
-            className="absolute bottom-0 right-0 flex h-9 w-9 items-center justify-center rounded-full border-[3px] border-white bg-[#141414] text-white shadow-md transition-colors hover:bg-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 disabled:cursor-not-allowed"
+            className="absolute bottom-0 right-0 flex h-9 w-9 items-center justify-center rounded-full border-[3px] border-white bg-[#141414] text-white shadow-md transition-colors hover:bg-[#1D468D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 disabled:cursor-not-allowed"
           >
             <Camera size={15} />
           </button>
@@ -493,10 +493,11 @@ function ProfileForm({
               }));
             }}
             onKeyDown={handleKeyDown}
-            className={`${inputClass} ${touched.fullName && errors.fullName
+            className={`${inputClass} ${
+              touched.fullName && errors.fullName
                 ? "border-red-500 ring-2 ring-red-500/10"
                 : ""
-              }`}
+            }`}
           />
           {touched.fullName && errors.fullName && (
             <p className="mt-1 break-words text-[10.5px] text-red-500">
@@ -557,7 +558,7 @@ function ProfileForm({
             className={readOnlyClass}
           />
         </div>
-        <div className="flex justify-end border-t border-[#EFEFF1] pt-5">
+        <div className="flex justify-end border-t border-[#EAF0F7] pt-5">
           <SaveButton onClick={handleSave} loading={loading} />
         </div>
       </div>
@@ -691,7 +692,7 @@ function PhoneChangeRequestCard({
           <p className="text-[10px] font-semibold uppercase tracking-wide text-[#8A8E97]">
             Registered phone number
           </p>
-          <p className="mt-1 break-all text-[13px] font-semibold text-[#4B4D56]">
+          <p className="mt-1 break-all text-[15px] font-bold text-[#253858]">
             {user?.phone || "Not available"}
           </p>
         </div>
@@ -699,7 +700,7 @@ function PhoneChangeRequestCard({
           <button
             type="button"
             onClick={onClick}
-            className="inline-flex min-h-[43px] shrink-0 items-center justify-center gap-2 rounded-[11px] bg-[#141414] px-4 text-[12px] font-bold text-white transition-colors hover:bg-black focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-black/10"
+            className="inline-flex min-h-[43px] shrink-0 items-center justify-center gap-2 rounded-[12px] bg-[#2957A8] px-4 text-[13px] font-bold text-white transition-colors hover:bg-[#1D468D] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-black/10"
           >
             <Phone size={15} />
             {changeButtonLabel}
@@ -815,33 +816,33 @@ function BankWalletDetails({ user }: { user: any }) {
     value: string;
     capitalize?: boolean;
   }[] = [
-      {
-        label: "Bank Name",
-        value: bankProfile?.bank_name || "—",
-      },
-      {
-        label: "Account Holder Name",
-        value: bankProfile?.bank_holder_name || "—",
-        capitalize: true,
-      },
-      {
-        label: "Account Number",
-        value: maskedAccount,
-      },
-      {
-        label: "Account Type",
-        value: bankProfile?.account_type || "—",
-        capitalize: true,
-      },
-      {
-        label: "IFSC Code",
-        value: bankProfile?.bank_ifsc || "—",
-      },
-      {
-        label: "Branch Name",
-        value: bankProfile?.branch_name || "—",
-      },
-    ];
+    {
+      label: "Bank Name",
+      value: bankProfile?.bank_name || "—",
+    },
+    {
+      label: "Account Holder Name",
+      value: bankProfile?.bank_holder_name || "—",
+      capitalize: true,
+    },
+    {
+      label: "Account Number",
+      value: maskedAccount,
+    },
+    {
+      label: "Account Type",
+      value: bankProfile?.account_type || "—",
+      capitalize: true,
+    },
+    {
+      label: "IFSC Code",
+      value: bankProfile?.bank_ifsc || "—",
+    },
+    {
+      label: "Branch Name",
+      value: bankProfile?.branch_name || "—",
+    },
+  ];
   const bankVerified = !!bankProfile?.bank_verified;
   return (
     <section className={sectionClass}>
@@ -874,7 +875,7 @@ function BankWalletDetails({ user }: { user: any }) {
               {row.label}
             </dt>
             <dd
-              className={`break-words text-[12.5px] font-semibold leading-[19px] text-[#282B31] ${row.capitalize ? "capitalize" : ""}`}
+              className={`break-words text-[14px] font-bold leading-6 text-[#253858] ${row.capitalize ? "capitalize" : ""}`}
               title={row.value}
             >
               {row.value}
@@ -1109,8 +1110,9 @@ function SecuritySection() {
           value={security[field]}
           onChange={(event) => handleChange(field, event.target.value)}
           placeholder={placeholder}
-          className={`${inputClass} pr-11 ${errors[field] ? "border-red-500 ring-2 ring-red-500/10" : ""
-            }`}
+          className={`${inputClass} pr-11 ${
+            errors[field] ? "border-red-500 ring-2 ring-red-500/10" : ""
+          }`}
         />
         <button
           type="button"
@@ -1160,7 +1162,7 @@ function SecuritySection() {
           () => setShowConfirmPassword((value) => !value),
           "new-password",
         )}
-        <div className="flex justify-end border-t border-[#EFEFF1] pt-5">
+        <div className="flex justify-end border-t border-[#EAF0F7] pt-5">
           <SaveButton
             text="Change Password"
             onClick={handleSave}
@@ -1268,8 +1270,9 @@ function ChangePhoneNumberModal({
               placeholder="Enter reason"
               aria-invalid={Boolean(error)}
               aria-describedby={error ? "phone-reason-error" : undefined}
-              className={`box-border min-h-[110px] min-w-0 w-full resize-y rounded-[10px] border border-[#E8E9EC] bg-[#F8F8F9] px-3.5 py-3 text-[13px] leading-5 text-[#4B4D56] outline-none placeholder:text-[#8A8E97] transition-all focus:border-[#141414] focus:bg-white focus:ring-2 focus:ring-[#141414]/10 sm:px-[14px] ${error ? "border-red-500 ring-2 ring-red-500/10" : ""
-                }`}
+              className={`box-border min-h-[110px] min-w-0 w-full resize-y rounded-[10px] border border-[#E8E9EC] bg-[#F8F8F9] px-3.5 py-3 text-[13px] leading-5 text-[#4B4D56] outline-none placeholder:text-[#8A8E97] transition-all focus:border-[#141414] focus:bg-white focus:ring-2 focus:ring-[#141414]/10 sm:px-[14px] ${
+                error ? "border-red-500 ring-2 ring-red-500/10" : ""
+              }`}
             />
             <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2">
               {error ? (
@@ -1285,10 +1288,11 @@ function ChangePhoneNumberModal({
                 </p>
               )}
               <span
-                className={`ml-auto shrink-0 text-[10.5px] ${reason.trim().length >= MIN_PHONE_CHANGE_REASON_CHARACTERS
+                className={`ml-auto shrink-0 text-[10.5px] ${
+                  reason.trim().length >= MIN_PHONE_CHANGE_REASON_CHARACTERS
                     ? "text-[#1f9d6b]"
                     : "text-[#8A8E97]"
-                  }`}
+                }`}
               >
                 {getWordCount(reason)}/{MAX_PHONE_CHANGE_REASON_WORDS} words
               </span>
@@ -1315,7 +1319,6 @@ function ChangePhoneNumberModal({
 // Entire KYC status — displayed inside Profile Overview
 // --------------------------------------------------
 
-
 // --------------------------------------------------
 
 // Design tokens
@@ -1331,7 +1334,6 @@ const AMBER = "#B8935A";
 // --------------------------------------------------
 
 const FontImport = () => (
-
   <style>{`
 
     @import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,300;0,400;0,700;0,900;1,400&display=swap');
@@ -1373,7 +1375,6 @@ const FontImport = () => (
     }
 
   `}</style>
-
 );
 
 // --------------------------------------------------
@@ -1383,49 +1384,34 @@ const FontImport = () => (
 // --------------------------------------------------
 
 function formatDate(dateStr: string | null | undefined): string {
-
   if (!dateStr) return "—";
 
   try {
-
     const date = new Date(dateStr.replace(" ", "T"));
 
     if (isNaN(date.getTime())) return "—";
 
     return date.toLocaleDateString("en-GB", {
-
       day: "2-digit",
 
       month: "short",
 
       year: "numeric",
-
     });
-
   } catch {
-
     return "—";
-
   }
-
 }
 
-function formatDateTime(
-
-  dateStr: string | null | undefined
-
-): string {
-
+function formatDateTime(dateStr: string | null | undefined): string {
   if (!dateStr) return "—";
 
   try {
-
     const date = new Date(dateStr.replace(" ", "T"));
 
     if (isNaN(date.getTime())) return "—";
 
     return date.toLocaleString("en-GB", {
-
       day: "2-digit",
 
       month: "short",
@@ -1437,49 +1423,31 @@ function formatDateTime(
       minute: "2-digit",
 
       hour12: true,
-
     });
-
   } catch {
-
     return "—";
-
   }
-
 }
 
 function maskLast(
-
   value: string | number | null | undefined,
 
-  lastN = 4
-
+  lastN = 4,
 ): string {
-
   if (value === null || value === undefined || value === "") {
-
     return "—";
-
   }
 
   const stringValue = String(value);
 
   if (stringValue.length <= lastN) {
-
     return `XXXX ${stringValue}`;
-
   }
 
   return `XXXX XXXX ${stringValue.slice(-lastN)}`;
-
 }
 
-function maskPhone(
-
-  phone: string | null | undefined
-
-): string {
-
+function maskPhone(phone: string | null | undefined): string {
   if (!phone) return "—";
 
   const cleaned = phone.replace(/\s+/g, "");
@@ -1487,7 +1455,6 @@ function maskPhone(
   if (cleaned.length < 6) return phone;
 
   return `${cleaned.slice(0, cleaned.length - 4)}XXXX`;
-
 }
 
 // --------------------------------------------------
@@ -1497,8 +1464,7 @@ function maskPhone(
 // --------------------------------------------------
 
 const cardClass =
-
-  "min-w-0 rounded-[14px] border border-[#e7e9ee] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.03)] sm:rounded-[16px] sm:p-5 lg:p-6";
+  "min-w-0 rounded-[22px] border border-[#E2EAF4] bg-white p-5 shadow-[0_10px_35px_-18px_rgba(23,43,77,0.20)] sm:p-6 lg:p-7";
 
 // --------------------------------------------------
 
@@ -1507,51 +1473,37 @@ const cardClass =
 // --------------------------------------------------
 
 function KycLoading() {
-
   return (
-
     <div
-
       className={`kyc-status-page ${cardClass}`}
 
       aria-label="Loading KYC status"
 
       aria-busy="true"
-
     >
-
       <FontImport />
 
       <div className="flex items-center gap-3">
-
         <Loader2
-
           className="h-5 w-5 shrink-0 animate-spin"
 
           style={{ color: NAVY }}
-
         />
 
         <div className="min-w-0 flex-1">
-
           <div className="h-5 w-36 max-w-full animate-pulse rounded bg-[#f2f4f7]" />
 
           <div className="mt-2 h-3.5 w-56 max-w-full animate-pulse rounded bg-[#f2f4f7]" />
-
         </div>
-
       </div>
 
       <div className="mt-6 rounded-[14px] border border-[#e7e9ee] p-4 sm:mt-8 sm:p-6">
-
         <div className="h-4 w-40 max-w-full animate-pulse rounded bg-[#f2f4f7]" />
 
         <div className="mt-4 flex flex-wrap items-center gap-3">
-
           <div className="h-12 w-12 shrink-0 animate-pulse rounded-full bg-[#f2f4f7] sm:h-14 sm:w-14" />
 
           <div className="h-7 w-36 max-w-full animate-pulse rounded bg-[#f2f4f7]" />
-
         </div>
 
         <div className="mt-4 h-4 w-full max-w-[440px] animate-pulse rounded bg-[#f2f4f7]" />
@@ -1559,43 +1511,29 @@ function KycLoading() {
         <div className="mt-2 h-4 w-4/5 max-w-[360px] animate-pulse rounded bg-[#f2f4f7]" />
 
         <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-
           {Array.from({ length: 4 }).map((_, index) => (
-
             <div
-
               key={index}
 
               className="flex min-w-0 flex-col items-center rounded-[12px] bg-[#f7f8fa] p-3 sm:p-4"
-
             >
-
               <div className="h-9 w-9 animate-pulse rounded-full bg-[#e7e9ee]" />
 
               <div className="mt-3 h-3 w-20 max-w-full animate-pulse rounded bg-[#e7e9ee]" />
 
               <div className="mt-2 h-3 w-16 max-w-full animate-pulse rounded bg-[#e7e9ee]" />
-
             </div>
-
           ))}
-
         </div>
-
       </div>
 
       <div className="mt-4 grid grid-cols-1 gap-4 lg:mt-6 lg:grid-cols-2">
-
         <div className="h-52 animate-pulse rounded-[14px] bg-[#f7f8fa] sm:rounded-[16px]" />
 
         <div className="h-52 animate-pulse rounded-[14px] bg-[#f7f8fa] sm:rounded-[16px]" />
-
       </div>
-
     </div>
-
   );
-
 }
 
 // --------------------------------------------------
@@ -1604,64 +1542,36 @@ function KycLoading() {
 
 // --------------------------------------------------
 
-function KycError({
-
-  onRetry,
-
-}: {
-
-  onRetry: () => void;
-
-}) {
-
+function KycError({ onRetry }: { onRetry: () => void }) {
   return (
-
     <div className={`kyc-status-page ${cardClass}`}>
-
       <FontImport />
 
       <div className="flex min-h-[260px] flex-col items-center justify-center px-1 py-10 text-center sm:min-h-[320px]">
-
         <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#fef2f2]">
-
           <AlertCircle className="h-7 w-7 text-[#DC2626]" />
-
         </div>
 
         <p className="mt-4 text-[14px] font-semibold text-[#101828] sm:text-[15px]">
-
           Failed to load KYC status
-
         </p>
 
         <p className="mt-2 max-w-sm text-[12px] leading-5 text-[#667085] sm:text-[13px]">
-
-          Something went wrong while fetching your profile. Please try
-
-          again.
-
+          Something went wrong while fetching your profile. Please try again.
         </p>
 
         <button
-
           type="button"
 
           onClick={onRetry}
 
           className="mt-5 inline-flex min-h-[40px] items-center justify-center gap-2 rounded-[9px] bg-[#0E1B3D] px-5 py-2 text-[12px] font-semibold text-white transition hover:bg-[#1a2a54] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E1B3D]/30 focus-visible:ring-offset-2"
-
         >
-
           Retry
-
         </button>
-
       </div>
-
     </div>
-
   );
-
 }
 
 // --------------------------------------------------
@@ -1671,7 +1581,6 @@ function KycError({
 // --------------------------------------------------
 
 function DetailRow({
-
   label,
 
   value,
@@ -1679,9 +1588,7 @@ function DetailRow({
   valueColor,
 
   capitalize = false,
-
 }: {
-
   label: string;
 
   value: string;
@@ -1689,37 +1596,24 @@ function DetailRow({
   valueColor?: string;
 
   capitalize?: boolean;
-
 }) {
-
   return (
-
     <div className="grid min-w-0 grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] items-start gap-3 sm:gap-4">
-
       <p className="min-w-0 break-words text-[12px] leading-5 text-[#667085] sm:text-[13px] sm:text-[13.5px]">
-
         {label}
-
       </p>
 
       <p
-
-        className={`min-w-0 break-words text-right text-[12px] font-semibold leading-5 text-[#101828] sm:text-[13px] sm:text-[13.5px] ${capitalize ? "capitalize" : ""
-
-          }`}
+        className={`min-w-0 break-words text-right text-[12px] font-semibold leading-5 text-[#101828] sm:text-[13px] sm:text-[13.5px] ${
+          capitalize ? "capitalize" : ""
+        }`}
 
         style={{ color: valueColor }}
-
       >
-
         {value}
-
       </p>
-
     </div>
-
   );
-
 }
 
 // --------------------------------------------------
@@ -1729,7 +1623,6 @@ function DetailRow({
 // --------------------------------------------------
 
 function TimelineStep({
-
   label,
 
   date,
@@ -1741,9 +1634,7 @@ function TimelineStep({
   nextDone,
 
   isLast,
-
 }: {
-
   label: string;
 
   date: string;
@@ -1755,75 +1646,48 @@ function TimelineStep({
   nextDone: boolean;
 
   isLast: boolean;
-
 }) {
-
   return (
-
     <div className="relative flex min-w-0 flex-col items-center px-1 text-center">
-
       {/* Connector: desktop only, behind the step icons */}
 
       {!isLast && (
-
         <div
-
           className="absolute left-1/2 top-[17px] z-0 hidden h-[2px] w-full sm:block"
 
           style={{
-
             backgroundColor: nextDone ? color : "#e7e9ee",
-
           }}
 
           aria-hidden="true"
-
         />
-
       )}
 
       <div
-
         className="relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full sm:h-10 sm:w-10"
 
         style={{
-
           backgroundColor: done ? color : "#e7e9ee",
-
         }}
-
       >
-
         <CheckCircle2
-
           className="h-[18px] w-[18px] sm:h-5 sm:w-5"
 
           style={{
-
             color: done ? "#ffffff" : "#98a2b3",
-
           }}
-
         />
-
       </div>
 
       <p className="mt-2 w-full break-words text-[11px] font-semibold leading-4 text-[#101828] sm:text-[12px]">
-
         {label}
-
       </p>
 
       <p className="mt-1 w-full break-words text-[10px] leading-4 text-[#98a2b3] sm:text-[11px]">
-
         {date}
-
       </p>
-
     </div>
-
   );
-
 }
 
 // --------------------------------------------------
@@ -1833,87 +1697,61 @@ function TimelineStep({
 // --------------------------------------------------
 
 function KycDetailsCard({
-
   user,
 
   status,
-
 }: {
-
   user: any;
 
   status: {
-
     label: string;
 
     color: string;
-
   };
-
 }) {
-
   const details = [
-
     {
-
       label: "Application ID",
 
       value: `KYC${String(user.id).padStart(10, "0")}`,
-
     },
 
     {
-
       label: "Full name",
 
       value: user.full_name || "—",
 
       capitalize: true,
-
     },
 
     {
-
       label: "Aadhaar number",
 
       value: maskLast(user.aadhaar_last4),
-
     },
 
     {
-
       label: "Mobile number",
 
       value: maskPhone(user.phone),
-
     },
 
     {
-
       label: "PAN number",
 
       value: maskLast(user.pan_last4),
-
     },
-
   ];
 
   return (
-
     <div className={cardClass}>
-
       <h3 className="break-words text-[15px] font-bold text-[#101828] sm:text-[16px]">
-
         KYC details
-
       </h3>
 
       <div className="mt-4 space-y-3 border-b border-[#e7e9ee] pb-4 sm:space-y-3.5">
-
         {details.map((item) => (
-
           <DetailRow
-
             key={item.label}
 
             label={item.label}
@@ -1921,31 +1759,21 @@ function KycDetailsCard({
             value={item.value}
 
             capitalize={item.capitalize}
-
           />
-
         ))}
-
       </div>
 
       <div className="mt-4">
-
         <DetailRow
-
           label="KYC status"
 
           value={status.label}
 
           valueColor={status.color}
-
         />
-
       </div>
-
     </div>
-
   );
-
 }
 
 // --------------------------------------------------
@@ -1955,17 +1783,13 @@ function KycDetailsCard({
 // --------------------------------------------------
 
 function DocumentVerificationCard({
-
   bp,
 
   documents,
-
 }: {
-
   bp: any;
 
   documents: {
-
     label: string;
 
     status: string;
@@ -1973,121 +1797,77 @@ function DocumentVerificationCard({
     verified: boolean;
 
     notApplicable: boolean;
-
   }[];
-
 }) {
-
   return (
-
     <div className={cardClass}>
-
       <h3 className="break-words text-[15px] font-bold text-[#101828] sm:text-[16px]">
-
         Document verification status
-
       </h3>
 
       <div className="mt-4 space-y-3 border-b border-[#e7e9ee] pb-4 sm:space-y-3.5">
-
         {documents.map((document) => {
-
           const color = document.notApplicable
-
             ? "#98a2b3"
-
             : document.verified
-
               ? EMERALD
-
               : AMBER;
 
           return (
-
             <div
-
               key={document.label}
 
               className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-3"
-
             >
-
               <p className="min-w-0 break-words text-[12px] leading-5 text-[#667085] sm:text-[13px] sm:text-[13.5px]">
-
                 {document.label}
-
               </p>
 
               <span
-
                 className="inline-flex max-w-full items-center justify-end gap-1.5 break-words text-right text-[11px] font-semibold leading-5 sm:text-[12px] sm:text-[13px]"
 
                 style={{ color }}
-
               >
-
                 {document.verified && (
-
                   <CheckCircle2
-
                     size={13}
 
                     className="shrink-0"
-
                   />
-
                 )}
 
                 {!document.verified && !document.notApplicable && (
-
                   <Clock
-
                     size={13}
 
                     className="shrink-0"
-
                   />
-
                 )}
 
                 <span>{document.status}</span>
-
               </span>
-
             </div>
-
           );
-
         })}
-
       </div>
 
       <div className="mt-4 space-y-3 sm:space-y-3.5">
-
         <DetailRow
-
           label="Bank name"
 
           value={bp.bank_name || "—"}
-
         />
 
         <DetailRow
-
           label="Account type"
 
           value={bp.account_type || "—"}
 
           capitalize
-
         />
-
       </div>
-
     </div>
-
   );
-
 }
 
 // ============================================
@@ -2099,19 +1879,9 @@ function DocumentVerificationCard({
 const KycStatus = ({ user }: { user: any }) => {
   // Reuse the Profile Overview user payload; avoid a duplicate API request.
 
-  const bp =
+  const bp = user.distributor_profile ?? user.business_profile ?? {};
 
-    user.distributor_profile ??
-
-    user.business_profile ??
-
-    {};
-
-  const kycStatus: string = (
-
-    bp.kyc_status || ""
-
-  ).toLowerCase();
+  const kycStatus: string = (bp.kyc_status || "").toLowerCase();
 
   const aadhaarVerified = !!bp.aadhaar_verified;
 
@@ -2126,11 +1896,8 @@ const KycStatus = ({ user }: { user: any }) => {
   // --------------------------------------------------
 
   const STATUS_META: Record<
-
     string,
-
     {
-
       label: string;
 
       color: string;
@@ -2144,13 +1911,9 @@ const KycStatus = ({ user }: { user: any }) => {
       successMsg: string;
 
       successTitle: string;
-
     }
-
   > = {
-
     verified: {
-
       label: "Completed",
 
       color: EMERALD,
@@ -2160,19 +1923,15 @@ const KycStatus = ({ user }: { user: any }) => {
       Icon: CheckCircle2,
 
       description:
-
         "Your KYC verification is complete. Thank you — your details have been verified successfully.",
 
       successTitle: "Great! Your KYC is completed",
 
       successMsg:
-
         "All your details have been verified successfully. You now have full access to all features.",
-
     },
 
     pending: {
-
       label: "Under Review",
 
       color: AMBER,
@@ -2182,19 +1941,15 @@ const KycStatus = ({ user }: { user: any }) => {
       Icon: Clock,
 
       description:
-
         "Your KYC verification is currently under review. This usually takes 24–48 hours.",
 
       successTitle: "KYC under review",
 
       successMsg:
-
         "We're reviewing your submitted documents. You'll be notified once the verification is complete.",
-
     },
 
     rejected: {
-
       label: "Rejected",
 
       color: RED,
@@ -2204,26 +1959,18 @@ const KycStatus = ({ user }: { user: any }) => {
       Icon: XCircle,
 
       description: bp.rejection_reason
-
         ? `Your KYC was rejected. Reason: ${bp.rejection_reason}`
-
         : "Your KYC verification was rejected. Please re-submit with correct details.",
 
       successTitle: "KYC rejected",
 
       successMsg: bp.rejection_reason
-
         ? `Reason: ${bp.rejection_reason}`
-
         : "Please contact support or re-submit your KYC documents.",
-
     },
-
   };
 
-  const status =
-
-    STATUS_META[kycStatus] ?? STATUS_META.pending;
+  const status = STATUS_META[kycStatus] ?? STATUS_META.pending;
 
   const StatusIcon = status.Icon;
 
@@ -2234,63 +1981,37 @@ const KycStatus = ({ user }: { user: any }) => {
   // --------------------------------------------------
 
   const timeline = [
-
     {
-
       label: "Submitted",
 
       date: formatDate(bp.submitted_at),
 
       done: !!bp.submitted_at,
-
     },
 
     {
-
       label: "Under review",
 
       date: formatDate(bp.submitted_at),
 
       done: !!bp.submitted_at,
-
     },
 
     {
-
       label: "In verification",
 
-      date: formatDate(
-
-        bp.aadhaar_verified_at || bp.pan_verified_at
-
-      ),
+      date: formatDate(bp.aadhaar_verified_at || bp.pan_verified_at),
 
       done: aadhaarVerified || panVerified,
-
     },
 
     {
-
       label: status.label,
 
-      date: formatDate(
+      date: formatDate(bp.reviewed_at || bp.updated_at || bp.submitted_at),
 
-        bp.reviewed_at ||
-
-        bp.updated_at ||
-
-        bp.submitted_at
-
-      ),
-
-      done:
-
-        kycStatus === "verified" ||
-
-        kycStatus === "rejected",
-
+      done: kycStatus === "verified" || kycStatus === "rejected",
     },
-
   ];
 
   // --------------------------------------------------
@@ -2300,9 +2021,7 @@ const KycStatus = ({ user }: { user: any }) => {
   // --------------------------------------------------
 
   const documents = [
-
     {
-
       label: "Aadhaar proof",
 
       status: aadhaarVerified ? "Verified" : "Pending",
@@ -2310,11 +2029,9 @@ const KycStatus = ({ user }: { user: any }) => {
       verified: aadhaarVerified,
 
       notApplicable: false,
-
     },
 
     {
-
       label: "PAN card",
 
       status: panVerified ? "Verified" : "Pending",
@@ -2322,11 +2039,9 @@ const KycStatus = ({ user }: { user: any }) => {
       verified: panVerified,
 
       notApplicable: false,
-
     },
 
     {
-
       label: "Bank account",
 
       status: bankVerified ? "Verified" : "Pending",
@@ -2334,25 +2049,17 @@ const KycStatus = ({ user }: { user: any }) => {
       verified: bankVerified,
 
       notApplicable: false,
-
     },
 
     {
-
       label: "Address proof",
 
-      status: bp.location_consent
-
-        ? "Verified"
-
-        : "Not applicable",
+      status: bp.location_consent ? "Verified" : "Not applicable",
 
       verified: !!bp.location_consent,
 
       notApplicable: !bp.location_consent,
-
     },
-
   ];
 
   // --------------------------------------------------
@@ -2362,107 +2069,71 @@ const KycStatus = ({ user }: { user: any }) => {
   // --------------------------------------------------
 
   return (
-
     <div className={`kyc-status-page ${cardClass}`}>
-
       <FontImport />
 
       {/* Page heading */}
 
       <div className="min-w-0">
-
         <h1 className="text-[20px] font-black tracking-[-0.01em] text-[#101828] sm:text-[22px]">
-
           KYC status
-
         </h1>
 
         <p className="mt-1 break-words text-[12px] leading-5 text-[#667085] sm:text-[13.5px]">
-
           Track and manage your KYC verification status.
-
         </p>
-
       </div>
 
       {/* Overall status card */}
 
       <section className="mt-2 min-w-0 rounded-[14px] border border-[#e7e9ee] bg-white p-4 sm:mt-4 sm:rounded-[16px] sm:p-5 lg:p-6">
-
         <div className="grid min-w-0 grid-cols-1 gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] xl:items-start xl:gap-8">
-
           {/* Status information */}
 
           <div className="min-w-0">
-
             <p className="text-[12px] font-semibold text-[#667085] sm:text-[13.5px]">
-
               Overall KYC status
-
             </p>
 
             <div className="mt-3 flex min-w-0 items-center gap-3 sm:gap-4">
-
               <div
-
                 className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full sm:h-14 sm:w-14"
 
                 style={{
-
                   backgroundColor: status.bg,
-
                 }}
-
               >
-
                 <StatusIcon
-
                   className="h-6 w-6 sm:h-7 sm:w-7"
 
                   style={{ color: status.color }}
-
                 />
-
               </div>
 
               <h2
-
                 className="min-w-0 break-words text-[22px] font-black leading-tight sm:text-[26px]"
 
                 style={{ color: status.color }}
-
               >
-
                 {status.label}
-
               </h2>
-
             </div>
 
             <p className="mt-4 max-w-[440px] break-words text-[12px] leading-5 text-[#667085] sm:text-[13px] sm:leading-[1.7]">
-
               {status.description}
-
             </p>
-
           </div>
 
           {/* Responsive timeline */}
 
           <div className="min-w-0 rounded-[12px] bg-[#fafbfc] p-3 sm:p-4">
-
             <h3 className="mb-4 text-[12px] font-bold text-[#475066] sm:text-[13px]">
-
               Verification timeline
-
             </h3>
 
             <div className="grid min-w-0 grid-cols-2 gap-x-2 gap-y-5 sm:grid-cols-4 sm:gap-x-0 sm:gap-y-3">
-
               {timeline.map((item, index) => (
-
                 <TimelineStep
-
                   key={item.label}
 
                   label={item.label}
@@ -2474,123 +2145,80 @@ const KycStatus = ({ user }: { user: any }) => {
                   color={status.color}
 
                   nextDone={
-
                     index < timeline.length - 1
-
                       ? timeline[index + 1].done
-
                       : false
-
                   }
 
                   isLast={index === timeline.length - 1}
-
                 />
-
               ))}
-
             </div>
-
           </div>
-
         </div>
 
         {/* Status message */}
 
         <div
-
           className="mt-5 flex min-w-0 items-start gap-3 rounded-[12px] p-3.5 sm:mt-8 sm:gap-4 sm:rounded-[14px] sm:p-4"
 
           style={{
-
             backgroundColor: status.bg,
-
           }}
-
         >
-
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white sm:h-10 sm:w-10">
-
             <StatusIcon
-
               className="h-[18px] w-[18px] sm:h-5 sm:w-5"
 
               style={{ color: status.color }}
-
             />
-
           </div>
 
           <div className="min-w-0 flex-1">
-
             <p
-
               className="break-words text-[13px] font-bold leading-5 sm:text-[14px]"
 
               style={{ color: status.color }}
-
             >
-
               {status.successTitle}
-
             </p>
 
             <p className="mt-1 break-words text-[12px] leading-5 text-[#475066] sm:text-[13px]">
-
               {status.successMsg}
-
             </p>
-
           </div>
-
         </div>
 
         {/* Last updated */}
 
         <div className="mt-4 flex min-w-0 items-start gap-2 border-t border-[#f0f2f5] pt-4 sm:mt-6">
-
           <Clock className="mt-0.5 h-4 w-4 shrink-0 text-[#98a2b3]" />
 
           <p className="min-w-0 break-words text-[11px] leading-5 text-[#98a2b3] sm:text-[12px]">
-
             <span className="font-semibold">Last updated:</span>{" "}
-
             {formatDateTime(bp.updated_at || user.updated_at)}
-
           </p>
-
         </div>
-
       </section>
 
       {/* Bottom cards */}
 
       <div className="mt-4 grid min-w-0 grid-cols-1 items-start gap-4 sm:mt-6 sm:gap-5 lg:grid-cols-2">
-
         <KycDetailsCard
-
           user={user}
 
           status={status}
-
         />
 
         <DocumentVerificationCard
-
           bp={bp}
 
           documents={documents}
-
         />
-
       </div>
-
     </div>
-
   );
-
 };
-
 
 export default function DistributorProfilePage() {
   const dispatch = useDispatch();
@@ -2680,8 +2308,9 @@ export default function DistributorProfilePage() {
     if (allowedAt !== null && Date.now() < allowedAt) {
       dispatch(
         showToast({
-          message: `You can submit another request after ${formatApiDate(nextAllowedAt) || nextAllowedAt
-            }.`,
+          message: `You can submit another request after ${
+            formatApiDate(nextAllowedAt) || nextAllowedAt
+          }.`,
           type: "info",
         }),
       );
@@ -2717,7 +2346,8 @@ export default function DistributorProfilePage() {
     const allowedAt = parseApiDate(nextAllowedAt);
     if (allowedAt !== null && Date.now() < allowedAt) {
       setPhoneRequestError(
-        `You can submit another request after ${formatApiDate(nextAllowedAt) || nextAllowedAt
+        `You can submit another request after ${
+          formatApiDate(nextAllowedAt) || nextAllowedAt
         }.`,
       );
       return;
@@ -2807,7 +2437,7 @@ export default function DistributorProfilePage() {
   }
   return (
     <div
-      className="min-h-dvh w-full overflow-x-clip bg-white"
+      className="profile-redesign min-h-dvh w-full overflow-x-clip bg-white"
       style={{ fontFamily: "'Lato', sans-serif" }}
     >
       <style>{`
@@ -2822,95 +2452,157 @@ export default function DistributorProfilePage() {
         *::after {
           box-sizing: border-box;
         }
+        .profile-redesign { scroll-behavior: smooth; }
+        .profile-redesign .profile-no-double-margin > section { margin-top: 0 !important; }
+        .profile-redesign .profile-section-nav::-webkit-scrollbar { height: 4px; }
+        .profile-redesign .profile-section-nav::-webkit-scrollbar-thumb { background: #CFD9E7; border-radius: 6px; }
+        .profile-redesign button:not(:disabled) { cursor: pointer; }
+        .profile-redesign :focus-visible { outline-offset: 3px; }
+        @media (prefers-reduced-motion: reduce) { .profile-redesign { scroll-behavior: auto; } }
       `}</style>
       <DashboardHeader distributorId={user?.distributor_id || ""} />
       <div className="relative flex min-h-[calc(100dvh-72px)] min-w-0">
         <Sidebar />
-        <main className="min-h-0 min-w-0 flex-1 overflow-x-clip bg-[#F8F8F9] px-3 pb-10 pt-4 sm:px-5 sm:pb-12 sm:pt-6 lg:px-7 lg:pt-7 2xl:px-9">
-          <div className="mx-auto w-full min-w-0 max-w-[1560px]">
-            <header className="relative mb-6 overflow-hidden rounded-[22px] bg-[#171717] px-5 py-6 text-white shadow-[0_12px_35px_-24px_rgba(0,0,0,.65)] sm:rounded-[24px] sm:px-7 sm:py-7 lg:px-8">
+        <main className="min-h-0 min-w-0 flex-1 overflow-x-clip bg-[#F3F6FB] px-3 pb-12 pt-5 sm:px-5 sm:pb-16 sm:pt-7 lg:px-8 lg:pt-8 2xl:px-10">
+          <div className="mx-auto w-full min-w-0 max-w-[1390px]">
+            <header className="relative mb-6 overflow-hidden rounded-[26px] bg-gradient-to-br from-[#172B4D] via-[#22457C] to-[#326AC0] px-5 py-7 text-white shadow-[0_16px_40px_-20px_rgba(23,43,77,.6)] sm:px-8 sm:py-8 lg:px-10">
               <div
                 aria-hidden="true"
-                className="pointer-events-none absolute -right-14 -top-28 h-[250px] w-[250px] rounded-full border border-white/10"
+                className="pointer-events-none absolute -right-20 -top-32 h-80 w-80 rounded-full border-[45px] border-white/[0.055]"
               />
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute -right-3 -top-20 h-[210px] w-[210px] rounded-full border border-white/[0.055]"
-              />
-              <div className="relative flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
+              <div className="relative flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
                 <div className="min-w-0">
-                  <div className="mb-2 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-white/55">
-                    <span className="h-1.5 w-1.5 rounded-full bg-white/75" />
-                    Account settings
-                  </div>
-                  <h1 className="text-[25px] font-bold leading-tight tracking-[-0.045em] text-white sm:text-[30px]">
-                    My Profile
+                  <p className="mb-2 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[11px] font-bold text-blue-100">
+                    <ShieldCheck size={14} /> Your account workspace
+                  </p>
+                  <h1 className="text-[27px] font-extrabold tracking-[-0.04em] sm:text-[34px]">
+                    Manage your profile
                   </h1>
-                  <p className="mt-2 max-w-[470px] text-[12px] leading-[19px] text-white/65 sm:text-[13px]">
-                    Keep your information, security and account preferences up
-                    to date.
+                  <p className="mt-2 max-w-xl text-[13px] leading-6 text-blue-100 sm:text-[14px]">
+                    Update personal information, check verification progress,
+                    manage your addresses and protect your account.
                   </p>
                 </div>
-                <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
-                  <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.08] px-3 py-[7px] text-[11px] font-semibold text-white/90">
+                <div className="flex min-w-0 flex-col gap-2 rounded-[18px] border border-white/20 bg-white/10 px-5 py-4 backdrop-blur-sm md:min-w-[220px]">
+                  <span className="text-[11px] font-semibold text-blue-100">
+                    ACCOUNT STATUS
+                  </span>
+                  <span className="inline-flex items-center gap-2 text-[15px] font-bold">
                     <span
-                      className={`h-2 w-2 rounded-full ${user?.is_active ? "bg-[#5BD39C]" : "bg-[#F7B267]"}`}
+                      className={`h-2.5 w-2.5 rounded-full ${user?.is_active ? "bg-[#72EDB8]" : "bg-[#FFD18A]"}`}
                     />
                     {user?.distributor_status ||
                       (user?.is_active ? "Active account" : "Inactive account")}
                   </span>
                   {user?.distributor_id && (
-                    <span className="max-w-full truncate rounded-full border border-white/15 bg-white/[0.08] px-3 py-[7px] text-[11px] font-medium text-white/80">
-                      ID: {user.distributor_id}
+                    <span className="break-all text-[12px] text-blue-100">
+                      BA ID: {user.distributor_id}
                     </span>
                   )}
                 </div>
               </div>
             </header>
-            <div className="grid min-w-0 grid-cols-1 items-start gap-4 sm:gap-5 xl:grid-cols-[240px_minmax(0,1fr)_290px] 2xl:grid-cols-[270px_minmax(0,1fr)_320px] xl:gap-5">
+            <nav
+              aria-label="Profile sections"
+              className="profile-section-nav mb-6 flex gap-2 overflow-x-auto rounded-[18px] border border-[#E2EAF4] bg-white p-2 shadow-sm"
+            >
+              {[
+                {
+                  id: "personal-details",
+                  label: "Personal info",
+                  Icon: UserRound,
+                },
+                {
+                  id: "profile-kyc-overview",
+                  label: "KYC verification",
+                  Icon: ShieldCheck,
+                },
+                { id: "phone-details", label: "Phone number", Icon: Phone },
+                { id: "address-details", label: "Addresses", Icon: MapPin },
+                { id: "bank-details", label: "Bank details", Icon: Landmark },
+                {
+                  id: "security-details",
+                  label: "Security",
+                  Icon: LockKeyhole,
+                },
+              ].map(({ id, label, Icon }) => (
+                <a
+                  key={id}
+                  href={`#${id}`}
+                  className="inline-flex min-h-[44px] shrink-0 items-center gap-2 rounded-[12px] px-4 text-[12px] font-bold text-[#52647E] transition-colors hover:bg-[#EDF4FF] hover:text-[#2858A8] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#326AC0]"
+                >
+                  <Icon size={16} /> {label}
+                </a>
+              ))}
+            </nav>
+            <div className="grid min-w-0 grid-cols-1 items-start gap-5 lg:grid-cols-[290px_minmax(0,1fr)] xl:grid-cols-[310px_minmax(0,1fr)] lg:gap-6">
               <aside
-                className={`${stickyColumnClass} sm:grid-cols-2 xl:grid-cols-1 xl:gap-5`}
-                aria-label="Profile summary"
+                className={stickyColumnClass}
+                aria-label="Your profile at a glance"
               >
                 <ProfileSummary user={user} />
                 <ProfileImageCard
                   user={user}
                   loading={isUpdating}
                   onSave={(file) =>
-                    handleUpdateProfile({
-                      profile_image: file,
-                    })
+                    handleUpdateProfile({ profile_image: file })
                   }
                 />
+                <div className="rounded-[19px] border border-[#D8E5F8] bg-[#EDF4FF] p-5">
+                  <p className="flex items-center gap-2 text-[13px] font-extrabold text-[#214C91]">
+                    <ShieldCheck size={17} /> Keep your account secure
+                  </p>
+                  <p className="mt-2 text-[12px] leading-5 text-[#52709B]">
+                    Review your verification, contact details and password
+                    regularly.
+                  </p>
+                  <a
+                    href="#security-details"
+                    className="mt-3 inline-flex items-center gap-1 text-[12px] font-bold text-[#2459AD] hover:underline"
+                  >
+                    Security settings <span aria-hidden="true">→</span>
+                  </a>
+                </div>
               </aside>
-              <div className="min-w-0">
-                <ProfileForm
-                  user={user}
-                  loading={isUpdating}
-                  onSave={(profileData) => handleUpdateProfile(profileData)}
-                />
+              <div className="min-w-0 space-y-5">
+                <div id="personal-details" className="scroll-mt-28">
+                  <ProfileForm
+                    user={user}
+                    loading={isUpdating}
+                    onSave={(profileData) => handleUpdateProfile(profileData)}
+                  />
+                </div>
                 {/* Entire KYC moved into Profile Overview */}
-                <div className="mt-5 min-w-0" id="profile-kyc-overview">
+                <div id="profile-kyc-overview" className="min-w-0 scroll-mt-28">
                   <KycStatus user={user} />
                 </div>
-                <PhoneChangeRequestCard
-                  user={user}
-                  onClick={openPhoneModal}
-                  nextAllowedAt={nextAllowedAt}
-                  canResubmit={canResubmitCorrection}
-                />
-                <AddressSection />
-                <div className="mt-5">
+                <div
+                  id="phone-details"
+                  className="scroll-mt-28 profile-no-double-margin"
+                >
+                  <PhoneChangeRequestCard
+                    user={user}
+                    onClick={openPhoneModal}
+                    nextAllowedAt={nextAllowedAt}
+                    canResubmit={canResubmitCorrection}
+                  />
+                </div>
+                <div
+                  id="address-details"
+                  className="scroll-mt-28 profile-no-double-margin"
+                >
+                  <AddressSection />
+                </div>
+                <div className="min-w-0">
                   <DistributorPVCSection user={user} />
                 </div>
+                <div id="bank-details" className="scroll-mt-28">
+                  <BankWalletDetails user={user} />
+                </div>
+                <div id="security-details" className="scroll-mt-28">
+                  <SecuritySection />
+                </div>
               </div>
-              <aside
-                className={`${stickyColumnClass} sm:grid-cols-2 xl:grid-cols-1 xl:gap-5`}
-                aria-label="Bank details and security"
-              >
-                <BankWalletDetails user={user} />
-                <SecuritySection />
-              </aside>
             </div>
           </div>
         </main>

@@ -32,11 +32,7 @@ import {
   usePlaceBankedTcMutation,
 } from "@/lib/redux/api/distributor/userDashboardApi";
 
-// =====================================================*
-
-// TYPES*
-
-// =====================================================*
+// =====================================================// TYPES// =====================================================
 
 export interface TCBankAccount {
   id: string | number;
@@ -97,6 +93,8 @@ export interface TCBankAllocationOption {
 
   leftAvailable?: boolean;
 
+  groupLabel?: string;
+
   rightAvailable?: boolean;
 }
 
@@ -130,11 +128,7 @@ export const EXAMPLE_TC_BANK_DATA: TCBankData = {
   transactions: [],
 };
 
-// =====================================================*
-
-// HELPERS*
-
-// =====================================================*
+// =====================================================// HELPERS// =====================================================
 
 const n = (value: number | string | null | undefined): number => {
   const parsed = Number(value ?? 0);
@@ -194,13 +188,9 @@ const formatType = (type?: string) => {
 };
 
 const panel =
-  "min-w-0 rounded-[18px] border border-[#E7EAF0] bg-white shadow-[0_3px_18px_rgba(16,24,40,0.035)]";
+  "min-w-0 rounded-2xl border border-[#E4EAF4] bg-white shadow-[0_8px_32px_-22px_rgba(14,27,61,0.25)]";
 
-// =====================================================*
-
-// SMALL UI COMPONENTS*
-
-// =====================================================*
+// =====================================================// SMALL UI COMPONENTS// =====================================================
 
 function SectionHeading({
   icon: Icon,
@@ -388,11 +378,7 @@ function EmptyTable({
   );
 }
 
-// =====================================================*
-
-// ACCOUNT LIST (Member column removed)*
-
-// =====================================================*
+// =====================================================// ACCOUNT LIST (Member column removed)// =====================================================
 
 function AccountList({
   accounts,
@@ -773,8 +759,6 @@ function TransactionHistory({
           onSizeChange={updateSize}
         />
       </div>
-
-      <div className="h-4" />
     </section>
   );
 }
@@ -954,14 +938,12 @@ function CreateAccountModal({
   );
 }
 
-// =====================================================*
+// =====================================================// TC ALLOCATION// =====================================================
 
-// TC ALLOCATION*
+// Searchable selector searches BA IDs in every returned slot group.
 
-// =====================================================*
+// Searching BA IDs outside this response needs a separate backend search endpoint.
 
-// Searchable placement selector searches EVERY BA ID present in available_slots.
-// For BA IDs not returned by the API, a backend descendant search endpoint is required.
 function PlacementBASearch({
   options,
   value,
@@ -977,46 +959,30 @@ function PlacementBASearch({
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [activeIndex, setActiveIndex] = useState(0);
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const itemRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
   const selected = options.find((option) => option.value === value);
-  const filtered = useMemo(() => {
-    const words = query.toLocaleLowerCase().trim().split(/\s+/).filter(Boolean);
-    if (!words.length) return options;
-    return options.filter((option) => {
-      const searchable = `${option.value} ${option.label}`.toLocaleLowerCase();
-      return words.every((word) => searchable.includes(word));
-    });
-  }, [options, query]);
+  const filtered = useMemo(
+    () =>
+      options.filter((option) =>
+        option.label.toLowerCase().includes(query.trim().toLowerCase()),
+      ),
+    [options, query],
+  );
 
   useEffect(() => {
-    const onPointerDown = (event: PointerEvent) => {
-      if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
+    const closeOnOutside = (event: PointerEvent) => {
+      if (rootRef.current && !rootRef.current.contains(event.target as Node))
         setOpen(false);
-      }
     };
-    document.addEventListener("pointerdown", onPointerDown);
-    return () => document.removeEventListener("pointerdown", onPointerDown);
+    document.addEventListener("pointerdown", closeOnOutside);
+    return () => document.removeEventListener("pointerdown", closeOnOutside);
   }, []);
 
   useEffect(() => {
-    if (!open) return;
-    inputRef.current?.focus();
+    if (open) inputRef.current?.focus();
   }, [open]);
-
-  useEffect(() => {
-    setActiveIndex(0);
-  }, [query]);
-
-  useEffect(() => {
-    if (!open) return;
-    const item = filtered[activeIndex];
-    if (item)
-      itemRefs.current[item.value]?.scrollIntoView({ block: "nearest" });
-  }, [activeIndex, filtered, open]);
 
   const choose = (id: string) => {
     onChange(id);
@@ -1024,149 +990,83 @@ function PlacementBASearch({
     setOpen(false);
   };
 
-  const onKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      setOpen(false);
-    } else if (event.key === "ArrowDown") {
-      event.preventDefault();
-      setActiveIndex((i) => Math.min(i + 1, filtered.length - 1));
-    } else if (event.key === "ArrowUp") {
-      event.preventDefault();
-      setActiveIndex((i) => Math.max(0, i - 1));
-    } else if (event.key === "Enter" && filtered[activeIndex]) {
-      event.preventDefault();
-      choose(filtered[activeIndex].value);
-    }
-  };
-
   return (
     <div ref={rootRef} className="relative min-w-0">
       <button
         type="button"
-        aria-label="Placement BA ID"
+        aria-label="Select TC slot"
         aria-haspopup="listbox"
         aria-expanded={open}
         disabled={disabled}
         onClick={() => {
           setQuery("");
-          setActiveIndex(0);
-          setOpen((v) => !v);
+          setOpen((previous) => !previous);
         }}
-        className="flex h-[44px] w-full items-center gap-2 rounded-[10px] border border-[#E2E7EE] bg-white px-3.5 text-left text-[12px] font-medium text-[#293447] outline-none focus:border-[#78899C] focus:ring-2 focus:ring-[#78899C]/15 disabled:cursor-not-allowed disabled:bg-[#F6F7F9] disabled:text-[#9AA3B0]"
+        className="flex h-[44px] w-full items-center gap-2 rounded-[10px] border border-[#E2E7EE] bg-white px-3.5 text-left text-[12px] font-medium text-[#293447] outline-none focus:border-[#78899C] disabled:cursor-not-allowed disabled:bg-[#F6F7F9] disabled:text-[#9AA3B0]"
       >
-        <Search size={16} className="shrink-0 text-[#78899C]" />
         <span
           className={`min-w-0 flex-1 truncate ${!selected ? "text-[#98A2B3]" : ""}`}
         >
           {selected?.label ??
             (loading
-              ? "Loading available BA IDs..."
+              ? "Loading TCs..."
               : options.length
-                ? "Search / select placement BA ID"
-                : "No placements available")}
+                ? "Select TC"
+                : "No TC available")}
         </span>
         <ChevronDown
           size={16}
           className={`shrink-0 text-[#5E718B] transition-transform ${open ? "rotate-180" : ""}`}
         />
       </button>
-
       {open && !disabled && (
-        <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-[80] min-w-[260px] overflow-hidden rounded-[12px] border border-[#E2E7EE] bg-white shadow-[0_14px_42px_rgba(16,24,40,0.16)]">
-          <div className="border-b border-[#EDF0F4] p-2.5">
-            <div className="relative">
-              <Search
-                size={15}
-                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#929CAC]"
-              />
-              <input
-                ref={inputRef}
-                type="search"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                onKeyDown={onKeyDown}
-                placeholder="Search BA ID at any level..."
-                aria-label="Search placement BA IDs"
-                role="combobox"
-                aria-autocomplete="list"
-                aria-expanded={true}
-                aria-controls="placement-ba-listbox"
-                className="h-10 w-full rounded-[9px] border border-[#DFE5ED] bg-[#F8FAFC] pl-9 pr-3 text-[12px] text-[#293447] outline-none focus:border-[#78899C] focus:bg-white"
-              />
-            </div>
-            <div className="mt-2 flex items-center justify-between px-1 text-[10px] text-[#8490A0]">
-              <span>
-                {filtered.length} of {options.length} BA IDs
-              </span>
-              <span>All returned levels</span>
-            </div>
+        <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-[80] overflow-hidden rounded-[12px] border border-[#E2E7EE] bg-white shadow-[0_14px_42px_rgba(16,24,40,0.16)]">
+          <div className="relative border-b border-[#EDF0F4] p-2">
+            <Search
+              size={15}
+              className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-[#929CAC]"
+            />
+            <input
+              ref={inputRef}
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Escape") setOpen(false);
+                if (event.key === "Enter" && filtered.length) {
+                  event.preventDefault();
+                  choose(filtered[0].value);
+                }
+              }}
+              placeholder="Search TC..."
+              aria-label="Search TC"
+              className="h-10 w-full rounded-[9px] border border-[#DFE5ED] bg-[#F8FAFC] pl-9 pr-3 text-[12px] text-[#293447] outline-none focus:border-[#78899C]"
+            />
           </div>
           <div
-            id="placement-ba-listbox"
             role="listbox"
-            aria-label="Matching placement BA IDs"
-            className="max-h-[300px] overflow-y-auto overscroll-contain py-1"
+            aria-label="TC slots"
+            className="max-h-[280px] overflow-y-auto overscroll-contain py-1"
           >
             {filtered.length ? (
-              filtered.map((option, index) => {
-                const isSelected = option.value === value;
-                const isFull =
-                  option.leftAvailable === false &&
-                  option.rightAvailable === false;
-                return (
-                  <button
-                    key={option.value}
-                    ref={(element) => {
-                      itemRefs.current[option.value] = element;
-                    }}
-                    type="button"
-                    role="option"
-                    aria-selected={isSelected}
-                    onMouseEnter={() => setActiveIndex(index)}
-                    onClick={() => choose(option.value)}
-                    className={`flex w-full items-center justify-between gap-2 px-3.5 py-2.5 text-left text-[11px] transition ${index === activeIndex ? "bg-[#F3F6FA]" : "hover:bg-[#F8FAFC]"}`}
-                  >
-                    <span className="min-w-0">
-                      <span className="block break-all font-semibold text-[#293447]">
-                        {option.label}
-                      </span>
-                      {option.label !== option.value && (
-                        <span className="block text-[10px] text-[#8792A1]">
-                          {option.value}
-                        </span>
-                      )}
-                    </span>
-                    <span className="flex shrink-0 items-center gap-1">
-                      {option.leftAvailable !== false && (
-                        <span className="rounded bg-[#EDF8F0] px-1.5 py-0.5 text-[9px] font-bold text-[#31805A]">
-                          L
-                        </span>
-                      )}
-                      {option.rightAvailable !== false && (
-                        <span className="rounded bg-[#EDF8F0] px-1.5 py-0.5 text-[9px] font-bold text-[#31805A]">
-                          R
-                        </span>
-                      )}
-                      {isFull && (
-                        <span className="text-[9px] text-[#B45353]">Full</span>
-                      )}
-                      {isSelected && (
-                        <CheckCircle2
-                          size={14}
-                          className="ml-1 text-[#31805A]"
-                        />
-                      )}
-                    </span>
-                  </button>
-                );
-              })
+              filtered.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  role="option"
+                  aria-selected={option.value === value}
+                  onClick={() => choose(option.value)}
+                  className={`flex w-full items-center justify-between px-4 py-3 text-left text-[12px] font-semibold text-[#293447] hover:bg-[#F3F6FA] ${option.value === value ? "bg-[#F3F6FA]" : ""}`}
+                >
+                  {option.label}
+                  {option.value === value && (
+                    <CheckCircle2 size={15} className="text-[#31805A]" />
+                  )}
+                </button>
+              ))
             ) : (
-              <div className="px-4 py-6 text-center text-[11px] text-[#8792A1]">
-                No matching BA ID among available slots.
-                <div className="mt-1 text-[10px]">
-                  Only BA IDs supplied by the API are searchable.
-                </div>
+              <div className="px-4 py-5 text-center text-[12px] text-[#8792A1]">
+                No TC found
               </div>
             )}
           </div>
@@ -1205,6 +1105,8 @@ function TCAllocation({
 
   onAllocated?: () => void | Promise<void>;
 }) {
+  const [selectedBaseId, setSelectedBaseId] = useState("");
+
   const [placementBaId, setPlacementBaId] = useState("");
 
   const [side, setSide] = useState<"left" | "right" | "">("");
@@ -1215,10 +1117,49 @@ function TCAllocation({
 
   const [placeBankedTc, { isLoading: submitting }] = usePlaceBankedTcMutation();
 
-  const selectedPlacement = useMemo(
-    () => placements.find((p) => p.value === placementBaId),
+  // Show slots only for the chosen API base_id. Each BA ID is unique in that group.
 
-    [placements, placementBaId],
+  const baseGroups = useMemo(() => {
+    return Array.from(
+      new Set(
+        placements.map((p) => p.groupLabel).filter((x): x is string => !!x),
+      ),
+    );
+  }, [placements]);
+
+  const groupedPlacements = useMemo(
+    () => placements.filter((p) => p.groupLabel === selectedBaseId),
+
+    [placements, selectedBaseId],
+  );
+
+  // Refreshes must not leave an old, no-longer-available TC selected.
+
+  useEffect(() => {
+    if (selectedBaseId && !baseGroups.includes(selectedBaseId)) {
+      setSelectedBaseId("");
+
+      setPlacementBaId("");
+
+      setSide("");
+    }
+  }, [baseGroups, selectedBaseId]);
+
+  useEffect(() => {
+    if (
+      placementBaId &&
+      !groupedPlacements.some((p) => p.value === placementBaId)
+    ) {
+      setPlacementBaId("");
+
+      setSide("");
+    }
+  }, [groupedPlacements, placementBaId]);
+
+  const selectedPlacement = useMemo(
+    () => groupedPlacements.find((p) => p.value === placementBaId),
+
+    [groupedPlacements, placementBaId],
   );
 
   React.useEffect(() => {
@@ -1236,17 +1177,28 @@ function TCAllocation({
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!baId || !placementBaId || !side || submitting) return;
-    const matchedPlacement = placements.find((p) => p.value === placementBaId);
-    if (!matchedPlacement) {
-      setError("Please select a valid placement BA ID.");
+    if (!baId || !placementBaId || !side || submitting) {
+      setError("Please select a placement BA ID and an available side.");
+
       return;
     }
+
+    const matchedPlacement = groupedPlacements.find(
+      (p) => p.value === placementBaId,
+    );
+
+    if (!matchedPlacement) {
+      setError("Please select a valid placement BA ID.");
+
+      return;
+    }
+
     if (
       (side === "left" && matchedPlacement.leftAvailable === false) ||
       (side === "right" && matchedPlacement.rightAvailable === false)
     ) {
       setError("Selected side is no longer available.");
+
       return;
     }
 
@@ -1260,7 +1212,9 @@ function TCAllocation({
       const res = await placeBankedTc({
         ba_id: baId,
 
-        placement_ba_id: placementBaId,
+        // Send the selected slot's ba_id, never its display_label.
+
+        placement_ba_id: matchedPlacement.value,
 
         side: side === "left" ? 1 : 2,
       }).unwrap();
@@ -1298,13 +1252,14 @@ function TCAllocation({
     hasBalance &&
     !!baId &&
     !!placementBaId &&
+    !!selectedBaseId &&
     !!side &&
     !submitting &&
     !!selectedPlacement &&
     (side === "left"
       ? selectedPlacement.leftAvailable !== false
       : selectedPlacement.rightAvailable !== false) &&
-    !!placements.length;
+    !!groupedPlacements.length;
 
   return (
     <section className={`${panel} overflow-visible`} aria-label="TC Allocation">
@@ -1312,9 +1267,9 @@ function TCAllocation({
         <SectionHeading
           icon={GitBranch}
 
-          title="TC Allocation"
+          title="Allocate Your TC"
 
-          subtitle="Select the BA ID, choose a TC and select the binary side"
+          subtitle="Choose a base account, search available TC slots and select the binary side"
         />
       </div>
 
@@ -1332,10 +1287,58 @@ function TCAllocation({
           </div>
         )}
 
-        <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-[minmax(0,380px)_minmax(0,175px)_auto] sm:justify-start">
+        <div className="grid grid-cols-1 items-end gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)_minmax(0,.7fr)_auto]">
+          <label className="min-w-0">
+            <span className="mb-1.5 block text-[12px] font-semibold text-[#485263]">
+              Base BA ID
+            </span>
+
+            <span className="relative block">
+              <select
+                aria-label="Select base BA ID"
+
+                value={selectedBaseId}
+
+                disabled={
+                  submitting ||
+                  placementsLoading ||
+                  !hasBalance ||
+                  !baseGroups.length
+                }
+
+                onChange={(event) => {
+                  setSelectedBaseId(event.target.value);
+
+                  setPlacementBaId("");
+
+                  setSide("");
+
+                  setSuccess(null);
+
+                  setError(null);
+                }}
+
+                className={selectClass}
+              >
+                <option value="">Select base BA ID</option>
+
+                {baseGroups.map((base) => (
+                  <option key={base} value={base}>
+                    {base}
+                  </option>
+                ))}
+              </select>
+
+              <ChevronDown
+                size={16}
+                className="pointer-events-none absolute right-3 top-3.5 text-[#5E718B]"
+              />
+            </span>
+          </label>
+
           <label className="min-w-0">
             <span className="mb-1.5 flex items-center justify-between text-[12px] font-semibold text-[#485263]">
-              <span>Placement BA ID</span>
+              <span>Placement TC Slot</span>
 
               {placementsLoading && (
                 <Loader2 size={12} className="animate-spin text-[#8893A2]" />
@@ -1343,22 +1346,31 @@ function TCAllocation({
             </span>
 
             <PlacementBASearch
-              options={placements}
+              options={groupedPlacements}
+
               value={placementBaId}
+
               loading={placementsLoading}
+
               disabled={
                 submitting ||
                 placementsLoading ||
-                !placements.length ||
+                !selectedBaseId ||
+                !groupedPlacements.length ||
                 !hasBalance
               }
+
               onChange={(nextId) => {
                 setPlacementBaId(nextId);
+
                 setSide("");
+
                 setSuccess(null);
+
                 setError(null);
               }}
             />
+
             {placementsError && (
               <p className="mt-1 flex items-center gap-1 text-[10px] text-[#B45353]">
                 <AlertCircle size={11} /> Failed to load placements.{" "}
@@ -1451,7 +1463,7 @@ function TCAllocation({
         {baId && (
           <p className="flex items-center gap-1.5 text-[10px] text-[#8B96A6]">
             <Info size={12} /> Placing from:{" "}
-            <strong className="font-semibold text-[#5F6C80]">{baId}</strong>
+            <strong className="font-bold text-white">{baId}</strong>
           </p>
         )}
 
@@ -1483,11 +1495,7 @@ function TCAllocation({
   );
 }
 
-// =====================================================*
-
-// MAIN PAGE*
-
-// =====================================================*
+// =====================================================// MAIN PAGE// =====================================================
 
 export default function TCBankPage({
   data,
@@ -1528,19 +1536,88 @@ export default function TCBankPage({
     refetch: refetchTcBank,
   } = useGetTcBankDashboardQuery();
 
+  // The GET endpoint returns available_slot_groups, not available_slots.
+
+  // UI shows display_label while POST uses the full ba_id.
+
+  type ApiSlot = {
+    ba_id: string;
+
+    display_label?: string;
+
+    tc_label?: string;
+
+    left_available: boolean;
+
+    right_available: boolean;
+  };
+
+  type ApiSlotGroup = {
+    base_id: string;
+
+    label?: string;
+
+    slots: ApiSlot[];
+
+    tc_count?: number;
+  };
+
+  type ApiTransaction = Partial<TCBankTransaction> & {
+    id?: number | string;
+
+    created_at?: string;
+
+    transaction_date?: string;
+
+    type?: string;
+  };
+
+  type ApiDashboard = {
+    available_slot_groups?: ApiSlotGroup[];
+
+    tc_transactions?: ApiTransaction[];
+  };
+
+  const dashboard = tcBankRes?.data as
+    (NonNullable<typeof tcBankRes>["data"] & ApiDashboard) | undefined;
+
   const placementOptions: TCBankAllocationOption[] = useMemo(() => {
-    const list = tcBankRes?.data?.available_slots ?? [];
+    const groups = dashboard?.available_slot_groups ?? [];
 
-    return list.map((p) => ({
-      value: p.ba_id,
+    const seen = new Set<string>();
 
-      label: p.display_label || p.ba_id,
+    return groups.flatMap((group) =>
+      (group.slots ?? []).flatMap((slot) => {
+        if (!slot.ba_id || seen.has(slot.ba_id)) return [];
 
-      leftAvailable: p.left_available,
+        seen.add(slot.ba_id);
 
-      rightAvailable: p.right_available,
-    }));
-  }, [tcBankRes]);
+        return [
+          {
+            value: slot.ba_id,
+
+            label: (() => {
+              const candidate = [slot.tc_label, slot.display_label].find(
+                (text) => /^TC[-\s]*\d+$/i.test(String(text ?? "").trim()),
+              );
+              if (candidate)
+                return String(candidate)
+                  .trim()
+                  .replace(/^TC[\s-]*/i, "TC-");
+              const suffix = slot.ba_id.match(/-(\d+)$/)?.[1];
+              return suffix ? `TC-${suffix}` : slot.ba_id;
+            })(),
+
+            groupLabel: group.base_id,
+
+            leftAvailable: slot.left_available === true,
+
+            rightAvailable: slot.right_available === true,
+          },
+        ];
+      }),
+    );
+  }, [dashboard?.available_slot_groups]);
 
   const accountRows: TCBankAccount[] = useMemo(() => {
     const list = tcBankRes?.data?.my_accounts ?? [];
@@ -1566,7 +1643,7 @@ export default function TCBankPage({
 
   const qualifiedStatus = balances?.qualified_status ?? "0 / 0";
 
-  const zoneTcCvPrice = balances?.zone_tc_cv_price ?? 600;
+  const zoneTcCvPrice = balances?.zone_tc_cv_price ?? 0;
 
   const [qualifiedCount, requiredCount] = useMemo(() => {
     const parts = String(qualifiedStatus)
@@ -1577,7 +1654,30 @@ export default function TCBankPage({
     return [parts[0] || 0, parts[1] || 0];
   }, [qualifiedStatus]);
 
-  const tcData = data === undefined ? EXAMPLE_TC_BANK_DATA : data;
+  const apiTransactions: TCBankTransaction[] = (
+    dashboard?.tc_transactions ?? []
+  ).map((tx, index) => ({
+    id: tx.id ?? index,
+
+    date: String(tx.date ?? tx.transaction_date ?? tx.created_at ?? "—"),
+
+    category: String(tx.category ?? tx.type ?? "TC Bank"),
+
+    description: String(tx.description ?? "—"),
+
+    amount: tx.amount ?? 0,
+
+    order_id: tx.order_id ?? null,
+
+    related_member: tx.related_member ?? null,
+
+    direction: tx.direction ?? null,
+  }));
+
+  const tcData =
+    data === undefined
+      ? { ...EXAMPLE_TC_BANK_DATA, transactions: apiTransactions }
+      : data;
 
   const combinedError =
     error ||
@@ -1595,10 +1695,10 @@ export default function TCBankPage({
 
       style={{ fontFamily: "'Inter', 'Lato', system-ui, sans-serif" }}
     >
-      <div className="mx-auto w-full max-w-[1500px] space-y-4 sm:space-y-5">
+      <div className="mx-auto w-full max-w-[1500px] space-y-5 sm:space-y-6">
         {/* HEADER */}
 
-        <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="relative isolate flex flex-wrap items-start justify-between gap-4 overflow-hidden rounded-[22px] bg-gradient-to-br from-[#0E1B3D] via-[#193A70] to-[#315EAD] p-5 text-white shadow-[0_16px_42px_-22px_rgba(14,27,61,0.65)] sm:p-7">
           <div className="flex min-w-0 items-start gap-3">
             {onBack && (
               <button
@@ -1608,22 +1708,22 @@ export default function TCBankPage({
 
                 aria-label="Back to dashboard"
 
-                className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-[#E5E9EF] bg-white text-[#5F6D80] hover:bg-[#F2F4F7]"
+                className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-white/25 bg-white/10 text-white hover:bg-white/20"
               >
                 <ArrowLeft size={17} />
               </button>
             )}
 
             <div>
-              <p className="mb-1 text-[10px] font-semibold uppercase tracking-[.14em] text-[#9AA3B1]">
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-[.16em] text-blue-100/80">
                 Distributor / TC Bank
               </p>
 
-              <h1 className="text-[22px] font-bold leading-tight tracking-[-.04em] text-[#1F2937] sm:text-[26px]">
+              <h1 className="text-[25px] font-black leading-tight tracking-[-.04em] text-white sm:text-[31px]">
                 TC Bank
               </h1>
 
-              <p className="mt-1 text-[12px] text-[#8691A1]">
+              <p className="mt-1 text-[12px] leading-5 text-blue-100/85">
                 Manage your TC balance, accounts and transactions
                 {distributorBaId && (
                   <>
@@ -1650,7 +1750,7 @@ export default function TCBankPage({
                 if (onRefresh) void onRefresh();
               }}
 
-              className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-[#E2E7EE] bg-white px-3 text-[11px] font-semibold text-[#48576D] hover:bg-[#F4F6F9] disabled:opacity-50"
+              className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/30 bg-white/15 px-4 text-[12px] font-bold text-white transition hover:bg-white/25 disabled:opacity-50"
             >
               <RefreshCw
                 size={14}
@@ -1660,7 +1760,7 @@ export default function TCBankPage({
               Refresh
             </button>
 
-            <span className="hidden items-center gap-1.5 rounded-full border border-[#E2E9F2] bg-white px-2.5 py-1.5 text-[10px] font-semibold text-[#6E798B] sm:inline-flex">
+            <span className="hidden items-center gap-1.5 rounded-full border border-white/25 bg-white/10 px-2.5 py-1.5 text-[10px] font-semibold text-blue-50 sm:inline-flex">
               <ShieldCheck size={13} /> TC Bank Overview
             </span>
           </div>
@@ -1704,13 +1804,13 @@ export default function TCBankPage({
           <>
             {/* BALANCE SUMMARY CARDS */}
 
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="grid grid-cols-1 gap-3 min-[520px]:grid-cols-2 xl:grid-cols-3">
               <div className={`${panel} p-4 sm:p-5`}>
-                <p className="text-[10px] font-semibold uppercase tracking-[.12em] text-[#9AA3B1]">
+                <p className="text-[11px] font-bold uppercase tracking-[.10em] text-[#66758E]">
                   Available Balance
                 </p>
 
-                <p className="mt-2 text-[24px] font-bold tracking-[-.03em] text-[#1F2937]">
+                <p className="mt-2 text-[28px] font-black tracking-[-.04em] text-[#0E1B3D] sm:text-[32px]">
                   {number(availableBalance)}{" "}
                   <span className="text-[12px] font-semibold text-[#8691A1]">
                     TC
@@ -1719,11 +1819,11 @@ export default function TCBankPage({
               </div>
 
               <div className={`${panel} p-4 sm:p-5`}>
-                <p className="text-[10px] font-semibold uppercase tracking-[.12em] text-[#9AA3B1]">
+                <p className="text-[11px] font-bold uppercase tracking-[.10em] text-[#66758E]">
                   Qualified Accounts
                 </p>
 
-                <p className="mt-2 text-[24px] font-bold tracking-[-.03em] text-[#1F2937]">
+                <p className="mt-2 text-[28px] font-black tracking-[-.04em] text-[#0E1B3D] sm:text-[32px]">
                   {qualifiedCount}{" "}
                   <span className="text-[12px] font-semibold text-[#8691A1]">
                     / {requiredCount}
@@ -1732,11 +1832,11 @@ export default function TCBankPage({
               </div>
 
               <div className={`${panel} p-4 sm:p-5`}>
-                <p className="text-[10px] font-semibold uppercase tracking-[.12em] text-[#9AA3B1]">
+                <p className="text-[11px] font-bold uppercase tracking-[.10em] text-[#66758E]">
                   Zone TC CV Price
                 </p>
 
-                <p className="mt-2 text-[24px] font-bold tracking-[-.03em] text-[#1F2937]">
+                <p className="mt-2 text-[28px] font-black tracking-[-.04em] text-[#0E1B3D] sm:text-[32px]">
                   {number(zoneTcCvPrice)}{" "}
                   <span className="text-[12px] font-semibold text-[#8691A1]">
                     CV
@@ -1745,11 +1845,11 @@ export default function TCBankPage({
               </div>
             </div>
 
-            {/* =====================================================*
+            {/* =====================================================**
 
 *                ACCOUNTS + HOW TC BANK WORKS — SIDE BY SIDE, EQUAL HEIGHT*
 
-*               ===================================================== */}
+**               ===================================================== */}
 
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-stretch">
               {/* ACCOUNTS */}

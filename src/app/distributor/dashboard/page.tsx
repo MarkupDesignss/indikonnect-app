@@ -11,7 +11,6 @@ import {
   Search,
   ShoppingBag,
   UsersRound,
-
   ArrowRight,
   Wallet,
   TrendingUp,
@@ -67,7 +66,7 @@ import Loding from "@/components/common/Loding";
 // --------------------------------------------------
 
 const CARD =
-  "min-w-0 rounded-[16px] border border-[#E6E9EF] bg-white shadow-[0_4px_20px_rgba(24,39,75,0.03)]";
+  "min-w-0 rounded-[20px] border border-[#E2E9F3] bg-white shadow-[0_6px_22px_rgba(36,55,90,.04)]";
 
 const CARD_HOVER =
   "transition-all duration-200 hover:border-[#C8CFD9] hover:shadow-[0_12px_28px_rgba(24,39,75,0.06)] motion-reduce:transition-none";
@@ -92,6 +91,13 @@ const FontImport = () => (
       }
     }
 
+    .distributor-dashboard { color: #1D2C46; }
+    .distributor-dashboard button, .distributor-dashboard select, .distributor-dashboard input { font-family: inherit; }
+    .distributor-dashboard button:focus-visible, .distributor-dashboard a:focus-visible, .distributor-dashboard select:focus-visible, .distributor-dashboard input:focus-visible { outline: 2px solid #3972CB; outline-offset: 2px; }
+    .distributor-dashboard button:not(:disabled) { cursor: pointer; }
+    .distributor-dashboard [id] { scroll-margin-top: 20px; }
+    .distributor-dashboard details > summary { list-style-position: inside; }
+    .distributor-dashboard .dashboard-number { font-variant-numeric: tabular-nums; }
     .thin-scroll::-webkit-scrollbar {
       width: 5px;
     }
@@ -206,72 +212,90 @@ function WelcomeHero({
     .map((part) => part[0])
     .join("")
     .toUpperCase();
+  const [copied, setCopied] = useState(false);
+  const cleanId = distributorId.replace(/-001$/, "");
+  const copyId = async () => {
+    try {
+      await navigator.clipboard.writeText(cleanId);
+      setCopied(true);
+      toast.success("Distributor ID copied");
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("Unable to copy ID. Please copy it manually.");
+    }
+  };
   return (
     <motion.section
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.32, ease: "easeOut" }}
-      className="relative isolate overflow-hidden rounded-[24px] border border-[#E5E9F1] bg-gradient-to-r from-[#F1F5FB] via-white to-[#F7F9FC] shadow-[0_8px_30px_rgba(24,39,75,0.045)]"
+      transition={{ duration: 0.3 }}
+      className="relative isolate overflow-hidden rounded-[24px] bg-[#172B52] text-white shadow-[0_16px_40px_rgba(23,43,82,.14)]"
     >
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -right-20 -top-32 h-80 w-80 rounded-full bg-[#C6D5F0]/15 blur-3xl"
+        className="pointer-events-none absolute -right-12 -top-24 h-64 w-64 rounded-full border-[38px] border-white/[.045]"
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute bottom-[-150px] left-[35%] h-64 w-64 rounded-full bg-[#D6E0F4]/10 blur-3xl"
+        className="pointer-events-none absolute -bottom-28 right-1/3 h-52 w-52 rounded-full bg-[#6C96EA]/20 blur-3xl"
       />
-      <div className="relative grid gap-3 p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_minmax(210px,270px)] lg:items-center lg:px-6 lg:py-5">
+      <div className="relative grid items-center gap-6 p-5 sm:p-7 lg:grid-cols-[minmax(0,1fr)_minmax(240px,320px)] lg:p-8">
         <div className="min-w-0">
-          <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-[#E1E7F0] bg-white/90 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[.13em] text-[#4564B7] sm:text-[11px]">
-            <span className="h-2 w-2 rounded-full bg-[#6686B9]" /> Distributor
-            workspace
-          </div>
-          <div className="flex min-w-0 items-center gap-3.5">
-            <div className="hidden h-[44px] w-[44px] shrink-0 items-center justify-center rounded-[16px] bg-[#283B55] text-[18px] font-bold text-white shadow-[0_8px_20px_rgba(34,52,77,.12)] sm:flex">
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[11px] font-bold tracking-wide text-[#DBE8FF]">
+            <span className="h-2 w-2 rounded-full bg-[#7BE5B7]" /> Your
+            distributor dashboard
+          </span>
+          <div className="mt-5 flex items-center gap-3.5">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/15 bg-white/15 text-base font-extrabold sm:h-14 sm:w-14 sm:text-lg">
               {initials || "D"}
             </div>
             <div className="min-w-0">
-              <h1 className="break-words text-[20px] font-bold leading-tight tracking-[-.04em] text-[#233254] sm:text-[24px]">
-                Welcome back, {displayName}
+              <p className="text-[12px] text-[#C9D8F4]">Welcome back</p>
+              <h1 className="mt-0.5 break-words text-[23px] font-extrabold leading-tight tracking-tight sm:text-[30px]">
+                {displayName}
               </h1>
-              <p className="mt-2 max-w-xl text-[12px] leading-5 text-[#6C7794] sm:text-[13px] sm:leading-6">
-                Your business at a glance. Track performance, manage your
-                network and stay on top of every update.
-              </p>
             </div>
           </div>
-          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-[#DCE5F6] pt-4">
-            <span className="inline-flex items-center gap-2 text-[11px] font-semibold text-[#6475A0]">
-              <ShieldCheck size={14} className="text-[#5E83DA]" />
+          <p className="mt-4 max-w-xl text-[13px] leading-6 text-[#D6E2F7] sm:text-[14px]">
+            Everything you need in one place. Check your earnings, track your TC
+            accounts and manage your coins.
+          </p>
+          <div className="mt-5 flex flex-wrap gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-[11px] font-semibold text-white">
+              <ShieldCheck size={14} />{" "}
               {formatStatus(user?.account_type || "distributor")} account
             </span>
             {user?.email && (
-              <span className="max-w-full truncate text-[11px] text-[#7A849C]">
+              <span className="inline-flex max-w-full items-center rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-[11px] text-[#DFE9FC] break-all">
                 {user.email}
               </span>
             )}
           </div>
         </div>
-        <div className="min-w-0 rounded-[18px] border border-white bg-white/80 p-4 shadow-[0_8px_30px_rgba(73,95,167,.07)] backdrop-blur-sm sm:p-5">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-[10px] font-bold uppercase tracking-[.13em] text-[#8994AC]">
-              Member identification
-            </span>
-            <span className="flex h-9 w-9 items-center justify-center rounded-[11px] bg-[#EFF3F9] text-[#607797]">
-              <Sparkles size={17} />
+        <div className="min-w-0 rounded-[20px] border border-white/20 bg-white/[.11] p-5 backdrop-blur-sm sm:p-6">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-[11px] font-bold uppercase tracking-[.12em] text-[#CFDDF5]">
+              Your BA ID
+            </p>
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15">
+              <UsersRound size={19} />
             </span>
           </div>
-          <p className="mt-3 text-[10px] font-semibold text-[#7B869D]">
-            Distributor ID
+          <p className="dashboard-number mt-4 break-all text-[21px] font-extrabold tracking-tight sm:text-[24px]">
+            {cleanId || "Not available"}
           </p>
-          <p className="dashboard-number mt-1 break-all text-[18px] font-bold tracking-[-.03em] text-[#293962] sm:text-[20px]">
-            {distributorId.replace(/-001$/, "")}
+          <p className="mt-2 text-[11px] leading-5 text-[#CBDCF8]">
+            Use this ID for your distributor account and support requests.
           </p>
-          <div className="mt-3 flex items-center gap-2 border-t border-[#E8ECF7] pt-3 text-[10px] text-[#8390AE]">
-            <span className="h-2 w-2 rounded-full bg-[#55A58C]" /> IndieKonnect
-            distributor portal
-          </div>
+          <button
+            type="button"
+            onClick={copyId}
+            disabled={!cleanId || cleanId === "N/A"}
+            className="mt-4 inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-white px-4 text-[12px] font-extrabold text-[#203B6C] transition hover:bg-[#ECF3FF] disabled:opacity-50"
+          >
+            {copied ? <Check size={15} /> : <span aria-hidden="true">⧉</span>}
+            {copied ? "Copied!" : "Copy ID"}
+          </button>
         </div>
       </div>
     </motion.section>
@@ -325,76 +349,94 @@ function QuickStatsCards({ ignite }: { ignite?: IgniteDashboard | null }) {
   const info = ignite as ExtendedIgnite | null | undefined;
   const cards = [
     {
-      label: "Cash wallet (INR)",
+      label: "Cash Wallet",
       value: info?.cash_bal_inr,
       prefix: "₹",
       icon: Wallet,
-      note: "INR value reported by API",
-      tone: "#256b58",
-      bg: "#e9f7f0",
+      note: "Your available INR cash balance",
+      tone: "#0B855A",
+      bg: "#E6F8F0",
     },
     {
-      label: "Retail profit (INR)",
+      label: "Retail Profit",
       value: info?.retail_profit_usd,
       prefix: "₹",
       icon: ShoppingBag,
-      note: "Retail profit balance",
-      tone: "#54729a",
-      bg: "#edf2fa",
+      note: "Retail profit shown by your API",
+      tone: "#2B67C5",
+      bg: "#EAF2FF",
     },
     {
-      label: "Weekly pairing (INR)",
+      label: "Weekly Pairing",
       value: info?.weekly_pairing_usd,
       prefix: "₹",
       icon: TrendingUp,
-      note: "Weekly pairing amount",
-      tone: "#776a98",
-      bg: "#f2eff8",
+      note: "Pairing earnings reported for the week",
+      tone: "#8754BF",
+      bg: "#F4EDFF",
     },
     {
-      label: "Unilevel green coins",
+      label: "Unilevel Green Coins",
       value: info?.unilevel_green_coin,
       prefix: "",
-      icon: UsersRound,
-      note: "Coins earned from unilevel",
-      tone: "#b18432",
-      bg: "#fbf5e8",
+      icon: Coins,
+      note: "Coins earned from your network",
+      tone: "#B77A18",
+      bg: "#FFF4DF",
     },
   ];
   return (
     <section
+      id="earnings"
       aria-label="Key dashboard earnings"
-      className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4"
+      className="mt-6 scroll-mt-6"
     >
-      {cards.map((item) => {
-        const Icon = item.icon;
-        return (
-          <div
-            key={item.label}
-            className={`${CARD} dashboard-card flex min-h-[105px] min-w-0 items-center gap-3 p-3.5 sm:p-4`}
-          >
-            <span
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
-              style={{ color: item.tone, backgroundColor: item.bg }}
+      <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
+        <div>
+          <h2 className="text-[19px] font-extrabold tracking-tight text-[#1D2C46] sm:text-[22px]">
+            Your earnings at a glance
+          </h2>
+          <p className="mt-1 text-[12px] text-[#66758D] sm:text-[13px]">
+            Understand your wallet and earnings without opening another page.
+          </p>
+        </div>
+        <span className="rounded-full bg-[#EAF0FA] px-3 py-1.5 text-[11px] font-bold text-[#45648C]">
+          Live account data
+        </span>
+      </div>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {cards.map((item) => {
+          const Icon = item.icon;
+          return (
+            <div
+              key={item.label}
+              className="dashboard-card relative flex min-h-[154px] flex-col justify-between rounded-[19px] border border-[#E2E9F3] bg-white p-5 shadow-[0_6px_22px_rgba(36,55,90,.045)]"
             >
-              <Icon size={19} strokeWidth={1.8} />
-            </span>
-            <div className="min-w-0">
-              <p className="text-[11px] font-semibold text-[#707b8e]">
-                {item.label}
-              </p>
-              <p className="dashboard-number mt-1 break-words text-[22px] font-bold leading-tight tracking-tight text-[#1e293b]">
-                {item.value == null
-                  ? "—"
-                  : `${item.prefix}${formatNumber(item.value)}`}
-              </p>
-              <p className="mt-1 text-[10px] text-[#98a2b3]">
-                {item.value == null ? "Not provided by API" : item.note}
-              </p>
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-[13px] font-bold text-[#526179]">
+                  {item.label}
+                </p>
+                <span
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px]"
+                  style={{ color: item.tone, backgroundColor: item.bg }}
+                >
+                  <Icon size={21} strokeWidth={2} />
+                </span>
+              </div>
+              <div className="mt-3">
+                <p className="dashboard-number break-words text-[29px] font-extrabold leading-tight tracking-tight text-[#192944] sm:text-[32px]">
+                  {item.value == null
+                    ? "—"
+                    : `${item.prefix}${formatNumber(item.value)}`}
+                </p>
+                <p className="mt-1.5 text-[11px] leading-5 text-[#718097]">
+                  {item.value == null ? "Not provided by API" : item.note}
+                </p>
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </section>
   );
 }
@@ -529,63 +571,41 @@ function CoinCard({
   valueInr?: number | string | null;
   label: string;
 }) {
-  const tone = {
-    yellow: "#F5B919",
-    green: "#19B85D",
-    blue: "#2375EA",
+  const theme = {
+    yellow: {
+      solid: "#A66A0A",
+      bg: "#FFF5DB",
+      border: "#F6E4B5",
+      name: "Yellow",
+    },
+    green: {
+      solid: "#16855A",
+      bg: "#E7F8ED",
+      border: "#CDEDD9",
+      name: "Green",
+    },
+    blue: { solid: "#2864BF", bg: "#E9F1FF", border: "#CFE0FC", name: "Blue" },
   }[color];
-
   return (
     <div
-      className="group flex min-h-[132px] min-w-0 flex-col items-center justify-center rounded-[12px] border border-[#E9EBEF] bg-white px-2 py-3 text-center transition-colors hover:border-[#D4DAE3] hover:bg-[#FCFDFE]"
+      className="flex min-w-0 flex-col rounded-[17px] border p-3.5 sm:p-4"
+      style={{ borderColor: theme.border, backgroundColor: theme.bg }}
       title={`${label} • USD: ${valueUsd == null ? "Not available" : formatCurrency(valueUsd, "USD")} • INR: ${valueInr == null ? "Not available" : formatCurrency(valueInr, "INR")}`}
     >
-      <svg
-        aria-hidden="true"
-        width="40"
-        height="40"
-        viewBox="0 0 48 48"
-        fill="none"
-        className="shrink-0"
+      <span
+        className="flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-sm"
+        style={{ color: theme.solid }}
       >
-        <ellipse
-          cx="24"
-          cy="17"
-          rx="17"
-          ry="9"
-          stroke={tone}
-          strokeWidth="2.3"
-        />
-        <ellipse
-          cx="24"
-          cy="16"
-          rx="13.5"
-          ry="6.5"
-          stroke={tone}
-          strokeWidth="1.7"
-        />
-        <path
-          d="M7 17v7c0 5 7.6 9 17 9s17-4 17-9v-7"
-          stroke={tone}
-          strokeWidth="2.3"
-        />
-        <path
-          d="M7 24v5c0 5 7.6 9 17 9s17-4 17-9v-5"
-          stroke={tone}
-          strokeWidth="2.3"
-        />
-        <path
-          d="M12 28v5M18 31v5M25 33v5M32 31v5M38 28v5"
-          stroke={tone}
-          strokeWidth="1.7"
-          strokeLinecap="round"
-        />
-      </svg>
-      <p className="dashboard-number mt-1 text-[27px] font-semibold leading-none tracking-[-.04em] text-[#202020] sm:text-[29px]">
+        <Coins size={21} strokeWidth={2} />
+      </span>
+      <p className="dashboard-number mt-4 break-words text-[27px] font-extrabold leading-none tracking-tight text-[#1B2A44] sm:text-[30px]">
         {value == null ? "—" : formatNumber(value)}
       </p>
-      <p className="mt-2 text-[12px] font-medium leading-4 text-[#343434] sm:text-[13px]">
+      <p className="mt-2 text-[12px] font-bold leading-5 text-[#41516B] sm:text-[13px]">
         {label}
+      </p>
+      <p className="mt-0.5 text-[10px] leading-4 text-[#66758D]">
+        Available balance
       </p>
     </div>
   );
@@ -708,17 +728,19 @@ function RedeemCoinsModal({
                     onClick={() => onSelectPoint("yellow_bal")}
                     disabled={isRedeeming}
                     aria-pressed={selectedRedeemPoint === "yellow_bal"}
-                    className={`flex min-w-0 items-center justify-between gap-2 rounded-[12px] border px-3 py-3 text-left transition-all disabled:cursor-not-allowed disabled:opacity-60 ${selectedRedeemPoint === "yellow_bal"
+                    className={`flex min-w-0 items-center justify-between gap-2 rounded-[12px] border px-3 py-3 text-left transition-all disabled:cursor-not-allowed disabled:opacity-60 ${
+                      selectedRedeemPoint === "yellow_bal"
                         ? "border-[#DCC58F] bg-[#FFF9EA] shadow-[0_3px_10px_rgba(183,139,48,.07)]"
                         : "border-[#E6E9EF] bg-white hover:border-[#D5D9E1]"
-                      }`}
+                    }`}
                   >
                     <span className="flex min-w-0 items-center gap-2.5">
                       <span
-                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] ${selectedRedeemPoint === "yellow_bal"
+                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] ${
+                          selectedRedeemPoint === "yellow_bal"
                             ? "bg-[#F4E8C9] text-[#A77B22]"
                             : "bg-[#F4F5F7] text-[#858B96]"
-                          }`}
+                        }`}
                       >
                         <Coins size={16} />
                       </span>
@@ -734,10 +756,11 @@ function RedeemCoinsModal({
                     </span>
 
                     <span
-                      className={`flex h-[17px] w-[17px] shrink-0 items-center justify-center rounded-full border ${selectedRedeemPoint === "yellow_bal"
+                      className={`flex h-[17px] w-[17px] shrink-0 items-center justify-center rounded-full border ${
+                        selectedRedeemPoint === "yellow_bal"
                           ? "border-[#B78B30] bg-[#B78B30] text-white"
                           : "border-[#CCD2DC] bg-white"
-                        }`}
+                      }`}
                     >
                       {selectedRedeemPoint === "yellow_bal" && (
                         <Check size={11} strokeWidth={3} />
@@ -750,17 +773,19 @@ function RedeemCoinsModal({
                     onClick={() => onSelectPoint("blue_bal")}
                     disabled={isRedeeming}
                     aria-pressed={selectedRedeemPoint === "blue_bal"}
-                    className={`flex min-w-0 items-center justify-between gap-2 rounded-[12px] border px-3 py-3 text-left transition-all disabled:cursor-not-allowed disabled:opacity-60 ${selectedRedeemPoint === "blue_bal"
+                    className={`flex min-w-0 items-center justify-between gap-2 rounded-[12px] border px-3 py-3 text-left transition-all disabled:cursor-not-allowed disabled:opacity-60 ${
+                      selectedRedeemPoint === "blue_bal"
                         ? "border-[#BFCBF0] bg-[#F0F4FE] shadow-[0_3px_10px_rgba(79,106,192,.07)]"
                         : "border-[#E6E9EF] bg-white hover:border-[#D5D9E1]"
-                      }`}
+                    }`}
                   >
                     <span className="flex min-w-0 items-center gap-2.5">
                       <span
-                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] ${selectedRedeemPoint === "blue_bal"
+                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] ${
+                          selectedRedeemPoint === "blue_bal"
                             ? "bg-[#DDE5FA] text-[#4F6AC0]"
                             : "bg-[#F4F5F7] text-[#858B96]"
-                          }`}
+                        }`}
                       >
                         <Coins size={16} />
                       </span>
@@ -776,10 +801,11 @@ function RedeemCoinsModal({
                     </span>
 
                     <span
-                      className={`flex h-[17px] w-[17px] shrink-0 items-center justify-center rounded-full border ${selectedRedeemPoint === "blue_bal"
+                      className={`flex h-[17px] w-[17px] shrink-0 items-center justify-center rounded-full border ${
+                        selectedRedeemPoint === "blue_bal"
                           ? "border-[#4F6AC0] bg-[#4F6AC0] text-white"
                           : "border-[#CCD2DC] bg-white"
-                        }`}
+                      }`}
                     >
                       {selectedRedeemPoint === "blue_bal" && (
                         <Check size={11} strokeWidth={3} />
@@ -804,10 +830,11 @@ function RedeemCoinsModal({
                 </div>
 
                 <div
-                  className={`flex h-[47px] items-center gap-2.5 rounded-[12px] border bg-white px-3.5 transition-all focus-within:ring-4 ${exceedsBalance
+                  className={`flex h-[47px] items-center gap-2.5 rounded-[12px] border bg-white px-3.5 transition-all focus-within:ring-4 ${
+                    exceedsBalance
                       ? "border-[#E7B5B5] focus-within:border-[#CE6464] focus-within:ring-[#CE6464]/10"
                       : "border-[#E2E6ED] focus-within:border-[#7183A3] focus-within:ring-[#7183A3]/10"
-                    }`}
+                  }`}
                 >
                   <Coins
                     size={17}
@@ -865,8 +892,9 @@ function RedeemCoinsModal({
                 </div>
 
                 <span
-                  className={`shrink-0 text-[10px] font-bold ${selectedBalance > 0 ? "text-[#28866B]" : "text-[#B85D5D]"
-                    }`}
+                  className={`shrink-0 text-[10px] font-bold ${
+                    selectedBalance > 0 ? "text-[#28866B]" : "text-[#B85D5D]"
+                  }`}
                 >
                   {selectedBalance > 0
                     ? "Balance available"
@@ -1007,25 +1035,32 @@ function CoinsSection({
 
       toast.error(
         apiError?.data?.message ||
-        apiError?.message ||
-        "Failed to redeem coins. Please try again.",
+          apiError?.message ||
+          "Failed to redeem coins. Please try again.",
       );
     }
   };
 
   return (
-    <section className="min-w-0 rounded-[12px] border border-[#E9EAEE] bg-white px-4 py-5 sm:px-6 sm:py-6">
+    <section className="min-w-0 rounded-[20px] border border-[#E2E9F3] bg-white p-5 shadow-[0_6px_22px_rgba(36,55,90,.04)] sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-[16px] font-medium text-[#313138]">My Coins</h2>
+        <div>
+          <h2 className="text-[16px] font-extrabold text-[#1D2C46]">
+            My coin wallet
+          </h2>
+          <p className="mt-1 text-[11px] leading-5 text-[#718097]">
+            See your coin balance and redeem eligible coins
+          </p>
+        </div>
         <button
           type="button"
           onClick={() => setIsRedeemModalOpen(true)}
-          className="inline-flex h-[35px] items-center justify-center gap-2 rounded-[9px] bg-[#171717] px-3.5 text-[11px] font-semibold text-white transition-colors hover:bg-[#333333] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#171717]/30 focus-visible:ring-offset-2"
+          className="inline-flex min-h-[43px] items-center justify-center gap-2 rounded-xl bg-[#2457AA] px-4 text-[12px] font-extrabold text-white shadow-[0_5px_14px_rgba(36,87,170,.15)] transition hover:bg-[#1C478C] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2457AA]/30 focus-visible:ring-offset-2"
         >
           <HandCoins size={14} /> Redeem Coins
         </button>
       </div>
-      <div className="mt-4 grid grid-cols-3 gap-2 sm:gap-3">
+      <div className="mt-5 grid grid-cols-1 gap-3 min-[440px]:grid-cols-3">
         <CoinCard
           color="yellow"
           value={coinValues?.yellow_bal ?? 0}
@@ -1568,16 +1603,16 @@ function LatestOrderSection({ order }: { order: DashboardLatestOrder | null }) {
     order?.order_reference || order?.order_number || order?.reference;
   const orderData = order as
     | (DashboardLatestOrder & {
-      total_payable?: number | string;
-      order_date?: string;
-    })
+        total_payable?: number | string;
+        order_date?: string;
+      })
     | null;
   const amount = order?.total_amount ?? orderData?.total_payable;
   const status = order?.status?.toLowerCase() ?? "";
   const statusStyle =
     status.includes("deliver") ||
-      status.includes("confirm") ||
-      status.includes("complete")
+    status.includes("confirm") ||
+    status.includes("complete")
       ? "border-[#D8EEE0] bg-[#F1FAF5] text-[#21815A]"
       : status.includes("fail") || status.includes("cancel")
         ? "border-[#F1D6D6] bg-[#FFF5F5] text-[#B45454]"
@@ -2311,8 +2346,9 @@ function SearchableDropdown<T extends string | number>({
 
         <ChevronDown
           size={16}
-          className={`shrink-0 text-[#7c879b] transition-transform duration-200 group-hover:text-[#262626] ${open ? "rotate-180 text-[#262626]" : ""
-            }`}
+          className={`shrink-0 text-[#7c879b] transition-transform duration-200 group-hover:text-[#262626] ${
+            open ? "rotate-180 text-[#262626]" : ""
+          }`}
         />
       </button>
 
@@ -2373,10 +2409,11 @@ function SearchableDropdown<T extends string | number>({
                     role="option"
                     aria-selected={featuredOption.value === value}
                     onClick={() => chooseOption(featuredOption)}
-                    className={`flex w-full items-center gap-2.5 rounded-[11px] border px-3 py-2.5 text-left transition-colors ${featuredOption.value === value
+                    className={`flex w-full items-center gap-2.5 rounded-[11px] border px-3 py-2.5 text-left transition-colors ${
+                      featuredOption.value === value
                         ? "border-[#D0D0D0] bg-[#F2F2F2]"
                         : "border-[#E7E7E7] bg-[#FAFAFA] hover:bg-[#EFEFEF]"
-                      }`}
+                    }`}
                   >
                     <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] bg-white text-[#1f9d6b] ring-1 ring-[#d9eee2]">
                       <CalendarDays size={15} />
@@ -2413,10 +2450,11 @@ function SearchableDropdown<T extends string | number>({
                         role="option"
                         aria-selected={isSelected}
                         onClick={() => chooseOption(option)}
-                        className={`flex w-full items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-left transition-colors ${isSelected
+                        className={`flex w-full items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-left transition-colors ${
+                          isSelected
                             ? "bg-[#EFEFEF] text-[#202020]"
                             : "text-[#344054] hover:bg-[#F7F7F7]"
-                          }`}
+                        }`}
                       >
                         <span className="min-w-0 flex-1">
                           <span className="block truncate text-[12px] font-bold">
@@ -2518,27 +2556,29 @@ function CvFilters({
     apiCurrentMonth ??
     (derivedCurrentMonth
       ? {
-        year: calendar?.year,
-        month_no: derivedCurrentMonth.month_no,
-        label: derivedCurrentMonth.label,
-        start: derivedCurrentMonth.weeks?.[0]?.start,
-        end: (derivedCurrentMonth.weeks ?? []).slice(-1)[0]?.end,
-      }
+          year: calendar?.year,
+          month_no: derivedCurrentMonth.month_no,
+          label: derivedCurrentMonth.label,
+          start: derivedCurrentMonth.weeks?.[0]?.start,
+          end: (derivedCurrentMonth.weeks ?? []).slice(-1)[0]?.end,
+        }
       : undefined);
 
   const currentWeekLabel =
     currentWeek?.start && currentWeek?.end
       ? `Week ${currentWeek.week_no ?? "—"}: ${formatCalendarDate(
-        currentWeek.start,
-      )} – ${formatCalendarDate(currentWeek.end)} ${currentWeek.year ?? calendar?.year ?? ""
+          currentWeek.start,
+        )} – ${formatCalendarDate(currentWeek.end)} ${
+          currentWeek.year ?? calendar?.year ?? ""
         }`.trim()
       : "Sales calendar from dashboard";
 
   const currentMonthLabel =
     currentMonth?.start && currentMonth?.end
       ? `${formatCalendarDate(
-        currentMonth.start,
-      )} – ${formatCalendarDate(currentMonth.end)} ${currentMonth.year ?? calendar?.year ?? ""
+          currentMonth.start,
+        )} – ${formatCalendarDate(currentMonth.end)} ${
+          currentMonth.year ?? calendar?.year ?? ""
         }`.trim()
       : currentMonth?.label || "—";
 
@@ -2568,14 +2608,16 @@ function CvFilters({
 
         {currentWeek?.is_settled !== undefined && (
           <span
-            className={`inline-flex w-fit shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold sm:text-[11px] ${currentWeek.is_settled
+            className={`inline-flex w-fit shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold sm:text-[11px] ${
+              currentWeek.is_settled
                 ? "bg-[#eaf7f0] text-[#1f9d6b]"
                 : "bg-[#fff4e5] text-[#a15c07]"
-              }`}
+            }`}
           >
             <span
-              className={`h-1.5 w-1.5 rounded-full ${currentWeek.is_settled ? "bg-[#1f9d6b]" : "bg-[#f79009]"
-                }`}
+              className={`h-1.5 w-1.5 rounded-full ${
+                currentWeek.is_settled ? "bg-[#1f9d6b]" : "bg-[#f79009]"
+              }`}
             />
 
             {currentWeek.is_settled ? "Settled" : "Pending settlement"}
@@ -2641,12 +2683,13 @@ function CvFilters({
         searchedWeek !== undefined && (
           <div
             role={isError ? "alert" : "status"}
-            className={`mt-4 flex min-w-0 items-start gap-2 rounded-[11px] px-3 py-2.5 text-[11px] leading-5 sm:text-[12px] ${isError
+            className={`mt-4 flex min-w-0 items-start gap-2 rounded-[11px] px-3 py-2.5 text-[11px] leading-5 sm:text-[12px] ${
+              isError
                 ? "border border-[#f2c6c3] bg-[#fff4f3] text-[#b42318]"
                 : isFetching
                   ? "border border-[#E4E4E4] bg-[#FAFAFA] text-[#454545]"
                   : "border border-[#DAEBDD] bg-[#F6FBF6] text-[#28724C]"
-              }`}
+            }`}
           >
             {isFetching && (
               <Loader2 size={14} className="mt-0.5 shrink-0 animate-spin" />
@@ -3038,7 +3081,14 @@ type TrackWeek = {
   isCurrent: boolean;
   isSettled: boolean;
 };
-type TrackAccount = { baId: string; rank: string; status: string };
+type TrackAccount = {
+  baId: string;
+  baseId: string;
+  label: string;
+  sequence: number;
+  rank: string;
+  status: string;
+};
 type TrackHistory = {
   id?: number | string;
   category?: string;
@@ -3057,6 +3107,7 @@ function DashboardTrackingCenter({
   const accountsQuery = useGetMyAccountsQuery();
   const [loadCv, cvRequest] = useLazyGetTrackingCvCounterQuery();
   const [accountId, setAccountId] = useState("");
+  const [baseAccountId, setBaseAccountId] = useState("");
   const [year, setYear] = useState("");
   const [weekNo, setWeekNo] = useState("");
   const [response, setResponse] = useState<unknown>(null);
@@ -3075,20 +3126,39 @@ function DashboardTrackingCenter({
     source.records,
     trackObj(container.data).accounts,
   ].find(Array.isArray);
+  // Keep the complete account_id for the CV API, and show its label to users.
+  // The same TC label can exist under different base IDs, so dedupe by full ID only.
   const accounts: TrackAccount[] = trackList(rawAccounts)
     .flatMap((a) => {
-      const baId = String(a.ba_id ?? a.account_id ?? "").trim();
-      return baId
-        ? [
-          {
-            baId,
-            rank: String(a.rank_name ?? a.rank ?? "—"),
-            status: String(a.status ?? a.membership_status ?? "—"),
-          },
-        ]
-        : [];
+      const baId = String(a.account_id ?? a.ba_id ?? "").trim();
+      if (!baId) return [];
+      const baseId = String(a.base_id ?? baId.replace(/-\d+$/, "")).trim();
+      const sequence = Number(a.sequence ?? baId.match(/-(\d+)$/)?.[1] ?? 0);
+      const label = String(
+        a.label ??
+          a.display_label ??
+          (sequence > 0 ? `TC-${String(sequence).padStart(3, "0")}` : baId),
+      ).trim();
+      return [
+        {
+          baId,
+          baseId,
+          label,
+          sequence: Number.isFinite(sequence) ? sequence : 0,
+          rank: String(a.rank_name ?? a.rank ?? "—"),
+          status: String(a.status ?? a.membership_status ?? "—"),
+        },
+      ];
     })
-    .filter((a, i, arr) => arr.findIndex((b) => b.baId === a.baId) === i);
+    .filter((a, i, arr) => arr.findIndex((b) => b.baId === a.baId) === i)
+    .sort(
+      (a, b) =>
+        a.baseId.localeCompare(b.baseId) ||
+        a.sequence - b.sequence ||
+        a.baId.localeCompare(b.baId),
+    );
+  const baseIds = [...new Set(accounts.map((a) => a.baseId))];
+  const visibleAccounts = accounts.filter((a) => a.baseId === baseAccountId);
 
   const db = trackObj(dashboardData);
   const calendar = trackObj(db.sales_calendar);
@@ -3099,15 +3169,15 @@ function DashboardTrackingCenter({
         const wkYear = Number(w.year ?? calendar.year);
         return Number.isFinite(number) && number > 0 && Number.isFinite(wkYear)
           ? [
-            {
-              year: wkYear,
-              weekNo: number,
-              start: String(w.start ?? ""),
-              end: String(w.end ?? ""),
-              isCurrent: w.is_current === true,
-              isSettled: w.is_settled === true,
-            },
-          ]
+              {
+                year: wkYear,
+                weekNo: number,
+                start: String(w.start ?? ""),
+                end: String(w.end ?? ""),
+                isCurrent: w.is_current === true,
+                isSettled: w.is_settled === true,
+              },
+            ]
           : [];
       }),
     )
@@ -3123,9 +3193,22 @@ function DashboardTrackingCenter({
   const currentWeek = weeks.find((w) => w.isCurrent);
 
   useEffect(() => {
-    if (accounts.length && !accounts.some((a) => a.baId === accountId))
-      setAccountId(accounts[0].baId);
-  }, [accountsQuery.data, accountId]);
+    if (!baseIds.length) {
+      if (baseAccountId) setBaseAccountId("");
+      if (accountId) setAccountId("");
+      return;
+    }
+    if (!baseIds.includes(baseAccountId)) {
+      setBaseAccountId(baseIds[0]);
+      return;
+    }
+    if (!visibleAccounts.some((a) => a.baId === accountId)) {
+      setAccountId(visibleAccounts[0]?.baId ?? "");
+      setResponse(null);
+      setHasSearched(false);
+      setRequestError("");
+    }
+  }, [accountsQuery.data, baseAccountId, accountId]);
   useEffect(() => {
     if (years.length && !years.some((y) => String(y) === year))
       setYear(String(currentWeek?.year ?? years[0]));
@@ -3138,7 +3221,7 @@ function DashboardTrackingCenter({
       setWeekNo(
         String(
           weeksOfYear.find((w) => w.isCurrent)?.weekNo ??
-          weeksOfYear[weeksOfYear.length - 1].weekNo,
+            weeksOfYear[weeksOfYear.length - 1].weekNo,
         ),
       );
     }
@@ -3178,9 +3261,9 @@ function DashboardTrackingCenter({
       setRequestError(
         String(
           trackObj(obj.data).message ??
-          obj.message ??
-          obj.error ??
-          "Unable to load CV data.",
+            obj.message ??
+            obj.error ??
+            "Unable to load CV data.",
         ),
       );
     }
@@ -3303,14 +3386,14 @@ function DashboardTrackingCenter({
     : 0;
   const allGroups = otherBreakdownCount
     ? [
-      ...breakdownGroups,
-      {
-        category: "other",
-        label: "Other",
-        color: "#9ca3af",
-        count: otherBreakdownCount,
-      },
-    ]
+        ...breakdownGroups,
+        {
+          category: "other",
+          label: "Other",
+          color: "#9ca3af",
+          count: otherBreakdownCount,
+        },
+      ]
     : breakdownGroups;
   const sumCount = allGroups.reduce((n, g) => n + g.count, 0);
   let donutOffset = 0;
@@ -3358,16 +3441,21 @@ function DashboardTrackingCenter({
       )
       .join(" ");
   const formClass =
-    "h-10 w-full min-w-0 appearance-none rounded-[10px] border border-[#e2e7ef] bg-white px-3 text-[12px] font-semibold text-[#293447] outline-none focus:border-[#8697ae] focus:ring-2 focus:ring-[#9facbf]/20";
+    "h-12 w-full min-w-0 appearance-none rounded-xl border border-[#D8E2F0] bg-white px-3 text-[13px] font-semibold text-[#293447] outline-none focus:border-[#3768C6] focus:ring-4 focus:ring-[#3768C6]/10 disabled:bg-[#F4F6F9]";
   const panel =
-    "min-w-0 rounded-[16px] border border-[#e6e9ef] bg-white p-4 shadow-[0_4px_20px_rgba(24,39,75,.03)] sm:p-5";
+    "min-w-0 rounded-[20px] border border-[#E2E9F3] bg-white p-5 shadow-[0_6px_22px_rgba(36,55,90,.04)] sm:p-6";
   return (
-    <section className="mt-5 min-w-0 sm:mt-6" aria-label="Tracking Center">
+    <section
+      id="tracking"
+      className="mt-6 min-w-0 scroll-mt-6"
+      aria-label="Tracking Center"
+    >
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <div>
           <SectionTitle large>Tracking Center</SectionTitle>
           <p className="ml-11 mt-1 text-[11px] text-[#8893a5]">
-            TC account-wise CV, weekly settlement and transaction activity
+            Choose your TC account and sales week below, then click Show CV to
+            view its performance.
           </p>
         </div>
         <button
@@ -3386,31 +3474,66 @@ function DashboardTrackingCenter({
         </button>
       </div>
       <div className={panel}>
-        <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1.5fr)_minmax(130px,.5fr)_auto]">
+        <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.3fr)_minmax(110px,.5fr)_auto]">
           <label className="min-w-0">
             <span className="mb-1.5 block text-[11px] font-semibold text-[#566174]">
-              TC Account
+              Base BA ID
             </span>
             <select
               className={formClass}
-              value={accountId}
-              disabled={!accounts.length}
+              value={baseAccountId}
+              disabled={!baseIds.length}
               onChange={(e) => {
-                setAccountId(e.target.value);
+                const nextBaseId = e.target.value;
+                setBaseAccountId(nextBaseId);
+                setAccountId(
+                  accounts.find((a) => a.baseId === nextBaseId)?.baId ?? "",
+                );
                 onChange();
               }}
             >
               <option value="">
                 {accountsQuery.isLoading
                   ? "Loading accounts..."
-                  : "Select TC account"}
+                  : "Select Base BA ID"}
               </option>
-              {accounts.map((a) => (
-                <option key={a.baId} value={a.baId}>
-                  {a.baId}
+              {baseIds.map((id) => (
+                <option key={id} value={id}>
+                  {id}
                 </option>
               ))}
             </select>
+          </label>
+          <label className="min-w-0">
+            <span className="mb-1.5 block text-[11px] font-semibold text-[#566174]">
+              TC Slot
+            </span>
+            <select
+              className={formClass}
+              value={
+                visibleAccounts.some((a) => a.baId === accountId)
+                  ? accountId
+                  : ""
+              }
+              disabled={!visibleAccounts.length}
+              onChange={(e) => {
+                setAccountId(e.target.value);
+                onChange();
+              }}
+            >
+              <option value="">Select TC slot</option>
+              {visibleAccounts.map((a) => (
+                <option key={a.baId} value={a.baId}>
+                  {a.label}
+                </option>
+              ))}
+            </select>
+            {selectedAccount && (
+              <span className="mt-1 block text-[10px] text-[#8893a5]">
+                {selectedAccount.baId} · {selectedAccount.rank} ·{" "}
+                {selectedAccount.status}
+              </span>
+            )}
           </label>
           <label className="min-w-0">
             <span className="mb-1.5 block text-[11px] font-semibold text-[#566174]">
@@ -3729,16 +3852,7 @@ function DashboardTrackingCenter({
           </div>
         </div>
       </div>
-      {validResponse && (
-        <details className={`${panel} mt-3`}>
-          <summary className="cursor-pointer text-[12px] font-bold text-[#35445a]">
-            Full CV Counter API response
-          </summary>
-          <pre className="mt-3 max-h-64 overflow-auto rounded-lg bg-[#f6f7f9] p-3 text-[10px] leading-5 text-[#526074]">
-            {JSON.stringify(response, null, 2)}
-          </pre>
-        </details>
-      )}
+   
     </section>
   );
 }
@@ -3753,7 +3867,6 @@ function CoinsAndAccountStatusOverview({
   ignite?: IgniteDashboard | null;
   onRedeemSuccess: () => void;
 }) {
-  const router = useRouter();
   const accountQuery = useGetMyAccountsQuery();
   const source = trackObj(accountQuery.data);
   const payload = trackObj(source.data);
@@ -3774,7 +3887,7 @@ function CoinsAndAccountStatusOverview({
     return [
       {
         accountId,
-        rank: String(item.rank_name ?? item.rank ?? "—"),
+        rank: String(item.rank_name ?? item.rank ?? item.rank_no ?? "—"),
         status: String(item.status ?? item.membership_status ?? "—"),
       },
     ];
@@ -3789,117 +3902,82 @@ function CoinsAndAccountStatusOverview({
       counts.registered += 1;
   }
   const isWaiting = accountQuery.isLoading && !accountQuery.data;
-  const prettyStatus = (value: string) =>
-    value.replace(/[_-]/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
-  const statusColor = (value: string) => {
-    const s = value.toLowerCase();
-    return (s.includes("activ") && !s.includes("inactiv")) ||
-      s.includes("qualif")
-      ? "text-[#0E9D4A]"
-      : s.includes("reject") || s.includes("block") || s.includes("inactiv")
-        ? "text-[#C05252]"
-        : "text-[#7D8796]";
-  };
   return (
     <section
-      aria-label="My coins and my accounts"
-      className="mt-4 grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-2"
+      id="accounts"
+      aria-label="Coin wallet and account status"
+      className="mt-6 scroll-mt-6"
     >
-      <div className="flex min-w-0 flex-col gap-4">
-        <CoinsSection ignite={ignite} onRedeemSuccess={onRedeemSuccess} />
-        <div className="min-w-0 rounded-[12px] border border-[#E9EAEE] bg-white px-4 py-5 sm:px-6 sm:py-6">
-          <h2 className="text-[16px] font-medium text-[#313138]">
-            My Account Status
-          </h2>
-          <div className="mt-5 grid grid-cols-3 gap-2.5">
+      <div className="mb-3">
+        <h2 className="text-[19px] font-extrabold tracking-tight text-[#1D2C46] sm:text-[22px]">
+          Coins & account status
+        </h2>
+        <p className="mt-1 text-[12px] text-[#66758D] sm:text-[13px]">
+          Redeem eligible coins and check your account status.
+        </p>
+      </div>
+      <div className="grid min-w-0 grid-cols-1 items-start gap-4 xl:grid-cols-2">
+        <div className="min-w-0">
+          <CoinsSection ignite={ignite} onRedeemSuccess={onRedeemSuccess} />
+        </div>
+        <div className="min-w-0 rounded-[20px] border border-[#E2E9F3] bg-white p-5 shadow-[0_6px_22px_rgba(36,55,90,.04)] sm:p-6">
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#EDF3FF] text-[#3768C6]">
+              <BarChart3 size={19} />
+            </span>
+            <div>
+              <h3 className="text-[16px] font-extrabold text-[#1D2C46]">
+                Account status summary
+              </h3>
+              <p className="mt-0.5 text-[11px] text-[#718097]">
+                How many accounts are at each stage
+              </p>
+            </div>
+          </div>
+          <div className="mt-4 grid grid-cols-3 gap-2 sm:gap-3">
             {[
               {
                 label: "Registered",
                 count: counts.registered,
-                tone: "#F5B919",
+                tone: "#B8821D",
+                bg: "#FFF6E5",
               },
-              { label: "Qualified", count: counts.qualified, tone: "#19B85D" },
-              { label: "Activated", count: counts.activated, tone: "#2375EA" },
+              {
+                label: "Qualified",
+                count: counts.qualified,
+                tone: "#18845B",
+                bg: "#ECF9F2",
+              },
+              {
+                label: "Activated",
+                count: counts.activated,
+                tone: "#2867BF",
+                bg: "#EDF4FF",
+              },
             ].map((item) => (
               <div
                 key={item.label}
-                className="flex min-h-[132px] min-w-0 flex-col items-center justify-center rounded-[11px] border border-[#EAEBEF] bg-white px-1.5 py-3 text-center"
+                className="min-w-0 rounded-[15px] border border-[#E7ECF3] px-2 py-4 text-center"
+                style={{ backgroundColor: item.bg }}
               >
                 <p
-                  className="text-[30px] font-medium leading-tight tabular-nums"
+                  className="dashboard-number text-[29px] font-extrabold leading-tight sm:text-[34px]"
                   style={{ color: item.tone }}
                 >
                   {isWaiting ? "—" : item.count}
                 </p>
-                <p className="mt-1.5 text-[12px] font-medium text-[#24252B] sm:text-[14px]">
+                <p className="mt-1 text-[11px] font-bold text-[#43516B] sm:text-[12px]">
                   {item.label}
                 </p>
               </div>
             ))}
           </div>
           {accountQuery.isError && (
-            <p className="mt-3 text-[11px] text-[#B42318]">
-              Unable to load account status.
+            <p className="mt-3 text-[12px] font-medium text-[#B42318]">
+              Unable to load account statuses. Please refresh.
             </p>
           )}
         </div>
-      </div>
-      <div className="min-w-0 rounded-[12px] border border-[#E9EAEE] bg-white px-4 py-5 sm:px-6 sm:py-6">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-[16px] font-medium text-[#313138]">
-            My Account Status
-          </h2>
-          <button
-            type="button"
-            onClick={() => router.push("/distributor/MyAccounts/")}
-            className="inline-flex items-center gap-1.5 rounded-[7px] px-1 py-1 text-[13px] font-medium text-[#303340] hover:text-black hover:underline"
-          >
-            View All <ChevronRight size={17} strokeWidth={2} />
-          </button>
-        </div>
-        <div className="mt-6 grid grid-cols-[minmax(0,1.45fr)_minmax(0,.75fr)_minmax(0,.85fr)] gap-3 border-b border-dashed border-[#D9DCE3] pb-4 text-[11px] font-semibold uppercase tracking-[.015em] text-[#22252C] sm:text-[13px]">
-          <span>Account ID</span>
-          <span>Rank</span>
-          <span>Status</span>
-        </div>
-        {isWaiting ? (
-          <div className="flex min-h-[245px] items-center justify-center gap-2 text-[12px] text-[#8490A1]">
-            <Loader2 size={16} className="animate-spin" /> Loading accounts...
-          </div>
-        ) : accounts.length ? (
-          <div>
-            {accounts.slice(0, 6).map((item) => (
-              <div
-                key={item.accountId}
-                className="grid min-h-[59px] grid-cols-[minmax(0,1.45fr)_minmax(0,.75fr)_minmax(0,.85fr)] items-center gap-3 border-b border-dashed border-[#D9DCE3] py-3 text-[11px] text-[#23262C] sm:text-[13px]"
-              >
-                <span className="min-w-0 break-all font-medium">
-                  {item.accountId}
-                </span>
-                <span className="min-w-0 break-words">
-                  {prettyStatus(item.rank)}
-                </span>
-                <span
-                  className={`min-w-0 break-words font-medium ${statusColor(item.status)}`}
-                >
-                  {prettyStatus(item.status)}
-                </span>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="flex min-h-[245px] flex-col items-center justify-center gap-2 text-center text-[12px] text-[#8490A1]">
-            <UsersRound size={23} className="text-[#A6AEBB]" />
-            {accountQuery.isError
-              ? "Unable to load accounts. Please refresh."
-              : "No accounts available"}
-          </div>
-        )}
-        {accounts.length > 6 && (
-          <p className="mt-3 text-right text-[11px] text-[#8691A0]">
-            Showing 6 of {accounts.length} accounts
-          </p>
-        )}
       </div>
     </section>
   );
@@ -4002,9 +4080,9 @@ export default function DistributorDashboardPage() {
   const pairingsQuery = useGetPairingsQuery(
     (submittedCvFilters
       ? {
-        year: submittedCvFilters.year,
-        week_no: submittedCvFilters.week_no,
-      }
+          year: submittedCvFilters.year,
+          week_no: submittedCvFilters.week_no,
+        }
       : undefined) as any,
     {
       skip: !submittedCvFilters,
@@ -4033,9 +4111,9 @@ export default function DistributorDashboardPage() {
 
   const cvCounterIgnite = periodIgniteMetrics
     ? ({
-      ...(ignite ?? {}),
-      ...periodIgniteMetrics,
-    } as IgniteDashboard)
+        ...(ignite ?? {}),
+        ...periodIgniteMetrics,
+      } as IgniteDashboard)
     : ignite;
 
   const handleBankedTcPlacement = async (side: BankedTcSide) => {
@@ -4067,7 +4145,7 @@ export default function DistributorDashboardPage() {
 
       toast.success(
         response.message ||
-        `Banked TC placed on ${side === 1 ? "Left" : "Right"} Side successfully.`,
+          `Banked TC placed on ${side === 1 ? "Left" : "Right"} Side successfully.`,
       );
 
       setIsBankedTcModalOpen(false);
@@ -4076,8 +4154,8 @@ export default function DistributorDashboardPage() {
     } catch (error: any) {
       toast.error(
         error?.data?.message ||
-        error?.message ||
-        "Failed to place Banked TC. Please try again.",
+          error?.message ||
+          "Failed to place Banked TC. Please try again.",
       );
     } finally {
       setPendingBankedTcSide(null);
@@ -4092,7 +4170,7 @@ export default function DistributorDashboardPage() {
     <div
       suppressHydrationWarning
       style={{ fontFamily: "'Lato', sans-serif" }}
-      className="distributor-dashboard flex h-dvh min-h-0 w-full flex-col overflow-hidden bg-white"
+      className="distributor-dashboard flex h-dvh min-h-0 w-full flex-col overflow-hidden bg-[#F5F7FC]"
     >
       <FontImport />
 
@@ -4101,7 +4179,7 @@ export default function DistributorDashboardPage() {
       <div className="relative flex min-h-0 min-w-0 flex-1 overflow-hidden">
         <Sidebar />
 
-        <main className="thin-scroll min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain bg-[#F8F9FB] px-3 pb-7 pt-3 sm:px-4 sm:pb-9 sm:pt-4 lg:px-5 lg:pt-5 xl:px-6">
+        <main className="thin-scroll min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain bg-[#F5F7FC] px-3 pb-9 pt-4 sm:px-5 sm:pb-12 sm:pt-5 lg:px-7 lg:pt-7 xl:px-8">
           <div className="mx-auto w-full min-w-0 max-w-[1390px]">
             <WelcomeHero user={user} distributorId={ignite?.ba_id || "N/A"} />
 
@@ -4124,6 +4202,88 @@ export default function DistributorDashboardPage() {
               </div>
             )}
 
+            <nav
+              aria-label="Quick dashboard navigation"
+              className="mt-5 rounded-[20px] border border-[#E2E9F3] bg-white p-4 shadow-[0_5px_18px_rgba(36,55,90,.035)] sm:p-5"
+            >
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h2 className="text-[15px] font-extrabold text-[#1D2C46]">
+                    What would you like to do?
+                  </h2>
+                  <p className="mt-1 text-[11px] text-[#718097]">
+                    Choose an option to jump straight to the right section.
+                  </p>
+                </div>
+                <span className="text-[11px] font-semibold text-[#8693A8]">
+                  Quick actions
+                </span>
+              </div>
+              <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+                {[
+                  {
+                    href: "#earnings",
+                    label: "Check earnings",
+                    note: "Wallet & profit",
+                    icon: Wallet,
+                    tone: "text-[#20825E]",
+                    bg: "bg-[#E9F8F0]",
+                  },
+                  {
+                    href: "#tracking",
+                    label: "Track my CV",
+                    note: "TC & weekly CV",
+                    icon: BarChart3,
+                    tone: "text-[#3268BE]",
+                    bg: "bg-[#EAF1FF]",
+                  },
+                  {
+                    href: "#accounts",
+                    label: "Coin wallet",
+                    note: "Redeem coins",
+                    icon: Coins,
+                    tone: "text-[#A36D15]",
+                    bg: "bg-[#FFF3DD]",
+                  },
+                ].map((action) => {
+                  const Icon = action.icon;
+                  return (
+                    <a
+                      key={action.href}
+                      href={action.href}
+                      onClick={
+                        action.href.startsWith("/")
+                          ? (event) => {
+                              event.preventDefault();
+                              router.push(action.href);
+                            }
+                          : undefined
+                      }
+                      className="group flex min-w-0 items-center gap-2.5 rounded-[14px] border border-[#E7ECF4] bg-[#FCFDFF] p-3 transition hover:border-[#B9CDEF] hover:bg-[#F2F7FF] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3972CB] sm:p-3.5"
+                    >
+                      <span
+                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${action.tone} ${action.bg}`}
+                      >
+                        <Icon size={19} />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-[12px] font-extrabold leading-5 text-[#263751]">
+                          {action.label}
+                        </span>
+                        <span className="block text-[10px] leading-4 text-[#7A889C]">
+                          {action.note}
+                        </span>
+                      </span>
+                      <ChevronRight
+                        size={15}
+                        className="hidden shrink-0 text-[#92A4BE] sm:block"
+                      />
+                    </a>
+                  );
+                })}
+              </div>
+            </nav>
+
             <QuickStatsCards ignite={ignite} />
 
             <DashboardTrackingCenter
@@ -4137,9 +4297,14 @@ export default function DistributorDashboardPage() {
                 void refetch();
               }}
             />
-            <FinancialSummary
-              ignite={ignite as ExtendedIgnite | null | undefined}
-            />
+            <details className="mt-5 rounded-[20px] border border-[#E2E9F3] bg-white p-4 sm:p-5">
+              <summary className="cursor-pointer text-[13px] font-bold text-[#3B587F]">
+                View detailed financial breakdown
+              </summary>
+              <FinancialSummary
+                ignite={ignite as ExtendedIgnite | null | undefined}
+              />
+            </details>
             <DashboardOverview stats={stats} />
 
             <section className="mt-5 grid min-w-0 grid-cols-1 gap-3 sm:mt-6 sm:gap-4 xl:grid-cols-2">
@@ -4147,7 +4312,6 @@ export default function DistributorDashboardPage() {
 
               <RecentActivity activity={activity} />
             </section>
-
 
             <section className="mt-3 grid min-w-0 gap-3 lg:grid-cols-2">
               <AccountSummary ignite={ignite} />
@@ -4166,9 +4330,7 @@ export default function DistributorDashboardPage() {
                   ?.commissions_history
               }
             />
-            <ApiDetailsExplorer
-              dashboard={dashboard as Record<string, any> | undefined}
-            />
+       
 
             {isFetching && !isLoading && (
               <div className="mt-4 flex items-center justify-end gap-2 text-[11px] font-semibold text-[#777777]">
