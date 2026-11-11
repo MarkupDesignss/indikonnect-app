@@ -544,7 +544,7 @@ const Referral = () => {
                 {/* Table Header */}
                 <thead>
                   <tr className="bg-[#F7F9FD] text-[10px] font-black uppercase tracking-[0.08em] text-[#75839B]">
-                    <th className="px-5 py-4">Referral member</th>
+           
                     <th className="px-4 py-4">BA ID</th>
                     <th className="px-4 py-4">Position</th>
                     <th className="px-4 py-4">Level</th>
@@ -561,24 +561,7 @@ const Referral = () => {
                       className="border-t border-[#EDF0F5] text-[12px] transition hover:bg-[#FAFCFF]"
                     >
                       {/* Name */}
-                      <td className="px-5 py-4">
-                        <div className="flex items-center gap-3">
-                          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EDF2FA] font-black text-[#365C91]">
-                            {(member.name || "M")
-                              .trim()
-                              .charAt(0)
-                              .toUpperCase()}
-                          </span>
-                          <div className="min-w-0">
-                            <p className="max-w-[160px] break-words font-bold text-[#1D304D]">
-                              {member.name || "—"}
-                            </p>
-                            <p className="mt-0.5 text-[10px] text-[#8A96A8]">
-                              Member #{member.member_id}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
+                  
                       {/* BA ID */}
                       <td className="px-4 py-4">
                         <div className="flex items-center gap-0.5">

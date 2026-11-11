@@ -664,45 +664,8 @@ export default function DownlineTreePage() {
         </header>
 
         <section className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <div className={`${card} flex items-center gap-4 p-5 sm:p-6`}>
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#EAF2FF] text-[#24578E]">
-              <UserRound size={23} />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-[#8290A4]">
-                Direct referrals in loaded tree
-              </p>
-              <p className="mt-1 text-[29px] font-extrabold leading-none tabular-nums text-[#172E51]">
-                {isLoading ? "—" : value(direct)}
-              </p>
-            </div>
-          </div>
-          <div className={`${card} flex items-center gap-4 p-5 sm:p-6`}>
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#E8F8F1] text-[#168358]">
-              <UsersRound size={23} />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-[#8290A4]">
-                Total API records
-              </p>
-              <p className="mt-1 text-[29px] font-extrabold leading-none tabular-nums text-[#172E51]">
-                {isLoading ? "—" : value(totalMembers)}
-              </p>
-            </div>
-          </div>
-          <div className={`${card} flex items-center gap-4 p-5 sm:p-6`}>
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#FFF4E7] text-[#B57321]">
-              <GitBranch size={23} />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-[#8290A4]">
-                Highest level in loaded tree
-              </p>
-              <p className="mt-1 text-[29px] font-extrabold leading-none tabular-nums text-[#172E51]">
-                {isLoading ? "—" : maxLevel}
-              </p>
-            </div>
-          </div>
+         
+  
         </section>
 
         <section className={`${card} p-4 sm:p-6`}>
