@@ -774,7 +774,7 @@ const Penidngcv = () => {
                 <Sparkles size={12} /> Network performance
               </div>
               <h1 className="text-[23px] font-extrabold tracking-[-.045em] sm:text-[30px]">
-                Pending CV Breakdown
+                CV Breakdown
               </h1>
               <p className="mt-2 max-w-2xl text-[12px] leading-6 text-[#d4e1f7] sm:text-[13px]">
                 Explore your floating CV transactions, identify which leg

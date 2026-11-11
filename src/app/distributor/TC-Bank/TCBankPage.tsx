@@ -380,7 +380,7 @@ function AccountList({
                   />
                 </button>
               </th>
-          
+
               <th className="px-3 py-3.5">Status</th>
               <th className="px-3 py-3.5">Qualified</th>
             </tr>
@@ -416,7 +416,7 @@ function AccountList({
                         </span>
                       </button>
                     </td>
-                 
+
                     <td className="px-3 py-3">
                       <span
                         className={`inline-flex rounded-full border px-2 py-1 text-[10px] font-semibold ${getStatusTone(account.status)}`}
@@ -447,7 +447,7 @@ function AccountList({
                               {tc.account_id}
                             </div>
                           </td>
-                     
+
                           <td className="px-3 py-3">
                             <span
                               className={`inline-flex rounded-full border px-2 py-1 text-[10px] font-semibold ${getStatusTone(tc.status)}`}
@@ -1041,7 +1041,8 @@ function TCAllocation({
             positive balance.
           </div>
         )}
-        <div className="grid grid-cols-1 items-end gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)_minmax(0,.7fr)_auto]">
+        {/* FIXED GRID LAYOUT: Use lg:grid-cols to align everything in one line on large screens */}
+        <div className="grid grid-cols-1 items-end gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)_minmax(0,.7fr)_auto]">
           <label className="min-w-0">
             <span className="mb-1.5 block text-[12px] font-semibold text-[#485263]">
               Base BA ID
