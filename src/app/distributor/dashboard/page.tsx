@@ -3097,6 +3097,331 @@ type TrackHistory = {
   date_created?: string;
 };
 
+// --------------------------------------------------
+// Searchable Base BA ID selector for Tracking Center
+// --------------------------------------------------
+function TrackingBaseIdSearch({
+  ids,
+  value,
+  onChange,
+  loading,
+}: {
+  ids: string[];
+  value: string;
+  onChange: (id: string) => void;
+  loading?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [activeIndex, setActiveIndex] = useState(0);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const filtered = ids.filter((id) =>
+    id.toLowerCase().includes(query.trim().toLowerCase()),
+  );
+  const disabled = loading || ids.length === 0;
+
+  useEffect(() => {
+    const handleOutside = (event: PointerEvent) => {
+      if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("pointerdown", handleOutside);
+    return () => document.removeEventListener("pointerdown", handleOutside);
+  }, []);
+
+  useEffect(() => {
+    if (open) inputRef.current?.focus();
+  }, [open]);
+
+  const choose = (id: string) => {
+    onChange(id);
+    setOpen(false);
+    setQuery("");
+    setActiveIndex(0);
+  };
+
+  return (
+    <div ref={rootRef} className="relative min-w-0">
+      <button
+        type="button"
+        aria-label="Select Base BA ID"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        disabled={disabled}
+        onClick={() => {
+          setQuery("");
+          setActiveIndex(0);
+          setOpen((prev) => !prev);
+        }}
+        className="flex h-12 w-full min-w-0 items-center gap-2 rounded-xl border border-[#D8E2F0] bg-white px-3 text-left text-[13px] font-semibold text-[#293447] outline-none focus:border-[#3768C6] focus:ring-4 focus:ring-[#3768C6]/10 disabled:cursor-not-allowed disabled:bg-[#F4F6F9]"
+      >
+        <Search size={15} className="shrink-0 text-[#8190A7]" />
+        <span
+          className={`min-w-0 flex-1 truncate ${!value ? "text-[#98A2B3]" : ""}`}
+        >
+          {value ||
+            (loading
+              ? "Loading accounts..."
+              : ids.length
+                ? "Search / select Base BA ID"
+                : "No Base BA IDs available")}
+        </span>
+        <ChevronDown
+          size={15}
+          className={`shrink-0 text-[#64748B] transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {open && !disabled && (
+        <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-[100] min-w-[240px] overflow-hidden rounded-xl border border-[#D8E2F0] bg-white shadow-[0_16px_40px_rgba(18,35,70,.17)]">
+          <div className="border-b border-[#E8EDF5] p-2.5">
+            <div className="relative">
+              <Search
+                size={15}
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#8795AA]"
+              />
+              <input
+                ref={inputRef}
+                type="search"
+                role="combobox"
+                aria-label="Search Base BA ID"
+                aria-controls="tracking-base-ids"
+                aria-expanded={open}
+                aria-autocomplete="list"
+                value={query}
+                onChange={(event) => {
+                  setQuery(event.target.value);
+                  setActiveIndex(0);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "Escape") {
+                    event.preventDefault();
+                    setOpen(false);
+                  } else if (event.key === "ArrowDown") {
+                    event.preventDefault();
+                    setActiveIndex((index) =>
+                      Math.min(index + 1, filtered.length - 1),
+                    );
+                  } else if (event.key === "ArrowUp") {
+                    event.preventDefault();
+                    setActiveIndex((index) => Math.max(index - 1, 0));
+                  } else if (event.key === "Enter" && filtered[activeIndex]) {
+                    event.preventDefault();
+                    choose(filtered[activeIndex]);
+                  }
+                }}
+                placeholder="Search Base BA ID..."
+                className="h-10 w-full rounded-lg border border-[#DDE5EF] bg-[#F8FAFC] pl-9 pr-3 text-[12px] text-[#293447] outline-none focus:border-[#3768C6] focus:bg-white"
+              />
+            </div>
+            <p className="mt-2 px-1 text-[10px] text-[#8793A5]">
+              {filtered.length} of {ids.length} Base BA IDs
+            </p>
+          </div>
+          <div
+            id="tracking-base-ids"
+            role="listbox"
+            aria-label="Base BA IDs"
+            className="max-h-[260px] overflow-y-auto overscroll-contain py-1"
+          >
+            {filtered.length ? (
+              filtered.map((id, index) => (
+                <button
+                  key={id}
+                  type="button"
+                  role="option"
+                  aria-selected={value === id}
+                  onMouseEnter={() => setActiveIndex(index)}
+                  onClick={() => choose(id)}
+                  className={`flex w-full items-center justify-between gap-2 px-3.5 py-2.5 text-left text-[12px] font-semibold transition ${activeIndex === index ? "bg-[#EFF5FF]" : "hover:bg-[#F7F9FC]"}`}
+                >
+                  <span className="truncate text-[#293447]">{id}</span>
+                  {value === id && (
+                    <Check size={15} className="shrink-0 text-[#2A7E60]" />
+                  )}
+                </button>
+              ))
+            ) : (
+              <p className="px-4 py-5 text-center text-[12px] text-[#8793A5]">
+                No matching Base BA ID
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// --------------------------------------------------
+// Searchable selectors for TC Slot, Sales Week and Year
+// --------------------------------------------------
+type TrackingSearchOption = { value: string; label: string; detail?: string };
+
+function TrackingSearchSelect({
+  options,
+  value,
+  onChange,
+  placeholder,
+  searchPlaceholder,
+  disabled = false,
+}: {
+  options: TrackingSearchOption[];
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  searchPlaceholder: string;
+  disabled?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [activeIndex, setActiveIndex] = useState(0);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const selected = options.find((option) => option.value === value);
+  const filtered = options.filter((option) =>
+    `${option.label} ${option.value} ${option.detail ?? ""}`
+      .toLowerCase()
+      .includes(query.trim().toLowerCase()),
+  );
+
+  useEffect(() => {
+    const outside = (event: PointerEvent) => {
+      if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("pointerdown", outside);
+    return () => document.removeEventListener("pointerdown", outside);
+  }, []);
+
+  useEffect(() => {
+    if (open) inputRef.current?.focus();
+  }, [open]);
+
+  const choose = (nextValue: string) => {
+    onChange(nextValue);
+    setOpen(false);
+    setQuery("");
+    setActiveIndex(0);
+  };
+
+  return (
+    <div ref={rootRef} className="relative min-w-0">
+      <button
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label={placeholder}
+        disabled={disabled || options.length === 0}
+        onClick={() => {
+          setOpen((previous) => !previous);
+          setQuery("");
+          setActiveIndex(0);
+        }}
+        className="flex h-12 w-full min-w-0 items-center gap-2 rounded-xl border border-[#D8E2F0] bg-white px-3 text-left text-[13px] font-semibold text-[#293447] outline-none focus:border-[#3768C6] focus:ring-4 focus:ring-[#3768C6]/10 disabled:cursor-not-allowed disabled:bg-[#F4F6F9]"
+      >
+        <Search size={15} className="shrink-0 text-[#8190A7]" />
+        <span
+          className={`min-w-0 flex-1 truncate ${!selected ? "text-[#98A2B3]" : ""}`}
+        >
+          {selected?.label ?? placeholder}
+        </span>
+        <ChevronDown
+          size={15}
+          className={`shrink-0 text-[#64748B] transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+      {open && !disabled && (
+        <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-[110] min-w-[240px] overflow-hidden rounded-xl border border-[#D8E2F0] bg-white shadow-[0_16px_40px_rgba(18,35,70,.17)]">
+          <div className="border-b border-[#E8EDF5] p-2.5">
+            <div className="relative">
+              <Search
+                size={15}
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#8795AA]"
+              />
+              <input
+                ref={inputRef}
+                type="search"
+                role="combobox"
+                aria-expanded={open}
+                aria-autocomplete="list"
+                aria-label={searchPlaceholder}
+                value={query}
+                onChange={(event) => {
+                  setQuery(event.target.value);
+                  setActiveIndex(0);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "Escape") {
+                    event.preventDefault();
+                    setOpen(false);
+                  } else if (event.key === "ArrowDown") {
+                    event.preventDefault();
+                    setActiveIndex((index) =>
+                      Math.min(index + 1, Math.max(0, filtered.length - 1)),
+                    );
+                  } else if (event.key === "ArrowUp") {
+                    event.preventDefault();
+                    setActiveIndex((index) => Math.max(index - 1, 0));
+                  } else if (event.key === "Enter" && filtered[activeIndex]) {
+                    event.preventDefault();
+                    choose(filtered[activeIndex].value);
+                  }
+                }}
+                placeholder={searchPlaceholder}
+                className="h-10 w-full rounded-lg border border-[#DDE5EF] bg-[#F8FAFC] pl-9 pr-3 text-[12px] text-[#293447] outline-none focus:border-[#3768C6] focus:bg-white"
+              />
+            </div>
+            <p className="mt-2 px-1 text-[10px] text-[#8793A5]">
+              {filtered.length} of {options.length} options
+            </p>
+          </div>
+          <div
+            role="listbox"
+            aria-label={placeholder}
+            className="max-h-[260px] overflow-y-auto overscroll-contain py-1"
+          >
+            {filtered.length ? (
+              filtered.map((option, index) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  role="option"
+                  aria-selected={option.value === value}
+                  onMouseEnter={() => setActiveIndex(index)}
+                  onClick={() => choose(option.value)}
+                  className={`flex w-full items-center justify-between gap-2 px-3.5 py-2.5 text-left text-[12px] transition ${activeIndex === index ? "bg-[#EFF5FF]" : "hover:bg-[#F7F9FC]"}`}
+                >
+                  <span className="min-w-0">
+                    <span className="block font-semibold text-[#293447]">
+                      {option.label}
+                    </span>
+                    {option.detail && (
+                      <span className="mt-0.5 block break-all text-[10px] text-[#8793A5]">
+                        {option.detail}
+                      </span>
+                    )}
+                  </span>
+                  {option.value === value && (
+                    <Check size={15} className="shrink-0 text-[#2A7E60]" />
+                  )}
+                </button>
+              ))
+            ) : (
+              <p className="px-4 py-5 text-center text-[12px] text-[#8793A5]">
+                No matching results
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function DashboardTrackingCenter({
   dashboardData,
   ignite,
@@ -3474,60 +3799,47 @@ function DashboardTrackingCenter({
         </button>
       </div>
       <div className={panel}>
-        <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.3fr)_minmax(110px,.5fr)_auto]">
-          <label className="min-w-0">
+        <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.3fr)_minmax(110px,.5fr)_auto]">
+          <div className="min-w-0">
             <span className="mb-1.5 block text-[11px] font-semibold text-[#566174]">
               Base BA ID
             </span>
-            <select
-              className={formClass}
+            <TrackingBaseIdSearch
+              ids={baseIds}
               value={baseAccountId}
-              disabled={!baseIds.length}
-              onChange={(e) => {
-                const nextBaseId = e.target.value;
+              loading={accountsQuery.isLoading}
+              onChange={(nextBaseId) => {
                 setBaseAccountId(nextBaseId);
                 setAccountId(
                   accounts.find((a) => a.baseId === nextBaseId)?.baId ?? "",
                 );
                 onChange();
               }}
-            >
-              <option value="">
-                {accountsQuery.isLoading
-                  ? "Loading accounts..."
-                  : "Select Base BA ID"}
-              </option>
-              {baseIds.map((id) => (
-                <option key={id} value={id}>
-                  {id}
-                </option>
-              ))}
-            </select>
-          </label>
+            />
+          </div>
           <label className="min-w-0">
             <span className="mb-1.5 block text-[11px] font-semibold text-[#566174]">
               TC Slot
             </span>
-            <select
-              className={formClass}
+            <TrackingSearchSelect
+              options={visibleAccounts.map((a) => ({
+                value: a.baId,
+                label: a.label,
+                detail: `${a.baId} · ${a.rank} · ${a.status}`,
+              }))}
               value={
                 visibleAccounts.some((a) => a.baId === accountId)
                   ? accountId
                   : ""
               }
               disabled={!visibleAccounts.length}
-              onChange={(e) => {
-                setAccountId(e.target.value);
+              placeholder="Select TC slot"
+              searchPlaceholder="Search TC label or BA ID..."
+              onChange={(nextAccountId) => {
+                setAccountId(nextAccountId);
                 onChange();
               }}
-            >
-              <option value="">Select TC slot</option>
-              {visibleAccounts.map((a) => (
-                <option key={a.baId} value={a.baId}>
-                  {a.label}
-                </option>
-              ))}
-            </select>
+            />
             {selectedAccount && (
               <span className="mt-1 block text-[10px] text-[#8893a5]">
                 {selectedAccount.baId} · {selectedAccount.rank} ·{" "}
@@ -3539,59 +3851,62 @@ function DashboardTrackingCenter({
             <span className="mb-1.5 block text-[11px] font-semibold text-[#566174]">
               Sales Week
             </span>
-            <select
-              className={formClass}
+            <TrackingSearchSelect
+              options={weeksOfYear.map((w) => ({
+                value: String(w.weekNo),
+                label: `Week ${w.weekNo} (${trackDate(w.start)} – ${trackDate(w.end)} ${w.year})${w.isCurrent ? " · Current" : ""}`,
+              }))}
               value={weekNo}
               disabled={!weeksOfYear.length}
-              onChange={(e) => {
-                setWeekNo(e.target.value);
+              placeholder="Select week"
+              searchPlaceholder="Search week number or date..."
+              onChange={(nextWeekNo) => {
+                setWeekNo(nextWeekNo);
                 onChange();
               }}
-            >
-              <option value="">Select week</option>
-              {weeksOfYear.map((w) => (
-                <option key={w.weekNo} value={w.weekNo}>
-                  Week {w.weekNo} ({trackDate(w.start)} – {trackDate(w.end)}{" "}
-                  {w.year}){w.isCurrent ? " · Current" : ""}
-                </option>
-              ))}
-            </select>
+            />
           </label>
           <label className="min-w-0">
             <span className="mb-1.5 block text-[11px] font-semibold text-[#566174]">
               Year
             </span>
-            <select
-              className={formClass}
+            <TrackingSearchSelect
+              options={years.map((y) => ({
+                value: String(y),
+                label: String(y),
+              }))}
               value={year}
               disabled={!years.length}
-              onChange={(e) => {
-                setYear(e.target.value);
+              placeholder="Select year"
+              searchPlaceholder="Search year..."
+              onChange={(nextYear) => {
+                setYear(nextYear);
                 setWeekNo("");
                 onChange();
               }}
-            >
-              <option value="">Year</option>
-              {years.map((y) => (
-                <option key={y} value={y}>
-                  {y}
-                </option>
-              ))}
-            </select>
+            />
           </label>
-          <button
-            type="button"
-            onClick={() => void showCv()}
-            disabled={!canSearch}
-            className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-[10px] bg-[#171717] px-5 text-[12px] font-bold text-white hover:bg-[#333] disabled:cursor-not-allowed disabled:bg-[#d0d5dd] lg:w-auto"
-          >
-            {cvRequest.isFetching ? (
-              <Loader2 size={15} className="animate-spin" />
-            ) : (
-              <Search size={15} />
-            )}{" "}
-            Show CV
-          </button>
+          <div className="min-w-0">
+            <span
+              aria-hidden="true"
+              className="mb-1.5 block text-[11px] font-semibold text-transparent select-none"
+            >
+              Action
+            </span>
+            <button
+              type="button"
+              onClick={() => void showCv()}
+              disabled={!canSearch}
+              className="inline-flex h-12 w-full items-center justify-center gap-2 whitespace-nowrap rounded-[10px] bg-[#171717] px-5 text-[12px] font-bold text-white hover:bg-[#333] disabled:cursor-not-allowed disabled:bg-[#d0d5dd]"
+            >
+              {cvRequest.isFetching ? (
+                <Loader2 size={15} className="animate-spin" />
+              ) : (
+                <Search size={15} />
+              )}{" "}
+              Show CV
+            </button>
+          </div>
         </div>
         {accountsQuery.isError && (
           <p role="alert" className="mt-3 text-[11px] text-[#b42318]">
@@ -3852,7 +4167,6 @@ function DashboardTrackingCenter({
           </div>
         </div>
       </div>
-   
     </section>
   );
 }
@@ -4330,7 +4644,6 @@ export default function DistributorDashboardPage() {
                   ?.commissions_history
               }
             />
-       
 
             {isFetching && !isLoading && (
               <div className="mt-4 flex items-center justify-end gap-2 text-[11px] font-semibold text-[#777777]">
