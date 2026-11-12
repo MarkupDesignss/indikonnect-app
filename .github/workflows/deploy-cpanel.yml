@@ -2,9 +2,13 @@ name: Indiekonnect cPanel Deployment
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
+    inputs:
+      release_ref:
+        description: "Git commit SHA or release tag to deploy (blank = current main)"
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -18,58 +22,57 @@ jobs:
     name: Build and Deploy Both Panels
     runs-on: ubuntu-latest
     timeout-minutes: 30
-
     steps:
-      # ==========================================
-      # 1. CHECKOUT REPOSITORY
-      # ==========================================
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.release_ref || github.sha }}
+          persist-credentials: false
 
-      # ==========================================
-      # 2. SETUP NODE.JS
-      # ==========================================
+      - name: Set release metadata
+        shell: bash
+        env:
+          RUN_NUMBER: ${{ github.run_number }}
+          RUN_ID: ${{ github.run_id }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          SHA="$(git rev-parse HEAD)"
+          SHORT_SHA="$(git rev-parse --short=7 HEAD)"
+          RELEASE="v1.0.${RUN_NUMBER}"
+          DEPLOYED_AT="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          echo "RELEASE=$RELEASE" >> "$GITHUB_ENV"
+          echo "SHORT_SHA=$SHORT_SHA" >> "$GITHUB_ENV"
+          echo "DEPLOYED_AT=$DEPLOYED_AT" >> "$GITHUB_ENV"
+          echo "SOURCE_SHA=$SHA" >> "$GITHUB_ENV"
+          echo "NEXT_PUBLIC_RELEASE_VERSION=$RELEASE" >> "$GITHUB_ENV"
+          echo "NEXT_PUBLIC_RELEASE_COMMIT=$SHORT_SHA" >> "$GITHUB_ENV"
+          echo "NEXT_PUBLIC_RELEASE_DATE=$DEPLOYED_AT" >> "$GITHUB_ENV"
+          echo "Release: $RELEASE ($SHA)"
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-          cache: "npm"
+          cache: npm
 
-      # ==========================================
-      # 3. INSTALL DEPENDENCIES
-      # ==========================================
       - name: Install dependencies
         run: npm ci
 
-      # ==========================================
-      # 4. VALIDATE ENVIRONMENT VARIABLES
-      # ==========================================
       - name: Check environment variables
+        shell: bash
         env:
           API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
           CUSTOMER_URL: ${{ secrets.CUSTOMER_APP_URL }}
           DISTRIBUTOR_URL: ${{ secrets.DISTRIBUTOR_APP_URL }}
         run: |
-          if [ -z "$API_URL" ]; then
-            echo "::error::NEXT_PUBLIC_API_URL missing"
-            exit 1
-          fi
+          for key in API_URL CUSTOMER_URL DISTRIBUTOR_URL; do
+            if [ -z "${!key}" ]; then
+              echo "::error::$key missing"
+              exit 1
+            fi
+          done
 
-          if [ -z "$CUSTOMER_URL" ]; then
-            echo "::error::CUSTOMER_APP_URL missing"
-            exit 1
-          fi
-
-          if [ -z "$DISTRIBUTOR_URL" ]; then
-            echo "::error::DISTRIBUTOR_APP_URL missing"
-            exit 1
-          fi
-
-          echo "All environment variables configured"
-
-      # ==========================================
-      # 5. BUILD CUSTOMER PANEL
-      # ==========================================
       - name: Build Customer Panel
         env:
           NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
@@ -78,9 +81,6 @@ jobs:
           CI: "true"
         run: npm run build:customer
 
-      # ==========================================
-      # 6. BUILD DISTRIBUTOR PANEL
-      # ==========================================
       - name: Build Distributor Panel
         env:
           NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
@@ -89,33 +89,44 @@ jobs:
           CI: "true"
         run: npm run build:distributor
 
-      # ==========================================
-      # 7. VERIFY BUILD OUTPUTS
-      # ==========================================
-      - name: Verify build outputs
+      - name: Verify outputs and write release manifests
+        shell: bash
+        env:
+          RUN_ID: ${{ github.run_id }}
+          REPOSITORY: ${{ github.repository }}
         run: |
-          if [ ! -f out-customer/index.html ]; then
-            echo "::error::Customer index.html missing"
-            exit 1
-          fi
+          set -euo pipefail
+          test -f out-customer/index.html
+          test -f out-distributor/index.html
+          for panel in customer distributor; do
+            PANEL="$panel" node - <<'NODE'
+          const fs = require('node:fs');
+          const panel = process.env.PANEL;
+          const data = {
+            version: process.env.RELEASE,
+            commit: process.env.SOURCE_SHA,
+            deployedAt: process.env.DEPLOYED_AT,
+            runId: process.env.RUN_ID,
+            repository: process.env.REPOSITORY,
+            panel
+          };
+          fs.writeFileSync(`out-${panel}/release.json`, JSON.stringify(data, null, 2) + '\n');
+          NODE
+          done
+          du -sh out-customer out-distributor
 
-          if [ ! -f out-distributor/index.html ]; then
-            echo "::error::Distributor index.html missing"
-            exit 1
-          fi
+      - name: Archive built panels for rollback
+        uses: actions/upload-artifact@v4
+        with:
+          name: indiekonnect-${{ env.RELEASE }}-${{ env.SHORT_SHA }}
+          path: |
+            out-customer/
+            out-distributor/
+          retention-days: 90
+          if-no-files-found: error
 
-          echo "Both Next.js builds generated successfully"
-
-          echo "Customer build size:"
-          du -sh out-customer/
-
-          echo "Distributor build size:"
-          du -sh out-distributor/
-
-      # ==========================================
-      # 8. VALIDATE FTP CREDENTIALS
-      # ==========================================
       - name: Validate FTP credentials
+        shell: bash
         env:
           FTP_HOST: ${{ secrets.FTP_HOST }}
           FTP_CUSTOMER_USERNAME: ${{ secrets.FTP_CUSTOMER_USERNAME }}
@@ -123,78 +134,56 @@ jobs:
           FTP_DISTRIBUTOR_USERNAME: ${{ secrets.FTP_DISTRIBUTOR_USERNAME }}
           FTP_DISTRIBUTOR_PASSWORD: ${{ secrets.FTP_DISTRIBUTOR_PASSWORD }}
         run: |
-          for key in \
-            FTP_HOST \
-            FTP_CUSTOMER_USERNAME \
-            FTP_CUSTOMER_PASSWORD \
-            FTP_DISTRIBUTOR_USERNAME \
-            FTP_DISTRIBUTOR_PASSWORD
-          do
+          for key in FTP_HOST FTP_CUSTOMER_USERNAME FTP_CUSTOMER_PASSWORD FTP_DISTRIBUTOR_USERNAME FTP_DISTRIBUTOR_PASSWORD; do
             if [ -z "${!key}" ]; then
               echo "::error::$key missing"
               exit 1
             fi
           done
 
-          echo "FTP credentials are configured"
-
-      # ==========================================
-      # 9. DEPLOY CUSTOMER PANEL TO CPANEL
-      # ==========================================
       - name: Deploy Customer to cPanel
         uses: SamKirkland/FTP-Deploy-Action@v4.4.0
         with:
           server: ${{ secrets.FTP_HOST }}
           username: ${{ secrets.FTP_CUSTOMER_USERNAME }}
           password: ${{ secrets.FTP_CUSTOMER_PASSWORD }}
-
           protocol: ftps
           port: 21
           security: strict
-
           local-dir: ./out-customer/
           server-dir: ./
-
           state-name: .ftp-deploy-customer.json
           timeout: 60000
           log-level: standard
-
           dangerous-clean-slate: false
           dry-run: false
 
-      # ==========================================
-      # 10. DEPLOY DISTRIBUTOR PANEL TO CPANEL
-      # ==========================================
       - name: Deploy Distributor to cPanel
         uses: SamKirkland/FTP-Deploy-Action@v4.4.0
         with:
           server: ${{ secrets.FTP_HOST }}
           username: ${{ secrets.FTP_DISTRIBUTOR_USERNAME }}
           password: ${{ secrets.FTP_DISTRIBUTOR_PASSWORD }}
-
           protocol: ftps
           port: 21
           security: strict
-
           local-dir: ./out-distributor/
           server-dir: ./
-
           state-name: .ftp-deploy-distributor.json
           timeout: 60000
           log-level: standard
-
           dangerous-clean-slate: false
           dry-run: false
 
-      # ==========================================
-      # 11. DEPLOYMENT COMPLETED
-      # ==========================================
       - name: Deployment checks completed
+        env:
+          RUN_ID: ${{ github.run_id }}
+          REPOSITORY: ${{ github.repository }}
         run: |
-          echo "======================================="
-          echo "INDIEKONNECT DEPLOYMENT COMPLETED"
-          echo "======================================="
-          echo "Customer Panel: Build and FTP successful"
-          echo "Distributor Panel: Build and FTP successful"
-          echo "Deployment mode: LIVE"
-          echo "======================================="
+          echo "## Deployment completed" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Release: **$RELEASE**" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Commit: \`$SOURCE_SHA\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- UTC build time: $DEPLOYED_AT" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Customer: FTPS upload completed" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Distributor: FTPS upload completed" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Run: https://github.com/$REPOSITORY/actions/runs/$RUN_ID" >> "$GITHUB_STEP_SUMMARY"
