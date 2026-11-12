@@ -64,7 +64,7 @@ const SEMI = (px: number) => `600 ${px}px ${FONT_FAMILY}`;
 
 // Photo rectangle on the FRONT card.
 
-const PHOTO = { x: 199, y: 165, w: 240, h: 240, r: 120 };
+const PHOTO = { x: 214, y: 260, w: 210, h: 231, r: 30 };
 
 // The photo is embedded directly into the canvas for preview, PDF and print.
 
@@ -263,7 +263,7 @@ async function loadPoppins(): Promise<void> {
     link.rel = "stylesheet";
 
     link.href =
-      "https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&display=swap";
+      "https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap";
 
     document.head.appendChild(link);
   }
@@ -286,6 +286,8 @@ async function loadPoppins(): Promise<void> {
         document.fonts.load("500 24px Poppins"),
 
         document.fonts.load("600 24px Poppins"),
+
+        document.fonts.load("700 24px Poppins"),
       ]),
 
       new Promise<void>((resolve) => setTimeout(resolve, 3000)),
@@ -429,11 +431,13 @@ async function loadPhotoForCanvas(rawUrl: string): Promise<HTMLImageElement> {
     try {
       const result = await fetch(candidate, {
         credentials: "same-origin",
+
         cache: "no-store",
       });
 
       if (result.ok) {
         response = result;
+
         break;
       }
 
@@ -531,13 +535,9 @@ function img(
 
 function escapeHtmlAttribute(value: string): string {
   return value
-
     .replace(/&/g, "&amp;")
-
     .replace(/"/g, "&quot;")
-
     .replace(/</g, "&lt;")
-
     .replace(/>/g, "&gt;");
 }
 
@@ -944,8 +944,11 @@ function drawStatusBadge(
 
 function wrapCardText(
   ctx: CanvasRenderingContext2D,
+
   text: string,
+
   maxWidth: number,
+
   font: string,
 ) {
   ctx.font = font;
@@ -969,6 +972,541 @@ function wrapCardText(
   return output;
 }
 
+// =============================================================
+// PREMIUM CORPORATE PVC CARD – SAME CANVAS FOR PREVIEW/PDF/PRINT
+// Dimensions are proportional to an 85.6 × 54 mm portrait card.
+// =============================================================
+const BRAND_NAVY = "#092851";
+const BRAND_BLUE = "#113C70";
+const BRAND_GOLD = "#FFC400";
+const BRAND_ORANGE = "#FF890D";
+const BRAND_GREY = "#586378";
+const COMPANY_NAME_LINE_1 = "The Indiekonnect";
+const COMPANY_NAME_LINE_2 = "Enterprises Pvt. Ltd.";
+const DIRECT_SELLING_RULES = "Consumer Protection (Direct Selling) Rules, 2021";
+const LEGAL_STATEMENT =
+  "A statement confirming that the cardholder is authorized to undertake direct selling business on a principal-to-principal basis and is not a direct employee of the company.";
+
+const BOLD = (px: number) => `700 ${px}px ${FONT_FAMILY}`;
+
+function gradientFill(
+  ctx: CanvasRenderingContext2D,
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  stops: Array<[number, string]>,
+) {
+  const gradient = ctx.createLinearGradient(x0, y0, x1, y1);
+  stops.forEach(([offset, color]) => gradient.addColorStop(offset, color));
+  return gradient;
+}
+
+function drawCanvasBase(ctx: CanvasRenderingContext2D) {
+  ctx.clearRect(0, 0, PX_W, PX_H);
+  ctx.save();
+  // Rounded corners are part of the image and carry through to the PDF.
+  roundRect(ctx, 0, 0, PX_W, PX_H, 39);
+  ctx.clip();
+  ctx.fillStyle = "#FFFFFF";
+  ctx.fillRect(0, 0, PX_W, PX_H);
+
+  // Top right: overlapping golden and orange facets of the reference design.
+  ctx.fillStyle = gradientFill(ctx, 440, 0, 638, 260, [
+    [0, "#FFE07B"],
+    [0.58, BRAND_GOLD],
+    [1, "#FFAB18"],
+  ]);
+  ctx.beginPath();
+  ctx.moveTo(456, 0);
+  ctx.lineTo(638, 0);
+  ctx.lineTo(638, 271);
+  ctx.lineTo(548, 146);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = gradientFill(ctx, 555, 95, 637, 285, [
+    [0, "#FFC52D"],
+    [1, "#FF760C"],
+  ]);
+  ctx.beginPath();
+  ctx.moveTo(638, 55);
+  ctx.lineTo(638, 290);
+  ctx.lineTo(560, 182);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = "rgba(255, 183, 24, 0.48)";
+  ctx.beginPath();
+  ctx.moveTo(518, 0);
+  ctx.lineTo(638, 0);
+  ctx.lineTo(638, 136);
+  ctx.closePath();
+  ctx.fill();
+
+  // Punch slot: a soft metallic recessed cutout.
+  ctx.save();
+  ctx.shadowColor = "rgba(20,36,55,.24)";
+  ctx.shadowBlur = 7;
+  ctx.shadowOffsetY = -2;
+  ctx.fillStyle = gradientFill(ctx, 0, 29, 0, 61, [
+    [0, "#AAB1BC"],
+    [0.48, "#E6E9EF"],
+    [1, "#FCFCFE"],
+  ]);
+  roundRect(ctx, 247, 29, 144, 28, 15);
+  ctx.fill();
+  ctx.restore();
+  ctx.strokeStyle = "#C4C8CF";
+  ctx.lineWidth = 1;
+  roundRect(ctx, 247, 29, 144, 28, 15);
+  ctx.stroke();
+}
+
+function drawBrandHeader(
+  ctx: CanvasRenderingContext2D,
+  logo: HTMLImageElement | null,
+) {
+  // Reference: large logo at LEFT, divider, two-line company name at RIGHT.
+  // Draw the original file with its full aspect ratio – no crop or clipping.
+  const logoBox = { x: 78, y: 91, w: 132, h: 144 };
+  if (logo && logo.naturalWidth > 0 && logo.naturalHeight > 0) {
+    const scale = Math.min(
+      logoBox.w / logo.naturalWidth,
+      logoBox.h / logo.naturalHeight,
+    );
+    const w = logo.naturalWidth * scale;
+    const h = logo.naturalHeight * scale;
+    ctx.drawImage(
+      logo,
+      logoBox.x + (logoBox.w - w) / 2,
+      logoBox.y + (logoBox.h - h) / 2,
+      w,
+      h,
+    );
+  } else {
+    ctx.fillStyle = BRAND_GOLD;
+    roundRect(ctx, 94, 99, 105, 132, 7);
+    ctx.fill();
+    drawText(ctx, "INDIE", 146, 144, BOLD(25), BRAND_NAVY, 95, "center");
+    drawText(ctx, "KONNECT", 146, 167, BOLD(16), BRAND_NAVY, 95, "center");
+    drawText(ctx, "●  ●  ●", 146, 204, SEMI(21), BRAND_NAVY, 90, "center");
+  }
+
+  ctx.strokeStyle = BRAND_NAVY;
+  ctx.lineWidth = 2.2;
+  ctx.beginPath();
+  ctx.moveTo(226, 111);
+  ctx.lineTo(226, 215);
+  ctx.stroke();
+
+  drawText(ctx, COMPANY_NAME_LINE_1, 246, 153, BOLD(27), BRAND_NAVY, 350);
+  drawText(ctx, COMPANY_NAME_LINE_2, 246, 190, BOLD(27), BRAND_NAVY, 350);
+}
+
+function drawBottomWaves(ctx: CanvasRenderingContext2D) {
+  // Continuous flowing orange / yellow / navy waves, as in reference.
+  ctx.fillStyle = gradientFill(ctx, 0, 835, PX_W, 1011, [
+    [0, "#FFE77B"],
+    [0.38, BRAND_GOLD],
+    [1, "#FFA300"],
+  ]);
+  ctx.beginPath();
+  ctx.moveTo(0, 830);
+  ctx.bezierCurveTo(93, 954, 231, 980, 368, 972);
+  ctx.bezierCurveTo(486, 945, 562, 947, 638, 928);
+  ctx.lineTo(638, 1011);
+  ctx.lineTo(0, 1011);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = "#FFFFFF";
+  ctx.beginPath();
+  ctx.moveTo(0, 870);
+  ctx.bezierCurveTo(95, 960, 177, 966, 295, 984);
+  ctx.lineTo(310, 1003);
+  ctx.bezierCurveTo(155, 977, 70, 946, 0, 887);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = gradientFill(ctx, 0, 885, 375, 1011, [
+    [0, "#194F91"],
+    [0.45, BRAND_BLUE],
+    [1, "#001D43"],
+  ]);
+  ctx.beginPath();
+  ctx.moveTo(0, 884);
+  ctx.bezierCurveTo(97, 958, 210, 983, 390, 1011);
+  ctx.lineTo(0, 1011);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = gradientFill(ctx, 290, 961, 638, 1011, [
+    [0, "#FF9F00"],
+    [0.54, "#FF7107"],
+    [1, "#FFC400"],
+  ]);
+  ctx.beginPath();
+  ctx.moveTo(285, 978);
+  ctx.bezierCurveTo(391, 958, 527, 948, 638, 984);
+  ctx.lineTo(638, 1011);
+  ctx.lineTo(406, 1011);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function drawPortrait(
+  ctx: CanvasRenderingContext2D,
+  photo: HTMLImageElement | null,
+  fullName: string | undefined,
+) {
+  const frame = { x: 206, y: 252, w: 226, h: 247, r: 37 };
+  // Warm yellow outer outline and a white inner stroke.
+  ctx.save();
+  ctx.shadowColor = "rgba(13,37,72,.09)";
+  ctx.shadowBlur = 15;
+  ctx.shadowOffsetY = 4;
+  ctx.fillStyle = "#FFFFFF";
+  roundRect(ctx, frame.x, frame.y, frame.w, frame.h, frame.r);
+  ctx.fill();
+  ctx.restore();
+  ctx.strokeStyle = BRAND_GOLD;
+  ctx.lineWidth = 5;
+  roundRect(ctx, frame.x, frame.y, frame.w, frame.h, frame.r);
+  ctx.stroke();
+
+  const ix = frame.x + 8,
+    iy = frame.y + 8;
+  const iw = frame.w - 16,
+    ih = frame.h - 16;
+  ctx.save();
+  roundRect(ctx, ix, iy, iw, ih, 30);
+  ctx.clip();
+  if (photo && photo.naturalWidth > 0 && photo.naturalHeight > 0) {
+    const scale = Math.max(iw / photo.naturalWidth, ih / photo.naturalHeight);
+    const w = photo.naturalWidth * scale;
+    const h = photo.naturalHeight * scale;
+    ctx.drawImage(photo, ix + (iw - w) / 2, iy + (ih - h) / 2, w, h);
+  } else {
+    // Real photo absent: show initials, not an invented human portrait.
+    ctx.fillStyle = gradientFill(ctx, ix, iy, ix, iy + ih, [
+      [0, "#F2F5F9"],
+      [1, "#DCE5EF"],
+    ]);
+    ctx.fillRect(ix, iy, iw, ih);
+    drawText(
+      ctx,
+      initials(fullName),
+      319,
+      392,
+      BOLD(70),
+      BRAND_BLUE,
+      190,
+      "center",
+    );
+  }
+  ctx.restore();
+  ctx.strokeStyle = "#E9ECF0";
+  ctx.lineWidth = 2;
+  roundRect(ctx, ix, iy, iw, ih, 30);
+  ctx.stroke();
+}
+
+function drawSmallDetailIcon(
+  ctx: CanvasRenderingContext2D,
+  type: "id" | "calendar" | "expiry",
+  y: number,
+) {
+  ctx.save();
+  ctx.strokeStyle = BRAND_NAVY;
+  ctx.lineWidth = 2.5;
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  if (type === "id") {
+    roundRect(ctx, 84, y - 19, 37, 28, 4);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(97, y - 9, 4, 0, Math.PI * 2);
+    ctx.moveTo(89, y + 2);
+    ctx.quadraticCurveTo(97, y - 7, 105, y + 2);
+    ctx.moveTo(109, y - 9);
+    ctx.lineTo(116, y - 9);
+    ctx.moveTo(109, y - 3);
+    ctx.lineTo(116, y - 3);
+    ctx.stroke();
+  } else {
+    roundRect(ctx, 86, y - 20, 34, 32, 3);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(86, y - 11);
+    ctx.lineTo(120, y - 11);
+    ctx.moveTo(94, y - 24);
+    ctx.lineTo(94, y - 16);
+    ctx.moveTo(111, y - 24);
+    ctx.lineTo(111, y - 16);
+    ctx.stroke();
+    if (type === "expiry") {
+      ctx.fillStyle = "#FFFFFF";
+      ctx.beginPath();
+      ctx.arc(119, y + 6, 11, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(119, y);
+      ctx.lineTo(119, y + 6);
+      ctx.lineTo(124, y + 10);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+function drawDetailRow(
+  ctx: CanvasRenderingContext2D,
+  icon: "id" | "calendar" | "expiry",
+  label: string,
+  value: string,
+  y: number,
+) {
+  drawSmallDetailIcon(ctx, icon, y);
+  drawText(ctx, label, 149, y + 1, SEMI(20), BRAND_GREY, 137);
+  ctx.strokeStyle = BRAND_NAVY;
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  ctx.moveTo(291, y - 19);
+  ctx.lineTo(291, y + 14);
+  ctx.stroke();
+  // Expiry text is intentionally smaller; it is long and must never overlap.
+  const isLong = value.length > 25;
+  drawText(ctx, value, 311, y + 1, SEMI(isLong ? 17 : 21), BRAND_NAVY, 294);
+}
+
+function drawFrontCard(
+  ctx: CanvasRenderingContext2D,
+  user: User,
+  photo: HTMLImageElement | null,
+  logo: HTMLImageElement | null,
+) {
+  drawCanvasBase(ctx);
+  drawBrandHeader(ctx, logo);
+  drawPortrait(ctx, photo, user.full_name);
+
+  const name = (user.full_name || "Distributor").trim().toUpperCase();
+  const nameSize = Math.min(43, fitName(ctx, name, 562));
+  drawText(ctx, name, 319, 557, BOLD(nameSize), BRAND_NAVY, 566, "center");
+
+  // Golden designation pill and thin accent lines.
+  ctx.strokeStyle = BRAND_GOLD;
+  ctx.lineWidth = 2.3;
+  ctx.beginPath();
+  ctx.moveTo(88, 601);
+  ctx.lineTo(139, 601);
+  ctx.moveTo(499, 601);
+  ctx.lineTo(550, 601);
+  ctx.stroke();
+  ctx.fillStyle = gradientFill(ctx, 154, 581, 490, 623, [
+    [0, "#FFE69A"],
+    [0.48, "#FFD054"],
+    [1, "#FFDD78"],
+  ]);
+  roundRect(ctx, 153, 578, 332, 45, 24);
+  ctx.fill();
+  drawText(
+    ctx,
+    "AUTHORIZED DIRECT SELLER",
+    319,
+    608,
+    SEMI(21),
+    BRAND_NAVY,
+    318,
+    "center",
+    "1px",
+  );
+
+  drawDetailRow(ctx, "id", "ID NUMBER", user.distributor_id || "—", 687);
+  drawDetailRow(
+    ctx,
+    "calendar",
+    "ISSUE DATE",
+    formatDate(user.joining_date || user.created_at || DEMO_ISSUED),
+    746,
+  );
+  drawDetailRow(
+    ctx,
+    "expiry",
+    "EXPIRY DATE",
+    "As per membership validity",
+    805,
+  );
+
+  // Deliberately no fake handwritten signature: room is left for a valid one.
+  ctx.strokeStyle = "#294977";
+  ctx.lineWidth = 1.3;
+  ctx.beginPath();
+  ctx.moveTo(386, 915);
+  ctx.lineTo(579, 915);
+  ctx.stroke();
+  drawText(
+    ctx,
+    "Authorized Signatory",
+    482,
+    940,
+    MED(16),
+    BRAND_GREY,
+    208,
+    "center",
+  );
+  drawBottomWaves(ctx);
+  ctx.restore();
+}
+
+function drawBackCard(
+  ctx: CanvasRenderingContext2D,
+  logo: HTMLImageElement | null,
+) {
+  drawCanvasBase(ctx);
+  drawBrandHeader(ctx, logo);
+
+  // Subtle divider below the brand block.
+  ctx.strokeStyle = "#E6EAF0";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(72, 253);
+  ctx.lineTo(566, 253);
+  ctx.stroke();
+
+  drawText(
+    ctx,
+    "REGISTERED ADDRESS",
+    319,
+    301,
+    BOLD(25),
+    BRAND_NAVY,
+    520,
+    "center",
+  );
+  ctx.fillStyle = "#F6F8FB";
+  roundRect(ctx, 56, 318, 526, 181, 17);
+  ctx.fill();
+  ctx.strokeStyle = "#E6EAF0";
+  ctx.lineWidth = 1.5;
+  roundRect(ctx, 56, 318, 526, 181, 17);
+  ctx.stroke();
+
+  const addressLines = wrapCardText(ctx, COMPANY_ADDRESS, 474, MED(19)).slice(
+    0,
+    4,
+  );
+  addressLines.forEach((line, index) => {
+    drawText(
+      ctx,
+      line,
+      319,
+      358 + index * 30,
+      MED(19),
+      BRAND_NAVY,
+      475,
+      "center",
+    );
+  });
+  let contactY = 358 + addressLines.length * 30;
+  if (COMPANY_PHONE && !COMPANY_PHONE.startsWith("[") && contactY < 490) {
+    drawText(
+      ctx,
+      `Phone: ${COMPANY_PHONE}`,
+      319,
+      contactY,
+      MED(17),
+      BRAND_GREY,
+      477,
+      "center",
+    );
+    contactY += 26;
+  }
+  if (COMPANY_EMAIL && !COMPANY_EMAIL.startsWith("[") && contactY < 490) {
+    drawText(
+      ctx,
+      `Email: ${COMPANY_EMAIL}`,
+      319,
+      contactY,
+      MED(17),
+      BRAND_GREY,
+      477,
+      "center",
+    );
+  }
+
+  drawText(
+    ctx,
+    "LEGAL DISCLAIMER",
+    319,
+    549,
+    BOLD(25),
+    BRAND_NAVY,
+    500,
+    "center",
+  );
+  ctx.fillStyle = BRAND_GOLD;
+  roundRect(ctx, 164, 563, 310, 4, 2);
+  ctx.fill();
+
+  // Exact requested rule line comes immediately before the original statement.
+  drawText(
+    ctx,
+    DIRECT_SELLING_RULES,
+    319,
+    609,
+    SEMI(18),
+    BRAND_NAVY,
+    530,
+    "center",
+  );
+  const legalLines = wrapCardText(ctx, LEGAL_STATEMENT, 498, MED(19));
+  legalLines.slice(0, 7).forEach((line, index) => {
+    drawText(
+      ctx,
+      line,
+      319,
+      649 + index * 29,
+      MED(19),
+      BRAND_GREY,
+      516,
+      "center",
+    );
+  });
+
+  // Matching return instructions, safely above bottom geometric waves.
+  ctx.strokeStyle = "#E8EAF0";
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  ctx.moveTo(88, 847);
+  ctx.lineTo(550, 847);
+  ctx.stroke();
+  drawText(
+    ctx,
+    "IF FOUND, PLEASE RETURN TO",
+    319,
+    882,
+    SEMI(20),
+    BRAND_NAVY,
+    519,
+    "center",
+  );
+  drawText(
+    ctx,
+    "Indiekonnect Registered Office",
+    319,
+    915,
+    MED(17),
+    BRAND_GREY,
+    519,
+    "center",
+  );
+
+  drawBottomWaves(ctx);
+  ctx.restore();
+}
+
 async function drawCard(
   user: User,
   side: "front" | "back",
@@ -976,321 +1514,12 @@ async function drawCard(
   logo: HTMLImageElement | null,
 ): Promise<string> {
   const canvas = document.createElement("canvas");
-
   canvas.width = PX_W;
   canvas.height = PX_H;
-
   const ctx = canvas.getContext("2d");
-
   if (!ctx) throw new Error("Canvas unavailable");
-
-  const navy = "#153C69",
-    yellow = "#FFCC32",
-    orange = "#F28A21",
-    muted = "#506784";
-
-  ctx.fillStyle = "#FFFFFF";
-  ctx.fillRect(0, 0, PX_W, PX_H);
-
-  // Premium portrait card with print-safe vector artwork.
-
-  if (side === "front") {
-    ctx.fillStyle = navy;
-
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.lineTo(PX_W, 0);
-    ctx.lineTo(PX_W, 440);
-    ctx.lineTo(515, 375);
-    ctx.bezierCurveTo(320, 475, 170, 345, 0, 290);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.fillStyle = yellow;
-    ctx.beginPath();
-    ctx.moveTo(420, 0);
-    ctx.lineTo(PX_W, 0);
-    ctx.lineTo(PX_W, 220);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.fillStyle = orange;
-    ctx.beginPath();
-    ctx.moveTo(PX_W, 270);
-    ctx.lineTo(PX_W, 590);
-    ctx.lineTo(495, 445);
-    ctx.closePath();
-    ctx.fill();
-
-    // Punch-slot safe zone.
-
-    ctx.fillStyle = "#FFFFFF";
-    roundRect(ctx, 264, 23, 110, 19, 10);
-    ctx.fill();
-
-    // Display the original Indiekonnect logo without an extra colored box.
-
-    if (logo && logo.naturalWidth) {
-      const s = Math.min(180 / logo.naturalWidth, 112 / logo.naturalHeight);
-
-      ctx.drawImage(
-        logo,
-        38,
-        54,
-        logo.naturalWidth * s,
-        logo.naturalHeight * s,
-      );
-    } else {
-      drawText(ctx, "INDIE", 55, 105, SEMI(30), navy, 130);
-
-      drawText(ctx, "KONNECT", 55, 137, SEMI(23), navy, 130);
-    }
-
-    // Circular portrait, fully embedded into the PDF canvas.
-
-    ctx.fillStyle = "#FFFFFF";
-    ctx.beginPath();
-    ctx.arc(319, 285, 137, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.strokeStyle = "#E9EEF5";
-    ctx.lineWidth = 7;
-    ctx.beginPath();
-    ctx.arc(319, 285, 128, 0, Math.PI * 2);
-    ctx.stroke();
-
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(319, 285, 120, 0, Math.PI * 2);
-    ctx.clip();
-
-    if (photo) {
-      const scale = Math.max(
-        240 / photo.naturalWidth,
-        240 / photo.naturalHeight,
-      );
-
-      const w = photo.naturalWidth * scale,
-        h = photo.naturalHeight * scale;
-
-      ctx.drawImage(photo, 319 - w / 2, 285 - h / 2, w, h);
-    } else {
-      ctx.fillStyle = "#E8EEF6";
-      ctx.fillRect(199, 165, 240, 240);
-
-      drawText(
-        ctx,
-        initials(user.full_name),
-        319,
-        308,
-        SEMI(70),
-        navy,
-        190,
-        "center",
-      );
-    }
-
-    ctx.restore();
-
-    const name = (user.full_name || "Distributor").trim().toUpperCase();
-
-    drawText(
-      ctx,
-      name,
-      319,
-      515,
-      SEMI(fitName(ctx, name, 570)),
-      navy,
-      570,
-      "center",
-    );
-
-    drawText(
-      ctx,
-      "AUTHORIZED DIRECT SELLER",
-      319,
-      554,
-      SEMI(19),
-      muted,
-      550,
-      "center",
-      "1px",
-    );
-
-    ctx.fillStyle = "#E6EBF1";
-    ctx.fillRect(66, 593, 506, 2);
-
-    const fields = [
-      ["ID NUMBER", user.distributor_id || "—"],
-
-      [
-        "ISSUE DATE",
-        formatDate(user.joining_date || user.created_at || DEMO_ISSUED),
-      ],
-
-      ["EXPIRY DATE", "As per membership validity"],
-    ];
-
-    fields.forEach(([label, value], i) => {
-      const y = 650 + i * 75;
-
-      drawText(ctx, label + " :", 76, y, SEMI(19), muted, 200);
-
-      drawText(ctx, value, 560, y, SEMI(i === 2 ? 17 : 20), navy, 300, "right");
-    });
-
-    ctx.strokeStyle = "#9DB2C9";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(370, 918);
-    ctx.lineTo(564, 918);
-    ctx.stroke();
-
-    drawText(
-      ctx,
-      "Authorized Signatory",
-      467,
-      945,
-      MED(16),
-      muted,
-      230,
-      "center",
-    );
-
-    ctx.fillStyle = yellow;
-    ctx.fillRect(0, 987, PX_W, 24);
-  } else {
-    // Back panel styled to match the approved visual reference.
-    ctx.fillStyle = "#FFFFFF";
-    ctx.fillRect(0, 0, PX_W, PX_H);
-
-    // Top geometric brand artwork.
-    ctx.fillStyle = navy;
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.lineTo(0, 0);
-    ctx.lineTo(490, 0);
-    ctx.lineTo(604, 114);
-    ctx.lineTo(522, 194);
-    ctx.bezierCurveTo(426, 288, 260, 286, 145, 208);
-    ctx.lineTo(0, 82);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.fillStyle = yellow;
-    ctx.beginPath();
-    ctx.moveTo(486, 0);
-    ctx.lineTo(PX_W, 0);
-    ctx.lineTo(PX_W, 128);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.fillStyle = orange;
-    ctx.beginPath();
-    ctx.moveTo(536, 115);
-    ctx.lineTo(PX_W, 115);
-    ctx.lineTo(PX_W, 240);
-    ctx.closePath();
-    ctx.fill();
-
-    // Punch slot.
-    ctx.fillStyle = "#FFFFFF";
-    roundRect(ctx, 264, 23, 110, 19, 10);
-    ctx.fill();
-
-    // Centered logo.
-    if (logo && logo.naturalWidth) {
-      const s = Math.min(164 / logo.naturalWidth, 164 / logo.naturalHeight);
-      const lw = logo.naturalWidth * s;
-      const lh = logo.naturalHeight * s;
-      ctx.drawImage(logo, (PX_W - lw) / 2, 92, lw, lh);
-    } else {
-      drawText(ctx, "INDIE", 319, 140, SEMI(30), yellow, 180, "center");
-      drawText(ctx, "KONNECT", 319, 172, SEMI(23), yellow, 180, "center");
-    }
-
-    // Registered address heading and content.
-    drawText(
-      ctx,
-      "Registered Address",
-      319,
-      408,
-      SEMI(25),
-      navy,
-      550,
-      "center",
-    );
-
-    const addressLines = wrapCardText(ctx, COMPANY_ADDRESS, 500, MED(20)).slice(
-      0,
-      4,
-    );
-    addressLines.forEach((line, i) =>
-      drawText(ctx, line, 319, 468 + i * 32, MED(20), navy, 520, "center"),
-    );
-
-    let contactY = 468 + addressLines.length * 32 + 10;
-    if (COMPANY_PHONE && !COMPANY_PHONE.startsWith("[")) {
-      drawText(
-        ctx,
-        "Phone : " + COMPANY_PHONE,
-        319,
-        contactY,
-        MED(18),
-        navy,
-        540,
-        "center",
-      );
-      contactY += 32;
-    }
-
-    if (COMPANY_EMAIL && !COMPANY_EMAIL.startsWith("[")) {
-      drawText(
-        ctx,
-        "Email : " + COMPANY_EMAIL,
-        319,
-        contactY,
-        MED(18),
-        navy,
-        540,
-        "center",
-      );
-      contactY += 28;
-    }
-
-    // Legal disclaimer section without a background box.
-    drawText(ctx, "Legal Disclaimer", 319, 650, SEMI(25), navy, 520, "center");
-
-    const legal =
-      "A statement confirming that the cardholder is authorized to undertake direct selling business on a principal-to-principal basis and is not a direct employee of the company.";
-    wrapCardText(ctx, legal, 520, MED(19))
-      .slice(0, 6)
-      .forEach((line, i) =>
-        drawText(ctx, line, 319, 710 + i * 31, MED(19), navy, 530, "center"),
-      );
-
-    drawText(
-      ctx,
-      "If Found, Please return to",
-      319,
-      925,
-      SEMI(23),
-      navy,
-      560,
-      "center",
-    );
-    drawText(
-      ctx,
-      "Indiekonnect Registered Office Address",
-      319,
-      976,
-      MED(18),
-      navy,
-      560,
-      "center",
-    );
-  }
-
+  if (side === "front") drawFrontCard(ctx, user, photo, logo);
+  else drawBackCard(ctx, logo);
   return canvas.toDataURL("image/png");
 }
 
@@ -1334,6 +1563,7 @@ export default function DistributorPVCSection({ user }: { user: User }) {
 
         profilePhotoUrl
           ? Promise.resolve()
+
               .then(() => loadPhotoForCanvas(profilePhotoUrl))
 
               .then((image) => ({ image, problem: "" }))
@@ -1416,6 +1646,7 @@ export default function DistributorPVCSection({ user }: { user: User }) {
 
     if (photoExportError) {
       setError(photoExportError);
+
       return;
     }
 
@@ -1461,6 +1692,7 @@ export default function DistributorPVCSection({ user }: { user: User }) {
 
     if (photoExportError) {
       setError(photoExportError);
+
       return;
     }
 
@@ -1481,171 +1713,87 @@ export default function DistributorPVCSection({ user }: { user: User }) {
 
       popup.document.write(`<!doctype html>
 
-
-
 <html>
-
-
 
 <head>
 
-
-
 <meta charset="utf-8" />
-
-
 
 <title>Print Indiekonnect ID</title>
 
-
-
 <style>
-
-
 
 @page{size:A4 portrait;margin:15mm}
 
-
-
 *{box-sizing:border-box}
-
-
 
 body{font:13px Arial,sans-serif;padding:0;margin:0}
 
-
-
 .card-wrap{
-
-
 
   position:relative;
 
-
-
   width:54mm;
-
-
 
   height:85.6mm;
 
-
-
   margin:0 0 12mm 0;
-
-
 
   print-color-adjust:exact;
 
-
-
   -webkit-print-color-adjust:exact
 
-
-
 }
-
-
 
 .card{
 
-
-
   position:absolute;
-
-
 
   inset:0;
 
-
-
   width:100%;
-
-
 
   height:100%;
 
-
-
   display:block
-
-
 
 }
 
-
-
 .note{margin:0 0 8mm 0;padding:0}
-
-
 
 @media print{.note{display:none}}
 
-
-
 </style>
-
-
 
 </head>
 
-
-
 <body>
-
-
 
 <p class="note">Print at 100% / Actual Size. Front and back are separate; align carefully for duplex printing.</p>
 
-
-
 <div class="card-wrap">
-
-
 
   <img class="card" src="${front}" alt="Front card" />
 
-
-
 </div>
-
-
 
 <div class="card-wrap">
 
-
-
   <img class="card" src="${back}" alt="Back card" />
-
-
 
 </div>
 
-
-
 <script>
-
-
 
 window.addEventListener('load', function(){
 
-
-
   setTimeout(function(){ window.print(); }, 300);
-
-
 
 });
 
-
-
 <\/script>
 
-
-
 </body>
-
-
 
 </html>`);
 
@@ -1980,7 +2128,7 @@ window.addEventListener('load', function(){
 
                       height: `${(PHOTO.h / PX_H) * 100}%`,
 
-                      borderRadius: "50%",
+                      borderRadius: "13%",
                     }}
                   />
                 )}
@@ -2029,6 +2177,7 @@ window.addEventListener('load', function(){
       {!profilePhotoUrl && (
         <p
           role="alert"
+
           className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900"
         >
           Profile image URL missing in distributor user data. Check
@@ -2040,6 +2189,7 @@ window.addEventListener('load', function(){
       {photoExportError && (
         <p
           role="alert"
+
           className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900"
         >
           Profile photo could not be embedded in the PDF: {photoExportError}. If

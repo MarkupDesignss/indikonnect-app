@@ -20,6 +20,7 @@ import {
   X,
   Star,
   Package,
+  ShoppingBag,
   RotateCcw,
   AlertCircle,
   Check,
@@ -1377,11 +1378,10 @@ const OrderImageGallery = ({
                 type="button"
                 key={image.id || `${image.image_url}-${index}`}
                 onClick={() => setActiveIndex(index)}
-                className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-[7px] border bg-white transition ${
-                  activeIndex === index
+                className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-[7px] border bg-white transition ${activeIndex === index
                     ? "border-[#0E1B3D] ring-2 ring-[#0E1B3D]/10"
                     : "border-[#E4E4E2] hover:border-[#BDBDBA]"
-                }`}
+                  }`}
               >
                 <Image
                   src={image.image_url}
@@ -1434,46 +1434,46 @@ const TRACKING_STEPS: Array<{
   icon: any;
   group: "forward" | "return";
 }> = [
-  { key: "order_placed", label: "Order Placed", icon: Check, group: "forward" },
-  {
-    key: "order_confirmed",
-    label: "Order Confirmed",
-    icon: Check,
-    group: "forward",
-  },
-  {
-    key: "dispatched_at",
-    label: "Dispatched",
-    icon: Package,
-    group: "forward",
-  },
-  { key: "shipped_at", label: "Shipped", icon: Truck, group: "forward" },
-  { key: "delivered_at", label: "Delivered", icon: Package, group: "forward" },
-  {
-    key: "return_requested_at",
-    label: "Return Requested",
-    icon: Undo2,
-    group: "return",
-  },
-  {
-    key: "return_approved_at",
-    label: "Return Approved",
-    icon: Check,
-    group: "return",
-  },
-  {
-    key: "return_rejected_at",
-    label: "Return Rejected",
-    icon: AlertCircle,
-    group: "return",
-  },
-  {
-    key: "return_completed_at",
-    label: "Refund Processed",
-    icon: RefreshCcw,
-    group: "return",
-  },
-];
+    { key: "order_placed", label: "Order Placed", icon: Check, group: "forward" },
+    {
+      key: "order_confirmed",
+      label: "Order Confirmed",
+      icon: Check,
+      group: "forward",
+    },
+    {
+      key: "dispatched_at",
+      label: "Dispatched",
+      icon: Package,
+      group: "forward",
+    },
+    { key: "shipped_at", label: "Shipped", icon: Truck, group: "forward" },
+    { key: "delivered_at", label: "Delivered", icon: Package, group: "forward" },
+    {
+      key: "return_requested_at",
+      label: "Return Requested",
+      icon: Undo2,
+      group: "return",
+    },
+    {
+      key: "return_approved_at",
+      label: "Return Approved",
+      icon: Check,
+      group: "return",
+    },
+    {
+      key: "return_rejected_at",
+      label: "Return Rejected",
+      icon: AlertCircle,
+      group: "return",
+    },
+    {
+      key: "return_completed_at",
+      label: "Refund Processed",
+      icon: RefreshCcw,
+      group: "return",
+    },
+  ];
 
 const indiaPostEventLabel = (raw: string) => {
   const name = String(raw || "").toLowerCase();
@@ -1711,47 +1711,47 @@ const TrackingModal = ({
         {(timeline.cancelled_at ||
           returnSteps.length > 0 ||
           legacyShippingSteps.length > 0) && (
-          <section
-            className="rounded-xl border border-slate-200 bg-white p-3.5"
-            aria-label="IndieKonnect system order history"
-          >
-            <h4 className="text-[12px] font-bold text-slate-800">
-              IndieKonnect Order History
-            </h4>
-            <p className="mt-1 text-[10px] leading-4 text-slate-500">
-              Internal order and return records; may differ from carrier scan
-              history.
-            </p>
-            <div className="mt-3 space-y-3">
-              {timeline.cancelled_at && (
-                <div className="flex gap-2 text-[11px] text-red-700">
-                  <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                  <div>
-                    <p className="font-semibold">Order cancelled</p>
-                    <p>{formatDate(timeline.cancelled_at)}</p>
-                  </div>
-                </div>
-              )}
-              {[...legacyShippingSteps, ...returnSteps].map((step) => {
-                const Icon = step.icon;
-                return (
-                  <div
-                    key={step.key}
-                    className="flex gap-2 text-[11px] text-slate-700"
-                  >
-                    <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-500" />
+            <section
+              className="rounded-xl border border-slate-200 bg-white p-3.5"
+              aria-label="IndieKonnect system order history"
+            >
+              <h4 className="text-[12px] font-bold text-slate-800">
+                IndieKonnect Order History
+              </h4>
+              <p className="mt-1 text-[10px] leading-4 text-slate-500">
+                Internal order and return records; may differ from carrier scan
+                history.
+              </p>
+              <div className="mt-3 space-y-3">
+                {timeline.cancelled_at && (
+                  <div className="flex gap-2 text-[11px] text-red-700">
+                    <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                     <div>
-                      <p className="font-semibold">{step.label}</p>
-                      <p className="text-slate-500">
-                        {formatDate(timeline[step.key])}
-                      </p>
+                      <p className="font-semibold">Order cancelled</p>
+                      <p>{formatDate(timeline.cancelled_at)}</p>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          </section>
-        )}
+                )}
+                {[...legacyShippingSteps, ...returnSteps].map((step) => {
+                  const Icon = step.icon;
+                  return (
+                    <div
+                      key={step.key}
+                      className="flex gap-2 text-[11px] text-slate-700"
+                    >
+                      <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-500" />
+                      <div>
+                        <p className="font-semibold">{step.label}</p>
+                        <p className="text-slate-500">
+                          {formatDate(timeline[step.key])}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          )}
       </div>
       <div className="shrink-0 border-t border-slate-100 bg-slate-50 px-4 py-3 text-[10px] text-slate-500 sm:px-6">
         All shipment stages depend on verified India Post events. AWB allocation
@@ -1859,10 +1859,10 @@ const OrderBreakupModal = ({
     : hasAmount(summary.subtotal)
       ? moneyValue(summary.subtotal)
       : orderLines.reduce(
-          (acc, line) =>
-            acc + moneyValue(line.unit_price) * moneyValue(line.quantity),
-          0,
-        );
+        (acc, line) =>
+          acc + moneyValue(line.unit_price) * moneyValue(line.quantity),
+        0,
+      );
   const gstTotal = hasAmount(taxSummary?.total_tax)
     ? moneyValue(taxSummary.total_tax)
     : hasAmount(summary.total_gst)
@@ -1873,9 +1873,9 @@ const OrderBreakupModal = ({
     : hasAmount(summary.shipping_charge)
       ? moneyValue(summary.shipping_charge)
       : orderLines.reduce(
-          (acc, line) => acc + moneyValue(line.delivery_charges),
-          0,
-        );
+        (acc, line) => acc + moneyValue(line.delivery_charges),
+        0,
+      );
   const discount = moneyValue(taxSummary?.coupon_discount);
   const coinAmount = moneyValue(summary.coin_redeemed_amount);
   const grandTotal = hasAmount(taxSummary?.grand_total)
@@ -1911,8 +1911,8 @@ const OrderBreakupModal = ({
   const rowTax = (line: OrderLineItem) => {
     const item = Array.isArray(line.tax_breakdown?.items)
       ? line.tax_breakdown.items.find(
-          (v: any) => Number(v.product_id) === Number(line.product_id),
-        )
+        (v: any) => Number(v.product_id) === Number(line.product_id),
+      )
       : null;
     return item;
   };
@@ -2729,11 +2729,10 @@ const ReviewModal = ({
                     className="rounded-[5px] p-1"
                   >
                     <Star
-                      className={`h-8 w-8 sm:h-9 sm:w-9 ${
-                        star <= (hoverRating || rating)
+                      className={`h-8 w-8 sm:h-9 sm:w-9 ${star <= (hoverRating || rating)
                           ? "fill-[#171717] text-[#171717]"
                           : "fill-[#F1F1F0] text-[#D7D7D5]"
-                      }`}
+                        }`}
                     />
                   </motion.button>
                 ))}
@@ -2882,14 +2881,13 @@ const ReviewModal = ({
                 rating === 0 ||
                 reviewText.trim().length < 10
               }
-              className={`flex items-center gap-1.5 rounded-[6px] border px-4 py-2 text-[11px] font-medium ${
-                isSubmitting ||
-                isLoading ||
-                rating === 0 ||
-                reviewText.trim().length < 10
+              className={`flex items-center gap-1.5 rounded-[6px] border px-4 py-2 text-[11px] font-medium ${isSubmitting ||
+                  isLoading ||
+                  rating === 0 ||
+                  reviewText.trim().length < 10
                   ? "cursor-not-allowed border-[#D7D7D5] bg-[#F1F1F0] text-[#999999]"
                   : "border-[#111111] bg-[#111111] text-white hover:bg-[#292929]"
-              }`}
+                }`}
             >
               {isSubmitting || isLoading ? (
                 <>
@@ -3022,11 +3020,10 @@ const ViewReviewModal = ({ isOpen, onClose, order }: ViewReviewModalProps) => {
             {[1, 2, 3, 4, 5].map((star) => (
               <Star
                 key={star}
-                className={`h-8 w-8 sm:h-9 sm:w-9 ${
-                  star <= rating
+                className={`h-8 w-8 sm:h-9 sm:w-9 ${star <= rating
                     ? "fill-[#B8935A] text-[#B8935A]"
                     : "fill-[#F1F1F0] text-[#D7D7D5]"
-                }`}
+                  }`}
               />
             ))}
           </div>
@@ -3243,8 +3240,8 @@ const ReturnModal = ({
     } catch (err: any) {
       setError(
         err?.data?.message ||
-          err?.message ||
-          "Failed to submit return request.",
+        err?.message ||
+        "Failed to submit return request.",
       );
 
       setIsSubmitting(false);
@@ -3335,11 +3332,10 @@ const ReturnModal = ({
 
         {till && windowInfo && (
           <div
-            className={`mb-3 flex items-center gap-1.5 rounded-[6px] border px-3 py-2 text-[10px] font-medium ${
-              windowInfo.state === "open"
+            className={`mb-3 flex items-center gap-1.5 rounded-[6px] border px-3 py-2 text-[10px] font-medium ${windowInfo.state === "open"
                 ? "border-[#CFE0D4] bg-[#F1F7F3] text-[#3F765A]"
                 : "border-[#F0CFCF] bg-[#FDF2F2] text-[#B24C4C]"
-            }`}
+              }`}
           >
             <Clock size={12} />
 
@@ -3364,27 +3360,24 @@ const ReturnModal = ({
               type="button"
               onClick={() => setReturnMethod("doorstep")}
               disabled={isSubmitting || isUploading}
-              className={`flex flex-col items-start gap-1.5 rounded-[8px] border-2 p-2.5 text-left transition-all ${
-                returnMethod === "doorstep"
+              className={`flex flex-col items-start gap-1.5 rounded-[8px] border-2 p-2.5 text-left transition-all ${returnMethod === "doorstep"
                   ? "border-[#EA580C] bg-[#FFF7ED]"
                   : "border-[#E4E4E2] bg-white hover:border-[#D7D7D5]"
-              } disabled:cursor-not-allowed disabled:opacity-60`}
+                } disabled:cursor-not-allowed disabled:opacity-60`}
             >
               <div className="flex w-full items-center justify-between">
                 <Home
-                  className={`h-4 w-4 ${
-                    returnMethod === "doorstep"
+                  className={`h-4 w-4 ${returnMethod === "doorstep"
                       ? "text-[#EA580C]"
                       : "text-[#999999]"
-                  }`}
+                    }`}
                 />
 
                 <div
-                  className={`h-3.5 w-3.5 rounded-full border-2 ${
-                    returnMethod === "doorstep"
+                  className={`h-3.5 w-3.5 rounded-full border-2 ${returnMethod === "doorstep"
                       ? "border-[#EA580C] bg-[#EA580C]"
                       : "border-[#D7D7D5]"
-                  }`}
+                    }`}
                 >
                   {returnMethod === "doorstep" && (
                     <div className="m-auto mt-[2px] h-1 w-1 rounded-full bg-white" />
@@ -3394,11 +3387,10 @@ const ReturnModal = ({
 
               <div>
                 <p
-                  className={`text-[11px] font-semibold ${
-                    returnMethod === "doorstep"
+                  className={`text-[11px] font-semibold ${returnMethod === "doorstep"
                       ? "text-[#C2410C]"
                       : "text-[#171717]"
-                  }`}
+                    }`}
                 >
                   Doorstep
                 </p>
@@ -3414,27 +3406,24 @@ const ReturnModal = ({
               type="button"
               onClick={() => setReturnMethod("courier")}
               disabled={isSubmitting || isUploading}
-              className={`flex flex-col items-start gap-1.5 rounded-[8px] border-2 p-2.5 text-left transition-all ${
-                returnMethod === "courier"
+              className={`flex flex-col items-start gap-1.5 rounded-[8px] border-2 p-2.5 text-left transition-all ${returnMethod === "courier"
                   ? "border-[#EA580C] bg-[#FFF7ED]"
                   : "border-[#E4E4E2] bg-white hover:border-[#D7D7D5]"
-              } disabled:cursor-not-allowed disabled:opacity-60`}
+                } disabled:cursor-not-allowed disabled:opacity-60`}
             >
               <div className="flex w-full items-center justify-between">
                 <Truck
-                  className={`h-4 w-4 ${
-                    returnMethod === "courier"
+                  className={`h-4 w-4 ${returnMethod === "courier"
                       ? "text-[#EA580C]"
                       : "text-[#999999]"
-                  }`}
+                    }`}
                 />
 
                 <div
-                  className={`h-3.5 w-3.5 rounded-full border-2 ${
-                    returnMethod === "courier"
+                  className={`h-3.5 w-3.5 rounded-full border-2 ${returnMethod === "courier"
                       ? "border-[#EA580C] bg-[#EA580C]"
                       : "border-[#D7D7D5]"
-                  }`}
+                    }`}
                 >
                   {returnMethod === "courier" && (
                     <div className="m-auto mt-[2px] h-1 w-1 rounded-full bg-white" />
@@ -3444,11 +3433,10 @@ const ReturnModal = ({
 
               <div>
                 <p
-                  className={`text-[11px] font-semibold ${
-                    returnMethod === "courier"
+                  className={`text-[11px] font-semibold ${returnMethod === "courier"
                       ? "text-[#C2410C]"
                       : "text-[#171717]"
-                  }`}
+                    }`}
                 >
                   Courier
                 </p>
@@ -3530,9 +3518,8 @@ const ReturnModal = ({
             </label>
 
             <span
-              className={`shrink-0 text-[9px] font-medium ${
-                reasonLength >= 10 ? "text-[#3F765A]" : "text-[#999999]"
-              }`}
+              className={`shrink-0 text-[9px] font-medium ${reasonLength >= 10 ? "text-[#3F765A]" : "text-[#999999]"
+                }`}
             >
               {reasonLength}/10 min
             </span>
@@ -3668,11 +3655,10 @@ const ReturnModal = ({
             type="button"
             onClick={handleSubmit}
             disabled={!canSubmit}
-            className={`flex items-center gap-1.5 rounded-[6px] border px-4 py-2 text-[11px] font-medium ${
-              canSubmit
+            className={`flex items-center gap-1.5 rounded-[6px] border px-4 py-2 text-[11px] font-medium ${canSubmit
                 ? "border-[#EA580C] bg-[#EA580C] text-white hover:bg-[#C2410C]"
                 : "cursor-not-allowed border-[#D7D7D5] bg-[#F1F1F0] text-[#999999]"
-            }`}
+              }`}
           >
             {isSubmitting || isUploading ? (
               <>
@@ -3912,8 +3898,8 @@ const CancelReturnModal = ({
     } catch (err: any) {
       setError(
         err?.data?.message ||
-          err?.message ||
-          "Failed to cancel return request.",
+        err?.message ||
+        "Failed to cancel return request.",
       );
 
       setIsSubmitting(false);
@@ -4339,111 +4325,110 @@ const ActionDropdown = ({
 
   const menu = isOpen
     ? createPortal(
-        <AnimatePresence>
-          <motion.div
-            ref={menuRef}
-            initial={{
-              opacity: 0,
-              y: coords.openUp ? 6 : -6,
-              scale: 0.98,
-            }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{
-              opacity: 0,
-              y: coords.openUp ? 6 : -6,
-              scale: 0.98,
-            }}
-            transition={{ duration: 0.15 }}
-            style={{
-              position: "fixed",
-              top: coords.top,
-              left: coords.left,
-              width: coords.width,
-              transform: coords.openUp ? "translateY(-100%)" : "translateY(0)",
-              zIndex: 9999,
-            }}
-            className="overflow-hidden rounded-[8px] border border-[#e5e9ef] bg-white shadow-[0_8px_24px_rgba(16,24,40,0.15)]"
+      <AnimatePresence>
+        <motion.div
+          ref={menuRef}
+          initial={{
+            opacity: 0,
+            y: coords.openUp ? 6 : -6,
+            scale: 0.98,
+          }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{
+            opacity: 0,
+            y: coords.openUp ? 6 : -6,
+            scale: 0.98,
+          }}
+          transition={{ duration: 0.15 }}
+          style={{
+            position: "fixed",
+            top: coords.top,
+            left: coords.left,
+            width: coords.width,
+            transform: coords.openUp ? "translateY(-100%)" : "translateY(0)",
+            zIndex: 9999,
+          }}
+          className="overflow-hidden rounded-[8px] border border-[#e5e9ef] bg-white shadow-[0_8px_24px_rgba(16,24,40,0.15)]"
+        >
+          <button
+            onClick={() => handleAction(onTrack)}
+            className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#344054] hover:bg-[#f7f8fa]"
           >
+            <Truck
+              className="h-3.5 w-3.5 flex-shrink-0"
+              style={{ color: EMERALD }}
+            />
+
+            <span>Track Order</span>
+          </button>
+
+          {canReview && (
             <button
-              onClick={() => handleAction(onTrack)}
+              onClick={() =>
+                handleAction(hasReview ? onViewReview : onReview)
+              }
               className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#344054] hover:bg-[#f7f8fa]"
             >
-              <Truck
-                className="h-3.5 w-3.5 flex-shrink-0"
-                style={{ color: EMERALD }}
+              <Star
+                className={`h-3.5 w-3.5 flex-shrink-0 ${hasReview
+                    ? "fill-[#B8935A] text-[#B8935A]"
+                    : "text-[#B8935A]"
+                  }`}
               />
 
-              <span>Track Order</span>
+              <span>{hasReview ? "View Review" : "Write Review"}</span>
             </button>
+          )}
 
-            {canReview && (
-              <button
-                onClick={() =>
-                  handleAction(hasReview ? onViewReview : onReview)
-                }
-                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#344054] hover:bg-[#f7f8fa]"
-              >
-                <Star
-                  className={`h-3.5 w-3.5 flex-shrink-0 ${
-                    hasReview
-                      ? "fill-[#B8935A] text-[#B8935A]"
-                      : "text-[#B8935A]"
-                  }`}
-                />
+          {canReturn && (
+            <button
+              onClick={() => handleAction(onReturn)}
+              className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#344054] hover:bg-[#f7f8fa]"
+            >
+              <RotateCcw className="h-3.5 w-3.5 flex-shrink-0 text-[#EA580C]" />
 
-                <span>{hasReview ? "View Review" : "Write Review"}</span>
-              </button>
-            )}
+              <span>Return Item</span>
+            </button>
+          )}
 
-            {canReturn && (
-              <button
-                onClick={() => handleAction(onReturn)}
-                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#344054] hover:bg-[#f7f8fa]"
-              >
-                <RotateCcw className="h-3.5 w-3.5 flex-shrink-0 text-[#EA580C]" />
+          {canCancelReturn && cancellableReturn && (
+            <button
+              onClick={() =>
+                handleAction(() => onCancelReturn(cancellableReturn.returnId))
+              }
+              className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#DC2626] hover:bg-[#FEF2F2]"
+            >
+              <X className="h-3.5 w-3.5 flex-shrink-0" />
 
-                <span>Return Item</span>
-              </button>
-            )}
+              <span>Withdraw Return Request</span>
+            </button>
+          )}
 
-            {canCancelReturn && cancellableReturn && (
-              <button
-                onClick={() =>
-                  handleAction(() => onCancelReturn(cancellableReturn.returnId))
-                }
-                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#DC2626] hover:bg-[#FEF2F2]"
-              >
-                <X className="h-3.5 w-3.5 flex-shrink-0" />
+          {canCancel && (
+            <button
+              onClick={() => handleAction(onCancel)}
+              className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#DC2626] hover:bg-[#FEF2F2]"
+            >
+              <X className="h-3.5 w-3.5 flex-shrink-0" />
 
-                <span>Withdraw Return Request</span>
-              </button>
-            )}
+              <span>Cancel Order</span>
+            </button>
+          )}
 
-            {canCancel && (
-              <button
-                onClick={() => handleAction(onCancel)}
-                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#DC2626] hover:bg-[#FEF2F2]"
-              >
-                <X className="h-3.5 w-3.5 flex-shrink-0" />
+          {canWithdrawCancel && (
+            <button
+              onClick={() => handleAction(onWithdrawCancel)}
+              className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#DC2626] hover:bg-[#FFFBEB]"
+            >
+              <Undo2 className="h-3.5 w-3.5 flex-shrink-0" />
 
-                <span>Cancel Order</span>
-              </button>
-            )}
-
-            {canWithdrawCancel && (
-              <button
-                onClick={() => handleAction(onWithdrawCancel)}
-                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#DC2626] hover:bg-[#FFFBEB]"
-              >
-                <Undo2 className="h-3.5 w-3.5 flex-shrink-0" />
-
-                <span>Withdraw Cancel Request</span>
-              </button>
-            )}
-          </motion.div>
-        </AnimatePresence>,
-        document.body,
-      )
+              <span>Withdraw Cancel Request</span>
+            </button>
+          )}
+        </motion.div>
+      </AnimatePresence>,
+      document.body,
+    )
     : null;
 
   return (
@@ -4452,11 +4437,10 @@ const ActionDropdown = ({
         ref={buttonRef}
         onClick={handleToggle}
         aria-label="Actions"
-        className={`flex h-8 w-8 items-center justify-center rounded-[6px] border transition-colors ${
-          isOpen
+        className={`flex h-8 w-8 items-center justify-center rounded-[6px] border transition-colors ${isOpen
             ? "border-[#0E1B3D]/30 bg-[#f7f8fa] text-[#0E1B3D]"
             : "border-[#e5e9ef] bg-white text-[#344054] hover:bg-[#f7f8fa]"
-        }`}
+          }`}
       >
         <MoreVertical size={16} />
       </button>
@@ -4569,9 +4553,9 @@ const OrderDetails = ({
               <p className="mt-1.5 text-[16px] font-bold text-[#101828]">
                 {formatCurrency(
                   order.final_amount ??
-                    order.total_payable ??
-                    order.amount_paid ??
-                    0,
+                  order.total_payable ??
+                  order.amount_paid ??
+                  0,
                 )}
               </p>
             </div>
@@ -4738,7 +4722,7 @@ const MobileOrderCard = ({
   const apiStatus = getOrderStatusBadge(order);
 
   return (
-    <div className="border-b border-dashed border-[#e7e9ee] last:border-b-0">
+    <div className="border-b border-[#EDF1F7] px-3 transition-colors hover:bg-[#F8FAFF] last:border-b-0">
       <div className="px-3 py-4">
         <div className="flex items-start gap-3">
           {/* ✅ Product image → navigates to product page */}
@@ -4841,11 +4825,10 @@ const MobileOrderCard = ({
 
             {returnWindow && returnWindow.state !== "completed" && (
               <div
-                className={`mt-2.5 flex items-center gap-1.5 rounded-[6px] border px-2.5 py-2 text-[9.5px] font-medium ${
-                  returnWindow.state === "open"
+                className={`mt-2.5 flex items-center gap-1.5 rounded-[6px] border px-2.5 py-2 text-[9.5px] font-medium ${returnWindow.state === "open"
                     ? "border-[#CFE0D4] bg-[#F1F7F3] text-[#3F765A]"
                     : "border-[#F0CFCF] bg-[#FDF2F2] text-[#B24C4C]"
-                }`}
+                  }`}
               >
                 <Clock size={11} />
 
@@ -4930,9 +4913,8 @@ const MobileOrderCard = ({
             >
               <ChevronDown
                 size={13}
-                className={`transition-transform duration-200 ${
-                  isExpanded ? "rotate-180" : ""
-                }`}
+                className={`transition-transform duration-200 ${isExpanded ? "rotate-180" : ""
+                  }`}
               />
 
               {isExpanded ? "Hide Details" : "View Details"}
@@ -5285,8 +5267,8 @@ export default function OrderHistory() {
     try {
       const files: File[] = Array.isArray(reviewData?.images)
         ? reviewData.images.filter(
-            (img: any): img is File => img instanceof File,
-          )
+          (img: any): img is File => img instanceof File,
+        )
         : [];
 
       const rating = Number(reviewData?.rating);
@@ -5875,400 +5857,442 @@ export default function OrderHistory() {
 
   return (
     <>
-      <section className="rounded-[16px] border border-[#e7e9ee] bg-white p-3 shadow-[0_1px_2px_rgba(16,24,40,0.03)] sm:p-6">
-        {/* FILTER BAR */}
-
-        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          {/* SEARCH */}
-          <div className="relative w-full max-w-xs">
-            <Search
-              size={16}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-[#b0b6c3]"
-            />
-
-            <input
-              type="text"
-              placeholder="Search order or item"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-[40px] w-full rounded-[8px] border border-[#e5e9ef] bg-[#f7f8fa] pl-10 pr-4 text-[13px] text-[#101828] outline-none placeholder:text-[#b0b6c3] focus:border-[#0E1B3D] focus:bg-white"
-            />
-          </div>
-
-          {/* STATUS FILTER */}
-          <div className="relative w-full sm:w-[180px]">
-            <select
-              value={statusFilter}
-              onChange={(e) => {
-                const value = e.target.value;
-
-                setStatusFilter(value);
-                setPage(1);
-                setExpandedRows(new Set());
-              }}
-              className="h-[40px] w-full appearance-none rounded-[8px] border border-[#e5e9ef] bg-[#f7f8fa] pl-3 pr-9 text-[13px] text-[#101828] outline-none focus:border-[#0E1B3D] focus:bg-white"
-            >
-              <option value="">All Statuses</option>
-
-              {statusOptions.map((status) => (
-                <option key={status.value} value={status.value}>
-                  {status.label}
-                </option>
-              ))}
-            </select>
-
-            <ChevronDown
-              size={16}
-              className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#b0b6c3]"
-            />
-          </div>
-        </div>
-
-        {/* ================= MOBILE ================= */}
-
-        <div className="md:hidden">
-          {filteredOrders.length === 0 ? (
-            <div className="py-12 text-center text-[13px] text-[#98a2b3]">
-              {searchQuery || statusFilter
-                ? "No orders found matching your filters."
-                : "No orders found."}
-            </div>
-          ) : (
-            filteredOrders.map((order) => {
-              const rowKey = `${order.order_id}-${order.line_id}`;
-
-              const isExpanded = expandedRows.has(rowKey);
-
-              return (
-                <MobileOrderCard
-                  key={rowKey}
-                  order={order}
-                  allOrders={orders}
-                  isExpanded={isExpanded}
-                  onToggle={() => toggleRow(rowKey)}
-                  // ✅ CHANGED: navigate to product page
-                  onProductClick={() => navigateToProduct(order)}
-                  onTrack={() => openTracking(order)}
-                  onViewBreakup={() => openBreakup(order)}
-                  onReview={() => openReview(order)}
-                  onViewReview={() => openViewReview(order)}
-                  onReturn={openReturn}
-                  onCancel={() => openCancel(order)}
-                  onCancelReturn={(returnId) =>
-                    openCancelReturn(order, returnId)
-                  }
-                  onWithdrawCancel={() => openWithdrawCancel(order)}
-                  onWithdrawReturn={() => openWithdrawReturn(order)}
-                  onInvoiceDownload={handleInvoiceDownload}
-                  isInvoiceLoading={!!invoiceLoadingOrders[order.order_id]}
-                  now={now}
-                  retryBusy={retryingReference === order.order_reference}
-                  onRetry={handleRetryPayment}
-                />
-              );
-            })
-          )}
-        </div>
-
-        {/* ================= DESKTOP ================= */}
-
-        <div className="hidden md:block">
-          <div className="w-full overflow-x-auto">
-            <div className="min-w-[1000px]">
-              {/* HEADER */}
-
-              <div className="grid grid-cols-[40px_minmax(140px,1.35fr)_minmax(160px,1.6fr)_minmax(85px,0.8fr)_minmax(80px,0.8fr)_50px_minmax(70px,0.85fr)_minmax(120px,1.15fr)_190px] items-center gap-2 border-b border-[#e7e9ee] pb-3 text-[11.5px] font-bold tracking-wide text-[#8a92a6]">
-                <span />
-
-                <span>Order Reference</span>
-
-                <span>Product</span>
-
-                <span>Total</span>
-
-                <span>Method</span>
-
-                <span>Qty</span>
-
-                <span>Coins</span>
-
-                <span>Status</span>
-
-                <span className="text-right">Actions</span>
+      <div className="space-y-5 rounded-[24px] bg-[#F5F7FB] p-3 sm:p-5 lg:p-6">
+        {/* Premium My Referrals-style page heading */}
+        <div className="relative overflow-hidden rounded-[22px] bg-gradient-to-br from-[#0D1938] via-[#152D5C] to-[#244C91] px-5 py-7 text-white shadow-[0_18px_42px_rgba(13,25,56,0.18)] sm:px-8 sm:py-8">
+          <div className="pointer-events-none absolute -right-12 -top-20 h-64 w-64 rounded-full border border-white/10 bg-white/[0.04]" />
+          <div className="pointer-events-none absolute -bottom-28 right-24 h-56 w-56 rounded-full border border-white/10" />
+          <div className="relative flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
+            <div>
+              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-semibold tracking-wide text-blue-100">
+                <ShoppingBag size={13} /> MY ACCOUNT
               </div>
+              <h1 className="text-[25px] font-extrabold tracking-tight sm:text-[32px]">My Orders</h1>
+              <p className="mt-2 max-w-xl text-[12px] leading-5 text-blue-100/85 sm:text-[13px]">Manage purchases, track India Post deliveries, download invoices and review returns in one place.</p>
+            </div>
+            <div className="flex shrink-0 items-center gap-3 rounded-[16px] border border-white/15 bg-white/10 px-5 py-4 backdrop-blur-sm">
+              <div className="flex h-11 w-11 items-center justify-center rounded-[13px] bg-white/15"><Package size={22} /></div>
+              <div><p className="text-[11px] text-blue-100">Total orders</p><p className="text-[25px] font-extrabold leading-tight">{totalRecords}</p></div>
+            </div>
+          </div>
+        </div>
 
-              <div>
-                {filteredOrders.length === 0 ? (
-                  <div className="py-12 text-center text-[13px] text-[#98a2b3]">
-                    {searchQuery || statusFilter
-                      ? "No orders found matching your filters."
-                      : "No orders found."}
-                  </div>
-                ) : (
-                  filteredOrders.map((order) => {
-                    const rowKey = `${order.order_id}-${order.line_id}`;
+        {/* These counts reflect the current API page, not all pages. */}
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {[
+            { label: "Orders on this page", value: orders.length, icon: Package, color: "text-[#234E9A]", bg: "bg-[#EDF3FF]" },
+            { label: "Delivered", value: orders.filter((o) => normalizeStatus(o.delivery_status) === "delivered").length, icon: Check, color: "text-emerald-700", bg: "bg-emerald-50" },
+            { label: "In transit", value: orders.filter((o) => ["dispatched", "shipped", "out_for_delivery"].includes(normalizeStatus(o.delivery_status))).length, icon: Truck, color: "text-violet-700", bg: "bg-violet-50" },
+            { label: "Returns / Refunds", value: orders.filter((o) => ["returned", "refunded", "return_pending", "return_approved", "partial_returned", "buyback_refunded"].includes(getOrderStatusValue(o))).length, icon: RotateCcw, color: "text-amber-700", bg: "bg-amber-50" },
+          ].map((stat) => {
+            const Icon = stat.icon;
+            return (
+              <div key={stat.label} className="rounded-[17px] border border-[#E7ECF5] bg-white p-4 shadow-[0_4px_18px_rgba(20,35,65,0.035)] sm:p-5">
+                <div className={`mb-3 flex h-10 w-10 items-center justify-center rounded-[12px] ${stat.bg} ${stat.color}`}><Icon size={19} /></div>
+                <p className="text-[22px] font-extrabold tracking-tight text-[#122449] sm:text-[26px]">{stat.value}</p>
+                <p className="mt-1 text-[11px] font-medium text-[#75839B] sm:text-[12px]">{stat.label}</p>
+              </div>
+            );
+          })}
+        </div>
 
-                    const isExpanded = expandedRows.has(rowKey);
+        <section className="overflow-hidden rounded-[19px] border border-[#E4EAF4] bg-white p-3 shadow-[0_6px_30px_rgba(20,35,65,0.045)] sm:p-6">
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-2 border-b border-[#EDF1F7] pb-4">
+            <div><h2 className="text-[16px] font-extrabold tracking-tight text-[#122449] sm:text-[18px]">Order history</h2><p className="mt-1 text-[11px] text-[#8090A7]">Search and manage your order items</p></div>
+            <span className="rounded-full bg-[#EDF3FF] px-3 py-1.5 text-[11px] font-bold text-[#234E9A]">{totalRecords} records</span>
+          </div>
+          {/* FILTER BAR */}
 
-                    const returnWindow = getReturnWindowInfo(order);
+          <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            {/* SEARCH */}
+            <div className="relative w-full sm:max-w-md">
+              <Search
+                size={16}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-[#b0b6c3]"
+              />
 
-                    const refundDetails = getRefundDetails(order);
+              <input
+                type="text"
+                placeholder="Search by order ID, reference or product"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-[44px] w-full rounded-[11px] border border-[#E3EAF5] bg-[#F8FAFD] pl-10 pr-4 text-[13px] text-[#101828] outline-none placeholder:text-[#b0b6c3] focus:border-[#0E1B3D] focus:bg-white"
+              />
+            </div>
 
-                    const statusBadge = getOrderStatusBadge(order);
+            {/* STATUS FILTER */}
+            <div className="relative w-full sm:w-[180px]">
+              <select
+                value={statusFilter}
+                onChange={(e) => {
+                  const value = e.target.value;
 
-                    return (
-                      <div
-                        key={rowKey}
-                        className="border-b border-dashed border-[#e7e9ee] last:border-b-0"
-                      >
-                        {/* ROW */}
+                  setStatusFilter(value);
+                  setPage(1);
+                  setExpandedRows(new Set());
+                }}
+                className="h-[44px] w-full appearance-none rounded-[11px] border border-[#E3EAF5] bg-[#F8FAFD] pl-3 pr-9 text-[13px] text-[#101828] outline-none focus:border-[#0E1B3D] focus:bg-white"
+              >
+                <option value="">All Statuses</option>
 
-                        <div className="grid grid-cols-[40px_minmax(140px,1.35fr)_minmax(160px,1.6fr)_minmax(85px,0.8fr)_minmax(80px,0.8fr)_50px_minmax(70px,0.85fr)_minmax(120px,1.15fr)_190px] items-center gap-2 py-4 text-[13px] text-[#101828]">
-                          {/* EXPAND */}
+                {statusOptions.map((status) => (
+                  <option key={status.value} value={status.value}>
+                    {status.label}
+                  </option>
+                ))}
+              </select>
 
-                          <button
-                            onClick={() => toggleRow(rowKey)}
-                            className="flex h-7 w-7 items-center justify-center rounded-[6px] border border-[#e5e9ef] bg-white text-[#667085] hover:bg-[#f7f8fa]"
-                            aria-label={isExpanded ? "Collapse" : "Expand"}
-                          >
-                            <ChevronDown
-                              size={15}
-                              className={`transition-transform duration-200 ${
-                                isExpanded ? "rotate-180" : ""
-                              }`}
-                            />
-                          </button>
+              <ChevronDown
+                size={16}
+                className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#b0b6c3]"
+              />
+            </div>
+          </div>
 
-                          {/* ORDER REFERENCE */}
+          {/* ================= MOBILE ================= */}
 
-                          <div className="min-w-0">
-                            <p className="truncate font-semibold text-[#0E1B3D]">
-                              {order.order_reference}
-                            </p>
+          <div className="md:hidden">
+            {filteredOrders.length === 0 ? (
+              <div className="py-12 text-center text-[13px] text-[#98a2b3]">
+                {searchQuery || statusFilter
+                  ? "No orders found matching your filters."
+                  : "No orders found."}
+              </div>
+            ) : (
+              filteredOrders.map((order) => {
+                const rowKey = `${order.order_id}-${order.line_id}`;
 
-                            <p className="mt-0.5 truncate text-[10.5px] text-[#98a2b3]">
-                              {order.item_reference_id ||
-                                `Line #${order.line_id}`}
-                            </p>
-                          </div>
+                const isExpanded = expandedRows.has(rowKey);
 
-                          {/* ✅ PRODUCT — now navigates to product page */}
+                return (
+                  <MobileOrderCard
+                    key={rowKey}
+                    order={order}
+                    allOrders={orders}
+                    isExpanded={isExpanded}
+                    onToggle={() => toggleRow(rowKey)}
+                    // ✅ CHANGED: navigate to product page
+                    onProductClick={() => navigateToProduct(order)}
+                    onTrack={() => openTracking(order)}
+                    onViewBreakup={() => openBreakup(order)}
+                    onReview={() => openReview(order)}
+                    onViewReview={() => openViewReview(order)}
+                    onReturn={openReturn}
+                    onCancel={() => openCancel(order)}
+                    onCancelReturn={(returnId) =>
+                      openCancelReturn(order, returnId)
+                    }
+                    onWithdrawCancel={() => openWithdrawCancel(order)}
+                    onWithdrawReturn={() => openWithdrawReturn(order)}
+                    onInvoiceDownload={handleInvoiceDownload}
+                    isInvoiceLoading={!!invoiceLoadingOrders[order.order_id]}
+                    now={now}
+                    retryBusy={retryingReference === order.order_reference}
+                    onRetry={handleRetryPayment}
+                  />
+                );
+              })
+            )}
+          </div>
 
-                          <button
-                            type="button"
-                            onClick={() => navigateToProduct(order)}
-                            className="group flex min-w-0 cursor-pointer items-center gap-2.5 text-left"
-                            title={`View ${order.product_name}`}
-                          >
-                            <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-white transition-opacity group-hover:opacity-80">
-                              {order.primary_image ? (
-                                <Image
-                                  src={order.primary_image}
-                                  alt={order.product_name || "Product"}
-                                  fill
-                                  sizes="40px"
-                                  className="object-cover"
-                                />
-                              ) : (
-                                <span className="flex h-full w-full items-center justify-center">
-                                  <Package className="h-4 w-4 text-[#999999]" />
-                                </span>
-                              )}
-                            </span>
+          {/* ================= DESKTOP ================= */}
 
-                            <span
-                              className="truncate font-semibold text-[#101828] transition-colors group-hover:text-[#0E1B3D]"
-                              title={order.product_name}
+          <div className="hidden md:block">
+            <div className="w-full overflow-x-auto">
+              <div className="min-w-[1000px]">
+                {/* HEADER */}
+
+                <div className="grid grid-cols-[40px_minmax(140px,1.35fr)_minmax(160px,1.6fr)_minmax(85px,0.8fr)_minmax(80px,0.8fr)_50px_minmax(70px,0.85fr)_minmax(120px,1.15fr)_190px] items-center gap-2 rounded-t-xl border-b border-[#E7EDF6] bg-[#F6F8FC] px-3 py-4 text-[11px] font-bold uppercase tracking-[0.04em] text-[#657792]">
+                  <span />
+
+                  <span>Order Reference</span>
+
+                  <span>Product</span>
+
+                  <span>Total</span>
+
+                  <span>Method</span>
+
+                  <span>Qty</span>
+
+                  <span>Coins</span>
+
+                  <span>Status</span>
+
+                  <span className="text-right">Actions</span>
+                </div>
+
+                <div>
+                  {filteredOrders.length === 0 ? (
+                    <div className="py-12 text-center text-[13px] text-[#98a2b3]">
+                      {searchQuery || statusFilter
+                        ? "No orders found matching your filters."
+                        : "No orders found."}
+                    </div>
+                  ) : (
+                    filteredOrders.map((order) => {
+                      const rowKey = `${order.order_id}-${order.line_id}`;
+
+                      const isExpanded = expandedRows.has(rowKey);
+
+                      const returnWindow = getReturnWindowInfo(order);
+
+                      const refundDetails = getRefundDetails(order);
+
+                      const statusBadge = getOrderStatusBadge(order);
+
+                      return (
+                        <div
+                          key={rowKey}
+                          className="border-b border-dashed border-[#e7e9ee] last:border-b-0"
+                        >
+                          {/* ROW */}
+
+                          <div className="grid grid-cols-[40px_minmax(140px,1.35fr)_minmax(160px,1.6fr)_minmax(85px,0.8fr)_minmax(80px,0.8fr)_50px_minmax(70px,0.85fr)_minmax(120px,1.15fr)_190px] items-center gap-2 py-4 text-[13px] text-[#101828]">
+                            {/* EXPAND */}
+
+                            <button
+                              onClick={() => toggleRow(rowKey)}
+                              className="flex h-7 w-7 items-center justify-center rounded-[6px] border border-[#e5e9ef] bg-white text-[#667085] hover:bg-[#f7f8fa]"
+                              aria-label={isExpanded ? "Collapse" : "Expand"}
                             >
-                              {order.product_name}
-                            </span>
-                          </button>
+                              <ChevronDown
+                                size={15}
+                                className={`transition-transform duration-200 ${isExpanded ? "rotate-180" : ""
+                                  }`}
+                              />
+                            </button>
 
-                          {/* TOTAL — ✅ Now shows refunded_amount below final_amount */}
+                            {/* ORDER REFERENCE */}
 
-                          <div className="min-w-0">
-                            <span className="text-[#667085]">
-                              {formatCurrency(order.final_amount)}
-                            </span>
+                            <div className="min-w-0">
+                              <p className="truncate font-semibold text-[#0E1B3D]">
+                                {order.order_reference}
+                              </p>
 
-                            {refundDetails?.amount !== null &&
-                              refundDetails?.amount !== undefined && (
-                                <span className="mt-0.5 block truncate text-[9.5px] font-bold text-[#1F7A56]">
-                                  Refunded{" "}
-                                  {formatCurrency(refundDetails.amount)}
-                                </span>
-                              )}
-                          </div>
+                              <p className="mt-0.5 truncate text-[10.5px] text-[#98a2b3]">
+                                {order.item_reference_id ||
+                                  `Line #${order.line_id}`}
+                              </p>
+                            </div>
 
-                          {/* METHOD */}
+                            {/* ✅ PRODUCT — now navigates to product page */}
 
-                          <span>
-                            <span className="inline-block rounded-[6px] bg-[#f2f4f7] px-2 py-1 text-[11px] font-semibold text-[#475066]">
-                              {order.payment_gateway || "N/A"}
-                            </span>
-                          </span>
+                            <button
+                              type="button"
+                              onClick={() => navigateToProduct(order)}
+                              className="group flex min-w-0 cursor-pointer items-center gap-2.5 text-left"
+                              title={`View ${order.product_name}`}
+                            >
+                              <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-white transition-opacity group-hover:opacity-80">
+                                {order.primary_image ? (
+                                  <Image
+                                    src={order.primary_image}
+                                    alt={order.product_name || "Product"}
+                                    fill
+                                    sizes="40px"
+                                    className="object-cover"
+                                  />
+                                ) : (
+                                  <span className="flex h-full w-full items-center justify-center">
+                                    <Package className="h-4 w-4 text-[#999999]" />
+                                  </span>
+                                )}
+                              </span>
 
-                          {/* QTY */}
-
-                          <span className="text-[#667085]">
-                            {order.quantity}
-                          </span>
-
-                          {/* COINS */}
-
-                          <div className="flex items-center gap-1.5">
-                            <span className="inline-flex h-6 min-w-7 items-center justify-center gap-1 rounded-[5px] border border-[#CFE0D4] bg-[#F1F7F3] px-1.5 text-[10px] font-bold text-[#1F7A56]">
-                              <Coins size={11} />
-
-                              {order.coin_redeemed || 0}
-                            </span>
-                          </div>
-
-                          {/* STATUS — ✅ Cancelled wins, then refunded/returned, then delivered */}
-
-                          <div className="min-w-0">
-                            <div className="flex min-w-0 flex-wrap items-center gap-1.5">
                               <span
-                                className="inline-block max-w-full truncate rounded-[6px] px-2.5 py-1 text-[11px] font-semibold capitalize"
-                                style={{
-                                  color: statusBadge.color,
-                                  backgroundColor: statusBadge.bg,
-                                }}
-                                title={statusBadge.label}
+                                className="truncate font-semibold text-[#101828] transition-colors group-hover:text-[#0E1B3D]"
+                                title={order.product_name}
                               >
-                                {statusBadge.label}
+                                {order.product_name}
+                              </span>
+                            </button>
+
+                            {/* TOTAL — ✅ Now shows refunded_amount below final_amount */}
+
+                            <div className="min-w-0">
+                              <span className="text-[#667085]">
+                                {formatCurrency(order.final_amount)}
+                              </span>
+
+                              {refundDetails?.amount !== null &&
+                                refundDetails?.amount !== undefined && (
+                                  <span className="mt-0.5 block truncate text-[9.5px] font-bold text-[#1F7A56]">
+                                    Refunded{" "}
+                                    {formatCurrency(refundDetails.amount)}
+                                  </span>
+                                )}
+                            </div>
+
+                            {/* METHOD */}
+
+                            <span>
+                              <span className="inline-block rounded-[6px] bg-[#f2f4f7] px-2 py-1 text-[11px] font-semibold text-[#475066]">
+                                {order.payment_gateway || "N/A"}
+                              </span>
+                            </span>
+
+                            {/* QTY */}
+
+                            <span className="text-[#667085]">
+                              {order.quantity}
+                            </span>
+
+                            {/* COINS */}
+
+                            <div className="flex items-center gap-1.5">
+                              <span className="inline-flex h-6 min-w-7 items-center justify-center gap-1 rounded-[5px] border border-[#CFE0D4] bg-[#F1F7F3] px-1.5 text-[10px] font-bold text-[#1F7A56]">
+                                <Coins size={11} />
+
+                                {order.coin_redeemed || 0}
                               </span>
                             </div>
-                            {statusBadge.value === "payment_failed" && (
-                              <div className="mt-2">
-                                <RetryPaymentButton
-                                  order={order}
-                                  now={now}
-                                  busy={
-                                    retryingReference === order.order_reference
-                                  }
-                                  onRetry={handleRetryPayment}
-                                />
+
+                            {/* STATUS — ✅ Cancelled wins, then refunded/returned, then delivered */}
+
+                            <div className="min-w-0">
+                              <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                                <span
+                                  className="inline-block max-w-full truncate rounded-[6px] px-2.5 py-1 text-[11px] font-semibold capitalize"
+                                  style={{
+                                    color: statusBadge.color,
+                                    backgroundColor: statusBadge.bg,
+                                  }}
+                                  title={statusBadge.label}
+                                >
+                                  {statusBadge.label}
+                                </span>
                               </div>
-                            )}
-
-                            {refundDetails?.amount !== null &&
-                              refundDetails?.amount !== undefined && (
-                                <p className="mt-1 truncate text-[8.5px] font-semibold text-[#1F7A56]">
-                                  <Check size={10} className="mr-0.5 inline" />
-                                  Refunded processed
-                                </p>
+                              {statusBadge.value === "payment_failed" && (
+                                <div className="mt-2">
+                                  <RetryPaymentButton
+                                    order={order}
+                                    now={now}
+                                    busy={
+                                      retryingReference === order.order_reference
+                                    }
+                                    onRetry={handleRetryPayment}
+                                  />
+                                </div>
                               )}
+
+                              {refundDetails?.amount !== null &&
+                                refundDetails?.amount !== undefined && (
+                                  <p className="mt-1 truncate text-[8.5px] font-semibold text-[#1F7A56]">
+                                    <Check size={10} className="mr-0.5 inline" />
+                                    Refunded processed
+                                  </p>
+                                )}
+                            </div>
+
+                            {/* ACTIONS */}
+
+                            <div className="flex items-center justify-end gap-2">
+                              <ActionDropdown
+                                order={order}
+                                onReview={() => openReview(order)}
+                                onViewReview={() => openViewReview(order)}
+                                onReturn={() => openReturn(order)}
+                                onCancel={() => openCancel(order)}
+                                onTrack={() => openTracking(order)}
+                                onCancelReturn={(returnId) =>
+                                  openCancelReturn(order, returnId)
+                                }
+                                onWithdrawCancel={() => openWithdrawCancel(order)}
+                                onWithdrawReturn={() => openWithdrawReturn(order)}
+                              />
+                            </div>
                           </div>
 
-                          {/* ACTIONS */}
+                          {/* DETAILS */}
 
-                          <div className="flex items-center justify-end gap-2">
-                            <ActionDropdown
-                              order={order}
-                              onReview={() => openReview(order)}
-                              onViewReview={() => openViewReview(order)}
-                              onReturn={() => openReturn(order)}
-                              onCancel={() => openCancel(order)}
-                              onTrack={() => openTracking(order)}
-                              onCancelReturn={(returnId) =>
-                                openCancelReturn(order, returnId)
-                              }
-                              onWithdrawCancel={() => openWithdrawCancel(order)}
-                              onWithdrawReturn={() => openWithdrawReturn(order)}
-                            />
-                          </div>
+                          <AnimatePresence initial={false}>
+                            {isExpanded && (
+                              <OrderDetails
+                                order={order}
+                                allOrders={orders}
+                                onTrack={() => openTracking(order)}
+                                onViewBreakup={() => openBreakup(order)}
+                                onReturn={openReturn}
+                                onInvoiceDownload={handleInvoiceDownload}
+                                isInvoiceLoading={
+                                  !!invoiceLoadingOrders[order.order_id]
+                                }
+                              />
+                            )}
+                          </AnimatePresence>
                         </div>
-
-                        {/* DETAILS */}
-
-                        <AnimatePresence initial={false}>
-                          {isExpanded && (
-                            <OrderDetails
-                              order={order}
-                              allOrders={orders}
-                              onTrack={() => openTracking(order)}
-                              onViewBreakup={() => openBreakup(order)}
-                              onReturn={openReturn}
-                              onInvoiceDownload={handleInvoiceDownload}
-                              isInvoiceLoading={
-                                !!invoiceLoadingOrders[order.order_id]
-                              }
-                            />
-                          )}
-                        </AnimatePresence>
-                      </div>
-                    );
-                  })
-                )}
+                      );
+                    })
+                  )}
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* PAGINATION */}
+          {/* PAGINATION */}
 
-        <div className="mt-4 flex flex-col gap-3 border-t border-[#f0f2f5] pt-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-wrap items-center gap-3 text-[12px] text-[#667085] sm:text-[13px]">
-            <div className="flex items-center gap-1.5">
-              <span className="font-semibold text-[#101828]">{perPage}</span>
+          <div className="mt-4 flex flex-col gap-3 border-t border-[#f0f2f5] pt-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap items-center gap-3 text-[12px] text-[#667085] sm:text-[13px]">
+              <div className="flex items-center gap-1.5">
+                <span className="font-semibold text-[#101828]">{perPage}</span>
 
-              <ChevronDown size={14} className="text-[#8a92a6]" />
-            </div>
+                <ChevronDown size={14} className="text-[#8a92a6]" />
+              </div>
 
-            <span className="font-medium">
-              {totalRecords > 0
-                ? `Showing ${(page - 1) * perPage + 1}–${Math.min(
+              <span className="font-medium">
+                {totalRecords > 0
+                  ? `Showing ${(page - 1) * perPage + 1}–${Math.min(
                     page * perPage,
                     totalRecords,
                   )} of ${totalRecords} records`
-                : "Showing 0 records"}
-            </span>
-          </div>
+                  : "Showing 0 records"}
+              </span>
+            </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="flex h-7 w-7 items-center justify-center rounded-[6px] text-[#b0b8c8] hover:bg-[#f2f4f7] disabled:opacity-40"
-            >
-              <ChevronLeft size={16} />
-            </button>
-
-            {Array.from(
-              { length: Math.min(totalPages, 5) },
-              (_, i) => i + 1,
-            ).map((p) => (
+            <div className="flex items-center gap-2">
               <button
-                key={p}
-                onClick={() => setPage(p)}
-                className={`flex h-7 w-7 items-center justify-center rounded-[6px] text-[12px] font-semibold ${
-                  page === p
-                    ? "text-white"
-                    : "text-[#667085] hover:bg-[#f2f4f7] hover:text-[#0E1B3D]"
-                }`}
-                style={
-                  page === p
-                    ? {
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="flex h-7 w-7 items-center justify-center rounded-[6px] text-[#b0b8c8] hover:bg-[#f2f4f7] disabled:opacity-40"
+              >
+                <ChevronLeft size={16} />
+              </button>
+
+              {Array.from(
+                { length: Math.min(totalPages, 5) },
+                (_, i) => i + 1,
+              ).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setPage(p)}
+                  className={`flex h-7 w-7 items-center justify-center rounded-[6px] text-[12px] font-semibold ${page === p
+                      ? "text-white"
+                      : "text-[#667085] hover:bg-[#f2f4f7] hover:text-[#0E1B3D]"
+                    }`}
+                  style={
+                    page === p
+                      ? {
                         backgroundColor: NAVY,
                       }
-                    : undefined
-                }
-              >
-                {p}
-              </button>
-            ))}
+                      : undefined
+                  }
+                >
+                  {p}
+                </button>
+              ))}
 
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-              className="flex h-7 w-7 items-center justify-center rounded-[6px] text-[#b0b8c8] hover:bg-[#f2f4f7] disabled:opacity-40"
-            >
-              <ChevronRight size={16} />
-            </button>
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="flex h-7 w-7 items-center justify-center rounded-[6px] text-[#b0b8c8] hover:bg-[#f2f4f7] disabled:opacity-40"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </div>
 
       {/* ================= MODALS ================= */}
 
@@ -6285,7 +6309,7 @@ export default function OrderHistory() {
         order={selectedOrder}
         tracking={
           Number(indiaPostTrackingResponse?.data?.order_id) ===
-          Number(selectedOrder?.order_id)
+            Number(selectedOrder?.order_id)
             ? (indiaPostTrackingResponse?.data ?? null)
             : null
         }
