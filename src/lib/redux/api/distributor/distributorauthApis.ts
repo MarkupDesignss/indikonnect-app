@@ -1,3 +1,5 @@
+// src/lib/redux/api/distributor/distributorauthApis.ts
+
 "use client";
 
 import { baseApi, TokenManager } from "../baseApi";
@@ -53,12 +55,6 @@ const isDistributorApp = (): boolean => {
 // =====================================================
 // DISTRIBUTOR TAGS
 // =====================================================
-//
-// ⚠️ These string values MUST be present in
-// baseApi.tagTypes array — otherwise RTK Query
-// will silently ignore providesTags/invalidatesTags.
-//
-// =====================================================
 
 export const DISTRIBUTOR_TAGS = {
   CHECK_STATUS: "DistributorCheckStatus",
@@ -79,23 +75,7 @@ export const DISTRIBUTOR_TAGS = {
 // =====================================================
 // HELPER: Build tags for step-data invalidation
 // =====================================================
-/**
- * Given a step number (e.g. 4), invalidates step-data for that step
- * AND all subsequent steps (since a change in step N affects future steps).
- *
- * Why?
- *   - Aadhaar (step 3) → pre-fills PAN name/DOB (step 4)
- *   - PAN (step 4)     → pre-fills Bank holder name (step 5)
- *   - Bank (step 5)    → pre-fills final submit (step 7)
- *
- * Example:
- *   stepChainTags(4) => [
- *     { type: STEP_DATA, id: "4" },
- *     { type: STEP_DATA, id: "5" },
- *     { type: STEP_DATA, id: "6" },
- *     { type: STEP_DATA, id: "7" },
- *   ]
- */
+
 const stepChainTags = (startStep: number) => {
   const tags: { type: string; id: string }[] = [];
   for (let i = startStep; i <= 7; i++) {
@@ -123,8 +103,6 @@ export const distributorAuthApi = baseApi.injectEndpoints({
         method: "POST",
         body: { email: data.email },
       }),
-
-      // Only invalidate check-status related caches
       invalidatesTags: [
         DISTRIBUTOR_TAGS.CHECK_STATUS,
         DISTRIBUTOR_TAGS.CHECK_DISTRIBUTOR,
@@ -145,12 +123,11 @@ export const distributorAuthApi = baseApi.injectEndpoints({
         headers: { "Content-Type": "application/json" },
         body: { distributor_id: data.distributor_id },
       }),
-
       invalidatesTags: [DISTRIBUTOR_TAGS.CHECK_DISTRIBUTOR],
     }),
 
     // =================================================
-    // GET STEP DATA (READ-ONLY)
+    // GET STEP DATA
     // =================================================
 
     getStepData: builder.query<GetStepDataResponse, GetStepDataRequest>({
@@ -158,7 +135,6 @@ export const distributorAuthApi = baseApi.injectEndpoints({
         url: `/distributor/step-data/${step}/${phone}`,
         method: "GET",
       }),
-
       providesTags: (_result, _error, { step }) => [
         { type: DISTRIBUTOR_TAGS.STEP_DATA, id: String(step) },
       ],
@@ -187,7 +163,6 @@ export const distributorAuthApi = baseApi.injectEndpoints({
           },
         };
       },
-
       transformResponse: (response: DistributorLoginResponse) => {
         if (!response?.status) return response;
         if (!isDistributorApp()) return response;
@@ -208,8 +183,6 @@ export const distributorAuthApi = baseApi.injectEndpoints({
 
         return response;
       },
-
-      // Login mutates auth state → refresh user-related caches
       invalidatesTags: [
         DISTRIBUTOR_TAGS.CHECK_STATUS,
         DISTRIBUTOR_TAGS.STEP_DATA,
@@ -217,7 +190,7 @@ export const distributorAuthApi = baseApi.injectEndpoints({
     }),
 
     // =================================================
-    // SEND OTP (no cache impact — pure side-effect)
+    // SEND OTP
     // =================================================
 
     distributorsendOTP: builder.mutation<SendOTPResponse, SendOTPRequest>({
@@ -243,7 +216,6 @@ export const distributorAuthApi = baseApi.injectEndpoints({
           body: requestBody,
         };
       },
-
       invalidatesTags: [],
     }),
 
@@ -257,7 +229,7 @@ export const distributorAuthApi = baseApi.injectEndpoints({
           phone: string;
           otp: string;
           temp_token?: string;
-        } = { phone: data.phone, otp: data.otp };
+        } = { phone: data.phone, otp: String(data.otp) };
 
         if (data.temp_token) requestBody.temp_token = data.temp_token;
 
@@ -267,8 +239,6 @@ export const distributorAuthApi = baseApi.injectEndpoints({
           body: requestBody,
         };
       },
-
-      // Phone verified → affects check-status only
       invalidatesTags: [
         DISTRIBUTOR_TAGS.CHECK_STATUS,
         DISTRIBUTOR_TAGS.CHECK_DISTRIBUTOR,
@@ -285,7 +255,7 @@ export const distributorAuthApi = baseApi.injectEndpoints({
           email: string;
           otp: string;
           temp_token?: string;
-        } = { email: data.email, otp: data.otp };
+        } = { email: data.email, otp: String(data.otp) };
 
         if (data.temp_token) requestBody.temp_token = data.temp_token;
 
@@ -295,7 +265,6 @@ export const distributorAuthApi = baseApi.injectEndpoints({
           body: requestBody,
         };
       },
-
       invalidatesTags: [
         DISTRIBUTOR_TAGS.CHECK_STATUS,
         DISTRIBUTOR_TAGS.CHECK_DISTRIBUTOR,
@@ -336,7 +305,6 @@ export const distributorAuthApi = baseApi.injectEndpoints({
 
         return { url: "/distributor/step1-personal", method: "POST", body };
       },
-
       invalidatesTags: [
         ...stepChainTags(1),
         DISTRIBUTOR_TAGS.PERSONAL,
@@ -354,7 +322,6 @@ export const distributorAuthApi = baseApi.injectEndpoints({
         method: "POST",
         body: data,
       }),
-
       invalidatesTags: [...stepChainTags(2), DISTRIBUTOR_TAGS.SPONSOR],
     }),
 
@@ -379,7 +346,6 @@ export const distributorAuthApi = baseApi.injectEndpoints({
 
         return { url: "/distributor/step3-aadhaar", method: "POST", body };
       },
-
       invalidatesTags: [
         ...stepChainTags(3),
         DISTRIBUTOR_TAGS.AADHAAR,
@@ -413,10 +379,6 @@ export const distributorAuthApi = baseApi.injectEndpoints({
 
         return { url: "/distributor/step4-pan", method: "POST", body };
       },
-
-      // PAN changes everything from step 4 onwards.
-      // Bank holder name (step 5) must match PAN name,
-      // so BANK tag is also invalidated.
       invalidatesTags: [
         ...stepChainTags(4),
         DISTRIBUTOR_TAGS.PAN,
@@ -449,7 +411,6 @@ export const distributorAuthApi = baseApi.injectEndpoints({
           company_name: data.company_name,
         },
       }),
-
       invalidatesTags: [
         ...stepChainTags(5),
         DISTRIBUTOR_TAGS.BANK,
@@ -475,12 +436,12 @@ export const distributorAuthApi = baseApi.injectEndpoints({
           longitude: data.longitude,
         },
       }),
-
       invalidatesTags: [...stepChainTags(6), DISTRIBUTOR_TAGS.LOCATION],
     }),
 
     // =================================================
     // STEP 7 - FINAL SUBMIT
+    // ✅ FIXED: Sends accept_terms_text
     // =================================================
 
     step7Submit: builder.mutation<Step7SubmitResponse, Step7SubmitRequest>({
@@ -492,9 +453,9 @@ export const distributorAuthApi = baseApi.injectEndpoints({
           accept_terms: data.accept_terms,
           accept_agreement: data.accept_agreement,
           accept_code_of_conduct: data.accept_code_of_conduct,
+          accept_terms_text: data.accept_terms_text || "",
         },
       }),
-
       invalidatesTags: [
         DISTRIBUTOR_TAGS.SUBMIT,
         DISTRIBUTOR_TAGS.CHECK_STATUS,
@@ -503,7 +464,7 @@ export const distributorAuthApi = baseApi.injectEndpoints({
     }),
 
     // =================================================
-    // FORGOT PASSWORD (no cache impact)
+    // FORGOT PASSWORD
     // =================================================
 
     forgotPassword: builder.mutation<
@@ -515,7 +476,6 @@ export const distributorAuthApi = baseApi.injectEndpoints({
         method: "POST",
         body: { email: data.email },
       }),
-
       invalidatesTags: [],
     }),
 
@@ -529,10 +489,6 @@ export const distributorAuthApi = baseApi.injectEndpoints({
         method: "POST",
         body: data,
       }),
-
-      // Correction affects PAN + subsequent steps because
-      // the admin may approve a name/DOB change that flows
-      // into Bank holder name + final submit.
       invalidatesTags: [
         DISTRIBUTOR_TAGS.CORRECTION,
         ...stepChainTags(4),
@@ -543,7 +499,7 @@ export const distributorAuthApi = baseApi.injectEndpoints({
     }),
 
     // =================================================
-    // VERIFY RESET OTP (no cache impact)
+    // VERIFY RESET OTP
     // =================================================
 
     verifyResetOTP: builder.mutation<
@@ -555,7 +511,6 @@ export const distributorAuthApi = baseApi.injectEndpoints({
         method: "POST",
         body: { email: data.email, otp: data.otp },
       }),
-
       invalidatesTags: [],
     }),
 
@@ -576,8 +531,6 @@ export const distributorAuthApi = baseApi.injectEndpoints({
           password_confirmation: data.password_confirmation,
         },
       }),
-
-      // Password change may invalidate active session state
       invalidatesTags: [DISTRIBUTOR_TAGS.CHECK_STATUS],
     }),
   }),
