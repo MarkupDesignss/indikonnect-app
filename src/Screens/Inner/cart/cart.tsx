@@ -484,8 +484,8 @@ function AddressSelectorModal({
                 key={address.id}
                 onClick={() => !isDeleting && onSelect(address)}
                 className={`relative rounded-xl border p-4 transition-all duration-200 ${isDeleting
-                    ? "pointer-events-none opacity-50"
-                    : "cursor-pointer"
+                  ? "pointer-events-none opacity-50"
+                  : "cursor-pointer"
                   } ${isSelected
                     ? "border-[#16845B] bg-[#F5FBF6] shadow-sm ring-1 ring-[#16845B]"
                     : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
@@ -494,8 +494,8 @@ function AddressSelectorModal({
                 <div className="flex items-start gap-3">
                   <div
                     className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${isSelected
-                        ? "border-[#16845B] bg-[#16845B]"
-                        : "border-gray-300"
+                      ? "border-[#16845B] bg-[#16845B]"
+                      : "border-gray-300"
                       }`}
                   >
                     {isSelected && <Check className="h-3.5 w-3.5 text-white" />}
@@ -859,8 +859,8 @@ function CartProductItem({
                           aria-selected={active}
                           onClick={() => handleQtySelect(quantity)}
                           className={`flex w-full items-center justify-between px-2 py-[5px] text-[11px] font-medium transition ${active
-                              ? "bg-[#FFF1F4] text-[#E43D5C]"
-                              : "text-[#252525] hover:bg-[#F5F5F5]"
+                            ? "bg-[#FFF1F4] text-[#E43D5C]"
+                            : "text-[#252525] hover:bg-[#F5F5F5]"
                             }`}
                         >
                           {quantity}
@@ -2465,7 +2465,6 @@ export default function CartPage() {
     }
   };
 
-  // ── Update quantity ───────────────────────────────────────────────────────
 
   const updateQuantity = async (
     cartItemId: number,
@@ -2482,11 +2481,16 @@ export default function CartPage() {
       ? MAX_CART_QUANTITY
       : Math.min(MAX_CART_QUANTITY, item.stockQuantity ?? MAX_CART_QUANTITY);
 
-    if (!item.allowedPurchase && availableLimit < 1 && requestedQuantity > item.quantity) {
+    if (
+      !item.allowedPurchase &&
+      availableLimit < 1 &&
+      requestedQuantity > item.quantity
+    ) {
       toast.error("This item is out of stock. Quantity cannot be increased.");
       return;
     }
 
+    // ✅ Directly SET the requested quantity (no increment/decrement action)
     const newQuantity = Math.max(
       1,
       Math.min(requestedQuantity, Math.max(1, availableLimit)),
@@ -2501,21 +2505,18 @@ export default function CartPage() {
         itemId: item.cartItemId,
         data: {
           quantity: newQuantity,
-          action: newQuantity > item.quantity ? "increment" : "decrement",
+          // ❌ action removed — backend should treat this as a SET
         },
       }).unwrap();
 
       await refetchCart();
-
       await refetchCheckoutSummary();
 
       setUnavailableProductIds((previous) => {
         if (!previous.has(item.productId)) return previous;
 
         const next = new Set(previous);
-
         next.delete(item.productId);
-
         return next;
       });
     } catch (error: any) {

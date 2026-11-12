@@ -2638,11 +2638,11 @@ export default function CheckoutPage() {
               onClick={() =>
                 displayCheckoutType === "buy_now" && productId > 0
                   ? router.back()
-                  : router.push("/products")
+                  : router.push("/cart")
               }
               className="transition hover:text-[#173E2B]"
             >
-              Products
+              cart
             </button>
 
             <ChevronRight className="h-3 w-3" />

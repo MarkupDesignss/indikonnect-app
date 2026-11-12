@@ -1,3 +1,4 @@
+
 // src/lib/redux/api/baseApi.ts
 
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
@@ -8,7 +9,7 @@ import type {
   FetchBaseQueryError,
 } from "@reduxjs/toolkit/query";
 
-import { getAppType, getAppBasePath, type AppType } from "@/lib/appConfig";
+import { getAppType, type AppType } from "@/lib/appConfig";
 
 // =========================================================
 // API BASE URL
@@ -24,30 +25,30 @@ const API_BASE_URL =
 
 const getBasePath = (): string => {
   if (typeof window === "undefined") {
-    const buildBasePath = process.env.NEXT_PUBLIC_APP_BASE_PATH || "";
-    return buildBasePath;
+    return process.env.NEXT_PUBLIC_APP_BASE_PATH || "";
   }
 
-  const pathname = window.location.pathname;
   const currentAppType = getAppType();
 
   if (currentAppType === "distributor") {
     return "/indiekonnect-distributor";
   }
 
-  if (pathname.includes("/indiekonnect-web")) {
-    return "/indiekonnect-web";
-  }
-
   return "/indiekonnect-web";
 };
 
 // =========================================================
-// REDIRECT URL
+// LOGIN REDIRECT URL
 // =========================================================
 
 const getRedirectUrl = (): string => {
-  return `${getBasePath()}/`;
+  const appType = getAppType();
+
+  if (appType === "distributor") {
+    return `${getBasePath()}/auth/distributor/login/`;
+  }
+
+  return `${getBasePath()}/auth/customer/login/`;
 };
 
 // =========================================================
@@ -70,6 +71,7 @@ const APP_STORAGE: Record<AppType, AppStorageConfig> = {
     userType: "customer_user_type",
     loggedIn: "customer_is_logged_in",
   },
+
   distributor: {
     accessToken: "distributor_token",
     refreshToken: "distributor_refresh_token",
@@ -80,7 +82,7 @@ const APP_STORAGE: Record<AppType, AppStorageConfig> = {
 };
 
 // =========================================================
-// APP-SPECIFIC TEMP / SESSION KEYS
+// CLEAR CUSTOMER SESSION
 // =========================================================
 
 const clearCustomerSessionKeys = () => {
@@ -96,6 +98,10 @@ const clearCustomerSessionKeys = () => {
 
   keys.forEach((key) => localStorage.removeItem(key));
 };
+
+// =========================================================
+// CLEAR DISTRIBUTOR SESSION
+// =========================================================
 
 const clearDistributorSessionKeys = () => {
   if (typeof window === "undefined") return;
@@ -118,7 +124,10 @@ const clearDistributorSessionKeys = () => {
 const syncLegacyAuthState = () => {
   if (typeof window === "undefined") return;
 
-  const customerToken = localStorage.getItem(APP_STORAGE.customer.accessToken);
+  const customerToken = localStorage.getItem(
+    APP_STORAGE.customer.accessToken,
+  );
+
   const distributorToken = localStorage.getItem(
     APP_STORAGE.distributor.accessToken,
   );
@@ -127,6 +136,7 @@ const syncLegacyAuthState = () => {
     const distributorUserData = localStorage.getItem(
       APP_STORAGE.distributor.userData,
     );
+
     localStorage.setItem("user_type", "distributor");
     localStorage.setItem("is_logged_in", "true");
 
@@ -135,6 +145,7 @@ const syncLegacyAuthState = () => {
     } else {
       localStorage.removeItem("user_data");
     }
+
     return;
   }
 
@@ -142,6 +153,7 @@ const syncLegacyAuthState = () => {
     const customerUserData = localStorage.getItem(
       APP_STORAGE.customer.userData,
     );
+
     localStorage.setItem("user_type", "customer");
     localStorage.setItem("is_logged_in", "true");
 
@@ -150,6 +162,7 @@ const syncLegacyAuthState = () => {
     } else {
       localStorage.removeItem("user_data");
     }
+
     return;
   }
 
@@ -165,14 +178,22 @@ const syncLegacyAuthState = () => {
 const TokenManager = {
   getAccessToken: () => {
     if (typeof window === "undefined") return null;
+
     const appType = getAppType();
-    return localStorage.getItem(APP_STORAGE[appType].accessToken);
+
+    return localStorage.getItem(
+      APP_STORAGE[appType].accessToken,
+    );
   },
 
   getRefreshToken: () => {
     if (typeof window === "undefined") return null;
+
     const appType = getAppType();
-    return localStorage.getItem(APP_STORAGE[appType].refreshToken);
+
+    return localStorage.getItem(
+      APP_STORAGE[appType].refreshToken,
+    );
   },
 
   setTokens: (
@@ -232,6 +253,7 @@ const TokenManager = {
 
     const appType = getAppType();
     const storage = APP_STORAGE[appType];
+
     const userData = localStorage.getItem(storage.userData);
 
     if (userData) {
@@ -243,6 +265,7 @@ const TokenManager = {
     }
 
     const legacyUserData = localStorage.getItem("user_data");
+
     if (!legacyUserData) return null;
 
     try {
@@ -257,6 +280,7 @@ const TokenManager = {
 
     const appType = getAppType();
     const storage = APP_STORAGE[appType];
+
     const serialized = JSON.stringify(userData);
 
     localStorage.setItem(storage.userData, serialized);
@@ -270,6 +294,7 @@ const TokenManager = {
 
     const appType = getAppType();
     const accessToken = TokenManager.getAccessToken();
+
     if (!accessToken) return null;
 
     return appType;
@@ -277,17 +302,27 @@ const TokenManager = {
 
   isDistributor: () => {
     if (typeof window === "undefined") return false;
+
     return (
       getAppType() === "distributor" &&
-      Boolean(localStorage.getItem(APP_STORAGE.distributor.accessToken))
+      Boolean(
+        localStorage.getItem(
+          APP_STORAGE.distributor.accessToken,
+        ),
+      )
     );
   },
 
   isCustomer: () => {
     if (typeof window === "undefined") return false;
+
     return (
       getAppType() === "customer" &&
-      Boolean(localStorage.getItem(APP_STORAGE.customer.accessToken))
+      Boolean(
+        localStorage.getItem(
+          APP_STORAGE.customer.accessToken,
+        ),
+      )
     );
   },
 };
@@ -313,32 +348,34 @@ const baseQuery = fetchBaseQuery({
 });
 
 // =========================================================
-// REFRESH REQUEST
-// =========================================================
-
-const refreshBaseQuery = fetchBaseQuery({
-  baseUrl: API_BASE_URL,
-
-  prepareHeaders: (headers) => {
-    headers.set("Content-Type", "application/json");
-    return headers;
-  },
-});
-
-// =========================================================
-// AUTH SESSION FAILURE
+// AUTH SESSION FAILURE / 401 REDIRECT
 // =========================================================
 
 const redirectAuthenticatedUserToLanding = () => {
-  TokenManager.clearTokens();
+  if (typeof window === "undefined") return;
 
-  if (typeof window !== "undefined") {
-    window.location.href = getRedirectUrl();
+  const redirectUrl = getRedirectUrl();
+
+  // Clear only current app session
+  TokenManager.clearTokens(getAppType());
+
+  // Prevent redirect loop on login page
+  const currentPath =
+    window.location.pathname.replace(/\/+$/, "") || "/";
+
+  const targetPath =
+    new URL(redirectUrl, window.location.origin).pathname.replace(/\/+$/, "");
+
+  if (currentPath === targetPath) {
+    return;
   }
+
+  // Redirect to correct login page
+  window.location.replace(redirectUrl);
 };
 
 // =========================================================
-// BASE QUERY WITH REFRESH TOKEN
+// BASE QUERY WITH 401 HANDLING
 // =========================================================
 
 const baseQueryWithReauth: BaseQueryFn<
@@ -346,76 +383,11 @@ const baseQueryWithReauth: BaseQueryFn<
   unknown,
   FetchBaseQueryError
 > = async (args, api, extraOptions) => {
-  const accessTokenBeforeRequest = TokenManager.getAccessToken();
-  const hadAccessToken = Boolean(accessTokenBeforeRequest);
+  const result = await baseQuery(args, api, extraOptions);
 
-  let result = await baseQuery(args, api, extraOptions);
-
-  // Guest + 401 → don't touch
-  if (result.error?.status === 401 && !hadAccessToken) {
-    return result;
-  }
-
-  if (result.error?.status === 401 && hadAccessToken) {
-    const refreshToken = TokenManager.getRefreshToken();
-
-    if (!refreshToken) {
-      redirectAuthenticatedUserToLanding();
-      return result;
-    }
-
-    try {
-      const refreshResult = await refreshBaseQuery(
-        {
-          url: "/user/refresh-token",
-          method: "POST",
-          body: { refresh_token: refreshToken },
-        },
-        api,
-        extraOptions,
-      );
-
-      if (refreshResult.error) {
-        redirectAuthenticatedUserToLanding();
-        return result;
-      }
-
-      if (refreshResult.data) {
-        const data = refreshResult.data as {
-          status?: boolean;
-          access_token?: string;
-          refresh_token?: string;
-          expires_in?: number;
-        };
-
-        if (data.status && data.access_token) {
-          const currentAppType = getAppType();
-
-          TokenManager.setTokens(
-            data.access_token,
-            data.refresh_token || refreshToken,
-            currentAppType,
-          );
-
-          result = await baseQuery(args, api, extraOptions);
-
-          if (!result.error) return result;
-
-          if (result.error?.status === 401) {
-            redirectAuthenticatedUserToLanding();
-            return result;
-          }
-
-          return result;
-        }
-      }
-
-      redirectAuthenticatedUserToLanding();
-      return result;
-    } catch {
-      redirectAuthenticatedUserToLanding();
-      return result;
-    }
+  // Any API returning HTTP 401 → Login redirect
+  if (result.error?.status === 401) {
+    redirectAuthenticatedUserToLanding();
   }
 
   return result;
@@ -430,22 +402,8 @@ export const baseApi = createApi({
 
   baseQuery: baseQueryWithReauth,
 
-  /**
-   * =======================================================
-   * ⚠️ IMPORTANT: ALL TAG TYPES MUST BE DECLARED HERE
-   * =======================================================
-   *
-   * If you add a new `providesTags` / `invalidatesTags`
-   * with a tag string not present in this array, RTK Query
-   * will silently ignore it (or throw in dev).
-   *
-   * =======================================================
-   */
-
   tagTypes: [
-    // -----------------------------------------------------
     // GLOBAL / LEGACY
-    // -----------------------------------------------------
     "Distributor",
     "Customer",
     "User",
@@ -472,9 +430,7 @@ export const baseApi = createApi({
     "MyAccounts",
     "TCBankDashboard",
 
-    // -----------------------------------------------------
     // DISTRIBUTOR AUTH / KYC FLOW
-    // -----------------------------------------------------
     "DistributorCheckStatus",
     "DistributorCheckDistributor",
     "DistributorStepData",
@@ -489,14 +445,10 @@ export const baseApi = createApi({
     "ResetPassword",
     "DistributorPendingPlacements",
 
-    // -----------------------------------------------------
     // CORRECTION / ADMIN REQUESTS
-    // -----------------------------------------------------
     "Correction",
 
-    // -----------------------------------------------------
-    // OPTIONAL (future-proof)
-    // -----------------------------------------------------
+    // OPTIONAL
     "Notifications",
     "KYCStatus",
     "PaymentGatewaySettings",
