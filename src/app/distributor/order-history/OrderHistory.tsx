@@ -1378,10 +1378,11 @@ const OrderImageGallery = ({
                 type="button"
                 key={image.id || `${image.image_url}-${index}`}
                 onClick={() => setActiveIndex(index)}
-                className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-[7px] border bg-white transition ${activeIndex === index
+                className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-[7px] border bg-white transition ${
+                  activeIndex === index
                     ? "border-[#0E1B3D] ring-2 ring-[#0E1B3D]/10"
                     : "border-[#E4E4E2] hover:border-[#BDBDBA]"
-                  }`}
+                }`}
               >
                 <Image
                   src={image.image_url}
@@ -1434,46 +1435,46 @@ const TRACKING_STEPS: Array<{
   icon: any;
   group: "forward" | "return";
 }> = [
-    { key: "order_placed", label: "Order Placed", icon: Check, group: "forward" },
-    {
-      key: "order_confirmed",
-      label: "Order Confirmed",
-      icon: Check,
-      group: "forward",
-    },
-    {
-      key: "dispatched_at",
-      label: "Dispatched",
-      icon: Package,
-      group: "forward",
-    },
-    { key: "shipped_at", label: "Shipped", icon: Truck, group: "forward" },
-    { key: "delivered_at", label: "Delivered", icon: Package, group: "forward" },
-    {
-      key: "return_requested_at",
-      label: "Return Requested",
-      icon: Undo2,
-      group: "return",
-    },
-    {
-      key: "return_approved_at",
-      label: "Return Approved",
-      icon: Check,
-      group: "return",
-    },
-    {
-      key: "return_rejected_at",
-      label: "Return Rejected",
-      icon: AlertCircle,
-      group: "return",
-    },
-    {
-      key: "return_completed_at",
-      label: "Refund Processed",
-      icon: RefreshCcw,
-      group: "return",
-    },
-  ];
+  { key: "order_placed", label: "Order Placed", icon: Check, group: "forward" },
+  {
+    key: "order_confirmed",
+    label: "Order Confirmed",
+    icon: Check,
+    group: "forward",
+  },
+  {
+    key: "dispatched_at",
+    label: "Dispatched",
+    icon: Package,
+    group: "forward",
+  },
+  { key: "shipped_at", label: "Shipped", icon: Truck, group: "forward" },
+  { key: "delivered_at", label: "Delivered", icon: Package, group: "forward" },
+  {
+    key: "return_requested_at",
+    label: "Return Requested",
+    icon: Undo2,
+    group: "return",
+  },
+  {
+    key: "return_approved_at",
+    label: "Return Approved",
+    icon: Check,
+    group: "return",
+  },
+  {
+    key: "return_rejected_at",
+    label: "Return Rejected",
+    icon: AlertCircle,
+    group: "return",
+  },
+  {
+    key: "return_completed_at",
+    label: "Refund Processed",
+    icon: RefreshCcw,
+    group: "return",
+  },
+];
 
 const indiaPostEventLabel = (raw: string) => {
   const name = String(raw || "").toLowerCase();
@@ -1711,47 +1712,47 @@ const TrackingModal = ({
         {(timeline.cancelled_at ||
           returnSteps.length > 0 ||
           legacyShippingSteps.length > 0) && (
-            <section
-              className="rounded-xl border border-slate-200 bg-white p-3.5"
-              aria-label="IndieKonnect system order history"
-            >
-              <h4 className="text-[12px] font-bold text-slate-800">
-                IndieKonnect Order History
-              </h4>
-              <p className="mt-1 text-[10px] leading-4 text-slate-500">
-                Internal order and return records; may differ from carrier scan
-                history.
-              </p>
-              <div className="mt-3 space-y-3">
-                {timeline.cancelled_at && (
-                  <div className="flex gap-2 text-[11px] text-red-700">
-                    <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          <section
+            className="rounded-xl border border-slate-200 bg-white p-3.5"
+            aria-label="IndieKonnect system order history"
+          >
+            <h4 className="text-[12px] font-bold text-slate-800">
+              IndieKonnect Order History
+            </h4>
+            <p className="mt-1 text-[10px] leading-4 text-slate-500">
+              Internal order and return records; may differ from carrier scan
+              history.
+            </p>
+            <div className="mt-3 space-y-3">
+              {timeline.cancelled_at && (
+                <div className="flex gap-2 text-[11px] text-red-700">
+                  <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  <div>
+                    <p className="font-semibold">Order cancelled</p>
+                    <p>{formatDate(timeline.cancelled_at)}</p>
+                  </div>
+                </div>
+              )}
+              {[...legacyShippingSteps, ...returnSteps].map((step) => {
+                const Icon = step.icon;
+                return (
+                  <div
+                    key={step.key}
+                    className="flex gap-2 text-[11px] text-slate-700"
+                  >
+                    <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-500" />
                     <div>
-                      <p className="font-semibold">Order cancelled</p>
-                      <p>{formatDate(timeline.cancelled_at)}</p>
+                      <p className="font-semibold">{step.label}</p>
+                      <p className="text-slate-500">
+                        {formatDate(timeline[step.key])}
+                      </p>
                     </div>
                   </div>
-                )}
-                {[...legacyShippingSteps, ...returnSteps].map((step) => {
-                  const Icon = step.icon;
-                  return (
-                    <div
-                      key={step.key}
-                      className="flex gap-2 text-[11px] text-slate-700"
-                    >
-                      <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-500" />
-                      <div>
-                        <p className="font-semibold">{step.label}</p>
-                        <p className="text-slate-500">
-                          {formatDate(timeline[step.key])}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-          )}
+                );
+              })}
+            </div>
+          </section>
+        )}
       </div>
       <div className="shrink-0 border-t border-slate-100 bg-slate-50 px-4 py-3 text-[10px] text-slate-500 sm:px-6">
         All shipment stages depend on verified India Post events. AWB allocation
@@ -1859,10 +1860,10 @@ const OrderBreakupModal = ({
     : hasAmount(summary.subtotal)
       ? moneyValue(summary.subtotal)
       : orderLines.reduce(
-        (acc, line) =>
-          acc + moneyValue(line.unit_price) * moneyValue(line.quantity),
-        0,
-      );
+          (acc, line) =>
+            acc + moneyValue(line.unit_price) * moneyValue(line.quantity),
+          0,
+        );
   const gstTotal = hasAmount(taxSummary?.total_tax)
     ? moneyValue(taxSummary.total_tax)
     : hasAmount(summary.total_gst)
@@ -1873,9 +1874,9 @@ const OrderBreakupModal = ({
     : hasAmount(summary.shipping_charge)
       ? moneyValue(summary.shipping_charge)
       : orderLines.reduce(
-        (acc, line) => acc + moneyValue(line.delivery_charges),
-        0,
-      );
+          (acc, line) => acc + moneyValue(line.delivery_charges),
+          0,
+        );
   const discount = moneyValue(taxSummary?.coupon_discount);
   const coinAmount = moneyValue(summary.coin_redeemed_amount);
   const grandTotal = hasAmount(taxSummary?.grand_total)
@@ -1911,8 +1912,8 @@ const OrderBreakupModal = ({
   const rowTax = (line: OrderLineItem) => {
     const item = Array.isArray(line.tax_breakdown?.items)
       ? line.tax_breakdown.items.find(
-        (v: any) => Number(v.product_id) === Number(line.product_id),
-      )
+          (v: any) => Number(v.product_id) === Number(line.product_id),
+        )
       : null;
     return item;
   };
@@ -2729,10 +2730,11 @@ const ReviewModal = ({
                     className="rounded-[5px] p-1"
                   >
                     <Star
-                      className={`h-8 w-8 sm:h-9 sm:w-9 ${star <= (hoverRating || rating)
+                      className={`h-8 w-8 sm:h-9 sm:w-9 ${
+                        star <= (hoverRating || rating)
                           ? "fill-[#171717] text-[#171717]"
                           : "fill-[#F1F1F0] text-[#D7D7D5]"
-                        }`}
+                      }`}
                     />
                   </motion.button>
                 ))}
@@ -2881,13 +2883,14 @@ const ReviewModal = ({
                 rating === 0 ||
                 reviewText.trim().length < 10
               }
-              className={`flex items-center gap-1.5 rounded-[6px] border px-4 py-2 text-[11px] font-medium ${isSubmitting ||
-                  isLoading ||
-                  rating === 0 ||
-                  reviewText.trim().length < 10
+              className={`flex items-center gap-1.5 rounded-[6px] border px-4 py-2 text-[11px] font-medium ${
+                isSubmitting ||
+                isLoading ||
+                rating === 0 ||
+                reviewText.trim().length < 10
                   ? "cursor-not-allowed border-[#D7D7D5] bg-[#F1F1F0] text-[#999999]"
                   : "border-[#111111] bg-[#111111] text-white hover:bg-[#292929]"
-                }`}
+              }`}
             >
               {isSubmitting || isLoading ? (
                 <>
@@ -3020,10 +3023,11 @@ const ViewReviewModal = ({ isOpen, onClose, order }: ViewReviewModalProps) => {
             {[1, 2, 3, 4, 5].map((star) => (
               <Star
                 key={star}
-                className={`h-8 w-8 sm:h-9 sm:w-9 ${star <= rating
+                className={`h-8 w-8 sm:h-9 sm:w-9 ${
+                  star <= rating
                     ? "fill-[#B8935A] text-[#B8935A]"
                     : "fill-[#F1F1F0] text-[#D7D7D5]"
-                  }`}
+                }`}
               />
             ))}
           </div>
@@ -3240,8 +3244,8 @@ const ReturnModal = ({
     } catch (err: any) {
       setError(
         err?.data?.message ||
-        err?.message ||
-        "Failed to submit return request.",
+          err?.message ||
+          "Failed to submit return request.",
       );
 
       setIsSubmitting(false);
@@ -3332,10 +3336,11 @@ const ReturnModal = ({
 
         {till && windowInfo && (
           <div
-            className={`mb-3 flex items-center gap-1.5 rounded-[6px] border px-3 py-2 text-[10px] font-medium ${windowInfo.state === "open"
+            className={`mb-3 flex items-center gap-1.5 rounded-[6px] border px-3 py-2 text-[10px] font-medium ${
+              windowInfo.state === "open"
                 ? "border-[#CFE0D4] bg-[#F1F7F3] text-[#3F765A]"
                 : "border-[#F0CFCF] bg-[#FDF2F2] text-[#B24C4C]"
-              }`}
+            }`}
           >
             <Clock size={12} />
 
@@ -3360,24 +3365,27 @@ const ReturnModal = ({
               type="button"
               onClick={() => setReturnMethod("doorstep")}
               disabled={isSubmitting || isUploading}
-              className={`flex flex-col items-start gap-1.5 rounded-[8px] border-2 p-2.5 text-left transition-all ${returnMethod === "doorstep"
+              className={`flex flex-col items-start gap-1.5 rounded-[8px] border-2 p-2.5 text-left transition-all ${
+                returnMethod === "doorstep"
                   ? "border-[#EA580C] bg-[#FFF7ED]"
                   : "border-[#E4E4E2] bg-white hover:border-[#D7D7D5]"
-                } disabled:cursor-not-allowed disabled:opacity-60`}
+              } disabled:cursor-not-allowed disabled:opacity-60`}
             >
               <div className="flex w-full items-center justify-between">
                 <Home
-                  className={`h-4 w-4 ${returnMethod === "doorstep"
+                  className={`h-4 w-4 ${
+                    returnMethod === "doorstep"
                       ? "text-[#EA580C]"
                       : "text-[#999999]"
-                    }`}
+                  }`}
                 />
 
                 <div
-                  className={`h-3.5 w-3.5 rounded-full border-2 ${returnMethod === "doorstep"
+                  className={`h-3.5 w-3.5 rounded-full border-2 ${
+                    returnMethod === "doorstep"
                       ? "border-[#EA580C] bg-[#EA580C]"
                       : "border-[#D7D7D5]"
-                    }`}
+                  }`}
                 >
                   {returnMethod === "doorstep" && (
                     <div className="m-auto mt-[2px] h-1 w-1 rounded-full bg-white" />
@@ -3387,10 +3395,11 @@ const ReturnModal = ({
 
               <div>
                 <p
-                  className={`text-[11px] font-semibold ${returnMethod === "doorstep"
+                  className={`text-[11px] font-semibold ${
+                    returnMethod === "doorstep"
                       ? "text-[#C2410C]"
                       : "text-[#171717]"
-                    }`}
+                  }`}
                 >
                   Doorstep
                 </p>
@@ -3406,24 +3415,27 @@ const ReturnModal = ({
               type="button"
               onClick={() => setReturnMethod("courier")}
               disabled={isSubmitting || isUploading}
-              className={`flex flex-col items-start gap-1.5 rounded-[8px] border-2 p-2.5 text-left transition-all ${returnMethod === "courier"
+              className={`flex flex-col items-start gap-1.5 rounded-[8px] border-2 p-2.5 text-left transition-all ${
+                returnMethod === "courier"
                   ? "border-[#EA580C] bg-[#FFF7ED]"
                   : "border-[#E4E4E2] bg-white hover:border-[#D7D7D5]"
-                } disabled:cursor-not-allowed disabled:opacity-60`}
+              } disabled:cursor-not-allowed disabled:opacity-60`}
             >
               <div className="flex w-full items-center justify-between">
                 <Truck
-                  className={`h-4 w-4 ${returnMethod === "courier"
+                  className={`h-4 w-4 ${
+                    returnMethod === "courier"
                       ? "text-[#EA580C]"
                       : "text-[#999999]"
-                    }`}
+                  }`}
                 />
 
                 <div
-                  className={`h-3.5 w-3.5 rounded-full border-2 ${returnMethod === "courier"
+                  className={`h-3.5 w-3.5 rounded-full border-2 ${
+                    returnMethod === "courier"
                       ? "border-[#EA580C] bg-[#EA580C]"
                       : "border-[#D7D7D5]"
-                    }`}
+                  }`}
                 >
                   {returnMethod === "courier" && (
                     <div className="m-auto mt-[2px] h-1 w-1 rounded-full bg-white" />
@@ -3433,10 +3445,11 @@ const ReturnModal = ({
 
               <div>
                 <p
-                  className={`text-[11px] font-semibold ${returnMethod === "courier"
+                  className={`text-[11px] font-semibold ${
+                    returnMethod === "courier"
                       ? "text-[#C2410C]"
                       : "text-[#171717]"
-                    }`}
+                  }`}
                 >
                   Courier
                 </p>
@@ -3518,8 +3531,9 @@ const ReturnModal = ({
             </label>
 
             <span
-              className={`shrink-0 text-[9px] font-medium ${reasonLength >= 10 ? "text-[#3F765A]" : "text-[#999999]"
-                }`}
+              className={`shrink-0 text-[9px] font-medium ${
+                reasonLength >= 10 ? "text-[#3F765A]" : "text-[#999999]"
+              }`}
             >
               {reasonLength}/10 min
             </span>
@@ -3655,10 +3669,11 @@ const ReturnModal = ({
             type="button"
             onClick={handleSubmit}
             disabled={!canSubmit}
-            className={`flex items-center gap-1.5 rounded-[6px] border px-4 py-2 text-[11px] font-medium ${canSubmit
+            className={`flex items-center gap-1.5 rounded-[6px] border px-4 py-2 text-[11px] font-medium ${
+              canSubmit
                 ? "border-[#EA580C] bg-[#EA580C] text-white hover:bg-[#C2410C]"
                 : "cursor-not-allowed border-[#D7D7D5] bg-[#F1F1F0] text-[#999999]"
-              }`}
+            }`}
           >
             {isSubmitting || isUploading ? (
               <>
@@ -3898,8 +3913,8 @@ const CancelReturnModal = ({
     } catch (err: any) {
       setError(
         err?.data?.message ||
-        err?.message ||
-        "Failed to cancel return request.",
+          err?.message ||
+          "Failed to cancel return request.",
       );
 
       setIsSubmitting(false);
@@ -4325,110 +4340,111 @@ const ActionDropdown = ({
 
   const menu = isOpen
     ? createPortal(
-      <AnimatePresence>
-        <motion.div
-          ref={menuRef}
-          initial={{
-            opacity: 0,
-            y: coords.openUp ? 6 : -6,
-            scale: 0.98,
-          }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{
-            opacity: 0,
-            y: coords.openUp ? 6 : -6,
-            scale: 0.98,
-          }}
-          transition={{ duration: 0.15 }}
-          style={{
-            position: "fixed",
-            top: coords.top,
-            left: coords.left,
-            width: coords.width,
-            transform: coords.openUp ? "translateY(-100%)" : "translateY(0)",
-            zIndex: 9999,
-          }}
-          className="overflow-hidden rounded-[8px] border border-[#e5e9ef] bg-white shadow-[0_8px_24px_rgba(16,24,40,0.15)]"
-        >
-          <button
-            onClick={() => handleAction(onTrack)}
-            className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#344054] hover:bg-[#f7f8fa]"
+        <AnimatePresence>
+          <motion.div
+            ref={menuRef}
+            initial={{
+              opacity: 0,
+              y: coords.openUp ? 6 : -6,
+              scale: 0.98,
+            }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{
+              opacity: 0,
+              y: coords.openUp ? 6 : -6,
+              scale: 0.98,
+            }}
+            transition={{ duration: 0.15 }}
+            style={{
+              position: "fixed",
+              top: coords.top,
+              left: coords.left,
+              width: coords.width,
+              transform: coords.openUp ? "translateY(-100%)" : "translateY(0)",
+              zIndex: 9999,
+            }}
+            className="overflow-hidden rounded-[8px] border border-[#e5e9ef] bg-white shadow-[0_8px_24px_rgba(16,24,40,0.15)]"
           >
-            <Truck
-              className="h-3.5 w-3.5 flex-shrink-0"
-              style={{ color: EMERALD }}
-            />
-
-            <span>Track Order</span>
-          </button>
-
-          {canReview && (
             <button
-              onClick={() =>
-                handleAction(hasReview ? onViewReview : onReview)
-              }
+              onClick={() => handleAction(onTrack)}
               className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#344054] hover:bg-[#f7f8fa]"
             >
-              <Star
-                className={`h-3.5 w-3.5 flex-shrink-0 ${hasReview
-                    ? "fill-[#B8935A] text-[#B8935A]"
-                    : "text-[#B8935A]"
-                  }`}
+              <Truck
+                className="h-3.5 w-3.5 flex-shrink-0"
+                style={{ color: EMERALD }}
               />
 
-              <span>{hasReview ? "View Review" : "Write Review"}</span>
+              <span>Track Order</span>
             </button>
-          )}
 
-          {canReturn && (
-            <button
-              onClick={() => handleAction(onReturn)}
-              className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#344054] hover:bg-[#f7f8fa]"
-            >
-              <RotateCcw className="h-3.5 w-3.5 flex-shrink-0 text-[#EA580C]" />
+            {canReview && (
+              <button
+                onClick={() =>
+                  handleAction(hasReview ? onViewReview : onReview)
+                }
+                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#344054] hover:bg-[#f7f8fa]"
+              >
+                <Star
+                  className={`h-3.5 w-3.5 flex-shrink-0 ${
+                    hasReview
+                      ? "fill-[#B8935A] text-[#B8935A]"
+                      : "text-[#B8935A]"
+                  }`}
+                />
 
-              <span>Return Item</span>
-            </button>
-          )}
+                <span>{hasReview ? "View Review" : "Write Review"}</span>
+              </button>
+            )}
 
-          {canCancelReturn && cancellableReturn && (
-            <button
-              onClick={() =>
-                handleAction(() => onCancelReturn(cancellableReturn.returnId))
-              }
-              className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#DC2626] hover:bg-[#FEF2F2]"
-            >
-              <X className="h-3.5 w-3.5 flex-shrink-0" />
+            {canReturn && (
+              <button
+                onClick={() => handleAction(onReturn)}
+                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#344054] hover:bg-[#f7f8fa]"
+              >
+                <RotateCcw className="h-3.5 w-3.5 flex-shrink-0 text-[#EA580C]" />
 
-              <span>Withdraw Return Request</span>
-            </button>
-          )}
+                <span>Return Item</span>
+              </button>
+            )}
 
-          {canCancel && (
-            <button
-              onClick={() => handleAction(onCancel)}
-              className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#DC2626] hover:bg-[#FEF2F2]"
-            >
-              <X className="h-3.5 w-3.5 flex-shrink-0" />
+            {canCancelReturn && cancellableReturn && (
+              <button
+                onClick={() =>
+                  handleAction(() => onCancelReturn(cancellableReturn.returnId))
+                }
+                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#DC2626] hover:bg-[#FEF2F2]"
+              >
+                <X className="h-3.5 w-3.5 flex-shrink-0" />
 
-              <span>Cancel Order</span>
-            </button>
-          )}
+                <span>Withdraw Return Request</span>
+              </button>
+            )}
 
-          {canWithdrawCancel && (
-            <button
-              onClick={() => handleAction(onWithdrawCancel)}
-              className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#DC2626] hover:bg-[#FFFBEB]"
-            >
-              <Undo2 className="h-3.5 w-3.5 flex-shrink-0" />
+            {canCancel && (
+              <button
+                onClick={() => handleAction(onCancel)}
+                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#DC2626] hover:bg-[#FEF2F2]"
+              >
+                <X className="h-3.5 w-3.5 flex-shrink-0" />
 
-              <span>Withdraw Cancel Request</span>
-            </button>
-          )}
-        </motion.div>
-      </AnimatePresence>,
-      document.body,
-    )
+                <span>Cancel Order</span>
+              </button>
+            )}
+
+            {canWithdrawCancel && (
+              <button
+                onClick={() => handleAction(onWithdrawCancel)}
+                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#DC2626] hover:bg-[#FFFBEB]"
+              >
+                <Undo2 className="h-3.5 w-3.5 flex-shrink-0" />
+
+                <span>Withdraw Cancel Request</span>
+              </button>
+            )}
+          </motion.div>
+        </AnimatePresence>,
+        document.body,
+      )
     : null;
 
   return (
@@ -4437,10 +4453,11 @@ const ActionDropdown = ({
         ref={buttonRef}
         onClick={handleToggle}
         aria-label="Actions"
-        className={`flex h-8 w-8 items-center justify-center rounded-[6px] border transition-colors ${isOpen
+        className={`flex h-8 w-8 items-center justify-center rounded-[6px] border transition-colors ${
+          isOpen
             ? "border-[#0E1B3D]/30 bg-[#f7f8fa] text-[#0E1B3D]"
             : "border-[#e5e9ef] bg-white text-[#344054] hover:bg-[#f7f8fa]"
-          }`}
+        }`}
       >
         <MoreVertical size={16} />
       </button>
@@ -4553,9 +4570,9 @@ const OrderDetails = ({
               <p className="mt-1.5 text-[16px] font-bold text-[#101828]">
                 {formatCurrency(
                   order.final_amount ??
-                  order.total_payable ??
-                  order.amount_paid ??
-                  0,
+                    order.total_payable ??
+                    order.amount_paid ??
+                    0,
                 )}
               </p>
             </div>
@@ -4825,10 +4842,11 @@ const MobileOrderCard = ({
 
             {returnWindow && returnWindow.state !== "completed" && (
               <div
-                className={`mt-2.5 flex items-center gap-1.5 rounded-[6px] border px-2.5 py-2 text-[9.5px] font-medium ${returnWindow.state === "open"
+                className={`mt-2.5 flex items-center gap-1.5 rounded-[6px] border px-2.5 py-2 text-[9.5px] font-medium ${
+                  returnWindow.state === "open"
                     ? "border-[#CFE0D4] bg-[#F1F7F3] text-[#3F765A]"
                     : "border-[#F0CFCF] bg-[#FDF2F2] text-[#B24C4C]"
-                  }`}
+                }`}
               >
                 <Clock size={11} />
 
@@ -4913,8 +4931,9 @@ const MobileOrderCard = ({
             >
               <ChevronDown
                 size={13}
-                className={`transition-transform duration-200 ${isExpanded ? "rotate-180" : ""
-                  }`}
+                className={`transition-transform duration-200 ${
+                  isExpanded ? "rotate-180" : ""
+                }`}
               />
 
               {isExpanded ? "Hide Details" : "View Details"}
@@ -5029,7 +5048,7 @@ export default function OrderHistory() {
       "status" in indiaPostTrackingError &&
       indiaPostTrackingError.status === 404
     ) {
-      return "This order is not available for tracking with the current login. Check that the distributor owns this order.";
+      return "Tracking API returned 404. Please verify that the Laravel tracking route is deployed and this order belongs to the logged-in account.";
     }
     if (
       "status" in indiaPostTrackingError &&
@@ -5267,8 +5286,8 @@ export default function OrderHistory() {
     try {
       const files: File[] = Array.isArray(reviewData?.images)
         ? reviewData.images.filter(
-          (img: any): img is File => img instanceof File,
-        )
+            (img: any): img is File => img instanceof File,
+          )
         : [];
 
       const rating = Number(reviewData?.rating);
@@ -5755,19 +5774,35 @@ export default function OrderHistory() {
   };
 
   const openTracking = (order: OrderLineItem) => {
+    const orderReference = String(order?.order_reference ?? "").trim();
+    if (!orderReference) {
+      dispatch(
+        showToast({
+          message: "Order reference is missing. Tracking cannot be loaded.",
+          type: "error",
+        }),
+      );
+      return;
+    }
+
     setSelectedOrder(order);
     setTrackingModalOpen(true);
-    const orderId = Number(order?.order_id);
-    if (Number.isSafeInteger(orderId) && orderId > 0) {
-      // false forces a fresh server request instead of reusing cached tracking.
-      void loadIndiaPostTracking(orderId, false);
-    }
+    // Request by Order Reference. Laravel verifies ownership and maps it to
+    // the internal numeric ID before contacting the protected Node adapter.
+    // false requests fresh data rather than using the RTK Query cache.
+    void loadIndiaPostTracking(
+      { orderReference, orderId: Number(order.order_id) },
+      false,
+    );
   };
 
   const refreshIndiaPostTracking = () => {
-    const orderId = Number(selectedOrder?.order_id);
-    if (Number.isSafeInteger(orderId) && orderId > 0) {
-      void loadIndiaPostTracking(orderId, false);
+    const orderReference = String(selectedOrder?.order_reference ?? "").trim();
+    if (orderReference && selectedOrder?.order_id) {
+      void loadIndiaPostTracking(
+        { orderReference, orderId: Number(selectedOrder.order_id) },
+        false,
+      );
     }
   };
 
@@ -5867,12 +5902,24 @@ export default function OrderHistory() {
               <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-semibold tracking-wide text-blue-100">
                 <ShoppingBag size={13} /> MY ACCOUNT
               </div>
-              <h1 className="text-[25px] font-extrabold tracking-tight sm:text-[32px]">My Orders</h1>
-              <p className="mt-2 max-w-xl text-[12px] leading-5 text-blue-100/85 sm:text-[13px]">Manage purchases, track India Post deliveries, download invoices and review returns in one place.</p>
+              <h1 className="text-[25px] font-extrabold tracking-tight sm:text-[32px]">
+                My Orders
+              </h1>
+              <p className="mt-2 max-w-xl text-[12px] leading-5 text-blue-100/85 sm:text-[13px]">
+                Manage purchases, track India Post deliveries, download invoices
+                and review returns in one place.
+              </p>
             </div>
             <div className="flex shrink-0 items-center gap-3 rounded-[16px] border border-white/15 bg-white/10 px-5 py-4 backdrop-blur-sm">
-              <div className="flex h-11 w-11 items-center justify-center rounded-[13px] bg-white/15"><Package size={22} /></div>
-              <div><p className="text-[11px] text-blue-100">Total orders</p><p className="text-[25px] font-extrabold leading-tight">{totalRecords}</p></div>
+              <div className="flex h-11 w-11 items-center justify-center rounded-[13px] bg-white/15">
+                <Package size={22} />
+              </div>
+              <div>
+                <p className="text-[11px] text-blue-100">Total orders</p>
+                <p className="text-[25px] font-extrabold leading-tight">
+                  {totalRecords}
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -5880,17 +5927,67 @@ export default function OrderHistory() {
         {/* These counts reflect the current API page, not all pages. */}
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {[
-            { label: "Orders on this page", value: orders.length, icon: Package, color: "text-[#234E9A]", bg: "bg-[#EDF3FF]" },
-            { label: "Delivered", value: orders.filter((o) => normalizeStatus(o.delivery_status) === "delivered").length, icon: Check, color: "text-emerald-700", bg: "bg-emerald-50" },
-            { label: "In transit", value: orders.filter((o) => ["dispatched", "shipped", "out_for_delivery"].includes(normalizeStatus(o.delivery_status))).length, icon: Truck, color: "text-violet-700", bg: "bg-violet-50" },
-            { label: "Returns / Refunds", value: orders.filter((o) => ["returned", "refunded", "return_pending", "return_approved", "partial_returned", "buyback_refunded"].includes(getOrderStatusValue(o))).length, icon: RotateCcw, color: "text-amber-700", bg: "bg-amber-50" },
+            {
+              label: "Orders on this page",
+              value: orders.length,
+              icon: Package,
+              color: "text-[#234E9A]",
+              bg: "bg-[#EDF3FF]",
+            },
+            {
+              label: "Delivered",
+              value: orders.filter(
+                (o) => normalizeStatus(o.delivery_status) === "delivered",
+              ).length,
+              icon: Check,
+              color: "text-emerald-700",
+              bg: "bg-emerald-50",
+            },
+            {
+              label: "In transit",
+              value: orders.filter((o) =>
+                ["dispatched", "shipped", "out_for_delivery"].includes(
+                  normalizeStatus(o.delivery_status),
+                ),
+              ).length,
+              icon: Truck,
+              color: "text-violet-700",
+              bg: "bg-violet-50",
+            },
+            {
+              label: "Returns / Refunds",
+              value: orders.filter((o) =>
+                [
+                  "returned",
+                  "refunded",
+                  "return_pending",
+                  "return_approved",
+                  "partial_returned",
+                  "buyback_refunded",
+                ].includes(getOrderStatusValue(o)),
+              ).length,
+              icon: RotateCcw,
+              color: "text-amber-700",
+              bg: "bg-amber-50",
+            },
           ].map((stat) => {
             const Icon = stat.icon;
             return (
-              <div key={stat.label} className="rounded-[17px] border border-[#E7ECF5] bg-white p-4 shadow-[0_4px_18px_rgba(20,35,65,0.035)] sm:p-5">
-                <div className={`mb-3 flex h-10 w-10 items-center justify-center rounded-[12px] ${stat.bg} ${stat.color}`}><Icon size={19} /></div>
-                <p className="text-[22px] font-extrabold tracking-tight text-[#122449] sm:text-[26px]">{stat.value}</p>
-                <p className="mt-1 text-[11px] font-medium text-[#75839B] sm:text-[12px]">{stat.label}</p>
+              <div
+                key={stat.label}
+                className="rounded-[17px] border border-[#E7ECF5] bg-white p-4 shadow-[0_4px_18px_rgba(20,35,65,0.035)] sm:p-5"
+              >
+                <div
+                  className={`mb-3 flex h-10 w-10 items-center justify-center rounded-[12px] ${stat.bg} ${stat.color}`}
+                >
+                  <Icon size={19} />
+                </div>
+                <p className="text-[22px] font-extrabold tracking-tight text-[#122449] sm:text-[26px]">
+                  {stat.value}
+                </p>
+                <p className="mt-1 text-[11px] font-medium text-[#75839B] sm:text-[12px]">
+                  {stat.label}
+                </p>
               </div>
             );
           })}
@@ -5898,8 +5995,17 @@ export default function OrderHistory() {
 
         <section className="overflow-hidden rounded-[19px] border border-[#E4EAF4] bg-white p-3 shadow-[0_6px_30px_rgba(20,35,65,0.045)] sm:p-6">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-2 border-b border-[#EDF1F7] pb-4">
-            <div><h2 className="text-[16px] font-extrabold tracking-tight text-[#122449] sm:text-[18px]">Order history</h2><p className="mt-1 text-[11px] text-[#8090A7]">Search and manage your order items</p></div>
-            <span className="rounded-full bg-[#EDF3FF] px-3 py-1.5 text-[11px] font-bold text-[#234E9A]">{totalRecords} records</span>
+            <div>
+              <h2 className="text-[16px] font-extrabold tracking-tight text-[#122449] sm:text-[18px]">
+                Order history
+              </h2>
+              <p className="mt-1 text-[11px] text-[#8090A7]">
+                Search and manage your order items
+              </p>
+            </div>
+            <span className="rounded-full bg-[#EDF3FF] px-3 py-1.5 text-[11px] font-bold text-[#234E9A]">
+              {totalRecords} records
+            </span>
           </div>
           {/* FILTER BAR */}
 
@@ -6058,8 +6164,9 @@ export default function OrderHistory() {
                             >
                               <ChevronDown
                                 size={15}
-                                className={`transition-transform duration-200 ${isExpanded ? "rotate-180" : ""
-                                  }`}
+                                className={`transition-transform duration-200 ${
+                                  isExpanded ? "rotate-180" : ""
+                                }`}
                               />
                             </button>
 
@@ -6169,7 +6276,8 @@ export default function OrderHistory() {
                                     order={order}
                                     now={now}
                                     busy={
-                                      retryingReference === order.order_reference
+                                      retryingReference ===
+                                      order.order_reference
                                     }
                                     onRetry={handleRetryPayment}
                                   />
@@ -6179,7 +6287,10 @@ export default function OrderHistory() {
                               {refundDetails?.amount !== null &&
                                 refundDetails?.amount !== undefined && (
                                   <p className="mt-1 truncate text-[8.5px] font-semibold text-[#1F7A56]">
-                                    <Check size={10} className="mr-0.5 inline" />
+                                    <Check
+                                      size={10}
+                                      className="mr-0.5 inline"
+                                    />
                                     Refunded processed
                                   </p>
                                 )}
@@ -6198,8 +6309,12 @@ export default function OrderHistory() {
                                 onCancelReturn={(returnId) =>
                                   openCancelReturn(order, returnId)
                                 }
-                                onWithdrawCancel={() => openWithdrawCancel(order)}
-                                onWithdrawReturn={() => openWithdrawReturn(order)}
+                                onWithdrawCancel={() =>
+                                  openWithdrawCancel(order)
+                                }
+                                onWithdrawReturn={() =>
+                                  openWithdrawReturn(order)
+                                }
                               />
                             </div>
                           </div>
@@ -6243,9 +6358,9 @@ export default function OrderHistory() {
               <span className="font-medium">
                 {totalRecords > 0
                   ? `Showing ${(page - 1) * perPage + 1}–${Math.min(
-                    page * perPage,
-                    totalRecords,
-                  )} of ${totalRecords} records`
+                      page * perPage,
+                      totalRecords,
+                    )} of ${totalRecords} records`
                   : "Showing 0 records"}
               </span>
             </div>
@@ -6266,15 +6381,16 @@ export default function OrderHistory() {
                 <button
                   key={p}
                   onClick={() => setPage(p)}
-                  className={`flex h-7 w-7 items-center justify-center rounded-[6px] text-[12px] font-semibold ${page === p
+                  className={`flex h-7 w-7 items-center justify-center rounded-[6px] text-[12px] font-semibold ${
+                    page === p
                       ? "text-white"
                       : "text-[#667085] hover:bg-[#f2f4f7] hover:text-[#0E1B3D]"
-                    }`}
+                  }`}
                   style={
                     page === p
                       ? {
-                        backgroundColor: NAVY,
-                      }
+                          backgroundColor: NAVY,
+                        }
                       : undefined
                   }
                 >
@@ -6308,6 +6424,9 @@ export default function OrderHistory() {
         onClose={closeAllModals}
         order={selectedOrder}
         tracking={
+          (!indiaPostTrackingResponse?.data?.order_reference ||
+            indiaPostTrackingResponse.data.order_reference ===
+              selectedOrder?.order_reference) &&
           Number(indiaPostTrackingResponse?.data?.order_id) ===
             Number(selectedOrder?.order_id)
             ? (indiaPostTrackingResponse?.data ?? null)

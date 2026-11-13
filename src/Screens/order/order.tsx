@@ -1938,19 +1938,37 @@ export default function OrdersPage() {
     setShowBreakup(true);
   };
 
+  // Reference + internal order ID come from authenticated My Orders data.
+  // Tracking API prefers the reference endpoint and uses the owner-scoped
+  // numeric endpoint only if the reference endpoint responds 404.
+  const getTrackingIdentifier = (order: any) => {
+    const reference =
+      typeof order?.order_reference === "string"
+        ? order.order_reference.trim()
+        : "";
+    const id = Number(order?.order_id);
+    const validId = Number.isSafeInteger(id) && id > 0;
+
+    if (reference && validId) {
+      return { orderReference: reference, orderId: id };
+    }
+    if (reference) return reference;
+    return validId ? id : null;
+  };
+
   const openTrackModal = (order: any) => {
     setSelectedOrderForTracking(order);
     setShowTrackModal(true);
-    const id = Number(order?.order_id);
-    if (Number.isSafeInteger(id) && id > 0) {
-      void loadIndiaPostTracking(id, false);
+    const identifier = getTrackingIdentifier(order);
+    if (identifier !== null) {
+      void loadIndiaPostTracking(identifier, false);
     }
   };
 
   const refreshIndiaPostTracking = () => {
-    const id = Number(selectedOrderForTracking?.order_id);
-    if (Number.isSafeInteger(id) && id > 0) {
-      void loadIndiaPostTracking(id, false);
+    const identifier = getTrackingIdentifier(selectedOrderForTracking);
+    if (identifier !== null) {
+      void loadIndiaPostTracking(identifier, false);
     }
   };
 
@@ -2966,9 +2984,15 @@ export default function OrdersPage() {
               )}
               order={selectedOrderForTracking}
               tracking={
-                Number(indiaPostTrackingResponse?.data?.order_id) ===
-                Number(selectedOrderForTracking?.order_id)
-                  ? (indiaPostTrackingResponse?.data ?? null)
+                indiaPostTrackingResponse?.data &&
+                // Never show previous order's cached tracking in a new modal.
+                Number(indiaPostTrackingResponse.data.order_id) ===
+                  Number(selectedOrderForTracking?.order_id) &&
+                // Reference must also match whenever Laravel sends it.
+                (!indiaPostTrackingResponse.data.order_reference ||
+                  indiaPostTrackingResponse.data.order_reference ===
+                    selectedOrderForTracking?.order_reference)
+                  ? indiaPostTrackingResponse.data
                   : null
               }
               loading={isIndiaPostTracking}
