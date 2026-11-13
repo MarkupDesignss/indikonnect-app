@@ -139,7 +139,7 @@ function SmallMetric({
         {value}
       </p>
 
-      {sub && <p className="mt-0.5 text-[12px] text-[#65758D]">{sub}</p>}
+     
     </div>
   );
 }
@@ -178,19 +178,10 @@ function AccountCard({
       <div className="grid grid-cols-2 gap-3">
         <SmallMetric
           label="Title Rank"
-
           value={currentName}
-
-          sub="Your achieved title"
         />
 
-        <SmallMetric
-          label="pay rank"
-
-          value={payRankName}
-
-          sub="Next rank"
-        />
+        <SmallMetric label="pay rank" value="Silver" />
 
         {/* <SmallMetric
           label="Account type"

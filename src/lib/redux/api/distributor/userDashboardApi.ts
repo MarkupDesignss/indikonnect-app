@@ -148,7 +148,13 @@ export interface UserDashboardResponse {
 // CREATE CORRECTION REQUEST
 // =====================================================
 
+/** Type of correction being requested */
+export type CorrectionRequestType = "email_request" | "phone_request";
+
 export interface CreateCorrectionRequestPayload {
+  /** The type of correction request */
+  type: CorrectionRequestType;
+  /** Reason for the correction request */
   reason: string;
 }
 
