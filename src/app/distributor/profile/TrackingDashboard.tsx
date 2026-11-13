@@ -5,23 +5,14 @@ import { useEffect, useMemo, useState, useRef } from "react";
 import {
   AlertCircle,
   CalendarDays,
-  Check,
-  CheckCircle2,
-  ChevronDown,
-  Clock3,
-  Info,
   Loader2,
   RefreshCw,
   Timer,
-  TrendingUp,
   UserRound,
   Trophy,
   ArrowRight,
   Target,
   ListChecks,
-  ShieldCheck,
-  Sparkles,
-  ChevronRight,
 } from "lucide-react";
 
 import { useGetDistributorStatsQuery } from "../../../lib/redux/api/distributor/distributorStatsApi";
@@ -103,28 +94,6 @@ const conditionLabel = (key: string) =>
 
 const isDownline = (key: string) => key.startsWith("downlines_");
 
-function conditionDetail(
-  key: string,
-
-  condition: RankCondition,
-
-  ranks: DistributorRank[],
-) {
-  const requirement = fmt(condition.required);
-
-  if (isDownline(key))
-    return `${requirement} downline${number(condition.required) === 1 ? "" : "s"} with ${rankName(condition.rank_no, ranks)} rank or above`;
-
-  if (key === "tenure")
-    return `${requirement} consecutive month${number(condition.required) === 1 ? "" : "s"}`;
-
-  if (key === "direct_cv") return `${requirement} Direct CV required`;
-
-  if (key === "steps") return `${requirement} steps required`;
-
-  return `${requirement} required`;
-}
-
 function ProgressBar({
   value,
 
@@ -144,18 +113,6 @@ function ProgressBar({
         style={{ width: `${Math.max(0, Math.min(100, value))}%` }}
       />
     </div>
-  );
-}
-
-function Chip({ met, text }: { met: boolean; text?: string }) {
-  return (
-    <span
-      className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold ${met ? "bg-[#e3f7eb] text-[#13804e]" : "bg-[#fff3df] text-[#bf790c]"}`}
-    >
-      {met ? <CheckCircle2 size={13} /> : <Clock3 size={13} />}
-
-      {text ?? (met ? "Completed" : "In progress")}
-    </span>
   );
 }
 
@@ -220,7 +177,7 @@ function AccountCard({
 
       <div className="grid grid-cols-2 gap-3">
         <SmallMetric
-          label="Your current rank"
+          label="Title Rank"
 
           value={currentName}
 
@@ -247,88 +204,70 @@ function AccountCard({
 
 function NextProgressCard({ progress }: { progress: RankProgress }) {
   const next = nextRankOf(progress);
-
   const entries = conditionsOf(next);
-
   const completed = entries.filter(({ condition }) => condition.met).length;
-
-  const pending = entries.filter(({ condition }) => !condition.met);
-
   const progressPercent = entries.length
     ? Math.round((completed / entries.length) * 100)
     : 0;
+  const steps = next?.conditions?.steps;
 
   return (
     <section className="flex min-h-[282px] flex-col rounded-[22px] border border-[#E1E9F4] bg-white p-5 shadow-[0_12px_38px_-26px_rgba(21,43,80,.25)] sm:p-6">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="flex items-center gap-2 text-[15px] font-bold text-[#172B4D]">
-          <TrendingUp size={19} className="text-[#3269C5]" />
-          Next rank progress
-        </h2>
-
-        {next && (
-          <span className="rounded-full bg-[#faebdb] px-3 py-1 text-[11px] font-semibold text-[#977044]">
-            {next.name}
-          </span>
-        )}
+      <div className="flex items-center gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EFF5FF] text-[#3269C5]">
+          <Trophy size={20} />
+        </span>
+        <div className="min-w-0">
+          <h2 className="break-words text-[22px] font-extrabold leading-tight text-[#172B4D]">
+            {next?.name ?? "All ranks achieved"}
+          </h2>
+        </div>
       </div>
 
       {next ? (
         <>
-          <div className="mt-6">
-            <p className="text-[13px] font-semibold text-[#667085]">
+          <div className="mt-7">
+            <p className="text-[12px] font-semibold text-[#66758D]">
               Requirements met
             </p>
-
-            <div className="mt-1 flex items-end justify-between gap-3">
-              <span className="text-[32px] font-bold leading-none text-[#172B4D]">
-                {completed} / {entries.length}
-              </span>
-
-              <span className="text-[19px] font-bold text-[#3269C5]">
-                {progressPercent}%
+            <div className="mt-3 flex items-center gap-3">
+              <div className="min-w-0 flex-1">
+                <ProgressBar value={progressPercent} />
+              </div>
+              <span className="min-w-[46px] shrink-0 text-right text-[17px] font-extrabold tabular-nums text-[#3269C5]">
+                {completed}/{entries.length}
               </span>
             </div>
-
-            <ProgressBar value={progressPercent} className="mt-3" />
           </div>
 
-          <div className="mt-auto pt-7">
-            <p className="mb-2 text-[11px] font-bold uppercase text-[#65758D]">
-              Still to complete
+          <div className="mt-auto pt-8">
+            <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-[#65758D]">
+              Steps to complete
             </p>
-
-            <div className="flex flex-wrap gap-2">
-              {pending.length ? (
-                pending.map(({ key, condition }) => (
-                  <span
-                    key={key}
-
-                    className="rounded-lg bg-[#fff2e1] px-2.5 py-1.5 text-[11px] font-semibold text-[#ac6a16]"
-                  >
-                    {conditionLabel(key)} {fmt(condition.current)} of{" "}
-                    {fmt(condition.required)}
-                  </span>
-                ))
-              ) : (
-                <Chip met text="All requirements met" />
-              )}
-            </div>
+            {steps ? (
+              <span
+                className={`inline-flex items-center rounded-lg px-3 py-2 text-[12px] font-bold ${steps.met ? "bg-[#E5F8EF] text-[#18875B]" : "bg-[#FFF1DF] text-[#A76513]"}`}
+              >
+                {fmt(steps.current)} of {fmt(steps.required)} steps
+              </span>
+            ) : (
+              <span className="text-[12px] text-[#65758D]">
+                No steps requirement provided
+              </span>
+            )}
           </div>
         </>
       ) : (
-        <div className="mt-8 rounded-xl bg-[#edf9f1] p-4 text-[13px] font-semibold text-[#188153]">
+        <p className="mt-6 rounded-xl bg-[#EAF7F0] p-4 text-[13px] font-semibold text-[#168255]">
           All available ranks have been achieved.
-        </div>
+        </p>
       )}
     </section>
   );
 }
 
 // Sales calendar is authoritative. Bare timestamps are interpreted in Asia/Kolkata;
-
 // explicitly offset timestamps preserve their timezone. No browser-local date parsing.
-
 type SalesCalendarWeek = {
   year?: number;
 
@@ -375,6 +314,39 @@ type SalesCalendar = {
   current_week?: SalesCalendarWeek;
 };
 
+// Use the sales-calendar week supplied by the backend, including custom sales weeks.
+// Do not substitute ISO week numbers: sales periods may cross calendar boundaries.
+function getCurrentSalesWeek(
+  calendar: SalesCalendar | undefined,
+  now: number | null,
+): SalesCalendarWeek | null {
+  if (!calendar) return null;
+
+  if (
+    calendar.current_week &&
+    (calendar.current_week.week_no != null || calendar.current_week.start)
+  ) {
+    return calendar.current_week;
+  }
+
+  const allWeeks = (calendar.all_months ?? []).flatMap(
+    (month) => month.weeks ?? [],
+  );
+  const flagged = allWeeks.find((week) => week.is_current);
+  if (flagged) return flagged;
+
+  if (now != null) {
+    const matching = allWeeks.find((week) => {
+      const start = parseSalesInstant(week.start);
+      const end = parseSalesInstant(week.end, true);
+      return start !== null && end !== null && now >= start && now <= end;
+    });
+    if (matching) return matching;
+  }
+
+  return null;
+}
+
 type SalesMonthPeriod = {
   start: number;
 
@@ -392,7 +364,6 @@ type SalesMonthPeriod = {
 const IST_OFFSET_MS = 330 * 60 * 1000;
 
 // Offset-aware, validates invalid dates/times and accepts API SQL/ISO formats.
-
 function parseSalesInstant(
   value: string | null | undefined,
 
@@ -538,9 +509,7 @@ function salesMonthFromDates(
 }
 
 // Match the exact current period first, then honor current_month from backend,
-
 // then derive boundaries using all_months weeks, including cross-calendar months.
-
 function getSalesMonthPeriod(
   calendar: SalesCalendar | undefined,
 
@@ -604,7 +573,6 @@ function getSalesMonthPeriod(
     );
 
   // Explicit current_month fields are the source of truth if they cover now.
-
   if (preferred && now >= preferred.start && now < preferred.endExclusive)
     return preferred;
 
@@ -615,9 +583,7 @@ function getSalesMonthPeriod(
   if (covering) return covering.period;
 
   // If API's active month is provided, keep it instead of silently switching
-
   // to some unrelated calendar month merely because no range covers now.
-
   if (preferred) return preferred;
 
   const flagged = periods.find(
@@ -641,11 +607,8 @@ function getSalesMonthPeriod(
 }
 
 // Optional server clock supplied in a dashboard API response. If absent, device
-
 // time remains the fallback; a server timestamp/header is needed to eliminate
-
 // intentionally misconfigured client clocks completely.
-
 function readServerNow(response: unknown): number | null {
   const root = response as any;
 
@@ -675,7 +638,6 @@ function readServerNow(response: unknown): number | null {
     }
 
     // Unix timestamp fields, only when explicitly present in the API.
-
     if (
       typeof value === "number" &&
       Number.isFinite(value) &&
@@ -766,6 +728,8 @@ function useSalesMonthCountdown(
   return {
     ...period,
 
+    now,
+
     upcoming,
 
     ended,
@@ -796,6 +760,16 @@ function CalendarCard({
   serverNow?: number | null;
 }) {
   const clock = useSalesMonthCountdown(calendar, serverNow);
+  const currentSalesWeek = getCurrentSalesWeek(
+    calendar,
+    clock?.now ?? serverNow ?? null,
+  );
+  const weekStart = currentSalesWeek?.start
+    ? parseSalesInstant(currentSalesWeek.start)
+    : null;
+  const weekEnd = currentSalesWeek?.end
+    ? parseSalesInstant(currentSalesWeek.end, true)
+    : null;
 
   return (
     <section className="flex min-h-[282px] flex-col rounded-[22px] border border-[#E1E9F4] bg-white p-5 shadow-[0_12px_38px_-26px_rgba(21,43,80,.25)] sm:p-6">
@@ -811,6 +785,23 @@ function CalendarCard({
             ? "Loading the sales calendar…"
             : "Sales month dates are unavailable from the API."}
       </p>
+
+      {currentSalesWeek && (
+        <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-[#DAE6F8] bg-[#F4F8FF] px-3 py-2.5">
+          <span className="inline-flex items-center gap-1.5 text-[12px] font-extrabold text-[#285DB3]">
+            <CalendarDays size={15} />
+            {currentSalesWeek.week_no != null
+              ? `Sales Week ${currentSalesWeek.week_no}`
+              : "Current sales week"}
+          </span>
+          {weekStart !== null && weekEnd !== null && (
+            <span className="text-[11px] font-medium text-[#65758D]">
+              {salesDateFormatter.format(new Date(weekStart))} –{" "}
+              {salesDateFormatter.format(new Date(weekEnd))}
+            </span>
+          )}
+        </div>
+      )}
 
       {clock && (
         <div className="mt-2 space-y-0.5 text-[10px] leading-4 text-[#65758D]">
@@ -875,563 +866,168 @@ function CalendarCard({
   );
 }
 
-function RequirementsCard({ progress }: { progress: RankProgress }) {
-  const next = nextRankOf(progress);
-
-  if (!next)
-    return (
-      <section className="rounded-[22px] border border-[#E1E9F4] bg-white p-6 shadow-[0_12px_38px_-26px_rgba(21,43,80,.25)]">
-        <h2 className="text-[18px] font-bold">Rank requirements</h2>
-
-        <p className="mt-3 text-[13px] text-[#168255]">
-          All available ranks achieved.
-        </p>
-      </section>
-    );
-
-  const entries = conditionsOf(next);
-
-  const completed = entries.filter(({ condition }) => condition.met).length;
-
-  const parentRank = [...(progress.ranks ?? [])]
-
-    .filter((r) => number(r.rank_no) < number(next.rank_no))
-
-    .sort((a, b) => number(b.rank_no) - number(a.rank_no))[0];
-
-  return (
-    <section className="rounded-[22px] border border-[#E1E9F4] bg-white p-5 shadow-[0_12px_38px_-26px_rgba(21,43,80,.25)] sm:p-6">
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[#EAF0F7] pb-5">
-        <div>
-          <h2 className="text-[18px] font-bold text-[#172B4D]">
-            {next.name} requirements
-          </h2>
-
-          <p className="mt-1 text-[13px] leading-5 text-[#65758D]">
-            Your next rank after{" "}
-            {rankName(progress.current?.rank_no, progress.ranks ?? [])}
-          </p>
-        </div>
-
-        <span className="text-[13px] leading-5 text-[#65758D]">
-          {completed} of {entries.length} met
-        </span>
-      </div>
-
-      {parentRank && (
-        <div className="flex items-center justify-between gap-4 border-b border-[#EAF0F7] py-4">
-          <div>
-            <p className="text-[13px] font-semibold text-[#172B4D]">
-              Must have achieved the {parentRank.name} rank
-            </p>
-
-            <p className="mt-1 text-[13px] leading-5 text-[#65758D]">
-              {parentRank.met
-                ? `${parentRank.name} achieved`
-                : `${parentRank.name} not yet achieved`}
-            </p>
-          </div>
-
-          <Chip met={!!parentRank.met} />
-        </div>
-      )}
-
-      {entries.length ? (
-        entries.map(({ key, condition }) => (
-          <div
-            key={key}
-
-            className="border-b border-[#EAF0F7] py-4 last:border-0 last:pb-0"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <h3 className="text-[13px] font-semibold text-[#172B4D]">
-                  {conditionLabel(key)}
-                </h3>
-
-                <p className="mt-1 text-[13px] leading-5 text-[#65758D]">
-                  {key === "direct_cv" && number(condition.required) === 0
-                    ? "No direct CV required"
-                    : `${fmt(condition.current)} of ${fmt(condition.required)} completed`}
-
-                  {isDownline(key) && condition.rank_no
-                    ? ` · ${rankName(condition.rank_no, progress.ranks ?? [])} rank`
-                    : ""}
-                </p>
-              </div>
-
-              <Chip met={!!condition.met} />
-            </div>
-
-            {number(condition.required) > 0 && (
-              <ProgressBar
-                className="mt-3"
-
-                value={pct(
-                  number(condition.current),
-
-                  number(condition.required),
-                )}
-              />
-            )}
-          </div>
-        ))
-      ) : (
-        <p className="py-5 text-[13px] text-[#65758D]">
-          The API has not provided conditions for this rank.
-        </p>
-      )}
-    </section>
-  );
-}
-
-function ActionCard({ progress }: { progress: RankProgress }) {
-  const next = nextRankOf(progress);
-
-  if (!next)
-    return (
-      <section className="rounded-[22px] border border-[#E1E9F4] bg-white p-6 shadow-[0_12px_38px_-26px_rgba(21,43,80,.25)]">
-        <h2 className="text-[18px] font-bold">What to do next</h2>
-
-        <p className="mt-3 text-[13px] text-[#168255]">
-          You have met the available rank requirements.
-        </p>
-      </section>
-    );
-
-  const entries = conditionsOf(next);
-
-  const pending = entries.filter(({ condition }) => !condition.met);
-
-  const met = entries.filter(({ condition }) => condition.met);
-
-  const focus = pending[0];
-
-  return (
-    <section className="rounded-[22px] border border-[#E1E9F4] bg-white p-5 shadow-[0_12px_38px_-26px_rgba(21,43,80,.25)] sm:p-6">
-      <h2 className="flex items-center gap-2 text-[18px] font-bold text-[#172B4D]">
-        <Target size={20} className="text-[#3269C5]" /> Your next steps
-      </h2>
-
-      <p className="mt-1 text-[13px] leading-5 text-[#65758D]">
-        Complete these milestones to qualify for {next.name}.
-      </p>
-
-      {focus ? (
-        <div className="mt-5 rounded-[13px] border border-[#E1E9F4] bg-[#F7FAFF] p-4">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="text-[11px] font-bold uppercase text-[#65758D]">
-                Still to complete
-              </p>
-
-              <p className="mt-2 text-[14px] font-semibold text-[#172B4D]">
-                {conditionLabel(focus.key)}:{" "}
-                {fmt(
-                  Math.max(
-                    0,
-
-                    number(focus.condition.required) -
-                      number(focus.condition.current),
-                  ),
-                )}{" "}
-                more
-              </p>
-            </div>
-
-            <p className="whitespace-nowrap text-[19px] font-bold text-[#172B4D]">
-              {fmt(focus.condition.current)}
-
-              <span className="text-[12px] font-normal text-[#65758D]">
-                {" "}
-                / {fmt(focus.condition.required)}
-              </span>
-            </p>
-          </div>
-
-          <ProgressBar
-            className="mt-3"
-
-            value={pct(
-              number(focus.condition.current),
-
-              number(focus.condition.required),
-            )}
-          />
-
-          <div className="mt-2 flex justify-between gap-3 text-[12px] text-[#65758D]">
-            <span>{fmt(focus.condition.current)} completed</span>
-
-            <span>{fmt(focus.condition.required)} required</span>
-          </div>
-        </div>
-      ) : (
-        <div className="mt-5 rounded-xl bg-[#e8f7ee] p-4 text-[13px] font-semibold text-[#168255]">
-          All listed requirements met.
-        </div>
-      )}
-
-      {!!pending.length && (
-        <div className="mt-5">
-          <p className="text-[11px] font-bold uppercase text-[#65758D]">
-            Pending requirements
-          </p>
-
-          <div className="mt-3 space-y-3">
-            {pending.map(({ key, condition }) => (
-              <div
-                key={key}
-
-                className="flex items-start gap-2 text-[12px] text-[#334963]"
-              >
-                <Clock3 size={15} className="mt-0.5 shrink-0 text-[#c28224]" />
-
-                <span>
-                  {conditionLabel(key)}:{" "}
-                  {conditionDetail(key, condition, progress.ranks ?? [])}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {!!met.length && (
-        <div className="mt-6">
-          <p className="text-[11px] font-bold uppercase text-[#65758D]">
-            Already met
-          </p>
-
-          <div className="mt-3 space-y-3">
-            {met.map(({ key, condition }) => (
-              <div
-                key={key}
-
-                className="flex items-start gap-2 text-[12px] text-[#334963]"
-              >
-                <CheckCircle2
-                  size={15}
-
-                  className="mt-0.5 shrink-0 text-[#139155]"
-                />
-
-                <span>
-                  {conditionLabel(key)} ({fmt(condition.current)} /{" "}
-                  {fmt(condition.required)})
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </section>
-  );
-}
-
-function RequirementBox({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="min-w-0 rounded-[13px] border border-[#E1E9F4] bg-[#F7FAFF] px-4 py-3">
-      <p className="text-[11px] font-bold uppercase leading-4 text-[#65758D]">
-        {label}
-      </p>
-
-      <p className="mt-1 break-words text-[13px] font-semibold leading-5 text-[#172B4D]">
-        {value}
-      </p>
-    </div>
-  );
-}
-
-function getValue(
-  rank: DistributorRank,
-
-  key: string,
-
-  ranks: DistributorRank[],
-) {
-  const condition = (
-    rank.conditions as Record<string, RankCondition | undefined> | undefined
-  )?.[key];
-
-  return condition
-    ? isDownline(key)
-      ? conditionDetail(key, condition, ranks)
-      : `${fmt(condition.required)}${key === "direct_cv" ? " CV" : key === "tenure" ? " months" : ""}`
-    : "—";
-}
-
-function RankTimeline({ progress }: { progress: RankProgress }) {
-  const ranks = [...(progress.ranks ?? [])].sort(
-    (a, b) => number(a.rank_no) - number(b.rank_no),
-  );
-
-  const next = nextRankOf(progress);
-
-  return (
-    <section className="rounded-[22px] border border-[#E1E9F4] bg-white p-5 shadow-[0_12px_38px_-26px_rgba(21,43,80,.25)] sm:p-6">
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[#EAF0F7] pb-5">
-        <div>
-          <p className="text-[11px] font-bold uppercase tracking-wide text-[#3269C5]">
-            Rank progression
-          </p>
-
-          <h2 className="mt-1 text-[18px] font-bold text-[#172B4D]">
-            Ranks chart
-          </h2>
-
-          <p className="mt-1 text-[13px] leading-5 text-[#65758D]">
-            Requirements for each rank, based on the API
-          </p>
-        </div>
-
-        <span className="rounded-full bg-[#f0f1f5] px-3 py-1.5 text-[12px] font-semibold text-[#172B4D]">
-          Current rank: {rankName(progress.current?.rank_no, ranks)}
-        </span>
-      </div>
-
-      {!ranks.length ? (
-        <p className="pt-5 text-[13px] text-[#65758D]">
-          No rank definitions available.
-        </p>
-      ) : (
-        <div className="mt-6">
-          {ranks.map((rank, index) => {
-            const achieved = !!rank.met;
-
-            const isNext = next?.rank_no === rank.rank_no;
-
-            const isCurrent =
-              number(rank.rank_no) === number(progress.current?.rank_no);
-
-            const downlines = ["downlines_one_below", "downlines_two_below"]
-
-              .map((k) => getValue(rank, k, ranks))
-
-              .filter((s) => s !== "—");
-
-            const extraConditions = conditionsOf(rank).filter(
-              ({ key }) =>
-                ![
-                  "steps",
-
-                  "direct_cv",
-
-                  "downlines_one_below",
-
-                  "downlines_two_below",
-
-                  "tenure",
-                ].includes(key),
-            );
-
-            const previous = index ? ranks[index - 1] : null;
-
-            return (
-              <div
-                key={rank.rank_no}
-
-                className="relative flex gap-4 pb-8 last:pb-0"
-              >
-                <div className="relative flex w-7 shrink-0 justify-center">
-                  {index < ranks.length - 1 && (
-                    <div
-                      className={`absolute bottom-[-6px] top-4 w-[2px] ${achieved ? "bg-[#15945a]" : "bg-[#e1e5ed]"}`}
-                    />
-                  )}
-
-                  <span
-                    className={`relative z-10 mt-[1px] flex h-6 w-6 items-center justify-center rounded-full border-2 ${achieved ? "border-[#3269C5] bg-[#3269C5] text-white" : isNext ? "border-[#3269C5] bg-white" : "border-[#d3d9e3] bg-white"}`}
-                  >
-                    {achieved && <Check size={13} strokeWidth={3} />}
-                  </span>
-                </div>
-
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="text-[16px] font-bold text-[#172B4D]">
-                      {rank.name}
-                    </h3>
-
-                    <Chip
-                      met={achieved}
-
-                      text={achieved ? "Achieved" : "Pending"}
-                    />
-
-                    {isNext && (
-                      <span className="rounded-full bg-[#faebdb] px-2.5 py-1 text-[11px] font-semibold text-[#9d7650]">
-                        Next
-                      </span>
-                    )}
-
-                    {isCurrent && (
-                      <span className="rounded-full bg-[#EAF2FF] px-2.5 py-1 text-[11px] font-semibold text-[#3269C5]">
-                        Current
-                      </span>
-                    )}
-                  </div>
-
-                  <p className="mt-1 text-[13px] leading-5 text-[#65758D]">
-                    {previous
-                      ? `Must have achieved the ${previous.name} rank`
-                      : "Starting rank"}
-                  </p>
-
-                  <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-12">
-                    <div className="lg:col-span-2">
-                      <RequirementBox
-                        label="Steps"
-
-                        value={getValue(rank, "steps", ranks)}
-                      />
-                    </div>
-
-                    {number(rank.conditions?.direct_cv?.required) > 0 && (
-                      <div className="lg:col-span-2">
-                        <RequirementBox
-                          label="Direct CV*"
-
-                          value={getValue(rank, "direct_cv", ranks)}
-                        />
-                      </div>
-                    )}
-
-                    <div className="lg:col-span-4">
-                      <RequirementBox
-                        label="Downlines (unilevel structure)"
-
-                        value={downlines.length ? downlines.join(" AND ") : "—"}
-                      />
-                    </div>
-
-                    <div className="lg:col-span-4">
-                      <RequirementBox
-                        label="Consecutive months"
-
-                        value={getValue(rank, "tenure", ranks)}
-                      />
-                    </div>
-                  </div>
-
-                  {extraConditions.length > 0 && (
-                    <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                      {extraConditions.map(({ key, condition }) => (
-                        <RequirementBox
-                          key={key}
-
-                          label={conditionLabel(key)}
-
-                          value={conditionDetail(key, condition, ranks)}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      <p className="mt-6 border-t border-[#EAF0F7] pt-4 text-[11px] leading-5 text-[#65758D]">
-        *Direct CV and other requirements are shown exactly as returned by your
-        distributor statistics API. Qualification periods and business rules
-        must be confirmed with the backend.
-      </p>
-    </section>
-  );
-}
-
 function RankTable({ progress }: { progress: RankProgress }) {
   const ranks = [...(progress.ranks ?? [])].sort(
     (a, b) => number(a.rank_no) - number(b.rank_no),
   );
+  const next = nextRankOf(progress);
+
+  const baseCriteria: { key: string; label: string }[] = [
+    { key: "qualification", label: "Previous rank" },
+    { key: "steps", label: "Steps" },
+    { key: "direct_cv", label: "Direct CV per annum" },
+    { key: "downlines_one_below", label: "Downlines · one rank below" },
+    { key: "downlines_two_below", label: "Downlines · two ranks below" },
+    { key: "tenure", label: "Consecutive months" },
+  ];
+
+  // Keep any additional API-supplied rank requirements visible.
+  const knownKeys = new Set(baseCriteria.map((item) => item.key));
+  const extraKeys = Array.from(
+    new Set(ranks.flatMap((rank) => Object.keys(rank.conditions ?? {}))),
+  ).filter((key) => !knownKeys.has(key));
+  const criteria = [
+    ...baseCriteria,
+    ...extraKeys.map((key) => ({ key, label: conditionLabel(key) })),
+  ];
+
+  const requirement = (
+    rank: DistributorRank,
+    index: number,
+    key: string,
+  ): string => {
+    if (key === "qualification") {
+      return index === 0
+        ? "Qualified distributor status"
+        : `Must have achieved ${ranks[index - 1].name}`;
+    }
+
+    const condition = (
+      rank.conditions as Record<string, RankCondition | undefined> | undefined
+    )?.[key];
+    if (!condition) return "—";
+
+    const required = number(condition.required);
+    if (key === "steps")
+      return required === 0 ? "No steps required" : `${fmt(required)} steps`;
+    if (key === "direct_cv")
+      return required === 0 ? "Not required" : `${fmt(required)} Direct CV`;
+    if (key === "tenure")
+      return required === 0
+        ? "Not required"
+        : `${fmt(required)} consecutive month${required === 1 ? "" : "s"}`;
+    if (isDownline(key)) {
+      if (required === 0) return "Not required";
+      const downlineRank = condition.rank_no
+        ? `${rankName(condition.rank_no, ranks)} or above`
+        : "the required rank";
+      return `${fmt(required)} downline${required === 1 ? "" : "s"} at ${downlineRank}`;
+    }
+    return `${fmt(required)} required`;
+  };
 
   return (
-    <section className="overflow-hidden rounded-[22px] border border-[#E1E9F4] bg-white shadow-[0_12px_38px_-26px_rgba(21,43,80,.25)]">
-      <div className="border-b border-[#EAF0F7] p-5 sm:p-6">
-        <h2 className="text-[18px] font-bold text-[#172B4D]">
-          Rank requirements table
-        </h2>
+    <section className="overflow-hidden rounded-[22px] border border-[#DCE6F4] bg-white shadow-[0_12px_38px_-26px_rgba(21,43,80,.25)]">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E9EFF7] px-5 py-4 sm:px-6">
+        <div>
+          <h2 className="text-[17px] font-extrabold text-[#172B4D]">
+            Rank requirements comparison
+          </h2>
+          <p className="mt-1 text-[12px] text-[#65758D]">
+            Compare each rank side by side. Values are taken from your rank API.
+          </p>
+        </div>
+        <span className="rounded-full border border-[#DFE8F5] bg-[#F5F8FD] px-3 py-1.5 text-[11px] font-semibold text-[#65758D]">
+          {ranks.length} ranks
+        </span>
+      </div>
 
-        <p className="mt-1 text-[13px] leading-5 text-[#65758D]">
-          Scroll horizontally on smaller screens
+      {ranks.length ? (
+        <>
+          <div className="flex items-center gap-1.5 px-5 py-2.5 text-[11px] text-[#70809A] sm:px-6 lg:hidden">
+            <ArrowRight size={13} /> Swipe horizontally to compare ranks
+          </div>
+          <div className="overflow-x-auto overscroll-x-contain">
+            <table className="w-max min-w-full border-collapse text-left text-[12px]">
+              <thead>
+                <tr>
+                  <th
+                    scope="col"
+                    className="sticky left-0 z-20 w-[205px] min-w-[205px] border-r border-[#2D5CA9] bg-[#17458E] px-4 py-5 text-[13px] font-extrabold text-white shadow-[4px_0_8px_rgba(22,48,95,.05)] sm:w-[228px] sm:min-w-[228px]"
+                  >
+                    Requirements
+                  </th>
+                  {ranks.map((rank) => {
+                    const isCurrent =
+                      number(rank.rank_no) ===
+                      number(progress.current?.rank_no);
+                    const isNext = next?.rank_no === rank.rank_no;
+                    return (
+                      <th
+                        key={rank.rank_no}
+                        scope="col"
+                        className="w-[175px] min-w-[175px] border-r border-[#F2D278] bg-[#FFD34F] px-4 py-4 align-top text-[#24344C] last:border-r-0 sm:w-[195px] sm:min-w-[195px]"
+                      >
+                        <div className="flex flex-col items-start gap-2">
+                          <span className="text-[13px] font-black uppercase leading-5 tracking-[.02em]">
+                            {rank.name}
+                          </span>
+                          {isCurrent ? (
+                            <span className="rounded-full bg-[#17458E] px-2 py-0.5 text-[10px] font-bold text-white">
+                              Current
+                            </span>
+                          ) : isNext ? (
+                            <span className="rounded-full bg-white/85 px-2 py-0.5 text-[10px] font-bold text-[#17458E]">
+                              Next rank
+                            </span>
+                          ) : null}
+                        </div>
+                      </th>
+                    );
+                  })}
+                </tr>
+              </thead>
+              <tbody>
+                {criteria.map(({ key, label }, rowIndex) => (
+                  <tr
+                    key={key}
+                    className={rowIndex % 2 === 0 ? "bg-white" : "bg-[#F8FAFE]"}
+                  >
+                    <th
+                      scope="row"
+                      className="sticky left-0 z-10 w-[205px] min-w-[205px] border-b border-r border-[#E4ECF5] bg-inherit px-4 py-5 align-top text-[12px] font-bold leading-5 text-[#18365F] shadow-[4px_0_8px_rgba(22,48,95,.04)] sm:w-[228px] sm:min-w-[228px]"
+                    >
+                      {label}
+                    </th>
+                    {ranks.map((rank, rankIndex) => {
+                      const value = requirement(rank, rankIndex, key);
+                      return (
+                        <td
+                          key={`${rank.rank_no}-${key}`}
+                          className="w-[175px] min-w-[175px] border-b border-r border-[#E9EFF7] px-4 py-5 align-top text-[12px] leading-[1.65] text-[#33435F] last:border-r-0 sm:w-[195px] sm:min-w-[195px]"
+                        >
+                          {value === "—" ? (
+                            <span className="text-[#A3AEC0]">—</span>
+                          ) : (
+                            <span className="flex items-start gap-2">
+                              <span className="mt-[8px] h-[5px] w-[5px] shrink-0 rounded-full bg-[#376FC3]" />
+                              <span>{value}</span>
+                            </span>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      ) : (
+        <p className="px-6 py-7 text-[13px] text-[#65758D]">
+          No rank definitions are available from the API.
         </p>
-      </div>
-
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[850px] text-left text-[12px]">
-          <thead className="bg-[#f7f8fb] text-[#677184]">
-            <tr>
-              {[
-                "Rank",
-
-                "Status",
-
-                "Steps",
-
-                "Direct CV",
-
-                "Downlines",
-
-                "Consecutive months",
-              ].map((h) => (
-                <th
-                  key={h}
-
-                  className="border-b border-[#EAF0F7] px-4 py-3 font-semibold"
-                >
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-
-          <tbody>
-            {ranks.map((r) => (
-              <tr
-                key={r.rank_no}
-
-                className="border-b border-[#ECF1F7] last:border-0"
-              >
-                <td className="px-4 py-4 font-semibold text-[#172B4D]">
-                  {r.name}
-                </td>
-
-                <td className="px-4 py-4">
-                  <Chip met={!!r.met} text={r.met ? "Achieved" : "Pending"} />
-                </td>
-
-                <td className="px-4 py-4">{getValue(r, "steps", ranks)}</td>
-
-                <td className="px-4 py-4">
-                  {number(r.conditions?.direct_cv?.required) > 0 ? (
-                    <span className="font-semibold text-[#172B4D]">
-                      {getValue(r, "direct_cv", ranks)}
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-[#EAF7F0] px-2.5 py-1 text-[11px] font-semibold text-[#168255]">
-                      <Check size={12} /> Not required
-                    </span>
-                  )}
-                </td>
-
-                <td className="max-w-[330px] px-4 py-4">
-                  {["downlines_one_below", "downlines_two_below"]
-
-                    .map((k) => getValue(r, k, ranks))
-
-                    .filter((v) => v !== "—")
-
-                    .join(" AND ") || "—"}
-                </td>
-
-                <td className="px-4 py-4">{getValue(r, "tenure", ranks)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      )}
     </section>
   );
 }
@@ -1451,12 +1047,7 @@ export default function TrackingDashboard({ variant = "cv" }: Props) {
     refetchOnMountOrArgChange: true,
   });
 
-  const [isRankTableOpen, setIsRankTableOpen] = useState(false);
-
-  const [isRankJourneyOpen, setIsRankJourneyOpen] = useState(false);
-
   // Fetch the sales calendar independently; the rank-stats API has no month boundaries.
-
   const salesDashboardQuery = useGetUserDashboardQuery(undefined, {
     refetchOnMountOrArgChange: true,
 
@@ -1626,14 +1217,14 @@ export default function TrackingDashboard({ variant = "cv" }: Props) {
                 onClick={() =>
                   document
 
-                    .getElementById("rank-next-actions")
+                    .getElementById("rank-requirements")
 
                     ?.scrollIntoView({ behavior: "smooth", block: "start" })
                 }
 
                 className="mt-1 inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl bg-white px-4 text-[12px] font-bold text-[#24519B] transition hover:bg-[#EAF2FF] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
               >
-                View my next steps <ArrowRight size={15} />
+                View rank requirements <ArrowRight size={15} />
               </button>
             </div>
           </div>
@@ -1680,83 +1271,35 @@ export default function TrackingDashboard({ variant = "cv" }: Props) {
           />
         </div>
 
-        <section id="rank-next-actions" className="scroll-mt-24">
-          <div className="mb-4">
-            <h2 className="flex items-center gap-2 text-[19px] font-extrabold text-[#172B4D] sm:text-[21px]">
-              <Target size={21} className="text-[#3269C5]" /> What should I do
-              next?
-            </h2>
-
-            <p className="mt-1 text-[13px] text-[#65758D]">
-              Start with your pending requirements. Completed ones are clearly
-              marked.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.9fr)]">
-            <RequirementsCard progress={progress} />
-
-            <ActionCard progress={progress} />
-          </div>
-        </section>
-
-        <section className="scroll-mt-24">
-          <div className="mb-4">
-            <h2 className="flex items-center gap-2 text-[19px] font-extrabold text-[#172B4D] sm:text-[21px]">
-              <ListChecks size={21} className="text-[#3269C5]" /> Explore all
-              ranks
-            </h2>
-
-            <p className="mt-1 text-[13px] text-[#65758D]">
-              Open the rank journey for a simple overview, or the table for a
-              detailed comparison.
-            </p>
-          </div>
-
-          <div className="rounded-[22px] border border-[#E1E9F4] bg-white p-4 shadow-[0_12px_38px_-26px_rgba(21,43,80,.25)] sm:p-5">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <button
-                type="button"
-
-                onClick={() => setIsRankTableOpen((v) => !v)}
-
-                aria-expanded={isRankTableOpen}
-
-                aria-controls="rank-requirements-table-content"
-
-                className="inline-flex min-h-[46px] flex-1 items-center justify-between gap-3 rounded-xl border border-[#D8E5F8] bg-white px-4 text-left text-[13px] font-bold text-[#24519B] hover:bg-[#F7FAFF] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#3269C5]"
-              >
-                <span className="inline-flex items-center gap-2">
-                  <ListChecks size={17} /> {isRankTableOpen ? "Hide" : "View"}{" "}
-                  requirements table
-                </span>
-
-                <ChevronDown
-                  size={17}
-
-                  className={`transition-transform ${isRankTableOpen ? "rotate-180" : ""}`}
-                />
-              </button>
+        <section id="rank-requirements" className="scroll-mt-24">
+          <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <h2 className="flex items-center gap-2 text-[19px] font-extrabold text-[#172B4D] sm:text-[21px]">
+                <ListChecks size={21} className="text-[#3269C5]" /> Rank
+                requirements
+              </h2>
+              <p className="mt-1 text-[13px] text-[#65758D]">
+                All rank criteria at a glance, just like a comparison chart.
+              </p>
             </div>
-
-            {/* Rank requirements are available on demand without visual/table view toggles. */}
-
-            <div
-              id="rank-journey-content"
-
-              className={isRankJourneyOpen ? "mt-5" : ""}
-            >
-              {isRankJourneyOpen && <RankTimeline progress={progress} />}
-            </div>
-
-            <div
-              id="rank-requirements-table-content"
-
-              className={isRankTableOpen ? "mt-5" : ""}
-            >
-              {isRankTableOpen && <RankTable progress={progress} />}
-            </div>
+            {nextRank?.conditions?.steps && (
+              <div className="inline-flex items-center gap-3 rounded-xl border border-[#DCE7F7] bg-white px-4 py-3 shadow-sm">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#EDF4FF] text-[#3269C5]">
+                  <Target size={18} />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-[#65758D]">
+                    Steps for {nextRank.name}
+                  </p>
+                  <p className="mt-0.5 text-[15px] font-extrabold tabular-nums text-[#172B4D]">
+                    {fmt(nextRank.conditions.steps.current)} /{" "}
+                    {fmt(nextRank.conditions.steps.required)}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
+          <RankTable progress={progress} />
         </section>
 
         {isFetching && (

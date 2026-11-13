@@ -170,13 +170,7 @@ const menuGroups: NavGroup[] = [
         href: "/distributor/downline-cv-report",
       },
 
-      {
-        label: "My Wallet",
 
-        icon: Wallet,
-
-        href: "/distributor/wallet",
-      },
 
       {
         label: "Sales Calendar",
@@ -234,21 +228,15 @@ const menuGroups: NavGroup[] = [
     title: "Finance",
 
     items: [
-      {
-        label: "Balance History",
-
-        icon: ArrowLeftRight,
-
-        href: "/distributor/transactions",
-      },
 
       {
-        label: "Commission History",
+        label: "My Wallet",
 
-        icon: BadgePercent,
+        icon: Wallet,
 
-        href: "/distributor/commissions",
+        href: "/distributor/wallet",
       },
+
     ],
   },
 ];
@@ -600,18 +588,16 @@ export default function Sidebar() {
 
     const expanded = openDropdowns.includes(item.label);
 
-    const commonItem = `group relative flex min-h-[42px] w-full min-w-0 items-center gap-3 rounded-xl px-3 text-left transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-600 focus-visible:ring-offset-2 ${
-      active
+    const commonItem = `group relative flex min-h-[42px] w-full min-w-0 items-center gap-3 rounded-xl px-3 text-left transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-600 focus-visible:ring-offset-2 ${active
         ? "bg-[#173A75] text-white"
         : "text-[#536780] hover:bg-[#F0F5FC] hover:text-[#194891]"
-    }`;
+      }`;
 
     const content = (
       <>
         <span
-          className={`flex h-[27px] w-[27px] shrink-0 items-center justify-center rounded-[9px] transition-colors ${
-            active ? "bg-white/20" : "bg-[#F0F4FB] group-hover:bg-white"
-          }`}
+          className={`flex h-[27px] w-[27px] shrink-0 items-center justify-center rounded-[9px] transition-colors ${active ? "bg-white/20" : "bg-[#F0F4FB] group-hover:bg-white"
+            }`}
         >
           <Icon
             size={16}
@@ -638,9 +624,8 @@ export default function Sidebar() {
 
             aria-hidden="true"
 
-            className={`shrink-0 transition-transform duration-200 ${
-              expanded ? "rotate-180" : ""
-            } ${active ? "text-white/80" : "text-[#9AA9BC]"}`}
+            className={`shrink-0 transition-transform duration-200 ${expanded ? "rotate-180" : ""
+              } ${active ? "text-white/80" : "text-[#9AA9BC]"}`}
           />
         )}
       </>
@@ -696,11 +681,10 @@ export default function Sidebar() {
 
                         aria-current={selected ? "page" : undefined}
 
-                        className={`group/child relative flex min-h-[36px] w-full min-w-0 items-center gap-2 rounded-lg px-2.5 py-1.5 text-[12px] transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-500 ${
-                          selected
+                        className={`group/child relative flex min-h-[36px] w-full min-w-0 items-center gap-2 rounded-lg px-2.5 py-1.5 text-[12px] transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-500 ${selected
                             ? "bg-[#ECF3FF] font-bold text-[#194891]"
                             : "font-medium text-[#74859C] hover:bg-[#F6F9FD] hover:text-[#1A2A40]"
-                        }`}
+                          }`}
                       >
                         {selected && (
                           <span className="absolute -left-[18px] top-1/2 h-[7px] w-[7px] -translate-y-1/2 rounded-full border-2 border-white bg-[#275FC1] ring-1 ring-[#275FC1]" />
@@ -711,9 +695,8 @@ export default function Sidebar() {
 
                           strokeWidth={1.8}
 
-                          className={`shrink-0 ${
-                            selected ? "text-[#17427D]" : "text-[#91A0B8]"
-                          }`}
+                          className={`shrink-0 ${selected ? "text-[#17427D]" : "text-[#91A0B8]"
+                            }`}
                         />
 
                         <span className="min-w-0 flex-1 break-words leading-[1.4]">
@@ -836,11 +819,10 @@ export default function Sidebar() {
           color: INK,
         }}
 
-        className={`fixed inset-y-0 left-0 z-50 flex w-[min(88vw,300px)] max-w-[300px] flex-col overflow-hidden border-r border-[#E3EAF3] bg-white transition-transform duration-300 ease-out lg:z-30 lg:w-[280px] lg:max-w-none lg:translate-x-0 lg:shadow-none ${
-          isMobileOpen
+        className={`fixed inset-y-0 left-0 z-50 flex w-[min(88vw,300px)] max-w-[300px] flex-col overflow-hidden border-r border-[#E3EAF3] bg-white transition-transform duration-300 ease-out lg:z-30 lg:w-[280px] lg:max-w-none lg:translate-x-0 lg:shadow-none ${isMobileOpen
             ? "translate-x-0 shadow-[12px_0_50px_rgba(0,0,0,0.18)]"
             : "-translate-x-full shadow-none"
-        }`}
+          }`}
       >
         {/* Brand header */}
 

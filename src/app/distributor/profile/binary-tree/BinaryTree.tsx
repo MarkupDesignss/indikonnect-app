@@ -35,8 +35,11 @@ import type { GenealogyMember } from "../../../../lib/redux/api/distributor/dist
 import Loding from "@/components/common/Loding";
 
 // --------------------------------------------------
+
 // COLORS
+
 // --------------------------------------------------
+
 const NAVY = "#162B4A";
 
 const BLUE = "#3268C8";
@@ -52,19 +55,27 @@ const LINE = "#B9CBE3";
 const LEVEL_COLORS = [PURPLE, BLUE, GREEN, ORANGE, "#0891b2", "#be185d"];
 
 // --------------------------------------------------
+
 // ZOOM CONFIGURATION
+
 // --------------------------------------------------
+
 const MIN_ZOOM = 0.03;
 
 const MAX_ZOOM = 1.8;
 
 // Default cards stay large and readable.
+
 // Users can manually choose Fit to View.
-const DEFAULT_ZOOM = 1;
+
+const DEFAULT_ZOOM = 0.8;
 
 // --------------------------------------------------
+
 // TYPES
+
 // --------------------------------------------------
+
 interface GenealogyTreeNode {
   member: GenealogyMember;
 
@@ -96,8 +107,11 @@ interface DragState {
 }
 
 // --------------------------------------------------
+
 // HELPERS
+
 // --------------------------------------------------
+
 function toNumber(value: string | number | null | undefined): number {
   if (value === null || value === undefined || value === "") {
     return 0;
@@ -114,13 +128,22 @@ function formatCV(value: string | number | null | undefined): string {
   });
 }
 
+// Show API member names in the tree while retaining BA IDs for internal navigation.
+function getMemberName(member: GenealogyMember): string {
+  const namedMember = member as GenealogyMember & { full_name?: string | null };
+  return namedMember.full_name?.trim() || "Unknown Member";
+}
+
 function clampZoom(value: number): number {
   return Number(Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, value)).toFixed(2));
 }
 
 // --------------------------------------------------
+
 // BUILD TREE FROM API ROWS
+
 // --------------------------------------------------
+
 function buildGenealogyTree(
   root: GenealogyMember,
 
@@ -162,6 +185,7 @@ function buildGenealogyTree(
         ) ?? [];
 
     // Binary tree allows one member on each side.
+
     const leftMember = children.find(
       (child) => Number(child.binary_side) === 1,
     );
@@ -183,8 +207,11 @@ function buildGenealogyTree(
 }
 
 // --------------------------------------------------
+
 // LOADER
+
 // --------------------------------------------------
+
 function TreeLoader() {
   return (
     <div className="flex min-h-[500px] w-full items-center justify-center rounded-xl border border-[#edf0f3] bg-white">
@@ -196,8 +223,11 @@ function TreeLoader() {
 }
 
 // --------------------------------------------------
+
 // MEMBER NODE CARD
+
 // --------------------------------------------------
+
 function MemberNodeCard({
   member,
 
@@ -219,12 +249,10 @@ function MemberNodeCard({
 
   const isRoot = side === "root";
 
+  const displayName = getMemberName(member);
+
   const sideLabel =
-    side === "left"
-      ? "LEFT LEG"
-      : side === "right"
-        ? "RIGHT LEG"
-        : "ROOT MEMBER";
+    side === "left" ? "LEFT LEG" : side === "right" ? "RIGHT LEG" : "";
 
   const sideColor = side === "left" ? GREEN : side === "right" ? ORANGE : BLUE;
 
@@ -241,7 +269,7 @@ function MemberNodeCard({
 
       tabIndex={0}
 
-      aria-label={`Open ${member.ba_id} branch`}
+      aria-label={`Open ${displayName} branch`}
 
       title="Double-click / double-tap to see this member and all sub-branches"
 
@@ -301,8 +329,11 @@ function MemberNodeCard({
         </div>
 
         <div className="min-w-0 flex-1">
-          <p className="break-all text-[15px] font-extrabold tracking-[-.01em] text-[#182F52]">
-            {member.ba_id}
+          <p
+            className="break-words text-[15px] font-extrabold leading-snug tracking-[-.01em] text-[#182F52]"
+            title={displayName}
+          >
+            {displayName}
           </p>
 
           <p className="mt-1 text-[10px] font-bold tracking-[.09em] text-[#71829A]">
@@ -374,20 +405,24 @@ function MemberNodeCard({
           handleOpen();
         }}
 
-        className="mt-5 flex min-h-[42px] w-full items-center justify-center gap-2 rounded-[12px] bg-[#295DB2] px-3 py-2.5 text-[12px] font-bold text-white shadow-[0_6px_12px_rgba(41,93,178,.16)] transition-all hover:bg-[#1D488F] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#295DB2]"
+        className="ml-auto mt-4 flex h-[40px] w-[40px] items-center justify-center rounded-[12px] bg-[#295DB2] text-white shadow-[0_6px_12px_rgba(41,93,178,.16)] transition-all hover:bg-[#1D488F] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#295DB2]"
 
-        aria-label={`Open branch for ${member.ba_id}`}
+        aria-label={`View ${displayName}'s branch`}
+
+        title={`View ${displayName}'s branch`}
       >
-        <Network size={14} />
-        View this branch
+        <Network size={18} aria-hidden="true" />
       </button>
     </div>
   );
 }
 
 // --------------------------------------------------
+
 // EMPTY BINARY POSITION
+
 // --------------------------------------------------
+
 function EmptyBranch({
   side,
 
@@ -419,10 +454,15 @@ function EmptyBranch({
 }
 
 // --------------------------------------------------
+
 // RECURSIVE TREE NODE
+
 // Connectors are drawn per child, so lines always meet
+
 // exactly at each card's centre, whatever the subtree width.
+
 // --------------------------------------------------
+
 function TreeNodeView({
   node,
 
@@ -447,8 +487,11 @@ function TreeNodeView({
   const hasChildren = Boolean(node.left || node.right);
 
   // Keep binary LEFT/RIGHT positions unchanged.
+
   // The wrapper is flipped vertically when inverted,
+
   // and each card counter-flips so its text remains readable.
+
   const visualBranches: Array<{
     node: GenealogyTreeNode | null;
 
@@ -565,8 +608,11 @@ function TreeNodeView({
 }
 
 // --------------------------------------------------
+
 // ZOOM CONTROL (sits beside Expand / Collapse)
+
 // --------------------------------------------------
+
 function ZoomControl({
   zoom,
 
@@ -618,8 +664,11 @@ function ZoomControl({
 }
 
 // --------------------------------------------------
+
 // MAIN COMPONENT
+
 // --------------------------------------------------
+
 const BinaryTree = () => {
   const {
     data: response,
@@ -642,7 +691,9 @@ const BinaryTree = () => {
   const [collapsed, setCollapsed] = useState(false);
 
   // Selected member acts as the root of the displayed subtree;
+
   // full API tree remains intact.
+
   const [activeRootId, setActiveRootId] = useState<string | null>(null);
 
   const [branchHistory, setBranchHistory] = useState<string[]>([]);
@@ -688,8 +739,11 @@ const BinaryTree = () => {
   }, [invertScroll]);
 
   // --------------------------------------------------
+
   // Build real hierarchy from API rows
+
   // --------------------------------------------------
+
   const tree = useMemo(() => {
     if (!data) return null;
 
@@ -704,7 +758,9 @@ const BinaryTree = () => {
   }, [data]);
 
   // Index the complete loaded tree so search includes
+
   // every API-supplied depth.
+
   const nodesById = useMemo(() => {
     const index = new Map<string, GenealogyTreeNode>();
 
@@ -735,8 +791,11 @@ const BinaryTree = () => {
   const displayedTree = nodesById.get(currentRootId) ?? tree;
 
   // --------------------------------------------------
+
   // Center tree horizontally and reset vertical position
+
   // --------------------------------------------------
+
   const centerTreeInViewport = useCallback(() => {
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
@@ -758,9 +817,13 @@ const BinaryTree = () => {
   }, []);
 
   // --------------------------------------------------
+
   // Drill into any branch while keeping a navigation trail
+
   // for Back and Full Tree.
+
   // --------------------------------------------------
+
   const openBranch = useCallback(
     (baId: string) => {
       const target = nodesById.get(baId);
@@ -791,7 +854,8 @@ const BinaryTree = () => {
 
       setCollapsed(false);
 
-      // Keep selected branch large and readable.
+      // Keep the selected branch at the requested default 80% zoom.
+
       setZoom(DEFAULT_ZOOM);
 
       setContentSize({ w: 0, h: 0 });
@@ -837,15 +901,20 @@ const BinaryTree = () => {
   };
 
   // --------------------------------------------------
+
   // Search all loaded BA IDs
+
   // --------------------------------------------------
+
   const searchResults = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
 
     if (!query) return [];
 
-    const results = [...nodesById.values()].filter((node) =>
-      node.member.ba_id.toLowerCase().includes(query),
+    const results = [...nodesById.values()].filter(
+      (node) =>
+        node.member.ba_id.toLowerCase().includes(query) ||
+        getMemberName(node.member).toLowerCase().includes(query),
     );
 
     return results
@@ -879,8 +948,11 @@ const BinaryTree = () => {
   }, []);
 
   // --------------------------------------------------
+
   // Measure real unscaled tree size
+
   // --------------------------------------------------
+
   useEffect(() => {
     const element = treeContentRef.current;
 
@@ -914,10 +986,15 @@ const BinaryTree = () => {
   }, [displayedTree, collapsed]);
 
   // --------------------------------------------------
+
   // Wheel navigation
+
   // Keep natural vertical scrolling.
+
   // Shift + Wheel pans horizontally.
+
   // --------------------------------------------------
+
   useEffect(() => {
     const viewport = treeViewportRef.current;
 
@@ -925,6 +1002,7 @@ const BinaryTree = () => {
 
     const onWheel = (event: WheelEvent) => {
       // Preserve browser zoom.
+
       if (event.ctrlKey || event.metaKey) return;
 
       if (event.shiftKey && viewport.scrollWidth > viewport.clientWidth) {
@@ -936,12 +1014,15 @@ const BinaryTree = () => {
       }
 
       // Allow native vertical scrolling whenever available.
+
       if (viewport.scrollHeight > viewport.clientHeight + 1) {
         return;
       }
 
       // On desktop, use wheel for wide-tree panning
+
       // when no vertical overflow exists.
+
       if (
         window.matchMedia("(min-width: 1024px)").matches &&
         Math.abs(event.deltaY) > Math.abs(event.deltaX) &&
@@ -963,9 +1044,13 @@ const BinaryTree = () => {
   }, [displayedTree]);
 
   // --------------------------------------------------
+
   // Mouse drag panning
+
   // Touch devices retain native 2D swipe.
+
   // --------------------------------------------------
+
   const onTreePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (event.pointerType !== "mouse" || event.button !== 0) {
       return;
@@ -974,6 +1059,7 @@ const BinaryTree = () => {
     const target = event.target as HTMLElement;
 
     // Do not interfere with interactive member cards.
+
     if (target.closest("button, input, select, textarea, [role='button']")) {
       return;
     }
@@ -1046,8 +1132,11 @@ const BinaryTree = () => {
   };
 
   // --------------------------------------------------
+
   // Zoom
+
   // --------------------------------------------------
+
   const handleZoomIn = () => {
     setZoom((current) => clampZoom(current + 0.1));
   };
@@ -1057,8 +1146,11 @@ const BinaryTree = () => {
   };
 
   // --------------------------------------------------
+
   // Fit tree into viewport
+
   // --------------------------------------------------
+
   const handleFitToView = () => {
     const viewport = treeViewportRef.current;
 
@@ -1084,10 +1176,15 @@ const BinaryTree = () => {
   };
 
   // --------------------------------------------------
+
   // Initial tree position
-  // Default is 100%, not auto-fit.
+
+  // Default is 80%, not auto-fit.
+
   // This prevents large trees from becoming tiny.
+
   // --------------------------------------------------
+
   useEffect(() => {
     if (!displayedTree) return;
 
@@ -1109,8 +1206,11 @@ const BinaryTree = () => {
   ]);
 
   // --------------------------------------------------
+
   // Reset
+
   // --------------------------------------------------
+
   const handleReset = () => {
     showFullTree();
 
@@ -1122,8 +1222,11 @@ const BinaryTree = () => {
   };
 
   // --------------------------------------------------
+
   // Fullscreen
+
   // --------------------------------------------------
+
   const handleFullscreen = async () => {
     const viewport = treeViewportRef.current;
 
@@ -1141,15 +1244,21 @@ const BinaryTree = () => {
   };
 
   // --------------------------------------------------
+
   // Loading
+
   // --------------------------------------------------
+
   if (isLoading) {
     return <TreeLoader />;
   }
 
   // --------------------------------------------------
+
   // Error
+
   // --------------------------------------------------
+
   if (isError || response?.success === false) {
     return (
       <div className="flex min-h-[400px] w-full flex-col items-center justify-center rounded-[12px] border border-[#edf0f3] bg-white p-6 text-center">
@@ -1178,8 +1287,11 @@ const BinaryTree = () => {
   }
 
   // --------------------------------------------------
+
   // Empty response
+
   // --------------------------------------------------
+
   if (!data || !tree) {
     return (
       <div className="flex min-h-[400px] w-full flex-col items-center justify-center rounded-[12px] border border-[#edf0f3] bg-white p-6 text-center">
@@ -1203,8 +1315,11 @@ const BinaryTree = () => {
   }
 
   // --------------------------------------------------
+
   // UI
+
   // --------------------------------------------------
+
   return (
     <div className="w-full min-w-0 rounded-[24px] border border-[#E0E8F3] bg-white p-3 shadow-[0_12px_40px_-22px_rgba(23,43,77,.24)] sm:p-5">
       {/* ================= HEADER ================= */}
@@ -1212,38 +1327,45 @@ const BinaryTree = () => {
       <div className="relative mb-5 overflow-hidden rounded-[23px] bg-gradient-to-br from-[#172C4D] via-[#244C89] to-[#3673CE] px-5 py-6 text-white shadow-[0_16px_36px_-22px_rgba(23,44,77,.7)] sm:px-7 sm:py-7">
         <div
           aria-hidden="true"
+
           className="pointer-events-none absolute -right-10 -top-16 h-48 w-48 rounded-full border-[35px] border-white/[.06]"
         />
+
         <div className="relative flex flex-wrap items-center justify-between gap-4">
           <div className="flex min-w-0 items-center gap-4">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[15px] border border-white/20 bg-white/15">
               <Network className="h-6 w-6 text-white" />
             </div>
+
             <div className="min-w-0">
               <p className="mb-1 text-[10px] font-extrabold uppercase tracking-[.17em] text-[#C6DEFF]">
                 Network workspace
               </p>
+
               <h1 className="text-[23px] font-extrabold tracking-[-.035em] sm:text-[28px]">
                 Your Binary Team Tree
               </h1>
+
               <p className="mt-1 max-w-2xl text-[12px] leading-5 text-[#DDEAFF] sm:text-[13px]">
-                Explore your team, search a BA ID or open any member to see
+                Explore your team, search for a member or open any member to see
                 their complete downline.
               </p>
             </div>
           </div>
-         
         </div>
       </div>
+
       <div className="flex flex-col gap-4 rounded-[19px] border border-[#DEE7F3] bg-[#F8FAFD] p-4 sm:p-5 xl:flex-row xl:items-end xl:justify-between">
         <div className="min-w-0 flex-1">
           <div className="mb-2 flex items-center gap-2 text-[12px] font-extrabold text-[#1F3C65]">
             <Search size={15} /> Find a member or branch
           </div>
+
           <p className="mb-3 text-[12px] leading-5 text-[#667B96]">
             Search across all loaded hierarchy levels. Select a result to open
             its entire branch.
           </p>
+
           {/* Controls */}
 
           <div className="flex flex-wrap items-center gap-2.5">
@@ -1267,10 +1389,11 @@ const BinaryTree = () => {
               <ChevronDown size={14} className="shrink-0 text-[#8a92a6]" />
             </button>
 
-            {/* Search any BA ID across all loaded hierarchy levels */}
+            {/* Search member names or BA IDs across all loaded hierarchy levels */}
 
             <div
               ref={searchRef}
+
               className="relative w-full min-w-[220px] sm:w-[310px]"
             >
               <div className="flex h-[44px] items-center gap-2.5 rounded-[11px] border border-[#C7D7EB] bg-white px-3 focus-within:border-[#3268C8] focus-within:ring-4 focus-within:ring-[#3268C8]/10">
@@ -1306,7 +1429,7 @@ const BinaryTree = () => {
                       if (match) {
                         openBranch(match.member.ba_id);
                       } else if (query) {
-                        setSearchError("BA ID not found in the loaded tree.");
+                        setSearchError("Member not found in the loaded tree.");
                       }
                     }
 
@@ -1315,9 +1438,9 @@ const BinaryTree = () => {
                     }
                   }}
 
-                  placeholder="Type BA ID to find a member..."
+                  placeholder="Search member name or BA ID..."
 
-                  aria-label="Search BA ID across all levels"
+                  aria-label="Search member name or BA ID across all levels"
 
                   className="w-full min-w-0 bg-transparent text-[13px] font-semibold text-[#1D3557] outline-none placeholder:font-normal placeholder:text-[#8FA0B7]"
                 />
@@ -1355,7 +1478,7 @@ const BinaryTree = () => {
                         className="flex w-full items-center justify-between gap-2 rounded-md px-3 py-2.5 text-left hover:bg-[#eff5ff]"
                       >
                         <span className="min-w-0 truncate text-[12px] font-semibold text-[#1a2332]">
-                          {node.member.ba_id}
+                          {getMemberName(node.member)}
                         </span>
 
                         <span className="shrink-0 text-[10px] text-[#64748b]">
@@ -1365,7 +1488,7 @@ const BinaryTree = () => {
                     ))
                   ) : (
                     <div className="px-3 py-3 text-[12px] text-[#64748b]">
-                      No matching BA ID in loaded tree.
+                      No matching member in the loaded tree.
                     </div>
                   )}
 
@@ -1390,6 +1513,7 @@ const BinaryTree = () => {
             >
               <RefreshCw
                 size={15}
+
                 className={isFetching ? "animate-spin" : ""}
               />
               Refresh
@@ -1435,31 +1559,57 @@ const BinaryTree = () => {
           </div>
         </div>
       </div>
+
       {/* <div className="mb-5 grid gap-3 sm:grid-cols-3">
+
         <div className="rounded-[15px] border border-[#DFE8F4] bg-white px-4 py-3">
+
           <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#8291A5]">
+
             Currently viewing
+
           </p>
+
           <p className="mt-1 break-all text-[14px] font-extrabold text-[#19375D]">
+
             {currentRootId}
+
           </p>
+
         </div>
+
         <div className="rounded-[15px] border border-[#DFE8F4] bg-white px-4 py-3">
+
           <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#8291A5]">
+
             Tree mode
+
           </p>
+
           <p className="mt-1 text-[14px] font-extrabold text-[#19375D]">
+
             {invertScroll ? "Root at bottom" : "Root at top"}
+
           </p>
+
         </div>
+
         <div className="rounded-[15px] border border-[#DFE8F4] bg-white px-4 py-3">
+
           <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#8291A5]">
+
             How to explore
+
           </p>
+
           <p className="mt-1 text-[12px] font-bold leading-5 text-[#19375D]">
+
             Click “View this branch” on any member card
+
           </p>
+
         </div>
+
       </div> */}
 
       {/* ================= STATISTICS ================= */}
@@ -1483,8 +1633,6 @@ const BinaryTree = () => {
               <h3 className="text-[17px] font-extrabold text-[#1A3559]">
                 Team Hierarchy
               </h3>
-
-      
             </div>
 
             <div className="flex flex-wrap items-center gap-2.5">
@@ -1512,7 +1660,6 @@ const BinaryTree = () => {
                   className="inline-flex h-[42px] items-center gap-1.5 rounded-[11px] border border-[#D7E2F0] bg-white px-3.5 text-[12px] font-bold text-[#244269] hover:bg-[#EAF2FC]"
                 >
                   <ArrowLeft size={14} />
-                  Back
                 </button>
               )}
 
@@ -1597,8 +1744,6 @@ const BinaryTree = () => {
           {/* Current branch and drill-down navigation */}
 
           <div className="flex flex-wrap items-center justify-between gap-2 border-x border-[#DCE6F2] bg-[#EDF5FF] px-4 py-3 text-[12px] sm:px-5">
-  
-
             <span className="text-[#64748b]">
               Double-click a member (double-tap on mobile) to open their branch
             </span>
@@ -1656,7 +1801,9 @@ const BinaryTree = () => {
                 height: contentSize.h ? contentSize.h * zoom : undefined,
 
                 // Flip all connector geometry vertically
+
                 // without swapping the legs.
+
                 transform: invertScroll ? "scaleY(-1)" : undefined,
               }}
             >

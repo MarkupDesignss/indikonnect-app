@@ -1052,13 +1052,6 @@ function CoinsSection({
             See your coin balance and redeem eligible coins
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setIsRedeemModalOpen(true)}
-          className="inline-flex min-h-[43px] items-center justify-center gap-2 rounded-xl bg-[#2457AA] px-4 text-[12px] font-extrabold text-white shadow-[0_5px_14px_rgba(36,87,170,.15)] transition hover:bg-[#1C478C] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2457AA]/30 focus-visible:ring-offset-2"
-        >
-          <HandCoins size={14} /> Redeem Coins
-        </button>
       </div>
       <div className="mt-5 grid grid-cols-1 gap-3 min-[440px]:grid-cols-3">
         <CoinCard
@@ -3098,162 +3091,9 @@ type TrackHistory = {
 };
 
 // --------------------------------------------------
-// Searchable Base BA ID selector for Tracking Center
+// Tracking Center resolves the Base BA ID internally from the logged-in
+// distributor account; it is never displayed as a separate form field.
 // --------------------------------------------------
-function TrackingBaseIdSearch({
-  ids,
-  value,
-  onChange,
-  loading,
-}: {
-  ids: string[];
-  value: string;
-  onChange: (id: string) => void;
-  loading?: boolean;
-}) {
-  const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState("");
-  const [activeIndex, setActiveIndex] = useState(0);
-  const rootRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const filtered = ids.filter((id) =>
-    id.toLowerCase().includes(query.trim().toLowerCase()),
-  );
-  const disabled = loading || ids.length === 0;
-
-  useEffect(() => {
-    const handleOutside = (event: PointerEvent) => {
-      if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("pointerdown", handleOutside);
-    return () => document.removeEventListener("pointerdown", handleOutside);
-  }, []);
-
-  useEffect(() => {
-    if (open) inputRef.current?.focus();
-  }, [open]);
-
-  const choose = (id: string) => {
-    onChange(id);
-    setOpen(false);
-    setQuery("");
-    setActiveIndex(0);
-  };
-
-  return (
-    <div ref={rootRef} className="relative min-w-0">
-      <button
-        type="button"
-        aria-label="Select Base BA ID"
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        disabled={disabled}
-        onClick={() => {
-          setQuery("");
-          setActiveIndex(0);
-          setOpen((prev) => !prev);
-        }}
-        className="flex h-12 w-full min-w-0 items-center gap-2 rounded-xl border border-[#D8E2F0] bg-white px-3 text-left text-[13px] font-semibold text-[#293447] outline-none focus:border-[#3768C6] focus:ring-4 focus:ring-[#3768C6]/10 disabled:cursor-not-allowed disabled:bg-[#F4F6F9]"
-      >
-        <Search size={15} className="shrink-0 text-[#8190A7]" />
-        <span
-          className={`min-w-0 flex-1 truncate ${!value ? "text-[#98A2B3]" : ""}`}
-        >
-          {value ||
-            (loading
-              ? "Loading accounts..."
-              : ids.length
-                ? "Search / select Base BA ID"
-                : "No Base BA IDs available")}
-        </span>
-        <ChevronDown
-          size={15}
-          className={`shrink-0 text-[#64748B] transition-transform ${open ? "rotate-180" : ""}`}
-        />
-      </button>
-
-      {open && !disabled && (
-        <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-[100] min-w-[240px] overflow-hidden rounded-xl border border-[#D8E2F0] bg-white shadow-[0_16px_40px_rgba(18,35,70,.17)]">
-          <div className="border-b border-[#E8EDF5] p-2.5">
-            <div className="relative">
-              <Search
-                size={15}
-                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#8795AA]"
-              />
-              <input
-                ref={inputRef}
-                type="search"
-                role="combobox"
-                aria-label="Search Base BA ID"
-                aria-controls="tracking-base-ids"
-                aria-expanded={open}
-                aria-autocomplete="list"
-                value={query}
-                onChange={(event) => {
-                  setQuery(event.target.value);
-                  setActiveIndex(0);
-                }}
-                onKeyDown={(event) => {
-                  if (event.key === "Escape") {
-                    event.preventDefault();
-                    setOpen(false);
-                  } else if (event.key === "ArrowDown") {
-                    event.preventDefault();
-                    setActiveIndex((index) =>
-                      Math.min(index + 1, filtered.length - 1),
-                    );
-                  } else if (event.key === "ArrowUp") {
-                    event.preventDefault();
-                    setActiveIndex((index) => Math.max(index - 1, 0));
-                  } else if (event.key === "Enter" && filtered[activeIndex]) {
-                    event.preventDefault();
-                    choose(filtered[activeIndex]);
-                  }
-                }}
-                placeholder="Search Base BA ID..."
-                className="h-10 w-full rounded-lg border border-[#DDE5EF] bg-[#F8FAFC] pl-9 pr-3 text-[12px] text-[#293447] outline-none focus:border-[#3768C6] focus:bg-white"
-              />
-            </div>
-            <p className="mt-2 px-1 text-[10px] text-[#8793A5]">
-              {filtered.length} of {ids.length} Base BA IDs
-            </p>
-          </div>
-          <div
-            id="tracking-base-ids"
-            role="listbox"
-            aria-label="Base BA IDs"
-            className="max-h-[260px] overflow-y-auto overscroll-contain py-1"
-          >
-            {filtered.length ? (
-              filtered.map((id, index) => (
-                <button
-                  key={id}
-                  type="button"
-                  role="option"
-                  aria-selected={value === id}
-                  onMouseEnter={() => setActiveIndex(index)}
-                  onClick={() => choose(id)}
-                  className={`flex w-full items-center justify-between gap-2 px-3.5 py-2.5 text-left text-[12px] font-semibold transition ${activeIndex === index ? "bg-[#EFF5FF]" : "hover:bg-[#F7F9FC]"}`}
-                >
-                  <span className="truncate text-[#293447]">{id}</span>
-                  {value === id && (
-                    <Check size={15} className="shrink-0 text-[#2A7E60]" />
-                  )}
-                </button>
-              ))
-            ) : (
-              <p className="px-4 py-5 text-center text-[12px] text-[#8793A5]">
-                No matching Base BA ID
-              </p>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
 
 // --------------------------------------------------
 // Searchable selectors for TC Slot, Sales Week and Year
@@ -3432,7 +3272,6 @@ function DashboardTrackingCenter({
   const accountsQuery = useGetMyAccountsQuery();
   const [loadCv, cvRequest] = useLazyGetTrackingCvCounterQuery();
   const [accountId, setAccountId] = useState("");
-  const [baseAccountId, setBaseAccountId] = useState("");
   const [year, setYear] = useState("");
   const [weekNo, setWeekNo] = useState("");
   const [response, setResponse] = useState<unknown>(null);
@@ -3482,8 +3321,16 @@ function DashboardTrackingCenter({
         a.sequence - b.sequence ||
         a.baId.localeCompare(b.baId),
     );
+  // Automatically use the authenticated distributor's Base BA ID.
+  // The full TC account ID remains available internally for the Show CV API.
   const baseIds = [...new Set(accounts.map((a) => a.baseId))];
-  const visibleAccounts = accounts.filter((a) => a.baseId === baseAccountId);
+  const loggedInBaId = String(ignite?.ba_id ?? "").trim();
+  const loggedInBaseId = loggedInBaId.replace(/-\d+$/, "");
+  const activeBaseId =
+    baseIds.find((id) => id === loggedInBaseId || id === loggedInBaId) ??
+    baseIds[0] ??
+    "";
+  const visibleAccounts = accounts.filter((a) => a.baseId === activeBaseId);
 
   const db = trackObj(dashboardData);
   const calendar = trackObj(db.sales_calendar);
@@ -3518,22 +3365,14 @@ function DashboardTrackingCenter({
   const currentWeek = weeks.find((w) => w.isCurrent);
 
   useEffect(() => {
-    if (!baseIds.length) {
-      if (baseAccountId) setBaseAccountId("");
-      if (accountId) setAccountId("");
-      return;
-    }
-    if (!baseIds.includes(baseAccountId)) {
-      setBaseAccountId(baseIds[0]);
-      return;
-    }
+    // Select the first TC slot for the resolved Base BA ID without showing it.
     if (!visibleAccounts.some((a) => a.baId === accountId)) {
       setAccountId(visibleAccounts[0]?.baId ?? "");
       setResponse(null);
       setHasSearched(false);
       setRequestError("");
     }
-  }, [accountsQuery.data, baseAccountId, accountId]);
+  }, [accountsQuery.data, ignite?.ba_id, accountId]);
   useEffect(() => {
     if (years.length && !years.some((y) => String(y) === year))
       setYear(String(currentWeek?.year ?? years[0]));
@@ -3557,7 +3396,7 @@ function DashboardTrackingCenter({
     setHasSearched(false);
     setRequestError("");
   };
-  const selectedAccount = accounts.find((a) => a.baId === accountId);
+  const selectedAccount = visibleAccounts.find((a) => a.baId === accountId);
   const chosenWeek = weeksOfYear.find((w) => String(w.weekNo) === weekNo);
   const canSearch =
     Boolean(selectedAccount && chosenWeek) && !cvRequest.isFetching;
@@ -3604,6 +3443,12 @@ function DashboardTrackingCenter({
     cvPayload.week_result !== null &&
     Object.keys(weekResult).length > 0;
   const settled = cvPayload.is_settled === true;
+  // Display the current rank NAME from the CV Counter API (e.g. Silver),
+  // not its numeric rank_no (e.g. 1).
+  const currentRankName = String(
+    trackField(cvCurrent, "rank_name") ?? "",
+  ).trim();
+  const currentTotalSteps = trackField(cvCurrent, "total_steps");
   const currentMetrics = [
     { label: "Left CV", value: trackField(cvCurrent, "cv_left") },
     { label: "Right CV", value: trackField(cvCurrent, "cv_right") },
@@ -3617,8 +3462,6 @@ function DashboardTrackingCenter({
     },
     { label: "Total Left CV", value: trackField(cvCurrent, "total_cv_left") },
     { label: "Total Right CV", value: trackField(cvCurrent, "total_cv_right") },
-    { label: "Current Rank", value: trackField(cvCurrent, "rank_no") },
-    { label: "Total Steps", value: trackField(cvCurrent, "total_steps") },
   ];
   const extraWeekMetrics = [
     {
@@ -3799,24 +3642,7 @@ function DashboardTrackingCenter({
         </button>
       </div>
       <div className={panel}>
-        <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.3fr)_minmax(110px,.5fr)_auto]">
-          <div className="min-w-0">
-            <span className="mb-1.5 block text-[11px] font-semibold text-[#566174]">
-              Base BA ID
-            </span>
-            <TrackingBaseIdSearch
-              ids={baseIds}
-              value={baseAccountId}
-              loading={accountsQuery.isLoading}
-              onChange={(nextBaseId) => {
-                setBaseAccountId(nextBaseId);
-                setAccountId(
-                  accounts.find((a) => a.baseId === nextBaseId)?.baId ?? "",
-                );
-                onChange();
-              }}
-            />
-          </div>
+        <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)_minmax(110px,.5fr)_auto]">
           <label className="min-w-0">
             <span className="mb-1.5 block text-[11px] font-semibold text-[#566174]">
               TC Slot
@@ -3825,7 +3651,7 @@ function DashboardTrackingCenter({
               options={visibleAccounts.map((a) => ({
                 value: a.baId,
                 label: a.label,
-                detail: `${a.baId} · ${a.rank} · ${a.status}`,
+                detail: `${a.rank} · ${a.status}`,
               }))}
               value={
                 visibleAccounts.some((a) => a.baId === accountId)
@@ -3834,7 +3660,7 @@ function DashboardTrackingCenter({
               }
               disabled={!visibleAccounts.length}
               placeholder="Select TC slot"
-              searchPlaceholder="Search TC label or BA ID..."
+              searchPlaceholder="Search TC slot..."
               onChange={(nextAccountId) => {
                 setAccountId(nextAccountId);
                 onChange();
@@ -3842,8 +3668,7 @@ function DashboardTrackingCenter({
             />
             {selectedAccount && (
               <span className="mt-1 block text-[10px] text-[#8893a5]">
-                {selectedAccount.baId} · {selectedAccount.rank} ·{" "}
-                {selectedAccount.status}
+                {selectedAccount.rank} · {selectedAccount.status}
               </span>
             )}
           </label>
@@ -3928,9 +3753,7 @@ function DashboardTrackingCenter({
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <h3 className="text-[15px] font-bold text-[#263449]">
-                  {validResponse
-                    ? String(cvPayload.ba_id ?? accountId)
-                    : "CV Overview"}
+                  CV Overview
                 </h3>
                 <p className="mt-1 text-[11px] text-[#8390a2]">
                   Live CV Counter API result for selected account and sales week
@@ -3952,38 +3775,91 @@ function DashboardTrackingCenter({
             </div>
             {validResponse ? (
               <>
-                <div className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-                  {currentMetrics.map((m, i) => (
-                    <div
-                      key={m.label}
-                      className="min-w-0 rounded-xl border border-[#e9edf2] bg-[#fafbfc] p-3"
-                    >
-                      <p className="text-[10px] text-[#8290a2]">{m.label}</p>
-                      <p
-                        className={`mt-1 text-[20px] font-bold ${i === 2 || i === 3 ? "text-[#5474bb]" : "text-[#263447]"}`}
-                      >
-                        {trackFmt(m.value)}
+                {/* Rank and steps sit above the CV grid for a clear visual hierarchy. */}
+                <div className="mt-5 grid min-w-0 gap-3 sm:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
+                  <div className="flex min-w-0 items-center gap-3 rounded-2xl border border-[#DCE7FA] bg-[#F2F6FF] p-4 sm:gap-4 sm:p-5">
+                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] bg-[#E1EBFF] text-[#3966B0]">
+                      <Trophy size={23} strokeWidth={1.9} />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] font-semibold text-[#687C9F]">
+                        Current Rank
+                      </p>
+                      <p className="mt-1 break-words text-[24px] font-extrabold leading-tight tracking-tight text-[#1C365D] sm:text-[29px]">
+                        {currentRankName || "—"}
                       </p>
                     </div>
-                  ))}
+                  </div>
+                  <div className="flex min-w-0 items-center justify-between gap-3 rounded-2xl border border-[#E5EAF3] bg-[#FAFBFD] p-4 sm:p-5">
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-semibold text-[#78869A]">
+                        Total Steps
+                      </p>
+                      <p className="dashboard-number mt-1 text-[26px] font-extrabold leading-tight tracking-tight text-[#26374F] sm:text-[29px]">
+                        {trackFmt(currentTotalSteps)}
+                      </p>
+                    </div>
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px] bg-[#EAF0F9] text-[#58749C]">
+                      <TrendingUp size={21} strokeWidth={1.9} />
+                    </span>
+                  </div>
                 </div>
-                {resultPresent ? (
-                  <div className="mt-3 grid grid-cols-2 gap-2 rounded-xl border border-[#e9edf2] p-3 sm:grid-cols-5">
-                    {extraWeekMetrics.map((m) => (
-                      <div key={m.label}>
-                        <p className="text-[10px] text-[#8490a0]">{m.label}</p>
-                        <p className="mt-1 text-[14px] font-bold text-[#283448]">
+
+                <div className="mt-3 grid min-w-0 grid-cols-2 gap-2.5 sm:grid-cols-3">
+                  {currentMetrics.map((m, i) => {
+                    const isFloating = i === 2 || i === 3;
+                    return (
+                      <div
+                        key={m.label}
+                        className={`flex min-h-[92px] min-w-0 flex-col justify-between rounded-[14px] border p-3.5 sm:min-h-[100px] sm:p-4 ${
+                          isFloating
+                            ? "border-[#DCE7F8] bg-[#F7FAFF]"
+                            : "border-[#E7ECF3] bg-white"
+                        }`}
+                      >
+                        <p className="text-[11px] font-semibold leading-4 text-[#77869A]">
+                          {m.label}
+                        </p>
+                        <p
+                          className={`dashboard-number mt-3 break-words text-[20px] font-extrabold leading-tight tracking-tight sm:text-[23px] ${
+                            isFloating ? "text-[#416CB1]" : "text-[#26374F]"
+                          }`}
+                        >
                           {trackFmt(m.value)}
                         </p>
                       </div>
-                    ))}
+                    );
+                  })}
+                </div>
+                {resultPresent ? (
+                  <div className="mt-3 rounded-[15px] border border-[#E7ECF3] bg-[#FAFBFD] p-3.5 sm:p-4">
+                    <p className="mb-3 text-[11px] font-bold text-[#4B5C74]">
+                      Weekly Settlement
+                    </p>
+                    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-5">
+                      {extraWeekMetrics.map((m) => (
+                        <div
+                          key={m.label}
+                          className="flex min-w-0 flex-col justify-between rounded-xl border border-[#E8EDF4] bg-white p-3"
+                        >
+                          <p className="text-[10px] font-semibold leading-4 text-[#8490A0]">
+                            {m.label}
+                          </p>
+                          <p className="dashboard-number mt-2 break-words text-[16px] font-extrabold text-[#283448]">
+                            {trackFmt(m.value)}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ) : (
-                  <p className="mt-3 rounded-lg border border-[#f4e8d1] bg-[#fffbf3] px-3 py-2.5 text-[11px] text-[#926b32]">
-                    Weekly settlement result is not available yet. Current CV
-                    and floating CV are shown above; no weekly commission has
-                    been assumed.
-                  </p>
+                  <div className="mt-3 flex items-start gap-2.5 rounded-[13px] border border-[#F2E4CC] bg-[#FFFBF4] px-3.5 py-3 text-[11px] leading-5 text-[#906B35]">
+                    <Info size={16} className="mt-0.5 shrink-0" />
+                    <p>
+                      Weekly settlement is not available yet. Current CV and
+                      floating CV are shown above; no commission is assumed.
+                    </p>
+                  </div>
                 )}
               </>
             ) : (
@@ -3998,7 +3874,7 @@ function DashboardTrackingCenter({
             )}
           </div>
           <div className="grid gap-3 md:grid-cols-2">
-            <div className={panel}>
+            {/* <div className={panel}>
               <h3 className="text-[14px] font-bold text-[#253449]">
                 Weekly Cash Activity
               </h3>
@@ -4082,8 +3958,8 @@ function DashboardTrackingCenter({
                   No weekly cash transactions found in the dashboard history.
                 </p>
               )}
-            </div>
-            <div className={panel}>
+            </div> */}
+            {/* <div className={panel}>
               <h3 className="text-[14px] font-bold text-[#253449]">
                 My Tree{" "}
                 <span className="inline-flex items-center align-middle ml-1">
@@ -4110,7 +3986,7 @@ function DashboardTrackingCenter({
                 Direct/downline counts are not included in the supplied
                 Dashboard response.
               </p>
-            </div>
+            </div> */}
           </div>
         </div>
         <div className={panel}>
@@ -4234,7 +4110,7 @@ function CoinsAndAccountStatusOverview({
         <div className="min-w-0">
           <CoinsSection ignite={ignite} onRedeemSuccess={onRedeemSuccess} />
         </div>
-        <div className="min-w-0 rounded-[20px] border border-[#E2E9F3] bg-white p-5 shadow-[0_6px_22px_rgba(36,55,90,.04)] sm:p-6">
+        {/* <div className="min-w-0 rounded-[20px] border border-[#E2E9F3] bg-white p-5 shadow-[0_6px_22px_rgba(36,55,90,.04)] sm:p-6">
           <div className="flex items-center gap-2.5">
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#EDF3FF] text-[#3768C6]">
               <BarChart3 size={19} />
@@ -4291,7 +4167,7 @@ function CoinsAndAccountStatusOverview({
               Unable to load account statuses. Please refresh.
             </p>
           )}
-        </div>
+        </div> */}
       </div>
     </section>
   );
@@ -4611,15 +4487,6 @@ export default function DistributorDashboardPage() {
                 void refetch();
               }}
             />
-            <details className="mt-5 rounded-[20px] border border-[#E2E9F3] bg-white p-4 sm:p-5">
-              <summary className="cursor-pointer text-[13px] font-bold text-[#3B587F]">
-                View detailed financial breakdown
-              </summary>
-              <FinancialSummary
-                ignite={ignite as ExtendedIgnite | null | undefined}
-              />
-            </details>
-            <DashboardOverview stats={stats} />
 
             <section className="mt-5 grid min-w-0 grid-cols-1 gap-3 sm:mt-6 sm:gap-4 xl:grid-cols-2">
               <LatestOrderSection order={dashboard?.latest_order ?? null} />

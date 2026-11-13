@@ -101,6 +101,8 @@ export interface TCBankAllocationOption {
 
   groupLabel?: string;
 
+  groupDisplayLabel?: string;
+
   rightAvailable?: boolean;
 }
 
@@ -1219,6 +1221,8 @@ function PlacementBASearch({
 }
 
 // Searchable Base BA ID dropdown — only API-returned unique base IDs are shown.
+// Display the API member name alongside the ID, while keeping the selected value as the real base_id.
+type BaseBAOption = { value: string; label: string };
 function BaseBASearch({
   options,
   value,
@@ -1226,7 +1230,7 @@ function BaseBASearch({
   disabled,
   loading,
 }: {
-  options: string[];
+  options: BaseBAOption[];
   value: string;
   onChange: (baseId: string) => void;
   disabled: boolean;
@@ -1236,9 +1240,12 @@ function BaseBASearch({
   const [query, setQuery] = useState("");
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const selected = options.find((option) => option.value === value);
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return options.filter((base) => base.toLowerCase().includes(q));
+    return options.filter((base) =>
+      `${base.value} ${base.label}`.toLowerCase().includes(q),
+    );
   }, [options, query]);
 
   useEffect(() => {
@@ -1283,7 +1290,8 @@ function BaseBASearch({
         <span
           className={`min-w-0 flex-1 truncate ${!value ? "text-[#98A2B3]" : ""}`}
         >
-          {value ||
+          {selected?.label ||
+            value ||
             (loading
               ? "Loading base BA IDs..."
               : options.length
@@ -1313,14 +1321,14 @@ function BaseBASearch({
                   if (event.key === "Escape") setOpen(false);
                   if (event.key === "Enter" && filtered.length) {
                     event.preventDefault();
-                    choose(filtered[0]);
+                    choose(filtered[0].value);
                   }
                 }}
                 role="combobox"
                 aria-expanded={open}
                 aria-controls="base-ba-search-options"
                 aria-autocomplete="list"
-                placeholder="Search Base BA ID..."
+                placeholder="Search BA ID or member name..."
                 aria-label="Search Base BA ID"
                 className="h-10 w-full rounded-[9px] border border-[#DFE5ED] bg-[#F8FAFC] pl-9 pr-3 text-[12px] text-[#293447] outline-none focus:border-[#78899C] focus:bg-white"
               />
@@ -1338,15 +1346,15 @@ function BaseBASearch({
             {filtered.length ? (
               filtered.map((base) => (
                 <button
-                  key={base}
+                  key={base.value}
                   type="button"
                   role="option"
-                  aria-selected={base === value}
-                  onClick={() => choose(base)}
-                  className={`flex w-full items-center justify-between gap-2 px-3.5 py-2.5 text-left text-[12px] font-semibold text-[#293447] transition hover:bg-[#F3F6FA] ${base === value ? "bg-[#F3F6FA]" : ""}`}
+                  aria-selected={base.value === value}
+                  onClick={() => choose(base.value)}
+                  className={`flex w-full items-center justify-between gap-2 px-3.5 py-2.5 text-left text-[12px] font-semibold text-[#293447] transition hover:bg-[#F3F6FA] ${base.value === value ? "bg-[#F3F6FA]" : ""}`}
                 >
-                  <span className="break-all">{base}</span>
-                  {base === value && (
+                  <span className="min-w-0 break-words">{base.label}</span>
+                  {base.value === value && (
                     <CheckCircle2
                       size={15}
                       className="shrink-0 text-[#31805A]"
@@ -1407,12 +1415,18 @@ function TCAllocation({
 
   const [placeBankedTc, { isLoading: submitting }] = usePlaceBankedTcMutation();
   //  Show slots only for the chosen API base_id. Each BA ID is unique in that group.
-  const baseGroups = useMemo(() => {
-    return Array.from(
-      new Set(
-        placements.map((p) => p.groupLabel).filter((x): x is string => !!x),
-      ),
-    );
+  const baseGroups = useMemo<BaseBAOption[]>(() => {
+    const groups = new Map<string, BaseBAOption>();
+    for (const placement of placements) {
+      if (!placement.groupLabel) continue;
+      if (!groups.has(placement.groupLabel)) {
+        groups.set(placement.groupLabel, {
+          value: placement.groupLabel,
+          label: placement.groupDisplayLabel || placement.groupLabel,
+        });
+      }
+    }
+    return [...groups.values()];
   }, [placements]);
 
   const groupedPlacements = useMemo(
@@ -1422,7 +1436,10 @@ function TCAllocation({
   );
   //  Refreshes must not leave an old, no-longer-available TC selected.
   useEffect(() => {
-    if (selectedBaseId && !baseGroups.includes(selectedBaseId)) {
+    if (
+      selectedBaseId &&
+      !baseGroups.some((group) => group.value === selectedBaseId)
+    ) {
       setSelectedBaseId("");
 
       setPlacementBaId("");
@@ -1576,7 +1593,7 @@ function TCAllocation({
         <div className="grid grid-cols-1 items-end gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)_minmax(0,.7fr)_auto]">
           <div className="min-w-0">
             <span className="mb-1.5 block text-[12px] font-semibold text-[#485263]">
-              Base BA ID
+              Basement BA ID
             </span>
             <BaseBASearch
               options={baseGroups}
@@ -1600,7 +1617,7 @@ function TCAllocation({
 
           <label className="min-w-0">
             <span className="mb-1.5 flex items-center justify-between text-[12px] font-semibold text-[#485263]">
-              <span>Placement TC Slot</span>
+              <span>Placement TC Number</span>
 
               {placementsLoading && (
                 <Loader2 size={12} className="animate-spin text-[#8893A2]" />
@@ -1813,6 +1830,10 @@ export default function TCBankPage({
 
     label?: string;
 
+    display_label?: string;
+
+    full_name?: string | null;
+
     slots: ApiSlot[];
 
     tc_count?: number;
@@ -1869,6 +1890,13 @@ export default function TCBankPage({
             })(),
 
             groupLabel: group.base_id,
+
+            groupDisplayLabel: (() => {
+              const name = group.full_name?.trim();
+              if (name) return `${group.base_id} — ${name}`;
+              const display = (group.display_label || group.label || "").trim();
+              return display || group.base_id;
+            })(),
 
             leftAvailable: slot.left_available === true,
 
