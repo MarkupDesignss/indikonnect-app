@@ -1938,19 +1938,22 @@ export default function OrdersPage() {
     setShowBreakup(true);
   };
 
-  // Customer-safe tracking: prefer orders.order_reference; Laravel resolves the
-  // reference to the internal order ID only after checking customer ownership.
-  // Numeric order ID is retained solely for orders missing a reference (legacy).
-  const getTrackingIdentifier = (order: any): string | number | null => {
+  // Reference + internal order ID come from authenticated My Orders data.
+  // Tracking API prefers the reference endpoint and uses the owner-scoped
+  // numeric endpoint only if the reference endpoint responds 404.
+  const getTrackingIdentifier = (order: any) => {
     const reference =
       typeof order?.order_reference === "string"
         ? order.order_reference.trim()
         : "";
-
-    if (reference) return reference;
-
     const id = Number(order?.order_id);
-    return Number.isSafeInteger(id) && id > 0 ? id : null;
+    const validId = Number.isSafeInteger(id) && id > 0;
+
+    if (reference && validId) {
+      return { orderReference: reference, orderId: id };
+    }
+    if (reference) return reference;
+    return validId ? id : null;
   };
 
   const openTrackModal = (order: any) => {
