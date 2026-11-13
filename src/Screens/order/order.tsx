@@ -1938,19 +1938,34 @@ export default function OrdersPage() {
     setShowBreakup(true);
   };
 
+  // Customer-safe tracking: prefer orders.order_reference; Laravel resolves the
+  // reference to the internal order ID only after checking customer ownership.
+  // Numeric order ID is retained solely for orders missing a reference (legacy).
+  const getTrackingIdentifier = (order: any): string | number | null => {
+    const reference =
+      typeof order?.order_reference === "string"
+        ? order.order_reference.trim()
+        : "";
+
+    if (reference) return reference;
+
+    const id = Number(order?.order_id);
+    return Number.isSafeInteger(id) && id > 0 ? id : null;
+  };
+
   const openTrackModal = (order: any) => {
     setSelectedOrderForTracking(order);
     setShowTrackModal(true);
-    const id = Number(order?.order_id);
-    if (Number.isSafeInteger(id) && id > 0) {
-      void loadIndiaPostTracking(id, false);
+    const identifier = getTrackingIdentifier(order);
+    if (identifier !== null) {
+      void loadIndiaPostTracking(identifier, false);
     }
   };
 
   const refreshIndiaPostTracking = () => {
-    const id = Number(selectedOrderForTracking?.order_id);
-    if (Number.isSafeInteger(id) && id > 0) {
-      void loadIndiaPostTracking(id, false);
+    const identifier = getTrackingIdentifier(selectedOrderForTracking);
+    if (identifier !== null) {
+      void loadIndiaPostTracking(identifier, false);
     }
   };
 
@@ -2966,9 +2981,15 @@ export default function OrdersPage() {
               )}
               order={selectedOrderForTracking}
               tracking={
-                Number(indiaPostTrackingResponse?.data?.order_id) ===
-                Number(selectedOrderForTracking?.order_id)
-                  ? (indiaPostTrackingResponse?.data ?? null)
+                indiaPostTrackingResponse?.data &&
+                // Never show previous order's cached tracking in a new modal.
+                Number(indiaPostTrackingResponse.data.order_id) ===
+                  Number(selectedOrderForTracking?.order_id) &&
+                // Reference must also match whenever Laravel sends it.
+                (!indiaPostTrackingResponse.data.order_reference ||
+                  indiaPostTrackingResponse.data.order_reference ===
+                    selectedOrderForTracking?.order_reference)
+                  ? indiaPostTrackingResponse.data
                   : null
               }
               loading={isIndiaPostTracking}

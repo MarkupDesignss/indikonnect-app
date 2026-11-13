@@ -1,6 +1,12 @@
 import { baseApi } from "./baseApi";
 
-/** Public browser requests never go directly to protected Node.js / India Post. */
+/**
+ * Public browser requests never go directly to
+ * protected Node.js / India Post.
+ *
+ * Customer tracking uses Laravel authenticated API.
+ */
+
 export interface IndiaPostTrackingEvent {
   date: string | null;
   event: string;
@@ -19,9 +25,13 @@ export interface IndiaPostOrderShipment {
 
 export interface IndiaPostOrderTrackingData {
   order_id: number;
-  // Allocated but not necessarily booked. Never interpret as courier pickup.
+  order_reference?: string | null;
+
+  // Allocated but not necessarily booked.
+  // Never interpret AWB allocation as courier pickup.
   allocated_awb?: string | null;
   allocated_at?: string | null;
+
   shipments: IndiaPostOrderShipment[];
   warning?: string | null;
 }
@@ -32,16 +42,34 @@ export interface IndiaPostOrderTrackingResponse {
   message?: string;
 }
 
+/**
+ * Pass:
+ * - string: Order Reference (new API)
+ * - number: Internal Order ID (legacy API)
+ */
+export type IndiaPostTrackingIdentifier = string | number;
+
 export const indiaPostTrackingApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getIndiaPostOrderTracking: builder.query<
       IndiaPostOrderTrackingResponse,
-      number
+      IndiaPostTrackingIdentifier
     >({
-      query: (orderId) => ({
-        url: `/orders/${encodeURIComponent(String(orderId))}/indiapost/tracking`,
-        method: "GET",
-      }),
+      query: (identifier) => {
+        const isLegacyOrderId = typeof identifier === "number";
+
+        const url = isLegacyOrderId
+          ? `/orders/${encodeURIComponent(String(identifier))}/indiapost/tracking`
+          : `/orders/by-reference/${encodeURIComponent(
+              identifier.trim(),
+            )}/indiapost/tracking`;
+
+        return {
+          url,
+          method: "GET",
+        };
+      },
+
       keepUnusedDataFor: 30,
     }),
   }),
