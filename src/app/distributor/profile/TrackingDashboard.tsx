@@ -208,7 +208,7 @@ function SmallMetric({
 
       </p>
 
-      {sub && <p className="mt-0.5 text-[12px] text-[#65758D]">{sub}</p>}
+      {/* {sub && <p className="mt-0.5 text-[12px] text-[#65758D]">{sub}</p>} */}
 
     </div>
 
@@ -276,19 +276,15 @@ function AccountCard({
 
         />
 
-<<<<<<< Updated upstream
         <SmallMetric
 
-          label="pay rank"
+          label="Achieved rank"
 
-          value={payRankName}
+          value={currentName}
 
           sub="Next rank"
 
         />
-=======
-        <SmallMetric label="Achieved Aank" value="Silver" />
->>>>>>> Stashed changes
 
         {/* <SmallMetric
           label="Account type"

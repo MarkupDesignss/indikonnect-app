@@ -46,13 +46,11 @@ const BLUE = "#3268C8";
 
 const GREEN = "#0E9F75";
 
-const PURPLE = "#a855f7";
 
 const ORANGE = "#E78A35";
 
 const LINE = "#B9CBE3";
 
-const LEVEL_COLORS = [PURPLE, BLUE, GREEN, ORANGE, "#0891b2", "#be185d"];
 
 // --------------------------------------------------
 
@@ -256,9 +254,6 @@ function MemberNodeCard({
 
   const sideColor = side === "left" ? GREEN : side === "right" ? ORANGE : BLUE;
 
-  const levelColor =
-    LEVEL_COLORS[Math.max(0, Number(member.level) || 0) % LEVEL_COLORS.length];
-
   const handleOpen = () => {
     onOpenBranch(member.ba_id);
   };
@@ -336,22 +331,16 @@ function MemberNodeCard({
             {displayName}
           </p>
 
-          <p className="mt-1 text-[10px] font-bold tracking-[.09em] text-[#71829A]">
-            {sideLabel}
+          <p className="mt-1 break-all text-[10px] font-semibold tracking-[.02em] text-[#3268C8]">
+            {member.ba_id || "N/A"}
           </p>
+
+          {sideLabel && (
+            <p className="mt-1 text-[10px] font-bold tracking-[.09em] text-[#71829A]">
+              {sideLabel}
+            </p>
+          )}
         </div>
-
-        <span
-          className="shrink-0 rounded-md px-2 py-1 text-[10px] font-bold"
-
-          style={{
-            color: levelColor,
-
-            backgroundColor: `${levelColor}15`,
-          }}
-        >
-          {isRoot ? "ROOT" : `L${member.level}`}
-        </span>
       </div>
 
       {/* CV data */}

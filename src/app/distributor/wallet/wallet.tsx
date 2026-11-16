@@ -71,6 +71,8 @@ interface WalletTransaction {
 
   wallet_change_inr: Amount;
 
+  net_payable_inr?: Amount;
+
   wallet_change_usd?: Amount;
 
   point_type?: string;
@@ -98,6 +100,8 @@ interface WalletWithdrawal {
   date: string;
 
   amount_inr: Amount;
+
+  net_payable_inr?: Amount;
 
   amount_usd?: Amount;
 
@@ -637,64 +641,9 @@ export default function WalletPage() {
 
   const balances = wallet?.balances;
 
-  const earnings = useMemo(
-    () =>
-      [
-        {
-          title: "Available Balance (INR)",
 
-          value: balances ? `₹${fmt(balances.cash_bal_inr)}` : "—",
-
-          icon: Wallet,
-
-          tone: "#269A70",
-
-          bg: "#EAF8F1",
-
-          note: balances ? "Available wallet funds" : undefined,
-        },
-
-        {
-          title: "Retail Profit (INR)",
-
-          value: balances ? `₹${fmt(balances.retail_profit_inr)}` : "—",
-
-          icon: TrendingUp,
-
-          tone: "#B58745",
-
-          bg: "#FBF3E8",
-
-          note: "Retail earnings",
-        },
-
-        {
-          title: "Cash Wallet (INR)",
-
-          value: balances ? `₹${fmt(balances.cash_bal_inr)}` : "—",
-
-          icon: CircleDollarSign,
-
-          tone: "#5476B2",
-
-          bg: "#EEF3FD",
-
-          note: balances ? "Displayed in INR" : undefined,
-        },
-      ] as const,
-
-    [balances],
-  );
-  // Withdrawal/WD records remain in Payouts and are hidden from Transactions.
   const nonWithdrawalTransactions = useMemo(
-    () =>
-      (wallet?.transactions ?? []).filter(
-        (item) =>
-          !/^(withdrawal|withdraw|wd)$/i.test(
-            String(item.category ?? "").trim(),
-          ),
-      ),
-
+    () => wallet?.transactions ?? [],
     [wallet?.transactions],
   );
 
@@ -717,6 +666,8 @@ export default function WalletPage() {
 
           item.wallet_change_inr,
 
+          item.net_payable_inr,
+
           item.yellow_coin,
 
           item.green_coin,
@@ -737,7 +688,7 @@ export default function WalletPage() {
     return (wallet?.withdrawals ?? []).filter(
       (item) =>
         !needle ||
-        [item.id, item.date, item.amount_inr, item.status, item.remark].some(
+        [item.id, item.date, item.amount_inr, item.net_payable_inr, item.status, item.remark].some(
           (v) =>
             String(v ?? "")
               .toLowerCase()
@@ -876,17 +827,7 @@ export default function WalletPage() {
               </div>
             )}
 
-            <section className="grid grid-cols-1 gap-3 min-[520px]:grid-cols-2 xl:grid-cols-3 sm:gap-4">
-              {earnings.map((item) => (
-                <StatCard
-                  key={item.title}
-
-                  {...item}
-
-                  value={loading ? "—" : item.value}
-                />
-              ))}
-            </section>
+          
 
             <section className={`${PANEL} p-4 sm:p-6`}>
               <div className="flex flex-wrap items-center justify-between gap-4">
@@ -1078,6 +1019,11 @@ export default function WalletPage() {
                                 className={`shrink-0 text-[16px] font-extrabold tabular-nums ${numberOf(t.wallet_change_inr) > 0 ? "text-[#15835A]" : numberOf(t.wallet_change_inr) < 0 ? "text-[#BE5656]" : "text-[#344054]"}`}
                               >
                                 {signed(t.wallet_change_inr, "₹")}
+                                {t.net_payable_inr != null && (
+                                  <span className="mt-1 block text-[11px] font-semibold text-[#168452]">
+                                    Net Payable: ₹{fmt(t.net_payable_inr)}
+                                  </span>
+                                )}
                               </p>
                             </div>
 
@@ -1123,9 +1069,16 @@ export default function WalletPage() {
                                 </p>
                               </div>
 
-                              <p className="text-[17px] font-extrabold text-[#1B355F]">
-                                ₹{fmt(w.amount_inr)}
-                              </p>
+                              <div className="text-right">
+                                <p className="text-[17px] font-extrabold text-[#1B355F]">
+                                  ₹{fmt(w.amount_inr)}
+                                </p>
+                                {w.net_payable_inr != null && (
+                                  <p className="mt-1 text-[11px] font-bold text-[#168452]">
+                                    Net Payable: ₹{fmt(w.net_payable_inr)}
+                                  </p>
+                                )}
+                              </div>
                             </div>
 
                             <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
@@ -1146,7 +1099,7 @@ export default function WalletPage() {
 
                 <div className="hidden max-w-full overflow-x-auto lg:block">
                   {tab === "transactions" ? (
-                    <table className="w-full min-w-[700px] border-collapse text-left">
+                    <table className="w-full min-w-[790px] border-collapse text-left">
                       <thead>
                         <tr className="border-b border-[#E9EDF2] bg-[#F7F9FD] text-[11px] font-bold uppercase tracking-[.03em] text-[#677992]">
                           {[
@@ -1154,7 +1107,9 @@ export default function WalletPage() {
 
                             "Category",
 
-                            "Wallet change (INR)",
+                            "Wallet Change",
+
+                            "Net Payable",
 
                             "Green",
 
@@ -1196,6 +1151,12 @@ export default function WalletPage() {
                               {signed(t.wallet_change_inr, "₹")}
                             </td>
 
+                            <td className="whitespace-nowrap px-3 py-3.5 font-bold text-[#168452]">
+                              {t.net_payable_inr != null
+                                ? `₹${fmt(t.net_payable_inr)}`
+                                : "—"}
+                            </td>
+
                             {(
                               [
                                 t.green_coin,
@@ -1218,7 +1179,7 @@ export default function WalletPage() {
                       </tbody>
                     </table>
                   ) : (
-                    <table className="w-full min-w-[650px] border-collapse text-left">
+                    <table className="w-full min-w-[720px] border-collapse text-left">
                       <thead>
                         <tr className="border-b border-[#E9EDF2] bg-[#F7F9FD] text-[11px] font-bold uppercase tracking-[.03em] text-[#677992]">
                           {[
@@ -1226,7 +1187,9 @@ export default function WalletPage() {
 
                             "Withdrawal ID",
 
-                            "Amount (INR)",
+                            "Amount",
+
+                            "Net Payable",
 
                             "Status",
 
@@ -1254,6 +1217,12 @@ export default function WalletPage() {
 
                             <td className="px-3 py-4 font-bold text-[#B75B5B]">
                               {signed(w.amount_inr, "₹")}
+                            </td>
+
+                            <td className="px-3 py-4 whitespace-nowrap font-bold text-[#168452]">
+                              {w.net_payable_inr != null
+                                ? `₹${fmt(w.net_payable_inr)}`
+                                : "—"}
                             </td>
 
                             <td className="px-3 py-4">

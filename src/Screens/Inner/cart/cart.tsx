@@ -19,6 +19,8 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
+  Heart,
+  HeartOff,
   Home,
   Info,
   Loader2,
@@ -29,9 +31,9 @@ import {
   ShoppingBag,
   Sparkles,
   Tag,
+  Trash2,
   X,
   AlertTriangle,
-  Trash2,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 
@@ -64,10 +66,13 @@ import {
 import { useGetUserDashboardQuery } from "@/lib/redux/api/distributor/userDashboardApi";
 import { useGetUserProfileQuery } from "@/lib/redux/api/authApi";
 import AddressFormModal from "@/Screens/CheckoutPage/AddressFormModal";
-import { useAddToWishlistMutation } from "@/lib/redux/api/Wishlist/wishlistApi";
 
-// API spelling is intentionally `allowed_purchsed` (not `allowed_purchased`).
-// A flag of 1 bypasses inventory restrictions only; cart/order API rules still apply.
+// ✅ Wishlist API hooks
+import {
+  useAddToWishlistMutation,
+  useGetWishlistQuery,
+} from "@/lib/redux/api/Wishlist/wishlistApi";
+
 const isPurchaseWithoutStockAllowed = (value: unknown): boolean =>
   value === true || value === 1 || String(value ?? "").trim().toLowerCase() === "1" ||
   String(value ?? "").trim().toLowerCase() === "true";
@@ -645,6 +650,152 @@ function DeleteConfirmModal({
             ) : (
               "Delete"
             )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// NEW: Remove-from-Cart Confirmation Popup
+// Gives user two choices: Add to Wishlist OR Remove from Cart
+// ─────────────────────────────────────────────────────────────────────────────
+
+function RemoveFromCartModal({
+  isOpen,
+  item,
+  isProcessing,
+  onAddToWishlist,
+  onRemoveOnly,
+  onCancel,
+}: {
+  isOpen: boolean;
+  item: CartItemView | null;
+  isProcessing: boolean;
+  onAddToWishlist: () => void;
+  onRemoveOnly: () => void;
+  onCancel: () => void;
+}) {
+  if (!isOpen || !item) return null;
+
+  return (
+    <div className="fixed inset-0 z-[10000] flex items-end justify-center bg-black/55 p-0 backdrop-blur-sm sm:items-center sm:p-4">
+      <div className="w-full max-w-md overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:rounded-2xl">
+        {/* Header */}
+        <div className="relative flex items-center justify-between border-b border-gray-100 px-5 py-4">
+          <div className="flex items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#FFF1F4]">
+              <Trash2 className="h-4 w-4 text-[#E43D5C]" />
+            </div>
+            <div>
+              <h3 className="text-[15px] font-semibold text-gray-900">
+                Remove this item?
+              </h3>
+              <p className="text-[11px] text-gray-500">
+                Choose what you want to do with it
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={isProcessing}
+            className="rounded-full p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 disabled:opacity-40"
+            aria-label="Close"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        {/* Product preview */}
+        <div className="flex items-center gap-3 border-b border-gray-100 bg-[#FAFAFA] px-5 py-3">
+          <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-white">
+            <img
+              src={item.image}
+              alt={item.name}
+              className="h-full w-full object-cover"
+              onError={(e) => {
+                const img = e.currentTarget;
+                if (!img.src.endsWith(PLACEHOLDER_IMAGE)) {
+                  img.src = PLACEHOLDER_IMAGE;
+                }
+              }}
+            />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[12.5px] font-semibold text-gray-900">
+              {item.name}
+            </p>
+            <p className="mt-0.5 text-[11px] text-gray-500">
+              Qty: {item.quantity} · {formatPrice(item.price)}
+            </p>
+          </div>
+        </div>
+
+        {/* Options */}
+        <div className="space-y-2.5 px-5 py-4">
+          {/* Option 1: Add to wishlist + remove */}
+          <button
+            type="button"
+            onClick={onAddToWishlist}
+            disabled={isProcessing}
+            className="group flex w-full items-center gap-3 rounded-xl border border-[#CDE4D5] bg-[#F1FAF4] p-3 text-left transition hover:border-[#16845B] hover:bg-[#E6F4EA] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-[#16845B] shadow-sm ring-1 ring-[#CDE4D5]">
+              {isProcessing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Heart className="h-4 w-4" />
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[12.5px] font-semibold text-[#1B2C20]">
+                Add to Wishlist
+              </p>
+              <p className="mt-0.5 text-[10.5px] leading-4 text-[#5C7264]">
+                Save it for later · will be removed from cart
+              </p>
+            </div>
+            <ArrowRight className="h-4 w-4 shrink-0 text-[#16845B] transition group-hover:translate-x-0.5" />
+          </button>
+
+          {/* Option 2: Remove only */}
+          <button
+            type="button"
+            onClick={onRemoveOnly}
+            disabled={isProcessing}
+            className="group flex w-full items-center gap-3 rounded-xl border border-[#F1C8C4] bg-[#FFF5F2] p-3 text-left transition hover:border-[#B64339] hover:bg-[#FFE9E5] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-[#B64339] shadow-sm ring-1 ring-[#F1C8C4]">
+              {isProcessing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="h-4 w-4" />
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[12.5px] font-semibold text-[#8F3023]">
+                Remove from Cart
+              </p>
+              <p className="mt-0.5 text-[10.5px] leading-4 text-[#A0574D]">
+                Remove permanently without saving
+              </p>
+            </div>
+            <ArrowRight className="h-4 w-4 shrink-0 text-[#B64339] transition group-hover:translate-x-0.5" />
+          </button>
+        </div>
+
+        {/* Cancel */}
+        <div className="border-t border-gray-100 bg-gray-50 px-5 py-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={isProcessing}
+            className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-[12px] font-semibold text-gray-700 transition hover:bg-gray-100 disabled:opacity-50"
+          >
+            Keep in Cart
           </button>
         </div>
       </div>
@@ -1620,6 +1771,10 @@ export default function CartPage() {
   const [checkoutIssues, setCheckoutIssues] = useState<string[]>([]);
   const checkoutLockRef = useRef(false);
 
+  // ✅ NEW: Remove confirmation popup state
+  const [removeTarget, setRemoveTarget] = useState<CartItemView | null>(null);
+  const [isRemoveProcessing, setIsRemoveProcessing] = useState(false);
+
   const reportCheckoutIssue = (message: string) => {
     setCheckoutIssues([message]);
     toast.error(message, { position: "bottom-center", duration: 5000 });
@@ -1667,8 +1822,7 @@ export default function CartPage() {
   const { data: productsData, isLoading: isProductsLoading } =
     useGetProductsQuery({});
 
-  const [removeFromCart, { isLoading: isRemoving }] =
-    useRemoveFromCartMutation();
+  const [removeFromCart] = useRemoveFromCartMutation();
 
   const [clearCart, { isLoading: isClearing }] = useClearCartMutation();
 
@@ -1676,6 +1830,12 @@ export default function CartPage() {
   const [addToCart] = useAddToCartMutation();
   const [checkCartStock] = useCheckCartStockMutation();
   const [checkProductStock] = useCheckProductStockMutation();
+
+  // ✅ NEW: Wishlist hooks — add mutation + get query for explicit recall
+  const [addToWishlist] = useAddToWishlistMutation();
+  const { refetch: refetchWishlist } = useGetWishlistQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+  });
 
   // ── Address APIs ──────────────────────────────────────────────────────────
 
@@ -1918,8 +2078,6 @@ export default function CartPage() {
   }, [cartItems]);
 
   // ── Commission POINTS (not money) ──────────────────────────────────────
-  // Cart endpoint provides product.commission_value per unit.
-  // Do not use formatPrice or subtract these points from payable totals.
   const totalCommission = useMemo(() => {
     if (!isDistributor) return 0;
 
@@ -2205,8 +2363,6 @@ export default function CartPage() {
       return false;
     }
 
-    // Products marked allowed_purchsed=1 can be purchased regardless of stock.
-    // If the entire cart is exempt, do not call the stock endpoint at all.
     const stockControlledItems = freshItems.filter((line) => !line.allowedPurchase);
     if (stockControlledItems.length === 0) {
       setUnavailableProductIds(new Set());
@@ -2235,7 +2391,6 @@ export default function CartPage() {
       const unavailableIds = new Set<number>();
       const reasons: string[] = [];
       for (const line of stockControlledItems) {
-        // Prefer cart-item ID: several variants of one product can appear in a cart.
         const stock =
           stockRows.find(
             (entry: any) =>
@@ -2289,7 +2444,6 @@ export default function CartPage() {
   };
 
   const handleCheckout = async () => {
-    // Never disable the CTA for missing data: tell the shopper how to fix it.
     if (checkoutLockRef.current || isCheckingStock) {
       toast("Checkout verification is already running.", {
         position: "bottom-center",
@@ -2314,7 +2468,7 @@ export default function CartPage() {
     }
     if (
       isUpdating !== null ||
-      isRemoving ||
+      isRemoveProcessing ||
       isClearing ||
       addingProductId !== null
     ) {
@@ -2466,7 +2620,6 @@ export default function CartPage() {
     }
   };
 
-
   const updateQuantity = async (
     cartItemId: number,
     requestedQuantity: number,
@@ -2491,7 +2644,6 @@ export default function CartPage() {
       return;
     }
 
-    // ✅ Directly SET the requested quantity (no increment/decrement action)
     const newQuantity = Math.max(
       1,
       Math.min(requestedQuantity, Math.max(1, availableLimit)),
@@ -2506,7 +2658,6 @@ export default function CartPage() {
         itemId: item.cartItemId,
         data: {
           quantity: newQuantity,
-          // ❌ action removed — backend should treat this as a SET
         },
       }).unwrap();
 
@@ -2527,35 +2678,115 @@ export default function CartPage() {
     }
   };
 
-  // ── Remove item ───────────────────────────────────────────────────────────
+  // ── Remove item — opens confirmation popup ────────────────────────────────
 
-  const removeItem = async (cartItemId: number) => {
+  const removeItem = (cartItemId: number) => {
     const item = cartItems.find((cartItem) => cartItem.id === cartItemId);
+    if (!item) return;
+    setRemoveTarget(item);
+  };
 
-    if (!item?.cartItemId) return;
+  const closeRemoveModal = () => {
+    if (isRemoveProcessing) return;
+    setRemoveTarget(null);
+  };
 
+  // ✅ Option: Move item to wishlist (add to wishlist + remove from cart)
+  const handleMoveToWishlist = async () => {
+    const item = removeTarget;
+    if (!item || isRemoveProcessing) return;
+
+    setIsRemoveProcessing(true);
+    try {
+      // Step 1: Add to wishlist
+      await addToWishlist({
+        product_id: item.productId,
+        ...(item.variantId ? { variant_id: item.variantId } : {}),
+      } as any).unwrap();
+
+      // Step 2: Remove from cart
+      await removeFromCart(item.cartItemId).unwrap();
+
+      // Step 3: Explicitly re-fetch GET APIs so UI is guaranteed fresh
+      await Promise.all([
+        refetchCart(),
+        refetchWishlist(),   // GET /wishlist recall
+      ]);
+
+      // Step 4: Drop item from "unavailable" set (if present)
+      setUnavailableProductIds((previous) => {
+        if (!previous.has(item.productId)) return previous;
+        const next = new Set(previous);
+        next.delete(item.productId);
+        return next;
+      });
+
+      // Step 5: Try to refresh summary; ignore if no address
+      if (selectedDeliveryAddress?.id) {
+        try {
+          await refetchCheckoutSummary();
+        } catch {
+          /* noop */
+        }
+      }
+
+      toast.success("Moved to wishlist", {
+        position: "bottom-center",
+      });
+
+      setRemoveTarget(null);
+    } catch (error: any) {
+      toast.error(
+        getErrorMessage(error, "Could not move item to wishlist"),
+        { position: "bottom-center" },
+      );
+    } finally {
+      setIsRemoveProcessing(false);
+    }
+  };
+
+  // ✅ Option: Remove only from cart
+  const handleRemoveOnly = async () => {
+    const item = removeTarget;
+    if (!item || isRemoveProcessing) return;
+
+    setIsRemoveProcessing(true);
     try {
       await removeFromCart(item.cartItemId).unwrap();
 
-      await refetchCart();
-
-      await refetchCheckoutSummary();
+      await Promise.all([
+        refetchCart(),
+        // Also recall wishlist GET for consistency (requirement)
+        refetchWishlist(),
+      ]);
 
       setUnavailableProductIds((previous) => {
         if (!previous.has(item.productId)) return previous;
-
         const next = new Set(previous);
-
         next.delete(item.productId);
-
         return next;
       });
+
+      if (selectedDeliveryAddress?.id) {
+        try {
+          await refetchCheckoutSummary();
+        } catch {
+          /* noop */
+        }
+      }
 
       toast.success("Item removed from cart", {
         position: "bottom-center",
       });
+
+      setRemoveTarget(null);
     } catch (error: any) {
-      toast.error(error?.data?.message || "Unable to remove item");
+      toast.error(
+        getErrorMessage(error, "Unable to remove item"),
+        { position: "bottom-center" },
+      );
+    } finally {
+      setIsRemoveProcessing(false);
     }
   };
 
@@ -2593,8 +2824,6 @@ export default function CartPage() {
     try {
       setAddingProductId(product.id);
 
-      // No stock verification for API-approved stock-independent purchases.
-      // Other products retain normal live stock verification.
       if (!isPurchaseWithoutStockAllowed(product?.allowed_purchsed)) {
         const productId = Number(product?.id);
         if (!Number.isInteger(productId) || productId <= 0) {
@@ -2923,7 +3152,7 @@ export default function CartPage() {
                         key={item.id}
                         item={item}
                         isUpdating={isUpdating === item.id}
-                        isRemoving={isRemoving}
+                        isRemoving={isRemoveProcessing && removeTarget?.id === item.id}
                         isUnavailable={
                           !item.allowedPurchase && unavailableProductIds.has(item.productId)
                         }
@@ -3030,6 +3259,16 @@ export default function CartPage() {
             setAddressToDelete(null);
           }
         }}
+      />
+
+      {/* ✅ NEW: Remove from Cart / Add to Wishlist Modal */}
+      <RemoveFromCartModal
+        isOpen={Boolean(removeTarget)}
+        item={removeTarget}
+        isProcessing={isRemoveProcessing}
+        onAddToWishlist={handleMoveToWishlist}
+        onRemoveOnly={handleRemoveOnly}
+        onCancel={closeRemoveModal}
       />
     </div>
   );
