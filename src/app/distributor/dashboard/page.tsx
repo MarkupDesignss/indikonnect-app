@@ -201,9 +201,11 @@ function DashboardLoader() {
 function WelcomeHero({
   user,
   distributorId,
+  gstIn,
 }: {
   user?: DashboardUser;
   distributorId: string;
+  gstIn?: string | null;
 }) {
   const displayName = user?.name?.trim() || "Distributor";
   const initials = displayName
@@ -268,6 +270,11 @@ function WelcomeHero({
             {user?.email && (
               <span className="inline-flex max-w-full items-center rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-[11px] text-[#DFE9FC] break-all">
                 {user.email}
+              </span>
+            )}
+            {gstIn != null && String(gstIn).trim() !== "" && (
+              <span className="inline-flex max-w-full items-center gap-1.5 rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-[11px] text-[#DFE9FC] break-all">
+                <span className="font-bold text-white">GSTIN:</span> {gstIn}
               </span>
             )}
           </div>
@@ -339,6 +346,14 @@ type ExtendedIgnite = IgniteDashboard & {
   far_right_ba_id?: string | null;
   commissions_history?: LedgerEntry[] | null;
   commission_breakdown?: CommissionBreakdown | null;
+  tds_summary?: {
+    gst_in?: string | null;
+    pan_verified?: boolean | null;
+    section?: string | null;
+    applied_rate?: number | string | null;
+    reason?: string | null;
+    action_hint?: string | null;
+  } | null;
 };
 
 // --------------------------------------------------
@@ -4106,7 +4121,7 @@ function CoinsAndAccountStatusOverview({
           Redeem eligible coins and check your account status.
         </p>
       </div>
-      <div className="grid min-w-0 grid-cols-1 items-start gap-4 xl:grid-cols-2">
+      <div className="grid min-w-0 grid-cols-1 items-start">
         <div className="min-w-0">
           <CoinsSection ignite={ignite} onRedeemSuccess={onRedeemSuccess} />
         </div>
@@ -4250,7 +4265,7 @@ export default function DistributorDashboardPage() {
 
   const user: DashboardUser | undefined = dashboard?.user;
   const stats = dashboard?.stats;
-  const ignite: IgniteDashboard | null | undefined = dashboard?.ignite;
+  const ignite: ExtendedIgnite | null | undefined = dashboard?.ignite as ExtendedIgnite | null | undefined;
   const activity: DashboardActivity[] = dashboard?.recent_activity ?? [];
   const salesCalendar = (dashboard as any)?.sales_calendar as
     SalesCalendar | undefined;
@@ -4371,7 +4386,11 @@ export default function DistributorDashboardPage() {
 
         <main className="thin-scroll min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain bg-[#F5F7FC] px-3 pb-9 pt-4 sm:px-5 sm:pb-12 sm:pt-5 lg:px-7 lg:pt-7 xl:px-8">
           <div className="mx-auto w-full min-w-0 max-w-[1390px]">
-            <WelcomeHero user={user} distributorId={ignite?.ba_id || "N/A"} />
+            <WelcomeHero
+              user={user}
+              distributorId={ignite?.ba_id || "N/A"}
+              gstIn={ignite?.tds_summary?.gst_in}
+            />
 
             {isError && (
               <div
