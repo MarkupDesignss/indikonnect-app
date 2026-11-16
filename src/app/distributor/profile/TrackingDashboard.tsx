@@ -278,7 +278,7 @@ function AccountCard({
 
         <SmallMetric
 
-          label="Achieved rank"
+          label="pay rank"
 
           value={currentName}
 
