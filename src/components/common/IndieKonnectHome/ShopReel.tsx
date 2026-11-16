@@ -22,6 +22,7 @@ import {
     X,
 } from "lucide-react";
 import { useGetReelsQuery } from "@/lib/redux/api/Home/contentApi";
+import { useGetUserProfileQuery } from "@/lib/redux/api/authApi";
 
 // TYPES
 interface ReelProduct {
@@ -34,6 +35,9 @@ interface ReelProduct {
     sale_price?: number | string;
     regular_price?: number | string;
     retail_price?: number | string;
+    retail_mrp?: number | string;
+    distributor_price?: number | string;
+    distributor_mrp?: number | string;
     primary_image_url?: string;
     image_url?: string;
     thumbnail_url?: string;
@@ -144,14 +148,16 @@ function getReelCreator(reel: Reel | null): string {
     if (!reel) return "";
     return reel.creator_name || reel.creator_handle || reel.creator || "";
 }
-function getProductPrice(product: ReelProduct | null): string {
+function getProductPrice(
+    product: ReelProduct | null,
+    accountType?: string | null,
+): string {
     if (!product) return "";
-    const price =
-        product?.retail_price ??
-        product?.sale_price ??
-        product?.price ??
-        product?.regular_price ??
-        "";
+    const isDistributor = accountType === "distributor";
+    // Distributor sees distributor_price, customer sees retail_price
+    const price = isDistributor
+        ? product?.distributor_price ?? product?.retail_price ?? product?.price ?? product?.regular_price ?? ""
+        : product?.retail_price ?? product?.price ?? product?.regular_price ?? "";
     if (price === "") return "";
     const numericPrice = Number(price);
     if (Number.isNaN(numericPrice)) return "";
@@ -227,11 +233,13 @@ function ShopReelsRow({
     isLoading,
     error,
     openReel,
+    accountType,
 }: {
     reels: Reel[];
     isLoading?: boolean;
     error?: any;
     openReel: (index: number) => void;
+    accountType?: string | null;
 }) {
     const scrollRef = useRef<HTMLDivElement>(null);
     const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -339,7 +347,7 @@ function ShopReelsRow({
                         viewCount,
                     );
                     const product = getReelProduct(reel);
-                    const productPrice = getProductPrice(product);
+                    const productPrice = getProductPrice(product, accountType);
                     const creator = getReelCreator(reel);
                     return (
                         <button
@@ -499,6 +507,12 @@ export default function ShopReels({
         isLoading: hookLoading,
         error: hookError,
     } = useGetReelsQuery(undefined, { skip: !shouldUseHook });
+
+    // FETCH USER PROFILE TO DETERMINE ACCOUNT TYPE
+    const { data: userProfile } = useGetUserProfileQuery(undefined);
+    const accountType = userProfile?.user?.account_type ?? null;
+    const isDistributor = accountType === "distributor";
+
     useEffect(() => {
         setMounted(true);
         return () => setMounted(false);
@@ -748,7 +762,7 @@ export default function ShopReels({
     const nextReel = reels[nextIndex] || null;
     const selectedProduct = selectedReel ? getReelProduct(selectedReel) : null;
     const selectedCreator = getReelCreator(selectedReel);
-    const selectedPrice = getProductPrice(selectedProduct);
+    const selectedPrice = getProductPrice(selectedProduct, accountType);
     const modalContent =
         mounted && selectedReel && selectedIndex !== null
             ? createPortal(
@@ -1073,6 +1087,7 @@ export default function ShopReels({
                         isLoading={isLoading}
                         error={error}
                         openReel={openReel}
+                        accountType={accountType}
                     />
                 </div>
             </section>
