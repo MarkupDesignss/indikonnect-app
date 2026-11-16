@@ -752,7 +752,7 @@ function RemoveFromCartModal({
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-[12.5px] font-semibold text-[#1B2C20]">
-                Add to Wishlist
+                Move to Wishlist
               </p>
               <p className="mt-0.5 text-[10.5px] leading-4 text-[#5C7264]">
                 Save it for later · will be removed from cart

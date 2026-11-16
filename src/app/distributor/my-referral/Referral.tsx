@@ -36,12 +36,6 @@ const formatNumber = (value: string | number | null | undefined) => {
     : "0";
 };
 
-const getFloatingCV = (member: {
-  floating_cv_left: string;
-  floating_cv_right: string;
-}) =>
-  Number(member.floating_cv_left || 0) + Number(member.floating_cv_right || 0);
-
 const formatDate = (value: string | null) => {
   if (!value) return "—";
   const date = new Date(value);
@@ -126,10 +120,10 @@ const Referral = () => {
   // {
   //   success: true,
   //   data: [...referrals],
-  //   total: 2
+  //   pagination: { total, per_page, current_page, last_page }
   // }
   const referrals = response?.data ?? [];
-  const totalReferrals = response?.total ?? referrals.length;
+  const totalReferrals = response?.pagination?.total ?? referrals.length;
 
   // --------------------------------------------------
   // Search / Filter
@@ -141,9 +135,8 @@ const Referral = () => {
         const matchesText =
           !query ||
           (member.ba_id ?? "").toLowerCase().includes(query) ||
-          (member.name ?? "").toLowerCase().includes(query) ||
-          String(member.member_id).includes(query) ||
-          (member.binary_parent_ba_id ?? "").toLowerCase().includes(query);
+          (member.full_name ?? "").toLowerCase().includes(query) ||
+          String(member.member_id).includes(query);
         return (
           matchesText &&
           (sideFilter === "all" || String(member.binary_side) === sideFilter)
@@ -152,7 +145,9 @@ const Referral = () => {
       .slice()
       .sort((a, b) => {
         if (sortBy === "name")
-          return String(a.name ?? "").localeCompare(String(b.name ?? ""));
+          return String(a.full_name ?? "").localeCompare(
+            String(b.full_name ?? ""),
+          );
         const aTime = a.joined_at ? new Date(a.joined_at).getTime() || 0 : 0;
         const bTime = b.joined_at ? new Date(b.joined_at).getTime() || 0 : 0;
         return sortBy === "newest" ? bTime - aTime : aTime - bTime;
@@ -168,8 +163,8 @@ const Referral = () => {
   const rightPositionCount = referrals.filter(
     (member) => member.binary_side === 2,
   ).length;
-  const totalFloatingCV = referrals.reduce(
-    (total, member) => total + getFloatingCV(member),
+  const totalCV = referrals.reduce(
+    (total, member) => total + Number(member.cv || 0),
     0,
   );
   const stats = [
@@ -198,8 +193,8 @@ const Referral = () => {
       helper: "Placed on right leg",
     },
     {
-      label: "Floating CV",
-      value: formatNumber(totalFloatingCV),
+      label: "Total CV",
+      value: formatNumber(totalCV),
       color: BRASS,
       bg: "#FBF4E8",
       icon: Wallet,
@@ -302,7 +297,7 @@ const Referral = () => {
               Find a referral
             </h2>
             <p className="mt-1 text-[12px] leading-5 text-[#75839A]">
-              Search by member name, BA ID, member ID or parent BA ID.
+              Search by member name, BA ID or member ID.
             </p>
           </div>
           <button
@@ -328,7 +323,7 @@ const Referral = () => {
               type="search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search name, BA ID or parent BA ID..."
+              placeholder="Search name, BA ID or member ID..."
               aria-label="Search referrals"
               className="h-12 w-full rounded-xl border border-[#DAE2ED] bg-[#FAFCFF] pl-11 pr-11 text-[13px] font-medium text-[#1C2C45] outline-none transition focus:border-[#4A73B5] focus:bg-white focus:ring-4 focus:ring-[#4A73B5]/10"
             />
@@ -496,7 +491,7 @@ const Referral = () => {
                     </span>
                     <div className="min-w-0 flex-1">
                       <p className="break-words text-[14px] font-black text-[#172A47]">
-                        {member.name || "Member"}
+                        {member.full_name || "Member"}
                       </p>
                       <div className="mt-1 flex items-center gap-1">
                         <span className="break-all text-[11px] font-bold text-[#4566A2]">
@@ -509,9 +504,9 @@ const Referral = () => {
                   </div>
                   <div className="mt-3 grid grid-cols-2 gap-2 rounded-xl bg-[#F7F9FD] p-3">
                     <div>
-                      <p className="text-[10px] text-[#8793A7]">Floating CV</p>
+                      <p className="text-[10px] text-[#8793A7]">CV</p>
                       <p className="mt-1 text-[17px] font-black text-[#1E8860]">
-                        {formatNumber(getFloatingCV(member))}
+                        {formatNumber(member.cv)}
                       </p>
                     </div>
                     <div>
@@ -523,9 +518,15 @@ const Referral = () => {
                   </div>
                   <div className="mt-3 grid gap-2 text-[11px]">
                     <div className="flex justify-between gap-3">
-                      <span className="text-[#8693A6]">Parent BA ID</span>
-                      <span className="break-all text-right font-semibold text-[#3E4F69]">
-                        {member.binary_parent_ba_id || "—"}
+                      <span className="text-[#8693A6]">Rank</span>
+                      <span className="font-semibold text-[#3E4F69]">
+                        {member.rank_name || "—"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <span className="text-[#8693A6]">Status</span>
+                      <span className="font-semibold text-[#3E4F69]">
+                        {member.status || "—"}
                       </span>
                     </div>
                     <div className="flex justify-between gap-3">
@@ -540,16 +541,16 @@ const Referral = () => {
             </div>
             {/* Desktop Referral Rows */}
             <div className="referral-scrollbar hidden overflow-x-auto md:block">
-              <table className="w-full min-w-[980px] border-collapse text-left">
+              <table className="w-full min-w-[880px] border-collapse text-left">
                 {/* Table Header */}
                 <thead>
                   <tr className="bg-[#F7F9FD] text-[10px] font-black uppercase tracking-[0.08em] text-[#75839B]">
-           
-                    <th className="px-4 py-4">BA ID</th>
+                    <th className="px-4 py-4">BA ID / Name</th>
                     <th className="px-4 py-4">Position</th>
                     <th className="px-4 py-4">Level</th>
-                    <th className="px-4 py-4">Parent BA ID</th>
-                    <th className="px-4 py-4">Floating CV</th>
+                    <th className="px-4 py-4">Rank</th>
+                    <th className="px-4 py-4">CV</th>
+                    <th className="px-4 py-4">Status</th>
                     <th className="px-4 py-4">Joined</th>
                   </tr>
                 </thead>
@@ -560,15 +561,18 @@ const Referral = () => {
                       key={member.member_id}
                       className="border-t border-[#EDF0F5] text-[12px] transition hover:bg-[#FAFCFF]"
                     >
-                      {/* Name */}
-                  
-                      {/* BA ID */}
+                      {/* BA ID + Full Name */}
                       <td className="px-4 py-4">
-                        <div className="flex items-center gap-0.5">
-                          <span className="max-w-[160px] break-all font-bold text-[#375B98]">
-                            {member.ba_id || "—"}
+                        <div className="flex flex-col gap-0.5">
+                          <div className="flex items-center gap-0.5">
+                            <span className="max-w-[160px] break-all font-bold text-[#375B98]">
+                              {member.ba_id || "—"}
+                            </span>
+                            <CopyButton value={member.ba_id || ""} />
+                          </div>
+                          <span className="max-w-[200px] break-words text-[12px] font-semibold text-[#172A47]">
+                            {member.full_name || "—"}
                           </span>
-                          <CopyButton value={member.ba_id || ""} />
                         </div>
                       </td>
                       {/* Position */}
@@ -579,13 +583,17 @@ const Referral = () => {
                       <td className="px-4 py-4 font-bold text-[#384B69]">
                         {member.level ?? "—"}
                       </td>
-                      {/* Parent BA ID */}
-                      <td className="max-w-[170px] break-all px-4 py-4 font-medium text-[#63738C]">
-                        {member.binary_parent_ba_id || "—"}
+                      {/* Rank */}
+                      <td className="px-4 py-4 font-medium text-[#63738C]">
+                        {member.rank_name || "—"}
                       </td>
-                      {/* Floating CV */}
+                      {/* CV */}
                       <td className="px-4 py-4 text-[13px] font-black tabular-nums text-[#19825B]">
-                        {formatNumber(getFloatingCV(member))}
+                        {formatNumber(member.cv)}
+                      </td>
+                      {/* Status */}
+                      <td className="px-4 py-4 font-medium text-[#63738C]">
+                        {member.status || "—"}
                       </td>
                       {/* Joined At */}
                       <td className="whitespace-nowrap px-4 py-4 text-[#63738C]">

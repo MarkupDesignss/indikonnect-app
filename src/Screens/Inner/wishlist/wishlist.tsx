@@ -23,6 +23,8 @@ import { useAddToCartMutation, useGetCartQuery } from "@/lib/redux/api/cartApi";
 import { useCheckProductStockMutation } from "@/lib/redux/api/productApi";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { showToast } from "../../../lib/slices/toastSlice";
+import { useGetUserProfileQuery } from "@/lib/redux/api/authApi";
+
 interface WishlistProductImage {
   id: number;
   image: string;
@@ -93,7 +95,10 @@ const getNumericPrice = (value?: string | null): number => {
   const parsed = Number.parseFloat(value);
   return Number.isFinite(parsed) ? parsed : 0;
 };
-const transformWishlistItem = (item: WishlistItem): WishlistCardData => {
+const transformWishlistItem = (
+  item: WishlistItem,
+  isDistributor: boolean,
+): WishlistCardData => {
   const product = item.product;
   const retailPrice = getNumericPrice(product.retail_price);
   const distributorPrice = getNumericPrice(product.distributor_price);
@@ -104,17 +109,38 @@ const transformWishlistItem = (item: WishlistItem): WishlistCardData => {
     String(product.allowed_purchsed).trim().toLowerCase() === "true" ||
     String(product.allowed_purchsed).trim() === "1";
 
-  const hasHigherOriginalPrice = distributorPrice > retailPrice;
-  const discount = hasHigherOriginalPrice
-    ? Math.round(((distributorPrice - retailPrice) / distributorPrice) * 100)
-    : null;
+  // Account-type aware pricing:
+  // - Distributor accounts see the distributor price as the selling price,
+  //   with retail price shown as the struck-through "old" price.
+  // - Customer / other accounts see the retail price, with the distributor
+  //   price as the struck-through "old" price when it is higher.
+  let price: number;
+  let oldPrice: number | null;
+  let discount: number | null;
+
+  if (isDistributor) {
+    price = distributorPrice > 0 ? distributorPrice : retailPrice;
+    oldPrice = retailPrice > price ? retailPrice : null;
+    discount =
+      oldPrice && oldPrice > 0
+        ? Math.round(((oldPrice - price) / oldPrice) * 100)
+        : null;
+  } else {
+    price = retailPrice;
+    oldPrice = distributorPrice > retailPrice ? distributorPrice : null;
+    discount =
+      oldPrice && oldPrice > 0
+        ? Math.round(((oldPrice - price) / oldPrice) * 100)
+        : null;
+  }
+
   return {
     id: item.id,
     productId: item.product_id,
     slug: product.slug,
     name: product.name,
-    price: retailPrice,
-    oldPrice: hasHigherOriginalPrice ? distributorPrice : null,
+    price,
+    oldPrice,
     discount: discount && discount > 0 ? discount : null,
     image:
       product.primary_image_url ||
@@ -144,6 +170,7 @@ export default function WishlistPage() {
     error: wishlistError,
     refetch: refetchWishlist,
   } = useGetWishlistQuery();
+  const { data: userProfile } = useGetUserProfileQuery();
   const { refetch: refetchCart } = useGetCartQuery();
   const [removeFromWishlist] = useRemoveFromWishlistMutation();
   const [addToCart] = useAddToCartMutation();
@@ -153,15 +180,22 @@ export default function WishlistPage() {
   const [removingId, setRemovingId] = useState<number | null>(null);
   const [addingToCartId, setAddingToCartId] = useState<number | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  // Distributor accounts get distributor pricing; everyone else gets retail.
+  const accountType = String(
+    userProfile?.user?.account_type ?? "",
+  ).toLowerCase();
+  const isDistributor = accountType === "distributor";
+
   useEffect(() => {
     if (wishlistData && Array.isArray(wishlistData?.data)) {
       const transformed = wishlistData.data.map((item: WishlistItem) =>
-        transformWishlistItem(item),
+        transformWishlistItem(item, isDistributor),
       );
       setWishlistItems(transformed);
       setIsInitialLoad(false);
     }
-  }, [wishlistData]);
+  }, [wishlistData, isDistributor]);
   const totalItems = wishlistItems.length;
   const handleRemove = async (item: WishlistCardData) => {
     if (removingId === item.productId) {
@@ -508,7 +542,7 @@ function WishlistCard({
           </>
         ) : (
           <>
-            {item.inStock ? "Add to Cart" : "Out of stock"}
+            {item.inStock ? "Move to Cart" : "Out of stock"}
             {item.inStock && <ShoppingCart className="h-3.5 w-3.5" />}
           </>
         )}
