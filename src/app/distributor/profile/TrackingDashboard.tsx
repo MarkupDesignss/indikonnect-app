@@ -276,6 +276,7 @@ function AccountCard({
 
         />
 
+<<<<<<< Updated upstream
         <SmallMetric
 
           label="pay rank"
@@ -285,6 +286,9 @@ function AccountCard({
           sub="Next rank"
 
         />
+=======
+        <SmallMetric label="Achieved Aank" value="Silver" />
+>>>>>>> Stashed changes
 
         {/* <SmallMetric
           label="Account type"

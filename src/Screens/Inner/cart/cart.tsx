@@ -64,6 +64,7 @@ import {
 import { useGetUserDashboardQuery } from "@/lib/redux/api/distributor/userDashboardApi";
 import { useGetUserProfileQuery } from "@/lib/redux/api/authApi";
 import AddressFormModal from "@/Screens/CheckoutPage/AddressFormModal";
+import { useAddToWishlistMutation } from "@/lib/redux/api/Wishlist/wishlistApi";
 
 // API spelling is intentionally `allowed_purchsed` (not `allowed_purchased`).
 // A flag of 1 bypasses inventory restrictions only; cart/order API rules still apply.

@@ -65,6 +65,8 @@ export interface Address {
   city: string;
   state: string;
   postcode: string;
+  post_office: string;
+  billing_post_office: string;
   country: string;
   is_default: boolean;
   is_billing: boolean;
@@ -83,6 +85,8 @@ export interface AddressFormData {
   city: string;
   state: string;
   postcode: string;
+  post_office: string;
+  billing_post_office: string;
   country: string;
   is_default: boolean;
   is_billing: boolean;
@@ -178,14 +182,14 @@ declare global {
 type PaymentGatewayId =
   "freecharge-axis" | "hdfc-ie" | "hdfc-sg" | "razorpay-axis";
 
-type PaymentGatewayKind = "razorpay" | "hdfc";
+type PaymentGatewayKind = "razorpay" | "hdfc" | "axispg";
 
 interface PaymentGatewayOption {
   id: PaymentGatewayId;
   settingKey: string;
   title: string;
   description: string;
-  paymentGateway: "razorpay" | "hdfc_ie" | "hdfc_sg";
+  paymentGateway: "axispg" | "razorpay" | "hdfc_ie" | "hdfc_sg";
   kind: PaymentGatewayKind;
   icon: "axis" | "hdfc" | "razorpay";
   tag?: string;
@@ -197,14 +201,34 @@ interface PaymentGatewayOption {
 
 const INK = "#111827";
 
+// The backend returns the signed Axis PG fields in `axispg_checkout`.
+// Keep sandbox as the safe default. Set NEXT_PUBLIC_AXISPG_ENV=production
+// in the production deployment only after production merchant credentials are enabled.
+const AXISPG_ENDPOINTS = {
+  sandbox: "https://sandbox-axispg.freecharge.in/payment/v1/checkout",
+  production: "https://axispg.freecharge.in/payment/v1/checkout",
+} as const;
+
+const AXISPG_ENVIRONMENT =
+  String(process.env.NEXT_PUBLIC_AXISPG_ENV || "sandbox").trim().toLowerCase() ===
+  "production"
+    ? "production"
+    : "sandbox";
+
+const AXISPG_CHECKOUT_ENDPOINT = AXISPG_ENDPOINTS[AXISPG_ENVIRONMENT];
+
+type AxisPgPaymentTarget = {
+  window: Window;
+};
+
 const PAYMENT_GATEWAY_OPTIONS: PaymentGatewayOption[] = [
   {
     id: "freecharge-axis",
     settingKey: "Freecharge(Axis)",
     title: "Freecharge",
     description: "Pay securely via Freecharge checkout gateway.",
-    paymentGateway: "razorpay",
-    kind: "razorpay",
+    paymentGateway: "axispg",
+    kind: "axispg",
     icon: "axis",
     tag: "Axis",
   },
@@ -249,6 +273,123 @@ const poppins = Poppins({
 // ─────────────────────────────────────────────────────────────────────────────
 // Utility helpers
 // ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Open the payment tab synchronously from the Place Order / Retry click.
+ * This avoids popup blockers after the checkout API request has completed.
+ */
+function openAxisPgPaymentTab(): AxisPgPaymentTarget | null {
+  const paymentWindow = window.open("", "_blank");
+
+  if (!paymentWindow) return null;
+
+  try {
+    // Do not let the external payment page access the checkout window.
+    paymentWindow.opener = null;
+    paymentWindow.document.title = "Secure Freecharge Payment";
+
+    const message = paymentWindow.document.createElement("div");
+    message.textContent = "Preparing your secure Freecharge payment...";
+    message.style.cssText =
+      "display:flex;min-height:100vh;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;font:500 16px Arial,sans-serif;color:#173e2b;background:#f7faf8;text-align:center";
+    paymentWindow.document.body.replaceChildren(message);
+  } catch {
+    // The payment tab can still be targeted even if its temporary message fails.
+  }
+
+  return { window: paymentWindow };
+}
+
+function closeAxisPgPaymentTab(target: AxisPgPaymentTarget | null): void {
+  if (!target) return;
+
+  try {
+    if (!target.window.closed) target.window.close();
+  } catch {
+    // Ignore browser errors while closing a temporary payment tab.
+  }
+}
+
+function getAxisPgFields(checkoutPayload: unknown): Array<{ name: string; value: string }> {
+  let checkout: unknown = checkoutPayload;
+
+  if (typeof checkout === "string") {
+    try {
+      checkout = JSON.parse(checkout);
+    } catch {
+      throw new Error("The Axis PG checkout payload returned by the server is not valid JSON.");
+    }
+  }
+
+  if (!checkout || typeof checkout !== "object" || Array.isArray(checkout)) {
+    throw new Error("Axis PG checkout details were not returned in the expected format.");
+  }
+
+  const checkoutObject = checkout as Record<string, unknown>;
+
+  // Some gateway integrations return a single encrypted field.
+  if (typeof checkoutObject.encData === "string" && checkoutObject.encData.trim()) {
+    return [{ name: "encData", value: checkoutObject.encData }];
+  }
+
+  // Also support the payload wrapper documented in the backend test page.
+  const source =
+    checkoutObject.payload &&
+    typeof checkoutObject.payload === "object" &&
+    !Array.isArray(checkoutObject.payload)
+      ? (checkoutObject.payload as Record<string, unknown>)
+      : checkoutObject;
+
+  const fields = Object.entries(source)
+    .filter(([name, value]) =>
+      /^[A-Za-z][A-Za-z0-9_]*$/.test(name) &&
+      value !== null &&
+      value !== undefined &&
+      ["string", "number", "boolean"].includes(typeof value),
+    )
+    .map(([name, value]) => ({ name, value: String(value) }));
+
+  if (fields.length === 0) {
+    throw new Error("No valid Axis PG fields were found in axispg_checkout.");
+  }
+
+  return fields;
+}
+
+/** Submit signed Axis PG fields through a hidden HTML form in the new tab. */
+function submitAxisPgForm(
+  checkoutPayload: unknown,
+  target: AxisPgPaymentTarget,
+): void {
+  if (target.window.closed) {
+    throw new Error("The Freecharge payment tab was closed. Please click Place Order again.");
+  }
+
+  const fields = getAxisPgFields(checkoutPayload);
+  const paymentDocument = target.window.document;
+  const form = paymentDocument.createElement("form");
+
+  form.method = "POST";
+  form.action = AXISPG_CHECKOUT_ENDPOINT;
+  form.target = "_self";
+  form.style.display = "none";
+  form.acceptCharset = "UTF-8";
+
+  fields.forEach(({ name, value }) => {
+    const input = paymentDocument.createElement("input");
+    input.type = "hidden";
+    input.name = name;
+    input.value = value;
+    form.appendChild(input);
+  });
+
+  paymentDocument.body.appendChild(form);
+  try {
+    form.submit();
+  } finally {
+    form.remove();
+  }
+}
 
 const formatPrice = (value: any): string => {
   const amount = Number(value || 0);
@@ -450,7 +591,10 @@ const getInitialGatewayId = (value: unknown): PaymentGatewayId => {
 
   if (code === "HDFC_IE") return "hdfc-ie";
   if (code === "HDFC_SG" || code === "HDFC") return "hdfc-sg";
-  if (code.includes("FREECHARGE")) return "freecharge-axis";
+  // Freecharge uses the separate Axis PG checkout flow, not Razorpay.
+  if (code.includes("FREECHARGE") || code.includes("AXISPG")) {
+    return "freecharge-axis";
+  }
   if (code.includes("RAZORPAY")) return "razorpay-axis";
   if (code.includes("AXIS")) return "razorpay-axis";
 
@@ -1150,6 +1294,31 @@ function AddressSelectorModal({
                       , {address.city}, {address.state} - {address.postcode}
                     </p>
 
+                    {/* ✅ new — post office details */}
+                    {(address.post_office || address.billing_post_office) && (
+                      <p className="mt-1 text-[11px] text-gray-500">
+                        {address.post_office && (
+                          <>
+                            <span className="font-medium text-gray-600">
+                              Post Office:
+                            </span>{" "}
+                            {address.post_office}
+                          </>
+                        )}
+                        {address.post_office && address.billing_post_office && (
+                          <span className="mx-1">·</span>
+                        )}
+                        {address.billing_post_office && (
+                          <>
+                            <span className="font-medium text-gray-600">
+                              Billing Post Office:
+                            </span>{" "}
+                            {address.billing_post_office}
+                          </>
+                        )}
+                      </p>
+                    )}
+
                     <p className="mt-1 text-sm text-gray-500">
                       Phone: {address.contact_number}
                     </p>
@@ -1627,10 +1796,6 @@ export default function CheckoutPage() {
     return () => { cancelled = true; };
   }, [checkoutType, triggerGetCart, checkCartStock, summaryData]);
 
-  // ───────────────────────────────────────────────────────────────────────────
-  // Address handlers
-  // ───────────────────────────────────────────────────────────────────────────
-
   const handleCreateAddress = async (data: AddressFormData) => {
     try {
       const payload = {
@@ -1638,9 +1803,12 @@ export default function CheckoutPage() {
         type: data.type || "Home",
         is_delivery: 1,
         is_billing: 1,
+        // ✅ explicit — guaranteed to be sent
+        post_office: data.post_office,
+        billing_post_office: data.billing_post_office,
       };
 
-      const result = await createAddress(payload).unwrap();
+      const result = await createAddress(payload as any).unwrap();
 
       if ((result as any)?.status) {
         dispatch(
@@ -1676,7 +1844,9 @@ export default function CheckoutPage() {
         data: {
           ...data,
           type: data.type || "Home",
-        },
+          post_office: data.post_office,
+          billing_post_office: data.billing_post_office,
+        } as any,
       }).unwrap();
 
       if ((result as any)?.status) {
@@ -1703,7 +1873,6 @@ export default function CheckoutPage() {
       );
     }
   };
-
   const openDeleteConfirm = (address: Address) => {
     setAddressToDelete(address);
     setIsDeleteConfirmOpen(true);
@@ -2104,6 +2273,20 @@ export default function CheckoutPage() {
       return;
     }
 
+    let axisPaymentTarget: AxisPgPaymentTarget | null = null;
+
+    if (selectedGateway.paymentGateway === "axispg") {
+      axisPaymentTarget = openAxisPgPaymentTab();
+
+      if (!axisPaymentTarget) {
+        const message =
+          "Please allow pop-ups for this website to open the Freecharge payment page.";
+        setCheckoutNotice(message);
+        dispatch(showToast({ message, type: "error" }));
+        return;
+      }
+    }
+
     paymentActionInProgress.current = true;
     setIsSubmitting(true);
 
@@ -2136,6 +2319,30 @@ export default function CheckoutPage() {
       const databaseOrderId = Number(data.order_id || 0);
 
       const amount = Number(data.total_amount || 0);
+
+      if (selectedGateway.paymentGateway === "axispg") {
+        const axisPgCheckout =
+          data.axispg_checkout ?? (response as any)?.axispg_checkout;
+
+        if (!axisPgCheckout) {
+          throw new Error(
+            "The retry API did not return axispg_checkout details for Freecharge.",
+          );
+        }
+
+        if (!axisPaymentTarget) {
+          throw new Error("Unable to open the Freecharge payment tab.");
+        }
+
+        submitAxisPgForm(axisPgCheckout, axisPaymentTarget);
+        dispatch(
+          showToast({
+            message: "Opening secure Freecharge payment...",
+            type: "info",
+          }),
+        );
+        return;
+      }
 
       if (selectedGateway.paymentGateway === "razorpay") {
         if (!Number.isSafeInteger(databaseOrderId) || databaseOrderId <= 0) {
@@ -2210,6 +2417,7 @@ export default function CheckoutPage() {
         "The selected payment gateway is not supported for retry.",
       );
     } catch (error: any) {
+      closeAxisPgPaymentTab(axisPaymentTarget);
       console.error("Retry payment error:", error);
 
       dispatch(
@@ -2321,6 +2529,21 @@ export default function CheckoutPage() {
       setCheckoutNotice(message);
       dispatch(showToast({ message, type: "error" }));
       return;
+    }
+
+    let axisPaymentTarget: AxisPgPaymentTarget | null = null;
+
+    if (selectedGateway.paymentGateway === "axispg") {
+      // Must happen synchronously in the click handler, before any API awaits.
+      axisPaymentTarget = openAxisPgPaymentTab();
+
+      if (!axisPaymentTarget) {
+        const message =
+          "Please allow pop-ups for this website to open the Freecharge payment page.";
+        setCheckoutNotice(message);
+        dispatch(showToast({ message, type: "error" }));
+        return;
+      }
     }
 
     paymentActionInProgress.current = true;
@@ -2498,6 +2721,32 @@ export default function CheckoutPage() {
         return;
       }
 
+      if (selectedGateway.paymentGateway === "axispg") {
+        const axisPgCheckout =
+          anyData?.axispg_checkout ??
+          firstOrder?.axispg_checkout ??
+          rawResponse?.axispg_checkout;
+
+        if (!axisPgCheckout) {
+          throw new Error(
+            "Place Order succeeded, but the response did not include axispg_checkout details for Freecharge.",
+          );
+        }
+
+        if (!axisPaymentTarget) {
+          throw new Error("Unable to open the Freecharge payment tab.");
+        }
+
+        submitAxisPgForm(axisPgCheckout, axisPaymentTarget);
+        dispatch(
+          showToast({
+            message: "Opening secure Freecharge payment...",
+            type: "info",
+          }),
+        );
+        return;
+      }
+
       if (!orderReference) {
         throw new Error(
           "Order was created, but order reference was not returned.",
@@ -2529,6 +2778,7 @@ export default function CheckoutPage() {
         razorpayKey,
       });
     } catch (error: any) {
+      closeAxisPgPaymentTab(axisPaymentTarget);
       console.error("Checkout error:", error);
 
       if (orderWasCreated) {
@@ -2693,6 +2943,33 @@ export default function CheckoutPage() {
                           , {selectedDeliveryAddress?.city},{" "}
                           {selectedDeliveryAddress?.state}
                         </p>
+
+                        {/* ✅ new — post office details */}
+                        {(selectedDeliveryAddress?.post_office ||
+                          selectedDeliveryAddress?.billing_post_office) && (
+                          <p className="mt-0.5 text-[11px] text-[#87918A]">
+                            {selectedDeliveryAddress?.post_office && (
+                              <>
+                                Post Office:{" "}
+                                <span className="font-medium text-[#526258]">
+                                  {selectedDeliveryAddress.post_office}
+                                </span>
+                              </>
+                            )}
+                            {selectedDeliveryAddress?.post_office &&
+                              selectedDeliveryAddress?.billing_post_office && (
+                                <span className="mx-1">·</span>
+                              )}
+                            {selectedDeliveryAddress?.billing_post_office && (
+                              <>
+                                Billing Post Office:{" "}
+                                <span className="font-medium text-[#526258]">
+                                  {selectedDeliveryAddress.billing_post_office}
+                                </span>
+                              </>
+                            )}
+                          </p>
+                        )}
                       </div>
 
                       <div className="flex w-full shrink-0 items-center gap-2 sm:w-auto">

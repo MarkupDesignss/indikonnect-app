@@ -59,7 +59,11 @@ export const addressApi = baseApi.injectEndpoints({
       query: (data) => ({
         url: "/addresses",
         method: "POST",
-        body: denormalizeAddress(data),
+        body: {
+          ...denormalizeAddress(data),
+          post_office: data.post_office,
+          billing_post_office: data.billing_post_office,
+        },
       }),
       invalidatesTags: ["Addresses"],
       transformResponse: (response: AddressSingleResponse) => {
@@ -70,42 +74,47 @@ export const addressApi = baseApi.injectEndpoints({
       },
     }),
 
+    // Update address
     updateAddress: builder.mutation<
-    {
-      status: boolean;
-      message: string;
-      data: NormalizedAddress;
-    },
-    {
-      id: number;
-      data: UpdateAddressRequest;
-    }
-  >({
-    query: ({ id, data }) => ({
-      url: `/addresses/${id}`,
-      method: "POST", 
-      body: denormalizeAddress(data),
+      {
+        status: boolean;
+        message: string;
+        data: NormalizedAddress;
+      },
+      {
+        id: number;
+        data: UpdateAddressRequest;
+      }
+    >({
+      query: ({ id, data }) => ({
+        url: `/addresses/${id}`,
+        method: "POST",
+        body: {
+          ...denormalizeAddress(data),
+          post_office: data.post_office,
+          billing_post_office: data.billing_post_office,
+        },
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: "Addresses", id },
+        "Addresses",
+      ],
+      transformResponse: (response: AddressSingleResponse) => ({
+        ...response,
+        data: normalizeAddress(response.data),
+      }),
     }),
-    invalidatesTags: (result, error, { id }) => [
-      { type: "Addresses", id },
-      "Addresses",
-    ],
-    transformResponse: (response: AddressSingleResponse) => ({
-      ...response,
-      data: normalizeAddress(response.data),
-    }),
-  }),
 
     deleteAddress: builder.mutation<
-    DeleteAddressResponse,
-    { id: number; data: DeleteAddressRequest }
-  >({
-    query: ({ id, data }) => ({
-      url: `/addresses/${id}`,
-      method: "DELETE",
-      body: data,
+      DeleteAddressResponse,
+      { id: number; data: DeleteAddressRequest }
+    >({
+      query: ({ id, data }) => ({
+        url: `/addresses/${id}`,
+        method: "DELETE",
+        body: data,
+      }),
     }),
-  }),
 
     // Set default address
     setDefaultAddress: builder.mutation<
@@ -166,8 +175,6 @@ export const addressApi = baseApi.injectEndpoints({
         };
       },
     }),
-
-    
   }),
 });
 

@@ -28,6 +28,8 @@ interface BillingAddressData {
   city: string;
   state: string;
   postcode: string;
+  post_office: string;
+  billing_post_office: string;
   country: string;
 }
 
@@ -48,6 +50,8 @@ const emptyBillingAddress: BillingAddressData = {
   city: "",
   state: "",
   postcode: "",
+  post_office: "",
+  billing_post_office: "",
   country: "India",
 };
 
@@ -103,7 +107,6 @@ function parseIndiaPostData(raw: unknown): {
       ? (outer.data as Record<string, unknown>)
       : undefined;
 
-  // India Post APIs can return the office array at different nesting levels.
   const containers = [root, outer, nested].filter(
     (item): item is Record<string, unknown> => Boolean(item),
   );
@@ -269,7 +272,7 @@ function CustomDropdown({
   const selectedLabel =
     value === OTHER_OPTION
       ? "Other (type manually)"
-      : options.find((o) => o.value === value)?.label || "";
+      : options.find((o) => o.value === value)?.label || value;
 
   return (
     <div ref={wrapperRef} className="relative">
@@ -304,7 +307,7 @@ function CustomDropdown({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.12 }}
-            className="absolute left-0 right-0 z-50 mt-1 max-h-[220px] overflow-y-auto rounded-[6px] border border-[#E4EBE6] bg-white py-1 shadow-[0_8px_24px_rgba(0,0,0,0.10)]"
+            className="absolute left-0 right-0 z-[10002] mt-1 max-h-[220px] overflow-y-auto rounded-[6px] border border-[#E4EBE6] bg-white py-1 shadow-[0_8px_24px_rgba(0,0,0,0.10)]"
           >
             {allOptions.map((opt) => {
               const isSelected = opt.value === value;
@@ -352,6 +355,8 @@ export default function AddressFormModal({
     city: "",
     state: "",
     postcode: "",
+    post_office: "",
+    billing_post_office: "",
     country: "India",
     is_default: true,
     is_billing: true,
@@ -373,17 +378,14 @@ export default function AddressFormModal({
 
   const showSeparateBillingForm = !formData.is_billing;
 
-  /* "OTHER" toggles */
   const [stateOther, setStateOther] = useState(false);
   const [cityOther, setCityOther] = useState(false);
   const [billingStateOther, setBillingStateOther] = useState(false);
   const [billingCityOther, setBillingCityOther] = useState(false);
 
-  /* Area selectors */
   const [selectedArea, setSelectedArea] = useState("");
   const [billingSelectedArea, setBillingSelectedArea] = useState("");
 
-  /* Manual "other" area values */
   const [manualArea, setManualArea] = useState("");
   const [billingManualArea, setBillingManualArea] = useState("");
 
@@ -393,8 +395,6 @@ export default function AddressFormModal({
   const [postcodeForLookup, setPostcodeForLookup] = useState("");
   const [billingPostcodeForLookup, setBillingPostcodeForLookup] = useState("");
 
-  // Clear lookup arguments as soon as the user edits a pincode. This prevents
-  // the previous pincode's response from remaining visible during the debounce.
   useEffect(() => {
     if (!inline && !isOpen) {
       setPostcodeForLookup("");
@@ -436,7 +436,6 @@ export default function AddressFormModal({
     isError: isPincodeError,
   } = useGetIndiaPostPincodeQuery(postcodeForLookup, {
     skip: !postcodeForLookup || (!inline && !isOpen),
-    // Re-fetch when the modal subscribes again, even if this pincode was used before.
     refetchOnMountOrArgChange: true,
   });
 
@@ -463,7 +462,7 @@ export default function AddressFormModal({
     [billingPincodeData],
   );
 
-  /* Auto-fill state and city only for the currently entered pincode. */
+  /* Auto-fill state and city for the current pincode. */
   useEffect(() => {
     if (
       !pincodeData ||
@@ -532,49 +531,106 @@ export default function AddressFormModal({
   useEffect(() => {
     if (
       postcodeForLookup !== formData.postcode ||
-      mainAreas.length !== 1 ||
+      mainAreas.length === 0 ||
       selectedArea
     ) {
       return;
     }
 
-    const area = mainAreas[0];
-    setSelectedArea(area.value);
-    setFormData((previous) => ({
-      ...previous,
-      state: previous.state || area.state,
-      city: previous.city || area.city,
-      address_line_1:
-        previous.address_line_1 ||
-        [area.office, area.taluk, area.village].filter(Boolean).join(", "),
-    }));
-  }, [postcodeForLookup, formData.postcode, mainAreas, selectedArea]);
+    if (formData.post_office) {
+      const matchedArea = mainAreas.find(
+        (a) => a.office.toLowerCase() === formData.post_office.toLowerCase()
+      );
+      if (matchedArea) {
+        setSelectedArea(matchedArea.value);
+        return;
+      } else {
+        setSelectedArea(formData.post_office);
+        return;
+      }
+    }
+
+    if (mainAreas.length === 1) {
+      const area = mainAreas[0];
+      setSelectedArea(area.value);
+      setFormData((previous) => {
+        const next = {
+          ...previous,
+          state: previous.state || area.state,
+          city: previous.city || area.city,
+          post_office: area.office,
+          address_line_1:
+            previous.address_line_1 ||
+            [area.office, area.taluk, area.village].filter(Boolean).join(", "),
+        };
+        if (next.is_billing) {
+          next.billing_post_office = area.office;
+        } else if (!next.billing_post_office) {
+          next.billing_post_office = area.office;
+        }
+        return next;
+      });
+    }
+  }, [postcodeForLookup, formData.postcode, mainAreas, selectedArea, formData.post_office]);
 
   useEffect(() => {
     if (
       billingPostcodeForLookup !== billingAddress.postcode ||
-      billingAreas.length !== 1 ||
+      billingAreas.length === 0 ||
       billingSelectedArea
     ) {
       return;
     }
 
-    const area = billingAreas[0];
-    setBillingSelectedArea(area.value);
-    setBillingAddress((previous) => ({
-      ...previous,
-      state: previous.state || area.state,
-      city: previous.city || area.city,
-      address_line_1:
-        previous.address_line_1 ||
-        [area.office, area.taluk, area.village].filter(Boolean).join(", "),
-    }));
+    if (billingAddress.post_office || billingAddress.billing_post_office) {
+      const targetVal = billingAddress.post_office || billingAddress.billing_post_office;
+      const matchedArea = billingAreas.find(
+        (a) => a.office.toLowerCase() === targetVal.toLowerCase()
+      );
+      if (matchedArea) {
+        setBillingSelectedArea(matchedArea.value);
+        return;
+      } else {
+        setBillingSelectedArea(targetVal);
+        return;
+      }
+    }
+
+    if (billingAreas.length === 1) {
+      const area = billingAreas[0];
+      setBillingSelectedArea(area.value);
+      setBillingAddress((previous) => ({
+        ...previous,
+        state: previous.state || area.state,
+        city: previous.city || area.city,
+        post_office: area.office,
+        billing_post_office: area.office,
+        address_line_1:
+          previous.address_line_1 ||
+          [area.office, area.taluk, area.village].filter(Boolean).join(", "),
+      }));
+    }
   }, [
     billingPostcodeForLookup,
     billingAddress.postcode,
     billingAreas,
     billingSelectedArea,
+    billingAddress.post_office,
+    billingAddress.billing_post_office
   ]);
+
+  /* ============================================================
+     SYNC billing_post_office when is_billing toggles ON
+  ============================================================ */
+  useEffect(() => {
+    if (!formData.is_billing) return;
+    if (formData.billing_post_office === formData.post_office) return;
+    setFormData((previous) =>
+      previous.is_billing
+        ? { ...previous, billing_post_office: previous.post_office }
+        : previous,
+    );
+  }, [formData.is_billing, formData.post_office, formData.billing_post_office]);
 
   const resetFormState = useCallback(() => {
     setFormData({
@@ -585,6 +641,8 @@ export default function AddressFormModal({
       city: "",
       state: "",
       postcode: "",
+      post_office: "",
+      billing_post_office: "",
       country: "India",
       is_default: true,
       is_billing: true,
@@ -621,7 +679,6 @@ export default function AddressFormModal({
       return;
     }
 
-    // Start every new modal session with fresh lookup arguments.
     setPostcodeForLookup("");
     setBillingPostcodeForLookup("");
 
@@ -634,6 +691,8 @@ export default function AddressFormModal({
         city: initialData.city || "",
         state: initialData.state || "",
         postcode: initialData.postcode || "",
+        post_office: initialData.post_office || "",
+        billing_post_office: initialData.billing_post_office || "",
         country: initialData.country || "India",
         is_default: initialData.is_default === true,
         is_billing: initialData.is_billing === true,
@@ -650,6 +709,7 @@ export default function AddressFormModal({
         billing_state?: string;
         billing_postcode?: string;
         billing_country?: string;
+        billing_post_office?: string;
       };
 
       const hasBillingData =
@@ -666,6 +726,11 @@ export default function AddressFormModal({
           city: addressWithBilling.billing_city || "",
           state: addressWithBilling.billing_state || "",
           postcode: addressWithBilling.billing_postcode || "",
+          post_office: addressWithBilling.billing_post_office || "",
+          billing_post_office:
+            addressWithBilling.billing_post_office ||
+            initialData.billing_post_office ||
+            "",
           country:
             addressWithBilling.billing_country ||
             initialData.country ||
@@ -681,6 +746,9 @@ export default function AddressFormModal({
           city: initialData.city || "",
           state: initialData.state || "",
           postcode: initialData.postcode || "",
+          post_office: initialData.post_office || "",
+          billing_post_office:
+            initialData.billing_post_office || initialData.post_office || "",
           country: initialData.country || "India",
         });
         setFormData((previous) => ({ ...previous, is_billing: true }));
@@ -694,6 +762,8 @@ export default function AddressFormModal({
         city: "",
         state: "",
         postcode: "",
+        post_office: "",
+        billing_post_office: "",
         country: "India",
         is_default: true,
         is_billing: true,
@@ -742,6 +812,8 @@ export default function AddressFormModal({
       newErrors.postcode = "Postcode must be exactly 6 digits";
     }
 
+    // ❌ Removed post_office validation (made optional)
+
     if (!formData.country.trim())
       newErrors.country = "Country is required";
 
@@ -775,6 +847,8 @@ export default function AddressFormModal({
       newErrors.postcode = "Postcode must be exactly 6 digits";
     }
 
+    // ❌ Removed billing_post_office validation (made optional)
+
     if (!billingAddress.country.trim())
       newErrors.country = "Billing country is required";
 
@@ -793,6 +867,11 @@ export default function AddressFormModal({
     const submitData: any = {
       ...formData,
       type: formData.type || "Home",
+      post_office: formData.post_office,
+      // If same billing, mirror delivery post office; otherwise the billing form's value
+      billing_post_office: formData.is_billing
+        ? formData.post_office
+        : billingAddress.billing_post_office,
     };
 
     if (formData.is_billing) {
@@ -804,6 +883,7 @@ export default function AddressFormModal({
       submitData.billing_state = formData.state;
       submitData.billing_postcode = formData.postcode;
       submitData.billing_country = formData.country;
+      submitData.billing_post_office = formData.post_office;
     } else {
       submitData.billing_recipient_name = billingAddress.recipient_name;
       submitData.billing_contact_number = billingAddress.contact_number;
@@ -813,6 +893,7 @@ export default function AddressFormModal({
       submitData.billing_state = billingAddress.state;
       submitData.billing_postcode = billingAddress.postcode;
       submitData.billing_country = billingAddress.country;
+      submitData.billing_post_office = billingAddress.billing_post_office;
     }
 
     await onSubmit(submitData);
@@ -839,6 +920,8 @@ export default function AddressFormModal({
       postcode: digitsOnly,
       city: "",
       state: "",
+      post_office: "",
+      billing_post_office: previous.is_billing ? "" : previous.billing_post_office,
     }));
     setSelectedArea("");
     setManualArea("");
@@ -855,6 +938,8 @@ export default function AddressFormModal({
       postcode: digitsOnly,
       city: "",
       state: "",
+      post_office: "",
+      billing_post_office: "",
     }));
     setBillingSelectedArea("");
     setBillingManualArea("");
@@ -895,12 +980,23 @@ export default function AddressFormModal({
     if (value === OTHER_OPTION || !value) return;
 
     const area = mainAreas.find((a) => a.value === value);
-    if (!area) return;
+    if (!area) {
+      setFormData((prev) => ({
+        ...prev,
+        post_office: value,
+        billing_post_office: prev.is_billing ? value : prev.billing_post_office,
+      }));
+      return;
+    }
 
     setFormData((previous) => {
       const next = { ...previous };
       if (!next.state && area.state) next.state = area.state;
       if (!next.city && area.city) next.city = area.city;
+      next.post_office = area.office;
+      if (next.is_billing) {
+        next.billing_post_office = area.office;
+      }
       if (!next.address_line_1.trim()) {
         next.address_line_1 = [area.office, area.taluk, area.village]
           .filter(Boolean)
@@ -916,12 +1012,20 @@ export default function AddressFormModal({
     if (value === OTHER_OPTION || !value) return;
 
     const area = billingAreas.find((a) => a.value === value);
-    if (!area) return;
+    if (!area) {
+      setBillingAddress((prev) => ({
+        ...prev,
+        billing_post_office: value,
+      }));
+      return;
+    }
 
     setBillingAddress((previous) => {
       const next = { ...previous };
       if (!next.state && area.state) next.state = area.state;
       if (!next.city && area.city) next.city = area.city;
+      next.post_office = area.office;
+      next.billing_post_office = area.office;
       if (!next.address_line_1.trim()) {
         next.address_line_1 = [area.office, area.taluk, area.village]
           .filter(Boolean)
@@ -1253,10 +1357,10 @@ export default function AddressFormModal({
                   <FieldError>{errors.city}</FieldError>
                 </div>
 
-                {/* DELIVERY AREA */}
-                {mainAreas.length > 0 && (
-                  <div className="md:col-span-2">
-                    <Label>Delivery Area / Post Office</Label>
+                {/* DELIVERY AREA / POST OFFICE → post_office (Optional) */}
+                <div className="md:col-span-2">
+                  <Label optional>Delivery Area / Post Office</Label>
+                  {mainAreas.length > 0 ? (
                     <CustomDropdown
                       value={selectedArea}
                       placeholder="Select delivery area"
@@ -1267,34 +1371,47 @@ export default function AddressFormModal({
                         label: a.label,
                       }))}
                     />
-                    <p className="mt-1 text-[9px] text-[#888888]">
-                      Pick your nearest post office / village. State, city &
-                      address line 1 will be auto-filled.
-                    </p>
+                  ) : (
+                    <input
+                      type="text"
+                      value={formData.post_office}
+                      onChange={(e) =>
+                        handleMainFieldChange("post_office", e.target.value)
+                      }
+                      className={simpleInputClass(errors.post_office)}
+                      placeholder="Enter post office / area"
+                    />
+                  )}
+                  <p className="mt-1 text-[9px] text-[#888888]">
+                    Pick your nearest post office / village. State, city,
+                    post office & address line 1 will be auto-filled.
+                  </p>
 
-                    {selectedArea === OTHER_OPTION && (
-                      <div className="mt-2">
-                        <Label>Enter your Area / Locality</Label>
-                        <input
-                          type="text"
-                          value={manualArea}
-                          onChange={(e) => {
-                            const v = e.target.value;
-                            setManualArea(v);
-                            // keep address line 1 in sync only if user hasn't typed anything else
-                            setFormData((prev) => ({
-                              ...prev,
-                              address_line_1: v,
-                            }));
-                          }}
-                          className={simpleInputClass()}
-                          placeholder="e.g. Village / Colony / Sector"
-                          autoFocus
-                        />
-                      </div>
-                    )}
-                  </div>
-                )}
+                  {selectedArea === OTHER_OPTION && (
+                    <div className="mt-2">
+                      <Label>Enter your Area / Locality</Label>
+                      <input
+                        type="text"
+                        value={manualArea}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          setManualArea(v);
+                          setFormData((prev) => ({
+                            ...prev,
+                            post_office: v,
+                            address_line_1: v,
+                            billing_post_office: prev.is_billing
+                              ? v
+                              : prev.billing_post_office,
+                          }));
+                        }}
+                        className={simpleInputClass()}
+                        placeholder="e.g. Village / Colony / Sector"
+                        autoFocus
+                      />
+                    </div>
+                  )}
+                </div>
 
                 {/* ADDRESS 1 */}
                 <div className="md:col-span-2">
@@ -1430,7 +1547,13 @@ export default function AddressFormModal({
                   checked={formData.is_billing}
                   onChange={(e) => {
                     const checked = e.target.checked;
-                    setFormData({ ...formData, is_billing: checked });
+                    setFormData((prev) => {
+                      const next = { ...prev, is_billing: checked };
+                      if (checked) {
+                        next.billing_post_office = next.post_office;
+                      }
+                      return next;
+                    });
                     if (checked) setBillingErrors({});
                   }}
                   className="h-4 w-4 shrink-0 cursor-pointer accent-[#16845B]"
@@ -1543,13 +1666,13 @@ export default function AddressFormModal({
                           />
                         </div>
 
-                        {/* AREA */}
-                        {billingAreas.length > 0 && (
-                          <div className="md:col-span-2">
-                            <Label>Billing Area / Post Office</Label>
+                        {/* BILLING AREA / POST OFFICE → billing_post_office (Optional) */}
+                        <div className="md:col-span-2">
+                          <Label optional>Billing Area / Post Office</Label>
+                          {billingAreas.length > 0 ? (
                             <CustomDropdown
                               value={billingSelectedArea}
-                              placeholder="Select area"
+                              placeholder="Select billing area"
                               onChange={onSelectBillingArea}
                               includeOther
                               options={billingAreas.map((a) => ({
@@ -1557,29 +1680,45 @@ export default function AddressFormModal({
                                 label: a.label,
                               }))}
                             />
+                          ) : (
+                            <input
+                              type="text"
+                              value={billingAddress.billing_post_office}
+                              onChange={(e) =>
+                                updateBillingField(
+                                  "billing_post_office",
+                                  e.target.value,
+                                )
+                              }
+                              className={simpleInputClass(
+                                billingErrors.billing_post_office,
+                              )}
+                              placeholder="Enter billing post office"
+                            />
+                          )}
 
-                            {billingSelectedArea === OTHER_OPTION && (
-                              <div className="mt-2">
-                                <Label>Enter your Area / Locality</Label>
-                                <input
-                                  type="text"
-                                  value={billingManualArea}
-                                  onChange={(e) => {
-                                    const v = e.target.value;
-                                    setBillingManualArea(v);
-                                    setBillingAddress((prev) => ({
-                                      ...prev,
-                                      address_line_1: v,
-                                    }));
-                                  }}
-                                  className={simpleInputClass()}
-                                  placeholder="e.g. Village / Colony / Sector"
-                                  autoFocus
-                                />
-                              </div>
-                            )}
-                          </div>
-                        )}
+                          {billingSelectedArea === OTHER_OPTION && (
+                            <div className="mt-2">
+                              <Label>Enter your Area / Locality</Label>
+                              <input
+                                type="text"
+                                value={billingManualArea}
+                                onChange={(e) => {
+                                  const v = e.target.value;
+                                  setBillingManualArea(v);
+                                  setBillingAddress((prev) => ({
+                                    ...prev,
+                                    billing_post_office: v,
+                                    address_line_1: v,
+                                  }));
+                                }}
+                                className={simpleInputClass()}
+                                placeholder="e.g. Village / Colony / Sector"
+                                autoFocus
+                              />
+                            </div>
+                          )}
+                        </div>
 
                         {/* ADDRESS */}
                         <div className="md:col-span-2">

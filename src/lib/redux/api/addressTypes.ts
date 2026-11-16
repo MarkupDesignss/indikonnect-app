@@ -10,6 +10,8 @@ export interface Address {
   city: string;
   state: string;
   postcode: string;
+  post_office: string;          // ✅ new
+  billing_post_office: string;  // ✅ new
   country: string;
   is_default: number; // 0 or 1 from API
   is_billing: number; // 0 or 1 from API
@@ -48,6 +50,8 @@ export interface CreateAddressRequest {
   city: string;
   state: string;
   postcode: string;
+  post_office: string;          // ✅ new
+  billing_post_office: string;  // ✅ new
   country: string;
   is_default?: boolean;
   is_billing?: boolean;
@@ -71,7 +75,6 @@ export interface DeleteAddressResponse {
   message: string;
 }
 
-
 // src/lib/redux/api/addressTypes.ts
 
 export const denormalizeAddress = (address: any): any => {
@@ -81,22 +84,23 @@ export const denormalizeAddress = (address: any): any => {
   }
 
   const result: any = { ...address };
-  
+
   // ✅ Safe check for is_default
   if (address.is_default !== undefined && address.is_default !== null) {
     result.is_default = address.is_default ? 1 : 0;
   }
-  
+
   // ✅ Safe check for is_billing
   if (address.is_billing !== undefined && address.is_billing !== null) {
     result.is_billing = address.is_billing ? 1 : 0;
   }
-  
+
   // ✅ Safe check for is_delivery
   if (address.is_delivery !== undefined && address.is_delivery !== null) {
     result.is_delivery = address.is_delivery ? 1 : 0;
   }
-  
+
+  // post_office & billing_post_office are passed through as-is via { ...address }
   return result;
 };
 
@@ -111,5 +115,6 @@ export const normalizeAddress = (address: any): NormalizedAddress => {
     is_default: address.is_default === 1 || address.is_default === true,
     is_billing: address.is_billing === 1 || address.is_billing === true,
     is_delivery: address.is_delivery === 1 || address.is_delivery === true,
+    // post_office & billing_post_office are carried over via { ...address }
   };
 };
