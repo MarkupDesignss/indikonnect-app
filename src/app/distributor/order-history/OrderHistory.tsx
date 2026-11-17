@@ -223,9 +223,16 @@ function flattenOrderItems(rows: unknown[]): OrderLineItem[] {
         (item.order_reference != null && item.order_reference !== reference)) return [];
       // Keep order-wide fields available for order-level breakup and payment.
       // Item flags, credit notes and shipping history must override parent defaults.
+      // A parent invoice must not be copied to every product in a partial shipment.
+      const parentInvoice = isRecord(parent.invoice) ? parent.invoice : null;
+      const lineInvoice = Object.prototype.hasOwnProperty.call(item, "invoice")
+        ? item.invoice
+        : parentInvoice && positiveId(parentInvoice.order_line_id) === lineId
+          ? parentInvoice
+          : null;
       return [{
         ...parent, ...item, order_id: orderId, order_reference: reference,
-        line_id: lineId, order_line_id: lineId
+        line_id: lineId, order_line_id: lineId, invoice: lineInvoice,
       } as unknown as OrderLineItem];
     });
   });
@@ -719,6 +726,10 @@ function canShowInvoice(order: OrderLineItem): boolean {
   const status = normalizeStatus(order.delivery_status);
 
   const INVOICE_ELIGIBLE_STATUSES = [
+    "dispatched",
+    "shipped",
+    "in_transit",
+    "out_for_delivery",
     "delivered",
     "partial_delivered",
     "return_pending",
@@ -737,7 +748,7 @@ function canShowInvoice(order: OrderLineItem): boolean {
     return false;
   }
 
-  return !!order.invoice;
+  return !!order.invoice?.invoice_number;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -1416,8 +1427,8 @@ const OrderImageGallery = ({
                 key={image.id || `${image.image_url}-${index}`}
                 onClick={() => setActiveIndex(index)}
                 className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-[7px] border bg-white transition ${activeIndex === index
-                    ? "border-[#0E1B3D] ring-2 ring-[#0E1B3D]/10"
-                    : "border-[#E4E4E2] hover:border-[#BDBDBA]"
+                  ? "border-[#0E1B3D] ring-2 ring-[#0E1B3D]/10"
+                  : "border-[#E4E4E2] hover:border-[#BDBDBA]"
                   }`}
               >
                 <Image
@@ -2780,8 +2791,8 @@ const ReviewModal = ({
                   >
                     <Star
                       className={`h-8 w-8 sm:h-9 sm:w-9 ${star <= (hoverRating || rating)
-                          ? "fill-[#171717] text-[#171717]"
-                          : "fill-[#F1F1F0] text-[#D7D7D5]"
+                        ? "fill-[#171717] text-[#171717]"
+                        : "fill-[#F1F1F0] text-[#D7D7D5]"
                         }`}
                     />
                   </motion.button>
@@ -2932,11 +2943,11 @@ const ReviewModal = ({
                 reviewText.trim().length < 10
               }
               className={`flex items-center gap-1.5 rounded-[6px] border px-4 py-2 text-[11px] font-medium ${isSubmitting ||
-                  isLoading ||
-                  rating === 0 ||
-                  reviewText.trim().length < 10
-                  ? "cursor-not-allowed border-[#D7D7D5] bg-[#F1F1F0] text-[#999999]"
-                  : "border-[#111111] bg-[#111111] text-white hover:bg-[#292929]"
+                isLoading ||
+                rating === 0 ||
+                reviewText.trim().length < 10
+                ? "cursor-not-allowed border-[#D7D7D5] bg-[#F1F1F0] text-[#999999]"
+                : "border-[#111111] bg-[#111111] text-white hover:bg-[#292929]"
                 }`}
             >
               {isSubmitting || isLoading ? (
@@ -3071,8 +3082,8 @@ const ViewReviewModal = ({ isOpen, onClose, order }: ViewReviewModalProps) => {
               <Star
                 key={star}
                 className={`h-8 w-8 sm:h-9 sm:w-9 ${star <= rating
-                    ? "fill-[#B8935A] text-[#B8935A]"
-                    : "fill-[#F1F1F0] text-[#D7D7D5]"
+                  ? "fill-[#B8935A] text-[#B8935A]"
+                  : "fill-[#F1F1F0] text-[#D7D7D5]"
                   }`}
               />
             ))}
@@ -3383,8 +3394,8 @@ const ReturnModal = ({
         {till && windowInfo && (
           <div
             className={`mb-3 flex items-center gap-1.5 rounded-[6px] border px-3 py-2 text-[10px] font-medium ${windowInfo.state === "open"
-                ? "border-[#CFE0D4] bg-[#F1F7F3] text-[#3F765A]"
-                : "border-[#F0CFCF] bg-[#FDF2F2] text-[#B24C4C]"
+              ? "border-[#CFE0D4] bg-[#F1F7F3] text-[#3F765A]"
+              : "border-[#F0CFCF] bg-[#FDF2F2] text-[#B24C4C]"
               }`}
           >
             <Clock size={12} />
@@ -3411,22 +3422,22 @@ const ReturnModal = ({
               onClick={() => setReturnMethod("doorstep")}
               disabled={isSubmitting || isUploading}
               className={`flex flex-col items-start gap-1.5 rounded-[8px] border-2 p-2.5 text-left transition-all ${returnMethod === "doorstep"
-                  ? "border-[#EA580C] bg-[#FFF7ED]"
-                  : "border-[#E4E4E2] bg-white hover:border-[#D7D7D5]"
+                ? "border-[#EA580C] bg-[#FFF7ED]"
+                : "border-[#E4E4E2] bg-white hover:border-[#D7D7D5]"
                 } disabled:cursor-not-allowed disabled:opacity-60`}
             >
               <div className="flex w-full items-center justify-between">
                 <Home
                   className={`h-4 w-4 ${returnMethod === "doorstep"
-                      ? "text-[#EA580C]"
-                      : "text-[#999999]"
+                    ? "text-[#EA580C]"
+                    : "text-[#999999]"
                     }`}
                 />
 
                 <div
                   className={`h-3.5 w-3.5 rounded-full border-2 ${returnMethod === "doorstep"
-                      ? "border-[#EA580C] bg-[#EA580C]"
-                      : "border-[#D7D7D5]"
+                    ? "border-[#EA580C] bg-[#EA580C]"
+                    : "border-[#D7D7D5]"
                     }`}
                 >
                   {returnMethod === "doorstep" && (
@@ -3438,8 +3449,8 @@ const ReturnModal = ({
               <div>
                 <p
                   className={`text-[11px] font-semibold ${returnMethod === "doorstep"
-                      ? "text-[#C2410C]"
-                      : "text-[#171717]"
+                    ? "text-[#C2410C]"
+                    : "text-[#171717]"
                     }`}
                 >
                   Doorstep
@@ -3457,22 +3468,22 @@ const ReturnModal = ({
               onClick={() => setReturnMethod("courier")}
               disabled={isSubmitting || isUploading}
               className={`flex flex-col items-start gap-1.5 rounded-[8px] border-2 p-2.5 text-left transition-all ${returnMethod === "courier"
-                  ? "border-[#EA580C] bg-[#FFF7ED]"
-                  : "border-[#E4E4E2] bg-white hover:border-[#D7D7D5]"
+                ? "border-[#EA580C] bg-[#FFF7ED]"
+                : "border-[#E4E4E2] bg-white hover:border-[#D7D7D5]"
                 } disabled:cursor-not-allowed disabled:opacity-60`}
             >
               <div className="flex w-full items-center justify-between">
                 <Truck
                   className={`h-4 w-4 ${returnMethod === "courier"
-                      ? "text-[#EA580C]"
-                      : "text-[#999999]"
+                    ? "text-[#EA580C]"
+                    : "text-[#999999]"
                     }`}
                 />
 
                 <div
                   className={`h-3.5 w-3.5 rounded-full border-2 ${returnMethod === "courier"
-                      ? "border-[#EA580C] bg-[#EA580C]"
-                      : "border-[#D7D7D5]"
+                    ? "border-[#EA580C] bg-[#EA580C]"
+                    : "border-[#D7D7D5]"
                     }`}
                 >
                   {returnMethod === "courier" && (
@@ -3484,8 +3495,8 @@ const ReturnModal = ({
               <div>
                 <p
                   className={`text-[11px] font-semibold ${returnMethod === "courier"
-                      ? "text-[#C2410C]"
-                      : "text-[#171717]"
+                    ? "text-[#C2410C]"
+                    : "text-[#171717]"
                     }`}
                 >
                   Courier
@@ -3706,8 +3717,8 @@ const ReturnModal = ({
             onClick={handleSubmit}
             disabled={!canSubmit}
             className={`flex items-center gap-1.5 rounded-[6px] border px-4 py-2 text-[11px] font-medium ${canSubmit
-                ? "border-[#EA580C] bg-[#EA580C] text-white hover:bg-[#C2410C]"
-                : "cursor-not-allowed border-[#D7D7D5] bg-[#F1F1F0] text-[#999999]"
+              ? "border-[#EA580C] bg-[#EA580C] text-white hover:bg-[#C2410C]"
+              : "cursor-not-allowed border-[#D7D7D5] bg-[#F1F1F0] text-[#999999]"
               }`}
           >
             {isSubmitting || isUploading ? (
@@ -4248,6 +4259,8 @@ interface ActionDropdownProps {
   onCancelReturn: (returnId: number) => void;
   onWithdrawCancel: () => void;
   onWithdrawReturn: () => void;
+  onInvoiceDownload: () => void;
+  isInvoiceLoading?: boolean;
 }
 
 const ActionDropdown = ({
@@ -4260,6 +4273,8 @@ const ActionDropdown = ({
   onCancelReturn,
   onWithdrawCancel,
   onWithdrawReturn,
+  onInvoiceDownload,
+  isInvoiceLoading = false,
 }: ActionDropdownProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -4412,6 +4427,22 @@ const ActionDropdown = ({
             <span>Track Shipment</span>
           </button>
 
+          {canShowInvoice(order) && (
+            <button
+              type="button"
+              disabled={isInvoiceLoading}
+              onClick={() => handleAction(onInvoiceDownload)}
+              className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#344054] hover:bg-[#f7f8fa] disabled:opacity-50"
+            >
+              {isInvoiceLoading ? (
+                <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
+              ) : (
+                <FileText className="h-3.5 w-3.5 shrink-0 text-[#3955A6]" />
+              )}
+              <span>{isInvoiceLoading ? "Loading invoice..." : "Download Invoice"}</span>
+            </button>
+          )}
+
           {canReview && (
             <button
               onClick={() =>
@@ -4421,8 +4452,8 @@ const ActionDropdown = ({
             >
               <Star
                 className={`h-3.5 w-3.5 flex-shrink-0 ${hasReview
-                    ? "fill-[#B8935A] text-[#B8935A]"
-                    : "text-[#B8935A]"
+                  ? "fill-[#B8935A] text-[#B8935A]"
+                  : "text-[#B8935A]"
                   }`}
               />
 
@@ -4488,8 +4519,8 @@ const ActionDropdown = ({
         onClick={handleToggle}
         aria-label="Actions"
         className={`flex h-8 w-8 items-center justify-center rounded-[6px] border transition-colors ${isOpen
-            ? "border-[#0E1B3D]/30 bg-[#f7f8fa] text-[#0E1B3D]"
-            : "border-[#e5e9ef] bg-white text-[#344054] hover:bg-[#f7f8fa]"
+          ? "border-[#0E1B3D]/30 bg-[#f7f8fa] text-[#0E1B3D]"
+          : "border-[#e5e9ef] bg-white text-[#344054] hover:bg-[#f7f8fa]"
           }`}
       >
         <MoreVertical size={16} />
@@ -4510,7 +4541,7 @@ interface OrderDetailsProps {
   onTrack: () => void;
   onViewBreakup: () => void;
   onReturn: (order: OrderLineItem) => void;
-  onInvoiceDownload: (orderId: number) => void;
+  onInvoiceDownload: (order: OrderLineItem) => void;
   isInvoiceLoading?: boolean;
 }
 
@@ -4685,7 +4716,7 @@ const OrderDetails = ({
               {canShowInvoice(order) && (
                 <button
                   type="button"
-                  onClick={() => onInvoiceDownload(order.order_id)}
+                  onClick={() => onInvoiceDownload(order)}
                   disabled={isInvoiceLoading}
                   className="inline-flex items-center gap-1.5 rounded-[7px] border border-[#D7D7D5] bg-white px-3.5 py-2 text-[11px] font-semibold text-[#171717] transition-colors hover:bg-[#FAFAF9] disabled:cursor-not-allowed disabled:opacity-50"
                 >
@@ -4739,7 +4770,7 @@ interface MobileOrderCardProps {
   onCancelReturn: (returnId: number) => void;
   onWithdrawCancel: () => void;
   onWithdrawReturn: () => void;
-  onInvoiceDownload: (orderId: number) => void;
+  onInvoiceDownload: (order: OrderLineItem) => void;
   isInvoiceLoading?: boolean;
   now: number;
   retryBusy: boolean;
@@ -4825,6 +4856,8 @@ const MobileOrderCard = ({
                 onCancelReturn={onCancelReturn}
                 onWithdrawCancel={onWithdrawCancel}
                 onWithdrawReturn={onWithdrawReturn}
+                onInvoiceDownload={() => onInvoiceDownload(order)}
+                isInvoiceLoading={isInvoiceLoading}
               />
             </div>
 
@@ -4876,8 +4909,8 @@ const MobileOrderCard = ({
             {returnWindow && returnWindow.state !== "completed" && (
               <div
                 className={`mt-2.5 flex items-center gap-1.5 rounded-[6px] border px-2.5 py-2 text-[9.5px] font-medium ${returnWindow.state === "open"
-                    ? "border-[#CFE0D4] bg-[#F1F7F3] text-[#3F765A]"
-                    : "border-[#F0CFCF] bg-[#FDF2F2] text-[#B24C4C]"
+                  ? "border-[#CFE0D4] bg-[#F1F7F3] text-[#3F765A]"
+                  : "border-[#F0CFCF] bg-[#FDF2F2] text-[#B24C4C]"
                   }`}
               >
                 <Clock size={11} />
@@ -5102,6 +5135,12 @@ export default function OrderHistory() {
     }
     return "Unable to load India Post tracking right now. Please retry.";
   })();
+
+  useEffect(() => {
+    if (trackingModalOpen && verifiedTracking && !isIndiaPostTracking) {
+      void refetch();
+    }
+  }, [trackingModalOpen, verifiedTracking, isIndiaPostTracking, refetch]);
 
   const rawOrderRows = useMemo((): unknown[] => {
     if (Array.isArray(data?.data)) return data.data;
@@ -5682,7 +5721,11 @@ export default function OrderHistory() {
     }
   };
 
-  const handleInvoiceDownload = async (orderId: number) => {
+  const handleInvoiceDownload = async (order: OrderLineItem) => {
+    if (!canShowInvoice(order)) return;
+    const orderId = order.order_id;
+    const expectedInvoiceNumber = String(order.invoice.invoice_number).trim();
+    if (invoiceLoadingOrders[orderId]) return;
     setInvoiceLoadingOrders((prev) => ({
       ...prev,
       [orderId]: true,
@@ -5692,11 +5735,20 @@ export default function OrderHistory() {
       const result = await getInvoice(orderId).unwrap();
 
       if (result?.data) {
+        // This existing endpoint is order-ID based. Do not download another
+        // product's invoice if it returns a different invoice for this order.
+        const payload: any = result.data;
+        const invoice = payload.invoice ?? payload;
+        const actualInvoiceNumber = String(invoice?.invoice_number ?? "").trim();
+        if (actualInvoiceNumber !== expectedInvoiceNumber ||
+          (invoice?.order_line_id != null && Number(invoice.order_line_id) !== Number(order.line_id))) {
+          throw new Error("The correct invoice for this item was not returned. Please contact support.");
+        }
         await generateInvoicePDF(result.data);
 
         dispatch(
           showToast({
-            message: "Invoice generated successfully!",
+            message: "Invoice downloaded successfully!",
             type: "success",
           }),
         );
@@ -5830,9 +5882,11 @@ export default function OrderHistory() {
     setTrackingModalOpen(true);
   };
 
-  const refreshIndiaPostTracking = () => {
+  const refreshIndiaPostTracking = async () => {
     if (trackingModalOpen && trackingLookupValid && !isIndiaPostTracking) {
-      void refetchIndiaPostTracking();
+      const result = await refetchIndiaPostTracking();
+      // Successful tracking refreshes orders through the effect above.
+      if (result.isError) await refetch();
     }
   };
 
@@ -6344,6 +6398,8 @@ export default function OrderHistory() {
                                 onWithdrawReturn={() =>
                                   openWithdrawReturn(order)
                                 }
+                                onInvoiceDownload={() => handleInvoiceDownload(order)}
+                                isInvoiceLoading={!!invoiceLoadingOrders[order.order_id]}
                               />
                             </div>
                           </div>
@@ -6410,8 +6466,8 @@ export default function OrderHistory() {
                   key={p}
                   onClick={() => setPage(p)}
                   className={`flex h-7 w-7 items-center justify-center rounded-[6px] text-[12px] font-semibold ${currentPage === p
-                      ? "text-white"
-                      : "text-[#667085] hover:bg-[#f2f4f7] hover:text-[#0E1B3D]"
+                    ? "text-white"
+                    : "text-[#667085] hover:bg-[#f2f4f7] hover:text-[#0E1B3D]"
                     }`}
                   style={
                     currentPage === p

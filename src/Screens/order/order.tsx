@@ -1266,7 +1266,9 @@ export default function OrdersPage() {
     data: ordersData,
     isLoading: ordersLoading,
     refetch,
-  } = useGetMyOrdersQuery();
+  } = useGetMyOrdersQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+  });
 
   const { data: statusesData, isLoading: statusesLoading } =
     useGetOrderStatusesQuery();
@@ -1431,16 +1433,24 @@ export default function OrdersPage() {
     return status === "delivered" && !order.is_reviewed && !hasExistingReview;
   };
 
+  // The invoice is issued by Laravel; the frontend only enables download.
   const canShowInvoice = (order: any) => {
-    const status = normalizeStatus(order.delivery_status);
+    const status = normalizeStatus(order?.delivery_status);
 
     return (
-      (status === "delivered" ||
-        status === "return_pending" ||
-        status === "return_approved" ||
-        status === "returned" ||
-        status === "refunded") &&
-      !!order.invoice
+      [
+        "dispatched",
+        "shipped",
+        "in_transit",
+        "out_for_delivery",
+        "delivered",
+        "return_initiated",
+        "return_pending",
+        "return_approved",
+        "return_rejected",
+        "returned",
+        "refunded",
+      ].includes(status) && !!order?.invoice?.invoice_number
     );
   };
 
@@ -1800,7 +1810,7 @@ export default function OrdersPage() {
 
         dispatch(
           showToast({
-            message: "Invoice generated successfully!",
+            message: "Invoice downloaded successfully!",
             type: "success",
           }),
         );
@@ -1903,11 +1913,13 @@ export default function OrdersPage() {
     }
   };
 
-  const refreshIndiaPostTracking = () => {
+  const refreshIndiaPostTracking = async () => {
     const identifier = getTrackingIdentifier(selectedOrderForTracking);
     if (identifier !== null) {
-      void loadIndiaPostTracking(identifier, false);
+      await loadIndiaPostTracking(identifier, false);
     }
+    // Fetch authoritative invoice and order status after checking tracking.
+    await refetch();
   };
 
   /* ============================================================
@@ -2085,7 +2097,6 @@ export default function OrdersPage() {
             animate="visible"
             className="space-y-5"
           >
-           
             <motion.div
               variants={itemVariants}
               className="flex flex-col items-stretch justify-between gap-3 rounded-[14px] border border-[#E4EAF4] bg-white p-3.5 sm:p-4 md:flex-row md:items-center"
@@ -2283,8 +2294,7 @@ export default function OrdersPage() {
                       className={`overflow-visible rounded-[16px] border bg-white shadow-[0_5px_22px_rgba(20,35,65,0.045)] ${
                         orderStatus === "cancelled"
                           ? "border-[#F0CFCF]"
-                          : orderStatus === "refunded" ||
-                              creditNotes.length > 0
+                          : orderStatus === "refunded" || creditNotes.length > 0
                             ? "border-[#CFE0D4]"
                             : "border-[#E4EAF4]"
                       }`}
@@ -2416,9 +2426,7 @@ export default function OrdersPage() {
                             lineActions.push({
                               key: "review",
                               label: "Write Review",
-                              icon: (
-                                <Star className="h-4 w-4 text-[#B8935A]" />
-                              ),
+                              icon: <Star className="h-4 w-4 text-[#B8935A]" />,
                               onClick: () => openReviewModal(line),
                             });
                           }
@@ -2624,7 +2632,10 @@ export default function OrdersPage() {
                             initial={{ height: 0, opacity: 0 }}
                             animate={{ height: "auto", opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                            transition={{
+                              duration: 0.3,
+                              ease: [0.22, 1, 0.36, 1],
+                            }}
                             className="overflow-hidden rounded-b-[16px] border-t border-[#E6E6E4] bg-[#FAFBFC]"
                           >
                             <div className="space-y-4 p-4 sm:p-5">
