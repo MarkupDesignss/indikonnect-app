@@ -107,7 +107,6 @@ interface OrderLineItem {
 
   line_id: number;
   product_id: number;
-  item_reference_id?: string;
 
   product_name: string;
   product_code: string;
@@ -197,6 +196,15 @@ interface OrderLineItem {
 interface ApiStatusOption {
   value: string;
   label: string;
+}
+
+interface OrderGroup {
+  key: string;
+  representative: OrderLineItem;
+  displayOrder: OrderLineItem;
+  lines: OrderLineItem[];
+  quantity: number;
+  total: number;
 }
 
 /* ========================================================================== */
@@ -1550,7 +1558,6 @@ const TrackingModal = ({
             </h3>
             <p className="mt-0.5 truncate text-[10px] text-slate-500">
               {order.order_reference}
-              {order.line_id ? ` · Item #${order.line_id}` : ""}
             </p>
           </div>
         </div>
@@ -2040,10 +2047,6 @@ const OrderBreakupModal = ({
                       <h5 className="text-[12.5px] font-semibold leading-5 text-[#202B3E]">
                         {line.product_name}
                       </h5>
-                      <p className="mt-0.5 break-all text-[10px] text-[#939CAC]">
-                        {line.product_code} ·{" "}
-                        {line.item_reference_id ?? `Line #${line.line_id}`}
-                      </p>
                       <span className="mt-1.5 inline-flex rounded-md bg-[#F0F4FA] px-2 py-0.5 text-[10px] font-semibold text-[#45627E]">
                         {formatStatusLabel(line.delivery_status)}
                       </span>
@@ -2256,9 +2259,6 @@ const OrderBreakupModal = ({
                   <h5 className="text-[12px] font-semibold text-[#1B293E]">
                     {line.product_name}
                   </h5>
-                  <span className="text-[10px] text-[#7E8C9B]">
-                    Line #{line.line_id}
-                  </span>
                 </div>
                 <div className="grid gap-x-6 sm:grid-cols-2">
                   <div>
@@ -2644,11 +2644,6 @@ const ReviewModal = ({
 
           <p className="mt-1 text-[10px] text-black sm:text-[11px]">
             Order: {order?.order_reference || `#${order?.order_id}`}
-            {order?.line_id && (
-              <span className="ml-1 text-[#AAAAAA]">
-                • Item #{order.line_id}
-              </span>
-            )}
           </p>
         </div>
 
@@ -2970,11 +2965,6 @@ const ViewReviewModal = ({ isOpen, onClose, order }: ViewReviewModalProps) => {
 
           <p className="mt-1 text-[10px] text-black sm:text-[11px]">
             Order: {order.order_reference}
-            {order.line_id && (
-              <span className="ml-1 text-[#AAAAAA]">
-                • Item #{order.line_id}
-              </span>
-            )}
           </p>
         </div>
 
@@ -4205,6 +4195,7 @@ const WithdrawModal = ({
 
 interface ActionDropdownProps {
   order: OrderLineItem;
+  mode?: "all" | "order" | "item";
   onReview: () => void;
   onViewReview: () => void;
   onReturn: () => void;
@@ -4213,10 +4204,22 @@ interface ActionDropdownProps {
   onCancelReturn: (returnId: number) => void;
   onWithdrawCancel: () => void;
   onWithdrawReturn: () => void;
+  onViewProduct?: () => void;
 }
+
+interface MenuAction {
+  key: string;
+  label: string;
+  icon: React.ReactNode;
+  onClick: () => void;
+  danger?: boolean;
+}
+
+const MAX_Z = 2147483647;
 
 const ActionDropdown = ({
   order,
+  mode = "all",
   onReview,
   onViewReview,
   onReturn,
@@ -4224,239 +4227,302 @@ const ActionDropdown = ({
   onTrack,
   onCancelReturn,
   onWithdrawCancel,
-  onWithdrawReturn,
+  onViewProduct,
 }: ActionDropdownProps) => {
   const [isOpen, setIsOpen] = useState(false);
-
+  const [isMobile, setIsMobile] = useState(false);
   const [coords, setCoords] = useState({
     top: 0,
+    bottom: 0,
     left: 0,
-    width: 0,
     openUp: false,
   });
 
   const buttonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const MENU_WIDTH = 180;
-  const MENU_OFFSET_X = 12;
+  const MENU_WIDTH = 200;
+
+  const deliveryStatus = normalizeStatus(order.delivery_status);
+  const orderStatus = normalizeStatus(order.order_status);
+  const hasReview = !!order.is_reviewed;
+  const canReview =
+    deliveryStatus === "delivered" || orderStatus === "delivered";
+  const canReturn = canInitiateReturn(order);
+  const canCancel = canCancelOrder(order);
+  const canWithdrawCancel = canWithdrawCancelOrder(order);
+  const cancellableReturn = findCancellableReturn(order);
+
+  // Build the list of actions first, so the menu is never rendered empty.
+  const actions: MenuAction[] = [];
+
+  if (mode !== "item") {
+    actions.push({
+      key: "track",
+      label: "Track Order",
+      icon: <Truck className="h-4 w-4" style={{ color: EMERALD }} />,
+      onClick: onTrack,
+    });
+  }
+
+  if (mode === "item" && onViewProduct) {
+    actions.push({
+      key: "view-product",
+      label: "View Product",
+      icon: <ShoppingBag className="h-4 w-4 text-[#3955A6]" />,
+      onClick: onViewProduct,
+    });
+  }
+
+  if (mode !== "order" && canReview) {
+    actions.push({
+      key: "review",
+      label: hasReview ? "View Review" : "Write Review",
+      icon: (
+        <Star
+          className={`h-4 w-4 ${
+            hasReview ? "fill-[#B8935A] text-[#B8935A]" : "text-[#B8935A]"
+          }`}
+        />
+      ),
+      onClick: hasReview ? onViewReview : onReview,
+    });
+  }
+
+  if (mode !== "order" && canReturn) {
+    actions.push({
+      key: "return",
+      label: "Return Item",
+      icon: <RotateCcw className="h-4 w-4 text-[#EA580C]" />,
+      onClick: onReturn,
+    });
+  }
+
+  if (mode !== "order" && cancellableReturn) {
+    actions.push({
+      key: "withdraw-return",
+      label: "Withdraw Return Request",
+      icon: <X className="h-4 w-4" />,
+      onClick: () => onCancelReturn(cancellableReturn.returnId),
+      danger: true,
+    });
+  }
+
+  if (mode !== "item" && canCancel) {
+    actions.push({
+      key: "cancel",
+      label: "Cancel Order",
+      icon: <X className="h-4 w-4" />,
+      onClick: onCancel,
+      danger: true,
+    });
+  }
+
+  if (mode !== "item" && canWithdrawCancel) {
+    actions.push({
+      key: "withdraw-cancel",
+      label: "Withdraw Cancel Request",
+      icon: <Undo2 className="h-4 w-4" />,
+      onClick: onWithdrawCancel,
+      danger: true,
+    });
+  }
+
+  const ITEM_HEIGHT = 44;
+  const menuHeight = Math.max(actions.length, 1) * ITEM_HEIGHT + 8;
 
   const updateCoords = () => {
-    if (!buttonRef.current) {
-      return;
-    }
+    if (!buttonRef.current) return;
+
+    const mobile = window.innerWidth < 640;
+    setIsMobile(mobile);
 
     const rect = buttonRef.current.getBoundingClientRect();
-
-    const menuHeight = 360;
-
     const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    const openUp = spaceBelow < menuHeight + 16 && spaceAbove > spaceBelow;
 
-    const openUp = spaceBelow < menuHeight + 20;
-
-    let left = rect.right + MENU_OFFSET_X - MENU_WIDTH;
-
+    let left = rect.right - MENU_WIDTH;
     if (left + MENU_WIDTH > window.innerWidth - 8) {
       left = window.innerWidth - MENU_WIDTH - 8;
     }
-
-    if (left < 8) {
-      left = 8;
-    }
+    if (left < 8) left = 8;
 
     setCoords({
-      top: openUp ? rect.top - 6 : rect.bottom + 6,
+      top: rect.bottom + 6,
+      bottom: window.innerHeight - rect.top + 6,
       left,
-      width: MENU_WIDTH,
       openUp,
     });
   };
 
-  const handleToggle = () => {
-    if (!isOpen) {
-      updateCoords();
-    }
-
-    setIsOpen((value) => !value);
+  const handleToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!isOpen) updateCoords();
+    setIsOpen((v) => !v);
   };
 
   useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
+    if (!isOpen) return;
 
-    const handler = () => updateCoords();
+    const onScrollOrResize = () => updateCoords();
+    window.addEventListener("scroll", onScrollOrResize, true);
+    window.addEventListener("resize", onScrollOrResize);
 
-    window.addEventListener("scroll", handler, true);
-    window.addEventListener("resize", handler);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
 
     return () => {
-      window.removeEventListener("scroll", handler, true);
-      window.removeEventListener("resize", handler);
+      window.removeEventListener("scroll", onScrollOrResize, true);
+      window.removeEventListener("resize", onScrollOrResize);
+      document.removeEventListener("keydown", onKey);
     };
-  }, [isOpen]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, menuHeight]);
 
   useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
+    if (!isOpen) return;
 
-    const handler = (e: MouseEvent) => {
+    const handler = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as Node;
       if (
-        buttonRef.current?.contains(e.target as Node) ||
-        menuRef.current?.contains(e.target as Node)
+        buttonRef.current?.contains(target) ||
+        menuRef.current?.contains(target)
       ) {
         return;
       }
-
       setIsOpen(false);
     };
 
     document.addEventListener("mousedown", handler);
-
-    return () => document.removeEventListener("mousedown", handler);
+    document.addEventListener("touchstart", handler);
+    return () => {
+      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("touchstart", handler);
+    };
   }, [isOpen]);
 
-  const deliveryStatus = normalizeStatus(order.delivery_status);
-  const orderStatus = normalizeStatus(order.order_status);
-
-  const hasReview = !!order.is_reviewed;
-
-  const canReview =
-    deliveryStatus === "delivered" || orderStatus === "delivered";
-
-  const canReturn = canInitiateReturn(order);
-  const canCancel = canCancelOrder(order);
-
-  const canWithdrawCancel = canWithdrawCancelOrder(order);
-
-  const cancellableReturn = findCancellableReturn(order);
-  const canCancelReturn = !!cancellableReturn;
+  // Lock body scroll while the mobile bottom sheet is open.
+  useEffect(() => {
+    if (!isOpen || !isMobile) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [isOpen, isMobile]);
 
   const handleAction = (action: () => void) => {
-    action();
     setIsOpen(false);
+    action();
   };
 
-  const menu = isOpen
-    ? createPortal(
-        <AnimatePresence>
-          <motion.div
-            ref={menuRef}
-            initial={{
-              opacity: 0,
-              y: coords.openUp ? 6 : -6,
-              scale: 0.98,
-            }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{
-              opacity: 0,
-              y: coords.openUp ? 6 : -6,
-              scale: 0.98,
-            }}
-            transition={{ duration: 0.15 }}
-            style={{
-              position: "fixed",
-              top: coords.top,
-              left: coords.left,
-              width: coords.width,
-              transform: coords.openUp ? "translateY(-100%)" : "translateY(0)",
-              zIndex: 9999,
-            }}
-            className="overflow-hidden rounded-[8px] border border-[#e5e9ef] bg-white shadow-[0_8px_24px_rgba(16,24,40,0.15)]"
+  const renderActions = () =>
+    actions.length === 0 ? (
+      <div className="px-4 py-3 text-[12px] text-[#98a2b3]">
+        No actions available
+      </div>
+    ) : (
+      actions.map((a) => (
+        <button
+          key={a.key}
+          type="button"
+          onClick={() => handleAction(a.onClick)}
+          className={`flex w-full items-center gap-3 px-4 text-left text-[13px] font-medium transition-colors ${
+            a.danger
+              ? "text-[#DC2626] hover:bg-[#FEF2F2]"
+              : "text-[#344054] hover:bg-[#F5F7FA]"
+          }`}
+          style={{ height: ITEM_HEIGHT }}
+        >
+          <span className="flex h-4 w-4 shrink-0 items-center justify-center">
+            {a.icon}
+          </span>
+          <span className="truncate">{a.label}</span>
+        </button>
+      ))
+    );
+
+  const menu =
+    isOpen && typeof document !== "undefined"
+      ? createPortal(
+          <div
+            className="fixed inset-0"
+            style={{ zIndex: MAX_Z, isolation: "isolate" }}
           >
-            <button
-              onClick={() => handleAction(onTrack)}
-              className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#344054] hover:bg-[#f7f8fa]"
-            >
-              <Truck
-                className="h-3.5 w-3.5 flex-shrink-0"
-                style={{ color: EMERALD }}
-              />
-
-              <span>Track Order</span>
-            </button>
-
-            {canReview && (
-              <button
-                onClick={() =>
-                  handleAction(hasReview ? onViewReview : onReview)
-                }
-                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#344054] hover:bg-[#f7f8fa]"
-              >
-                <Star
-                  className={`h-3.5 w-3.5 flex-shrink-0 ${
-                    hasReview
-                      ? "fill-[#B8935A] text-[#B8935A]"
-                      : "text-[#B8935A]"
-                  }`}
+            {isMobile ? (
+              <>
+                {/* Backdrop */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="absolute inset-0 bg-black/40"
+                  onClick={() => setIsOpen(false)}
                 />
-
-                <span>{hasReview ? "View Review" : "Write Review"}</span>
-              </button>
-            )}
-
-            {canReturn && (
-              <button
-                onClick={() => handleAction(onReturn)}
-                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#344054] hover:bg-[#f7f8fa]"
+                {/* Bottom sheet */}
+                <motion.div
+                  ref={menuRef}
+                  initial={{ y: "100%" }}
+                  animate={{ y: 0 }}
+                  transition={{ type: "tween", duration: 0.22 }}
+                  className="absolute inset-x-0 bottom-0 overflow-hidden rounded-t-[20px] bg-white pb-[max(env(safe-area-inset-bottom),12px)] shadow-[0_-12px_40px_rgba(16,24,40,0.25)]"
+                >
+                  <div className="mx-auto mt-2.5 h-1 w-10 rounded-full bg-[#D0D5DD]" />
+                  <p className="px-4 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#98a2b3]">
+                    Actions
+                  </p>
+                  <div className="py-1">{renderActions()}</div>
+                  <div className="px-4 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setIsOpen(false)}
+                      className="h-11 w-full rounded-xl border border-[#E4E7EC] bg-white text-[13px] font-semibold text-[#475467]"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </motion.div>
+              </>
+            ) : (
+              <motion.div
+                ref={menuRef}
+                initial={{ opacity: 0, scale: 0.97 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.14 }}
+                style={{
+                  position: "fixed",
+                  left: coords.left,
+                  width: MENU_WIDTH,
+                  ...(coords.openUp
+                    ? { bottom: coords.bottom }
+                    : { top: coords.top }),
+                  transformOrigin: coords.openUp ? "bottom right" : "top right",
+                }}
+                className="overflow-hidden rounded-[12px] border border-[#E4E7EC] bg-white py-1 shadow-[0_16px_40px_rgba(16,24,40,0.22)]"
               >
-                <RotateCcw className="h-3.5 w-3.5 flex-shrink-0 text-[#EA580C]" />
-
-                <span>Return Item</span>
-              </button>
+                {renderActions()}
+              </motion.div>
             )}
-
-            {canCancelReturn && cancellableReturn && (
-              <button
-                onClick={() =>
-                  handleAction(() => onCancelReturn(cancellableReturn.returnId))
-                }
-                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#DC2626] hover:bg-[#FEF2F2]"
-              >
-                <X className="h-3.5 w-3.5 flex-shrink-0" />
-
-                <span>Withdraw Return Request</span>
-              </button>
-            )}
-
-            {canCancel && (
-              <button
-                onClick={() => handleAction(onCancel)}
-                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#DC2626] hover:bg-[#FEF2F2]"
-              >
-                <X className="h-3.5 w-3.5 flex-shrink-0" />
-
-                <span>Cancel Order</span>
-              </button>
-            )}
-
-            {canWithdrawCancel && (
-              <button
-                onClick={() => handleAction(onWithdrawCancel)}
-                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#DC2626] hover:bg-[#FFFBEB]"
-              >
-                <Undo2 className="h-3.5 w-3.5 flex-shrink-0" />
-
-                <span>Withdraw Cancel Request</span>
-              </button>
-            )}
-          </motion.div>
-        </AnimatePresence>,
-        document.body,
-      )
-    : null;
+          </div>,
+          document.body,
+        )
+      : null;
 
   return (
     <div className="relative">
       <button
         ref={buttonRef}
+        type="button"
         onClick={handleToggle}
         aria-label="Actions"
-        className={`flex h-8 w-8 items-center justify-center rounded-[6px] border transition-colors ${
+        aria-haspopup="menu"
+        aria-expanded={isOpen}
+        className={`flex h-9 w-9 items-center justify-center rounded-[9px] border transition-colors ${
           isOpen
-            ? "border-[#0E1B3D]/30 bg-[#f7f8fa] text-[#0E1B3D]"
-            : "border-[#e5e9ef] bg-white text-[#344054] hover:bg-[#f7f8fa]"
+            ? "border-[#0E1B3D]/30 bg-[#F2F4F7] text-[#0E1B3D]"
+            : "border-[#E4E7EC] bg-white text-[#344054] hover:bg-[#F7F8FA]"
         }`}
       >
         <MoreVertical size={16} />
@@ -4509,21 +4575,12 @@ const OrderDetails = ({
       initial={{ opacity: 0, height: 0 }}
       animate={{ opacity: 1, height: "auto" }}
       exit={{ opacity: 0, height: 0 }}
-      transition={{ duration: 0.25, ease: "easeInOut" }}
+      transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
       className="overflow-hidden border-b border-[#e7e9ee] bg-[#fafbfc]"
     >
       <div className="px-4 py-4 sm:px-6 sm:py-5">
         <div className="mb-5 overflow-hidden rounded-[11px] border border-[#e1e5eb] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.03)]">
           <div className="grid grid-cols-1 gap-x-8 gap-y-5 px-4 py-5 sm:grid-cols-2 sm:px-5 md:grid-cols-3">
-            <div>
-              <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#8a92a6]">
-                Item Reference
-              </p>
-              <p className="mt-1.5 truncate text-[13px] font-semibold text-[#101828]">
-                {order.item_reference_id || `#${order.line_id}`}
-              </p>
-            </div>
-
             <div>
               <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#8a92a6]">
                 Payment Status
@@ -4569,9 +4626,9 @@ const OrderDetails = ({
               </p>
               <p className="mt-1.5 text-[16px] font-bold text-[#101828]">
                 {formatCurrency(
-                  order.final_amount ??
-                    order.total_payable ??
+                  order.total_payable ??
                     order.amount_paid ??
+                    order.final_amount ??
                     0,
                 )}
               </p>
@@ -4648,7 +4705,7 @@ const OrderDetails = ({
               Track Order
             </button>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {canShowInvoice(order) && (
                 <button
                   type="button"
@@ -4777,8 +4834,6 @@ const MobileOrderCard = ({
 
                 <p className="mt-0.5 truncate text-[10.5px] text-[#98a2b3]">
                   {order.order_reference}
-                  {" • "}
-                  {order.item_reference_id || `#${order.line_id}`}
                 </p>
               </div>
 
@@ -5059,21 +5114,134 @@ export default function OrderHistory() {
     return "Unable to load India Post tracking right now. Please retry.";
   })();
 
+  // API response is order-wise: each order contains an `items` array.
+  // Normalize it to product rows internally so existing item actions can work,
+  // while the UI below always groups and renders those rows under one order.
   const orders: OrderLineItem[] = useMemo(() => {
-    if (!data?.data) {
-      return [];
-    }
+    const records = Array.isArray((data as any)?.data)
+      ? (data as any).data
+      : Array.isArray((data as any)?.data?.data)
+        ? (data as any).data.data
+        : Array.isArray((data as any)?.data?.orders)
+          ? (data as any).data.orders
+          : Array.isArray((data as any)?.orders)
+            ? (data as any).orders
+            : [];
 
-    if (Array.isArray(data.data)) {
-      return data.data;
-    }
+    return records.flatMap((record: any) => {
+      if (!Array.isArray(record?.items)) {
+        const row = { ...record };
+        delete row.item_reference_id;
+        return [row as OrderLineItem];
+      }
 
-    if (data.data.data && Array.isArray(data.data.data)) {
-      return data.data.data;
-    }
+      const { items: productItems, ...orderFields } = record;
+      return productItems.map((product: any) => {
+        const row: any = {
+          ...orderFields,
+          ...product,
+          order_id: product.order_id ?? orderFields.order_id,
+          order_reference:
+            product.order_reference ?? orderFields.order_reference,
+          order_status: product.order_status ?? orderFields.order_status,
+          order_type: product.order_type ?? orderFields.order_type,
+          order_date: product.order_date ?? orderFields.order_date,
+          confirmed_date: product.confirmed_date ?? orderFields.confirmed_date,
+          payment_gateway:
+            product.payment_gateway ?? orderFields.payment_gateway,
+          payment_status: product.payment_status ?? orderFields.payment_status,
+          gateway_transaction_id:
+            product.gateway_transaction_id ?? orderFields.gateway_transaction_id,
+          amount_paid: product.amount_paid ?? orderFields.amount_paid,
+          subtotal: product.subtotal ?? orderFields.subtotal,
+          total_gst: product.total_gst ?? orderFields.total_gst,
+          shipping_charge:
+            product.shipping_charge ?? orderFields.shipping_charge,
+          coin_redeemed: product.coin_redeemed ?? orderFields.coin_redeemed,
+          coin_redeemed_amount:
+            product.coin_redeemed_amount ?? orderFields.coin_redeemed_amount,
+          total_payable: product.total_payable ?? orderFields.total_payable,
+          tax_breakdown: product.tax_breakdown ?? orderFields.tax_breakdown,
+          shipping_method:
+            product.shipping_method ?? orderFields.shipping_method,
+          billing_address:
+            product.billing_address ?? orderFields.billing_address,
+          delivery_address:
+            product.delivery_address ?? orderFields.delivery_address,
+          user: product.user ?? orderFields.user,
+          invoice: product.invoice ?? orderFields.invoice,
+          returns: product.returns ?? orderFields.returns ?? [],
+          credit_notes:
+            product.credit_notes ?? orderFields.credit_notes ?? [],
+          images: Array.isArray(product.images) ? product.images : [],
+          primary_image:
+            product.primary_image ||
+            product.images?.find?.((image: any) => image?.is_primary)?.image_url ||
+            product.images?.[0]?.image_url ||
+            "",
+        };
 
-    return [];
+        // Never carry the backend-only item reference into the UI model.
+        delete row.item_reference_id;
+        delete row.items;
+        return row as OrderLineItem;
+      });
+    });
   }, [data]);
+
+  const orderGroups: OrderGroup[] = useMemo(() => {
+    const grouped = new Map<string, OrderLineItem[]>();
+
+    orders.forEach((line) => {
+      const key = String(line.order_id || line.order_reference || "unknown-order");
+      const current = grouped.get(key) || [];
+      current.push(line);
+      grouped.set(key, current);
+    });
+
+    return Array.from(grouped.entries()).map(([key, lines]) => {
+      const sortedLines = [...lines].sort(
+        (a, b) => Number(a.line_id || 0) - Number(b.line_id || 0),
+      );
+      const representative = sortedLines[0];
+      const apiOrderStatus = normalizeStatus(representative.order_status);
+      const displayStatus = apiOrderStatus || getOrderStatusValue(representative);
+      const displayOrder = {
+        ...representative,
+        delivery_status: displayStatus,
+        order_status: displayStatus,
+        is_cancel_return_allowed: sortedLines.every(isCancelReturnAllowed) ? 1 : 0,
+      };
+      const quantity = sortedLines.reduce(
+        (sum, line) => sum + moneyValue(line.quantity),
+        0,
+      );
+      const fallbackTotal = sortedLines.reduce((sum, line) => {
+        const lineAmount = hasAmount(line.final_amount)
+          ? moneyValue(line.final_amount)
+          : moneyValue(line.line_total) + moneyValue(line.delivery_charges);
+        return sum + lineAmount;
+      }, 0);
+      const total = hasAmount(representative.total_payable)
+        ? moneyValue(representative.total_payable)
+        : hasAmount(representative.amount_paid)
+          ? moneyValue(representative.amount_paid)
+          : fallbackTotal;
+
+      return {
+        key,
+        representative,
+        displayOrder,
+        lines: sortedLines,
+        quantity,
+        total,
+      };
+    }).sort((a, b) => {
+      const dateA = parseDate(a.representative.order_date)?.getTime() || 0;
+      const dateB = parseDate(b.representative.order_date)?.getTime() || 0;
+      return dateB - dateA;
+    });
+  }, [orders]);
 
   // ✅ NEW: Navigate to product detail page using product_slug
   const navigateToProduct = (order: OrderLineItem) => {
@@ -5214,55 +5382,49 @@ export default function OrderHistory() {
     );
   }, [apiStatusOptions, orders]);
 
-  const filteredOrders = useMemo(() => {
-    let result = orders;
+  const filteredOrderGroups = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
 
-    if (statusFilter) {
-      const selectedStatus = normalizeStatus(statusFilter);
-
-      result = result.filter((order) => {
-        const deliveryStatus = normalizeStatus(order.delivery_status);
-        const orderStatus = normalizeStatus(order.order_status);
-        const returnStatus = normalizeStatus(order.return_status);
-
-        // Selecting Payment Failed covers both backend status spellings.
-        if (
-          selectedStatus === "failed" ||
-          selectedStatus === "payment_failed"
-        ) {
+    return orderGroups.filter((group) => {
+      const statusMatches = !statusFilter || group.lines.some((order) => {
+        const selectedStatus = normalizeStatus(statusFilter);
+        if (selectedStatus === "failed" || selectedStatus === "payment_failed") {
           return isPaymentFailed(order);
         }
-
         return (
-          deliveryStatus === selectedStatus ||
-          orderStatus === selectedStatus ||
-          returnStatus === selectedStatus
+          normalizeStatus(order.delivery_status) === selectedStatus ||
+          normalizeStatus(order.order_status) === selectedStatus ||
+          normalizeStatus(order.return_status) === selectedStatus
         );
       });
-    }
 
-    if (!searchQuery.trim()) {
-      return result;
-    }
+      if (!statusMatches) return false;
+      if (!q) return true;
 
-    const q = searchQuery.toLowerCase();
+      const searchableValues = [
+        group.representative.order_reference,
+        group.representative.order_id,
+        group.representative.order_status,
+        group.representative.payment_status,
+        ...group.lines.flatMap((line) => [
+          line.product_name,
+          line.product_code,
+          line.delivery_status,
+          line.return_status,
+        ]),
+      ];
 
-    return result.filter(
-      (order) =>
-        order.order_reference?.toLowerCase().includes(q) ||
-        order.product_name?.toLowerCase().includes(q) ||
-        order.order_status?.toLowerCase().includes(q) ||
-        order.item_reference_id?.toLowerCase().includes(q) ||
-        order.delivery_status?.toLowerCase().includes(q) ||
-        order.return_status?.toLowerCase().includes(q),
-    );
-  }, [orders, searchQuery, statusFilter]);
+      return searchableValues.some((value) =>
+        String(value ?? "").toLowerCase().includes(q),
+      );
+    });
+  }, [orderGroups, searchQuery, statusFilter]);
 
   const totalRecords =
     (data as any)?.meta?.total ||
     (data as any)?.data?.total ||
     (data as any)?.total ||
-    orders.length;
+    orderGroups.length;
 
   const totalPages = Math.ceil(totalRecords / perPage) || 1;
 
@@ -5403,6 +5565,8 @@ export default function OrderHistory() {
           returnData.return_method === "courier"
             ? returnData.tracking_id?.trim()
             : undefined,
+        // The order is identified by order_reference. order_line_id only tells
+        // the API which product inside this order is being returned.
         items: [
           {
             order_line_id: selectedOrder.line_id,
@@ -5462,26 +5626,20 @@ export default function OrderHistory() {
       // ✅ NEW: hard block if API says not allowed
       if (!isCancelReturnAllowed(selectedOrder)) {
         throw new Error(
-          "Cancellation is not allowed for this item. Please contact support.",
+          "Cancellation is not allowed for this order. Please contact support.",
         );
       }
 
-      const orderReference = selectedOrder.order_reference;
-      const orderLineId = selectedOrder.line_id;
+      const orderReference = String(selectedOrder.order_reference || "").trim();
 
       if (!orderReference) {
         throw new Error("Order reference is missing.");
       }
 
-      if (!orderLineId) {
-        throw new Error("Order line ID is missing.");
-      }
-
       const response = await cancelOrder({
         orderReference,
-        orderLineId,
         reason,
-      }).unwrap();
+      } as any).unwrap();
 
       dispatch(
         showToast({
@@ -5567,10 +5725,12 @@ export default function OrderHistory() {
     setIsUploading(true);
 
     try {
+      const orderReference = String(selectedOrder.order_reference || "").trim();
+      if (!orderReference) throw new Error("Order reference is missing.");
+
       const response = await withdrawCancelOrder({
-        orderReference: selectedOrder.order_reference,
-        orderLineId: selectedOrder.line_id,
-      }).unwrap();
+        orderReference,
+      } as any).unwrap();
 
       dispatch(
         showToast({
@@ -5608,10 +5768,12 @@ export default function OrderHistory() {
     setIsUploading(true);
 
     try {
+      const orderReference = String(selectedOrder.order_reference || "").trim();
+      if (!orderReference) throw new Error("Order reference is missing.");
+
       const response = await withdrawCancelRequest({
-        orderReference: selectedOrder.order_reference,
-        orderLineId: selectedOrder.line_id,
-      }).unwrap();
+        orderReference,
+      } as any).unwrap();
 
       dispatch(
         showToast({
@@ -5762,7 +5924,7 @@ export default function OrderHistory() {
       dispatch(
         showToast({
           message:
-            "Cancellation is not allowed for this item. Please contact support.",
+            "Cancellation is not allowed for this order. Please contact support.",
           type: "error",
         }),
       );
@@ -5929,15 +6091,15 @@ export default function OrderHistory() {
           {[
             {
               label: "Orders on this page",
-              value: orders.length,
+              value: orderGroups.length,
               icon: Package,
               color: "text-[#234E9A]",
               bg: "bg-[#EDF3FF]",
             },
             {
               label: "Delivered",
-              value: orders.filter(
-                (o) => normalizeStatus(o.delivery_status) === "delivered",
+              value: orderGroups.filter((group) =>
+                group.lines.every((o) => normalizeStatus(o.delivery_status) === "delivered"),
               ).length,
               icon: Check,
               color: "text-emerald-700",
@@ -5945,9 +6107,9 @@ export default function OrderHistory() {
             },
             {
               label: "In transit",
-              value: orders.filter((o) =>
-                ["dispatched", "shipped", "out_for_delivery"].includes(
-                  normalizeStatus(o.delivery_status),
+              value: orderGroups.filter((group) =>
+                group.lines.some((o) =>
+                  ["dispatched", "shipped", "out_for_delivery"].includes(normalizeStatus(o.delivery_status)),
                 ),
               ).length,
               icon: Truck,
@@ -5956,15 +6118,10 @@ export default function OrderHistory() {
             },
             {
               label: "Returns / Refunds",
-              value: orders.filter((o) =>
-                [
-                  "returned",
-                  "refunded",
-                  "return_pending",
-                  "return_approved",
-                  "partial_returned",
-                  "buyback_refunded",
-                ].includes(getOrderStatusValue(o)),
+              value: orderGroups.filter((group) =>
+                group.lines.some((o) =>
+                  ["returned", "refunded", "return_pending", "return_approved", "partial_returned", "buyback_refunded"].includes(getOrderStatusValue(o)),
+                ),
               ).length,
               icon: RotateCcw,
               color: "text-amber-700",
@@ -6000,11 +6157,11 @@ export default function OrderHistory() {
                 Order history
               </h2>
               <p className="mt-1 text-[11px] text-[#8090A7]">
-                Search and manage your order items
+                Products are grouped inside their orders
               </p>
             </div>
             <span className="rounded-full bg-[#EDF3FF] px-3 py-1.5 text-[11px] font-bold text-[#234E9A]">
-              {totalRecords} records
+              {totalRecords} orders
             </span>
           </div>
           {/* FILTER BAR */}
@@ -6019,7 +6176,7 @@ export default function OrderHistory() {
 
               <input
                 type="text"
-                placeholder="Search by order ID, reference or product"
+                placeholder="Search by order reference or product"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="h-[44px] w-full rounded-[11px] border border-[#E3EAF5] bg-[#F8FAFD] pl-10 pr-4 text-[13px] text-[#101828] outline-none placeholder:text-[#b0b6c3] focus:border-[#0E1B3D] focus:bg-white"
@@ -6055,294 +6212,272 @@ export default function OrderHistory() {
             </div>
           </div>
 
-          {/* ================= MOBILE ================= */}
-
-          <div className="md:hidden">
-            {filteredOrders.length === 0 ? (
-              <div className="py-12 text-center text-[13px] text-[#98a2b3]">
-                {searchQuery || statusFilter
-                  ? "No orders found matching your filters."
-                  : "No orders found."}
+          {/* ================= ORDERS (GROUPED BY ORDER REFERENCE) ================= */}
+          <div className="space-y-4">
+            {filteredOrderGroups.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-[#DCE4F0] bg-[#FAFCFF] py-14 text-center">
+                <Package className="mx-auto mb-3 h-8 w-8 text-[#A7B4C8]" />
+                <p className="text-[13px] font-semibold text-[#344054]">
+                  {searchQuery || statusFilter
+                    ? "No orders found matching your filters."
+                    : "No orders found."}
+                </p>
               </div>
             ) : (
-              filteredOrders.map((order) => {
-                const rowKey = `${order.order_id}-${order.line_id}`;
-
-                const isExpanded = expandedRows.has(rowKey);
+              filteredOrderGroups.map((group) => {
+                const { representative, displayOrder, lines, key, total, quantity } = group;
+                const isExpanded = expandedRows.has(key);
+                const statusBadge = getOrderStatusBadge(displayOrder);
+                const paymentFailed = lines.some(isPaymentFailed);
+                const canCancelWholeOrder = lines.every(canCancelOrder);
+                const orderActionOrder = {
+                  ...displayOrder,
+                  is_cancel_return_allowed: canCancelWholeOrder ? 1 : 0,
+                  delivery_status: lines.some(canWithdrawCancelOrder)
+                    ? "cancel_pending"
+                    : displayOrder.delivery_status,
+                };
 
                 return (
-                  <MobileOrderCard
-                    key={rowKey}
-                    order={order}
-                    allOrders={orders}
-                    isExpanded={isExpanded}
-                    onToggle={() => toggleRow(rowKey)}
-                    // ✅ CHANGED: navigate to product page
-                    onProductClick={() => navigateToProduct(order)}
-                    onTrack={() => openTracking(order)}
-                    onViewBreakup={() => openBreakup(order)}
-                    onReview={() => openReview(order)}
-                    onViewReview={() => openViewReview(order)}
-                    onReturn={openReturn}
-                    onCancel={() => openCancel(order)}
-                    onCancelReturn={(returnId) =>
-                      openCancelReturn(order, returnId)
-                    }
-                    onWithdrawCancel={() => openWithdrawCancel(order)}
-                    onWithdrawReturn={() => openWithdrawReturn(order)}
-                    onInvoiceDownload={handleInvoiceDownload}
-                    isInvoiceLoading={!!invoiceLoadingOrders[order.order_id]}
-                    now={now}
-                    retryBusy={retryingReference === order.order_reference}
-                    onRetry={handleRetryPayment}
-                  />
-                );
-              })
-            )}
-          </div>
-
-          {/* ================= DESKTOP ================= */}
-
-          <div className="hidden md:block">
-            <div className="w-full overflow-x-auto">
-              <div className="min-w-[1000px]">
-                {/* HEADER */}
-
-                <div className="grid grid-cols-[40px_minmax(140px,1.35fr)_minmax(160px,1.6fr)_minmax(85px,0.8fr)_minmax(80px,0.8fr)_50px_minmax(70px,0.85fr)_minmax(120px,1.15fr)_190px] items-center gap-2 rounded-t-xl border-b border-[#E7EDF6] bg-[#F6F8FC] px-3 py-4 text-[11px] font-bold uppercase tracking-[0.04em] text-[#657792]">
-                  <span />
-
-                  <span>Order Reference</span>
-
-                  <span>Product</span>
-
-                  <span>Total</span>
-
-                  <span>Method</span>
-
-                  <span>Qty</span>
-
-                  <span>Coins</span>
-
-                  <span>Status</span>
-
-                  <span className="text-right">Actions</span>
-                </div>
-
-                <div>
-                  {filteredOrders.length === 0 ? (
-                    <div className="py-12 text-center text-[13px] text-[#98a2b3]">
-                      {searchQuery || statusFilter
-                        ? "No orders found matching your filters."
-                        : "No orders found."}
-                    </div>
-                  ) : (
-                    filteredOrders.map((order) => {
-                      const rowKey = `${order.order_id}-${order.line_id}`;
-
-                      const isExpanded = expandedRows.has(rowKey);
-
-                      const returnWindow = getReturnWindowInfo(order);
-
-                      const refundDetails = getRefundDetails(order);
-
-                      const statusBadge = getOrderStatusBadge(order);
-
-                      return (
-                        <div
-                          key={rowKey}
-                          className="border-b border-dashed border-[#e7e9ee] last:border-b-0"
+                  <motion.article
+                    key={key}
+                    className="overflow-visible rounded-2xl border border-[#E4EAF4] bg-white shadow-[0_5px_22px_rgba(20,35,65,0.045)]"
+                  >
+                    {/* ORDER HEADER */}
+                    <div className="border-b border-[#EDF1F7] p-3.5 sm:p-5">
+                      <div className="flex items-start gap-3">
+                        <button
+                          type="button"
+                          onClick={() => toggleRow(key)}
+                          aria-label={isExpanded ? "Collapse order details" : "Expand order details"}
+                          className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#E2E8F2] bg-[#F8FAFD] text-[#36527B] transition hover:bg-[#EEF3FA]"
                         >
-                          {/* ROW */}
+                          <ChevronDown
+                            size={17}
+                            className={`transition-transform duration-300 ease-in-out ${isExpanded ? "rotate-180" : ""}`}
+                          />
+                        </button>
 
-                          <div className="grid grid-cols-[40px_minmax(140px,1.35fr)_minmax(160px,1.6fr)_minmax(85px,0.8fr)_minmax(80px,0.8fr)_50px_minmax(70px,0.85fr)_minmax(120px,1.15fr)_190px] items-center gap-2 py-4 text-[13px] text-[#101828]">
-                            {/* EXPAND */}
-
-                            <button
-                              onClick={() => toggleRow(rowKey)}
-                              className="flex h-7 w-7 items-center justify-center rounded-[6px] border border-[#e5e9ef] bg-white text-[#667085] hover:bg-[#f7f8fa]"
-                              aria-label={isExpanded ? "Collapse" : "Expand"}
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="break-all text-[13px] font-extrabold tracking-[-0.01em] text-[#122449] sm:text-[14px]">
+                              Order #{representative.order_reference}
+                            </p>
+                            <span
+                              className="rounded-full px-2.5 py-1 text-[10px] font-bold"
+                              style={{ color: statusBadge.color, backgroundColor: statusBadge.bg }}
                             >
-                              <ChevronDown
-                                size={15}
-                                className={`transition-transform duration-200 ${
-                                  isExpanded ? "rotate-180" : ""
-                                }`}
+                              {statusBadge.label}
+                            </span>
+                          </div>
+                          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10.5px] text-[#8592A7] sm:text-[11px]">
+                            <span>Placed {formatDate(representative.order_date)}</span>
+                            <span>{lines.length} {lines.length === 1 ? "product" : "products"}</span>
+                            <span>{quantity} {quantity === 1 ? "item" : "items"}</span>
+                            <span className="capitalize">Payment: {formatStatusLabel(representative.payment_status)}</span>
+                          </div>
+                        </div>
+
+                        {/* Desktop: total + menu on the right */}
+                        <div className="hidden shrink-0 items-start gap-4 sm:flex">
+                          <div className="flex flex-col items-end gap-1">
+                            <span className="text-[9px] font-semibold uppercase tracking-[0.08em] text-[#8A96A9]">Order total</span>
+                            <span className="text-[17px] font-extrabold tabular-nums text-[#172A4D]">
+                              {formatCurrency(total)}
+                            </span>
+                            {paymentFailed && (
+                              <RetryPaymentButton
+                                order={representative}
+                                now={now}
+                                busy={retryingReference === representative.order_reference}
+                                onRetry={handleRetryPayment}
                               />
-                            </button>
+                            )}
+                          </div>
+                          <ActionDropdown
+                            mode="order"
+                            order={orderActionOrder}
+                            onReview={() => openReview(representative)}
+                            onViewReview={() => openViewReview(representative)}
+                            onReturn={() => openReturn(representative)}
+                            onCancel={() => openCancel(representative)}
+                            onTrack={() => openTracking(representative)}
+                            onCancelReturn={(returnId) => openCancelReturn(representative, returnId)}
+                            onWithdrawCancel={() => openWithdrawCancel(representative)}
+                            onWithdrawReturn={() => openWithdrawReturn(representative)}
+                          />
+                        </div>
 
-                            {/* ORDER REFERENCE */}
+                        {/* Mobile: only menu next to title */}
+                        <div className="shrink-0 sm:hidden">
+                          <ActionDropdown
+                            mode="order"
+                            order={orderActionOrder}
+                            onReview={() => openReview(representative)}
+                            onViewReview={() => openViewReview(representative)}
+                            onReturn={() => openReturn(representative)}
+                            onCancel={() => openCancel(representative)}
+                            onTrack={() => openTracking(representative)}
+                            onCancelReturn={(returnId) => openCancelReturn(representative, returnId)}
+                            onWithdrawCancel={() => openWithdrawCancel(representative)}
+                            onWithdrawReturn={() => openWithdrawReturn(representative)}
+                          />
+                        </div>
+                      </div>
 
-                            <div className="min-w-0">
-                              <p className="truncate font-semibold text-[#0E1B3D]">
-                                {order.order_reference}
-                              </p>
+                      {/* Mobile: total row below */}
+                      <div className="mt-3 flex items-center justify-between gap-3 rounded-xl bg-[#F6F8FC] px-3.5 py-2.5 sm:hidden">
+                        <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8A96A9]">Order total</span>
+                        <span className="text-[16px] font-extrabold tabular-nums text-[#172A4D]">
+                          {formatCurrency(total)}
+                        </span>
+                      </div>
+                      {paymentFailed && (
+                        <div className="mt-2 sm:hidden">
+                          <RetryPaymentButton
+                            order={representative}
+                            now={now}
+                            busy={retryingReference === representative.order_reference}
+                            onRetry={handleRetryPayment}
+                          />
+                        </div>
+                      )}
+                    </div>
 
-                              <p className="mt-0.5 truncate text-[10.5px] text-[#98a2b3]">
-                                {order.item_reference_id ||
-                                  `Line #${order.line_id}`}
-                              </p>
-                            </div>
+                    {/* PRODUCT ITEMS INSIDE THIS ORDER */}
+                    <div className="divide-y divide-[#EEF2F7]">
+                      {lines.map((line) => {
+                        const itemTotal = hasAmount(line.final_amount)
+                          ? moneyValue(line.final_amount)
+                          : moneyValue(line.line_total) + moneyValue(line.delivery_charges);
+                        const itemStatus = getDeliveryStatusBadge(line);
+                        const returnInfo = getReturnWindowInfo(line);
 
-                            {/* ✅ PRODUCT — now navigates to product page */}
-
-                            <button
-                              type="button"
-                              onClick={() => navigateToProduct(order)}
-                              className="group flex min-w-0 cursor-pointer items-center gap-2.5 text-left"
-                              title={`View ${order.product_name}`}
-                            >
-                              <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-white transition-opacity group-hover:opacity-80">
-                                {order.primary_image ? (
+                        return (
+                          <div
+                            key={`${key}-${line.line_id}`}
+                            className="flex flex-col gap-3 p-3.5 sm:flex-row sm:items-center sm:gap-4 sm:p-4"
+                          >
+                            {/* Image + name */}
+                            <div className="flex min-w-0 flex-1 items-start gap-3">
+                              <button
+                                type="button"
+                                onClick={() => navigateToProduct(line)}
+                                title={`View ${line.product_name}`}
+                                className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-[#E5EAF1] bg-[#FAFBFD] transition hover:border-[#B8C8DE] sm:h-[76px] sm:w-[76px]"
+                              >
+                                {line.primary_image ? (
                                   <Image
-                                    src={order.primary_image}
-                                    alt={order.product_name || "Product"}
+                                    src={line.primary_image}
+                                    alt={line.product_name || "Product image"}
                                     fill
-                                    sizes="40px"
-                                    className="object-cover"
+                                    sizes="76px"
+                                    className="object-contain p-1.5"
                                   />
                                 ) : (
                                   <span className="flex h-full w-full items-center justify-center">
-                                    <Package className="h-4 w-4 text-[#999999]" />
+                                    <Package className="h-6 w-6 text-[#A6B1C0]" />
                                   </span>
                                 )}
-                              </span>
+                              </button>
 
-                              <span
-                                className="truncate font-semibold text-[#101828] transition-colors group-hover:text-[#0E1B3D]"
-                                title={order.product_name}
-                              >
-                                {order.product_name}
-                              </span>
-                            </button>
-
-                            {/* TOTAL — ✅ Now shows refunded_amount below final_amount */}
-
-                            <div className="min-w-0">
-                              <span className="text-[#667085]">
-                                {formatCurrency(order.final_amount)}
-                              </span>
-
-                              {refundDetails?.amount !== null &&
-                                refundDetails?.amount !== undefined && (
-                                  <span className="mt-0.5 block truncate text-[9.5px] font-bold text-[#1F7A56]">
-                                    Refunded{" "}
-                                    {formatCurrency(refundDetails.amount)}
-                                  </span>
-                                )}
-                            </div>
-
-                            {/* METHOD */}
-
-                            <span>
-                              <span className="inline-block rounded-[6px] bg-[#f2f4f7] px-2 py-1 text-[11px] font-semibold text-[#475066]">
-                                {order.payment_gateway || "N/A"}
-                              </span>
-                            </span>
-
-                            {/* QTY */}
-
-                            <span className="text-[#667085]">
-                              {order.quantity}
-                            </span>
-
-                            {/* COINS */}
-
-                            <div className="flex items-center gap-1.5">
-                              <span className="inline-flex h-6 min-w-7 items-center justify-center gap-1 rounded-[5px] border border-[#CFE0D4] bg-[#F1F7F3] px-1.5 text-[10px] font-bold text-[#1F7A56]">
-                                <Coins size={11} />
-
-                                {order.coin_redeemed || 0}
-                              </span>
-                            </div>
-
-                            {/* STATUS — ✅ Cancelled wins, then refunded/returned, then delivered */}
-
-                            <div className="min-w-0">
-                              <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-                                <span
-                                  className="inline-block max-w-full truncate rounded-[6px] px-2.5 py-1 text-[11px] font-semibold capitalize"
-                                  style={{
-                                    color: statusBadge.color,
-                                    backgroundColor: statusBadge.bg,
-                                  }}
-                                  title={statusBadge.label}
+                              <div className="min-w-0 flex-1">
+                                <button
+                                  type="button"
+                                  onClick={() => navigateToProduct(line)}
+                                  className="line-clamp-2 max-w-full text-left text-[12.5px] font-bold leading-snug text-[#1B2B45] transition hover:text-[#315B87] sm:text-[13px]"
                                 >
-                                  {statusBadge.label}
-                                </span>
-                              </div>
-                              {statusBadge.value === "payment_failed" && (
-                                <div className="mt-2">
-                                  <RetryPaymentButton
-                                    order={order}
-                                    now={now}
-                                    busy={
-                                      retryingReference ===
-                                      order.order_reference
-                                    }
-                                    onRetry={handleRetryPayment}
-                                  />
+                                  {line.product_name || "Product"}
+                                </button>
+                                <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[10.5px] text-[#8290A5]">
+                                  <span>
+                                    Qty: <strong className="text-[#485A73]">{line.quantity}</strong>
+                                  </span>
+                                  {line.product_code ? <span>Code: {line.product_code}</span> : null}
+                                  <span
+                                    className="rounded-full px-2 py-0.5 font-semibold"
+                                    style={{ color: itemStatus.color, backgroundColor: itemStatus.bg }}
+                                  >
+                                    {itemStatus.label}
+                                  </span>
                                 </div>
-                              )}
-
-                              {refundDetails?.amount !== null &&
-                                refundDetails?.amount !== undefined && (
-                                  <p className="mt-1 truncate text-[8.5px] font-semibold text-[#1F7A56]">
-                                    <Check
-                                      size={10}
-                                      className="mr-0.5 inline"
-                                    />
-                                    Refunded processed
+                                {returnInfo && (
+                                  <p
+                                    className={`mt-1.5 text-[10px] font-medium ${
+                                      returnInfo.state === "closed" ? "text-[#B45B4B]" : "text-[#26805E]"
+                                    }`}
+                                  >
+                                    {returnInfo.label} {formatDate(returnInfo.deadline.toISOString())}
                                   </p>
                                 )}
+                              </div>
                             </div>
 
-                            {/* ACTIONS */}
-
-                            <div className="flex items-center justify-end gap-2">
+                            {/* Price + menu */}
+                            <div className="flex items-center justify-between gap-3 border-t border-dashed border-[#EEF2F7] pt-3 sm:min-w-[170px] sm:justify-end sm:border-0 sm:pt-0">
+                              <div className="sm:text-right">
+                                <p className="text-[9px] font-semibold uppercase tracking-[0.08em] text-[#91A0B4]">
+                                  Item total
+                                </p>
+                                <p className="mt-0.5 text-[14px] font-extrabold tabular-nums text-[#1B2B45]">
+                                  {formatCurrency(itemTotal)}
+                                </p>
+                                <p className="mt-0.5 text-[10px] text-[#8B98AA]">
+                                  {formatCurrency(line.unit_price)} each
+                                </p>
+                              </div>
                               <ActionDropdown
-                                order={order}
-                                onReview={() => openReview(order)}
-                                onViewReview={() => openViewReview(order)}
-                                onReturn={() => openReturn(order)}
-                                onCancel={() => openCancel(order)}
-                                onTrack={() => openTracking(order)}
-                                onCancelReturn={(returnId) =>
-                                  openCancelReturn(order, returnId)
-                                }
-                                onWithdrawCancel={() =>
-                                  openWithdrawCancel(order)
-                                }
-                                onWithdrawReturn={() =>
-                                  openWithdrawReturn(order)
-                                }
+                                mode="item"
+                                order={line}
+                                onViewProduct={() => navigateToProduct(line)}
+                                onReview={() => openReview(line)}
+                                onViewReview={() => openViewReview(line)}
+                                onReturn={() => openReturn(line)}
+                                onCancel={() => openCancel(representative)}
+                                onTrack={() => openTracking(representative)}
+                                onCancelReturn={(returnId) => openCancelReturn(line, returnId)}
+                                onWithdrawCancel={() => openWithdrawCancel(representative)}
+                                onWithdrawReturn={() => openWithdrawReturn(line)}
                               />
                             </div>
                           </div>
+                        );
+                      })}
+                    </div>
 
-                          {/* DETAILS */}
+                    {/* SMOOTHLY EXPANDING ORDER DETAILS */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#EDF1F7] bg-[#FBFCFE] px-4 py-3 sm:px-5">
+                      <p className="text-[10.5px] text-[#8996A9]">
+                        {lines.length} product {lines.length === 1 ? "item" : "items"} in this order
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => toggleRow(key)}
+                        aria-expanded={isExpanded}
+                        className="inline-flex items-center gap-2 rounded-lg border border-[#DCE5F1] bg-white px-3.5 py-2 text-[10.5px] font-bold text-[#31527B] transition hover:border-[#B8C9E0] hover:bg-[#F6F9FD]"
+                      >
+                        {isExpanded ? "Hide Order Details" : "View Order Details"}
+                        <ChevronDown size={14} className={`transition-transform duration-300 ease-in-out ${isExpanded ? "rotate-180" : ""}`} />
+                      </button>
+                    </div>
 
-                          <AnimatePresence initial={false}>
-                            {isExpanded && (
-                              <OrderDetails
-                                order={order}
-                                allOrders={orders}
-                                onTrack={() => openTracking(order)}
-                                onViewBreakup={() => openBreakup(order)}
-                                onReturn={openReturn}
-                                onInvoiceDownload={handleInvoiceDownload}
-                                isInvoiceLoading={
-                                  !!invoiceLoadingOrders[order.order_id]
-                                }
-                              />
-                            )}
-                          </AnimatePresence>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-            </div>
+                    <AnimatePresence initial={false}>
+                      {isExpanded && (
+                        <OrderDetails
+                          order={representative}
+                          allOrders={orders}
+                          onTrack={() => openTracking(representative)}
+                          onViewBreakup={() => openBreakup(representative)}
+                          onReturn={openReturn}
+                          onInvoiceDownload={handleInvoiceDownload}
+                          isInvoiceLoading={!!invoiceLoadingOrders[representative.order_id]}
+                        />
+                      )}
+                    </AnimatePresence>
+                  </motion.article>
+                );
+              })
+            )}
           </div>
 
           {/* PAGINATION */}
@@ -6360,8 +6495,8 @@ export default function OrderHistory() {
                   ? `Showing ${(page - 1) * perPage + 1}–${Math.min(
                       page * perPage,
                       totalRecords,
-                    )} of ${totalRecords} records`
-                  : "Showing 0 records"}
+                    )} of ${totalRecords} orders`
+                  : "Showing 0 orders"}
               </span>
             </div>
 

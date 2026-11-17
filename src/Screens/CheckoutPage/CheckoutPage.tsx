@@ -144,7 +144,8 @@ interface CheckoutSummaryData {
   coupon_discount: number;
   subtotal_after_discount: number;
   total_tax: number;
-  shipping_cost: number;
+  shipping_cost: number;         // ✅ Shipping charge
+  service_charge?: number;       // ✅ Service charge (NEW — separate field)
   subtotal_after_discount_and_tax: number;
   grand_total: number;
   items: CheckoutSummaryItem[];
@@ -164,7 +165,6 @@ interface CheckoutSummaryData {
   }[];
   tax_breakdown?: any[];
 }
-
 interface RazorpayOrderData {
   orderId: number;
   orderReference: string;
@@ -1063,6 +1063,7 @@ function CartSummary({
       </div>
 
       <div className="space-y-1 border-t border-[#E8EEE9] px-4 py-2.5 sm:px-5">
+        {/* Subtotal */}
         <div className="flex items-center justify-between">
           <span className="text-[12px] text-[#667168]">Subtotal</span>
           <span className="text-[12px] font-medium text-[#263329]">
@@ -1070,15 +1071,37 @@ function CartSummary({
           </span>
         </div>
 
+        {/* Coupon discount (if any) */}
+        {Number(summaryData.coupon_discount || 0) > 0 && (
+          <div className="flex items-center justify-between">
+            <span className="text-[12px] text-[#667168]">Discount</span>
+            <span className="text-[12px] font-semibold text-[#28815C]">
+              −{formatPrice(summaryData.coupon_discount)}
+            </span>
+          </div>
+        )}
+
+        {/* ✅ SHIPPING CHARGE — separate row */}
         <div className="flex items-center justify-between">
-          <span className="text-[12px] text-[#667168]">Shipping</span>
+          <span className="text-[12px] text-[#667168]">Shipping Charge</span>
           <span className="text-[12px] font-medium text-[#263329]">
             {Number(summaryData.shipping_cost || 0) === 0
-              ? "₹0"
+              ? "FREE"
               : formatPrice(summaryData.shipping_cost)}
           </span>
         </div>
 
+        {/* ✅ SERVICE CHARGE — separate row */}
+        <div className="flex items-center justify-between">
+          <span className="text-[12px] text-[#667168]">Service Charge</span>
+          <span className="text-[12px] font-medium text-[#263329]">
+            {Number(summaryData.service_charge || 0) === 0
+              ? "FREE"
+              : formatPrice(summaryData.service_charge)}
+          </span>
+        </div>
+
+        {/* Taxes */}
         <div className="flex items-center justify-between">
           <span className="flex items-center gap-1 text-[12px] text-[#667168]">
             Taxes
@@ -1102,7 +1125,6 @@ function CartSummary({
           </div>
         )}
       </div>
-
       <div className="rounded-b-2xl border-t border-[#DEE7E0] bg-gradient-to-b from-white to-[#F8FBF8] px-4 pb-3 pt-2.5 sm:px-5">
         <div className="mb-2.5 flex items-center justify-between gap-3">
           <div>
@@ -2582,25 +2604,26 @@ export default function CheckoutPage() {
           ? normalizeSummaryItems(latestSummary, cartLines)
           : [];
 
-      const orderPayload: any = {
-        checkout_type: verifiedType,
-        address_id: selectedDeliveryAddress.id,
-        grand_total: grandTotal,
-        payment_gateway: selectedGateway.paymentGateway,
-
-        summary_data: {
-          subtotal: latestSummary.subtotal,
-          coupon_discount: latestSummary.coupon_discount || 0,
-
-          shipping_charge: latestSummary.shipping_cost || 0,
-          total_tax: latestSummary.total_tax,
-          net_subtotal: latestSummary.subtotal_after_discount,
-
-          tax_breakdown: latestSummary.tax_breakdown || [],
-
-          ...(verifiedType === "buy_now" ? { items: buyNowItems } : {}),
-        },
-      };
+          const orderPayload: any = {
+            checkout_type: verifiedType,
+            address_id: selectedDeliveryAddress.id,
+            grand_total: grandTotal,
+            payment_gateway: selectedGateway.paymentGateway,
+    
+            summary_data: {
+              subtotal: latestSummary.subtotal,
+              coupon_discount: latestSummary.coupon_discount || 0,
+    
+              shipping_charge: latestSummary.shipping_cost || 0,
+              service_charge: latestSummary.service_charge || 0,  // ✅ NEW
+              total_tax: latestSummary.total_tax,
+              net_subtotal: latestSummary.subtotal_after_discount,
+    
+              tax_breakdown: latestSummary.tax_breakdown || [],
+    
+              ...(verifiedType === "buy_now" ? { items: buyNowItems } : {}),
+            },
+          };
 
       if (verifiedType === "buy_now") {
         orderPayload.product_id = productId;
