@@ -39,7 +39,7 @@ import {
   useInitiateReturnMutation,
   useLazyGetInvoiceByOrderIdQuery,
   useAddRatingReviewMutation,
-  useWithdrawCancelRequestMutation,
+  useWithdrawCancelOrderMutation,
   useCancelReturnMutation,
 } from "@/lib/redux/api/order/orderApi";
 
@@ -70,7 +70,7 @@ const normalizeStatus = (status?: string | null) => {
     .replace(/[\s-]+/g, "_");
 };
 
-/* ✅ Only these statuses will appear in the filter dropdown.
+/* Only these statuses will appear in the filter dropdown.
    Buyback statuses are intentionally excluded. */
 const ALLOWED_FILTER_STATUSES = [
   "pending",
@@ -78,6 +78,7 @@ const ALLOWED_FILTER_STATUSES = [
   "processing",
   "shipped",
   "dispatched",
+  "partial_delivered",
   "delivered",
   "cancel_pending",
   "cancel_rejected",
@@ -96,6 +97,7 @@ const statusIcons: Record<string, any> = {
   processing: Truck,
   shipped: Truck,
   dispatched: Truck,
+  partial_delivered: Truck,
   delivered: CheckCircle,
   cancelled: XCircle,
   cancel_pending: Clock,
@@ -111,6 +113,7 @@ const statusColors: Record<string, string> = {
   processing: "text-[#5B4FA8] bg-[#F3F1FB] border-[#D8D3F2]",
   shipped: "text-[#5B4FA8] bg-[#F3F1FB] border-[#D8D3F2]",
   dispatched: "text-[#3E5AA8] bg-[#EEF1FB] border-[#CBD5F0]",
+  partial_delivered: "text-[#3E5AA8] bg-[#EEF1FB] border-[#CBD5F0]",
   delivered: "text-[#3F765A] bg-[#F1F7F3] border-[#CFE0D4]",
   cancelled: "text-[#B24C4C] bg-[#FDF2F2] border-[#F0CFCF]",
   cancel_pending: "text-[#A9711F] bg-[#FBF3E4] border-[#EBD9B4]",
@@ -1231,7 +1234,8 @@ export default function OrdersPage() {
 
   const [modalType, setModalType] = useState<"cancel" | "return">("cancel");
 
-  const [invoiceLoadingOrders, setInvoiceLoadingOrders] = useState<
+  // Invoice loading is tracked per order line (invoice is line-level now)
+  const [invoiceLoadingLines, setInvoiceLoadingLines] = useState<
     Record<number, boolean>
   >({});
 
@@ -1281,8 +1285,9 @@ export default function OrdersPage() {
   const [addRatingReview, { isLoading: isSubmittingReview }] =
     useAddRatingReviewMutation();
 
-  const [withdrawCancelRequest, { isLoading: isWithdrawingCancelRequest }] =
-    useWithdrawCancelRequestMutation();
+  // Line-level withdraw cancel: /orders/{ref}/withdrawCancel/{lineId}
+  const [withdrawCancelOrder, { isLoading: isWithdrawingCancelRequest }] =
+    useWithdrawCancelOrderMutation();
 
   const [withdrawReturnRequest, { isLoading: isWithdrawingReturnRequest }] =
     useCancelReturnMutation();
@@ -1300,15 +1305,21 @@ export default function OrdersPage() {
   ] = useLazyGetIndiaPostOrderTrackingQuery();
 
   /* ============================================================
-     STATUS LIST (buyback statuses removed)
+     STATUS LIST (buyback statuses removed, partial_delivered ensured)
   ============================================================ */
 
   const statusList = useMemo(() => {
     const all = statusesData?.data || [];
 
-    return all.filter((status: string) =>
+    const list: string[] = all.filter((status: string) =>
       ALLOWED_FILTER_STATUSES.includes(normalizeStatus(status)),
     );
+
+    if (!list.some((s) => normalizeStatus(s) === "partial_delivered")) {
+      list.push("partial_delivered");
+    }
+
+    return list;
   }, [statusesData]);
 
   /* ============================================================
@@ -1390,7 +1401,8 @@ export default function OrdersPage() {
 
     return (
       normalizeStatus(order.delivery_status) === "cancel_pending" &&
-      !!order.order_reference
+      !!order.order_reference &&
+      !!order.line_id
     );
   };
 
@@ -1404,8 +1416,6 @@ export default function OrdersPage() {
   };
 
   const canReturnOrder = (order: any) => {
-    if (!isAllowedByApi(order)) return false;
-
     const status = normalizeStatus(order.delivery_status);
 
     const quantity = Number(order.quantity) || 0;
@@ -1415,7 +1425,15 @@ export default function OrdersPage() {
     const isReturnable =
       Number(order.is_returnable) === 1 || order.is_returnable === true;
 
+    const returnTill = toDate(order.timeline?.return_applicable_till);
+    const windowOpen = !!returnTill && returnTill.getTime() > Date.now();
+
+    // In partial_delivered orders the API flag can be 0 even though the
+    // delivered item is still inside its return window.
+    const allowed = isAllowedByApi(order) || windowOpen;
+
     return (
+      allowed &&
       status === "delivered" &&
       !order.is_returned &&
       isReturnable &&
@@ -1433,9 +1451,16 @@ export default function OrdersPage() {
     return status === "delivered" && !order.is_reviewed && !hasExistingReview;
   };
 
-  // The invoice is issued by Laravel; the frontend only enables download.
-  const canShowInvoice = (order: any) => {
-    const status = normalizeStatus(order?.delivery_status);
+  // Invoice is line-level: the API tells us per item via `invoice_available`.
+  // Falls back to the old status check only if the flag is missing.
+  const canShowInvoice = (line: any) => {
+    if (!line?.line_id || !line?.order_id) return false;
+
+    if (typeof line.invoice_available === "boolean") {
+      return line.invoice_available;
+    }
+
+    const status = normalizeStatus(line?.delivery_status);
 
     return (
       [
@@ -1450,7 +1475,7 @@ export default function OrdersPage() {
         "return_rejected",
         "returned",
         "refunded",
-      ].includes(status) && !!order?.invoice?.invoice_number
+      ].includes(status) && !!line?.invoice?.invoice_number
     );
   };
 
@@ -1492,8 +1517,9 @@ export default function OrdersPage() {
     if (!canWithdrawCancelRequest(order)) return;
 
     try {
-      await withdrawCancelRequest({
+      await withdrawCancelOrder({
         orderReference: order.order_reference,
+        orderLineId: order.line_id,
       }).unwrap();
 
       dispatch(
@@ -1793,17 +1819,30 @@ export default function OrdersPage() {
   };
 
   /* ============================================================
-     INVOICE
+     INVOICE (line level: /invoice/order/{orderId}/{lineId})
   ============================================================ */
 
-  const handleInvoiceDownload = async (orderId: number) => {
-    setInvoiceLoadingOrders((prev) => ({
+  const handleInvoiceDownload = async (
+    orderId: number | string,
+    lineId: number,
+  ) => {
+    if (!orderId || !lineId) {
+      dispatch(
+        showToast({
+          message: "Invoice details are missing for this item.",
+          type: "error",
+        }),
+      );
+      return;
+    }
+
+    setInvoiceLoadingLines((prev) => ({
       ...prev,
-      [orderId]: true,
+      [lineId]: true,
     }));
 
     try {
-      const result = await getInvoice(orderId).unwrap();
+      const result = await getInvoice({ orderId, lineId }).unwrap();
 
       if (result?.data) {
         await generateInvoicePDF(result.data);
@@ -1817,7 +1856,7 @@ export default function OrdersPage() {
       } else {
         dispatch(
           showToast({
-            message: "Invoice not available for this order",
+            message: "Invoice not available for this item",
             type: "error",
           }),
         );
@@ -1835,9 +1874,9 @@ export default function OrdersPage() {
         }),
       );
     } finally {
-      setInvoiceLoadingOrders((prev) => ({
+      setInvoiceLoadingLines((prev) => ({
         ...prev,
-        [orderId]: false,
+        [lineId]: false,
       }));
     }
   };
@@ -1965,8 +2004,10 @@ export default function OrdersPage() {
       },
       {
         label: "Delivered",
-        value: orderGroups.filter(
-          (g) => normalizeStatus(g.order_status) === "delivered",
+        value: orderGroups.filter((g) =>
+          ["delivered", "partial_delivered"].includes(
+            normalizeStatus(g.order_status),
+          ),
         ).length,
         icon: Check,
         color: "text-emerald-700",
@@ -2004,6 +2045,9 @@ export default function OrdersPage() {
     ],
     [orderGroups],
   );
+
+  // stats is kept for future summary cards
+  void stats;
 
   /* ============================================================
      LOADING
@@ -2238,11 +2282,6 @@ export default function OrdersPage() {
 
                   const statusColor = getStatusColor(group.order_status);
 
-                  const isInvoiceLoading =
-                    invoiceLoadingOrders[group.order_id] || false;
-
-                  const orderHasInvoice = lines.some(canShowInvoice);
-
                   /* unique credit notes across all products of this order */
                   const creditNotes = Array.from(
                     new Map(
@@ -2273,15 +2312,6 @@ export default function OrdersPage() {
                       onClick: () => setBreakupOrder(group),
                     },
                   ];
-
-                  if (orderHasInvoice) {
-                    orderActions.push({
-                      key: "invoice",
-                      label: "Download Invoice",
-                      icon: <FileText className="h-4 w-4 text-[#344054]" />,
-                      onClick: () => handleInvoiceDownload(group.order_id),
-                    });
-                  }
 
                   const orderMenu = (
                     <ActionMenu actions={orderActions} title="Order actions" />
@@ -2419,6 +2449,23 @@ export default function OrdersPage() {
                                 <ShoppingBag className="h-4 w-4 text-[#3955A6]" />
                               ),
                               onClick: () => navigateToProduct(line),
+                            });
+                          }
+
+                          if (canShowInvoice(line)) {
+                            lineActions.push({
+                              key: "invoice",
+                              label: invoiceLoadingLines[line.line_id]
+                                ? "Loading Invoice..."
+                                : "Download Invoice",
+                              icon: (
+                                <FileText className="h-4 w-4 text-[#344054]" />
+                              ),
+                              onClick: () =>
+                                handleInvoiceDownload(
+                                  line.order_id,
+                                  line.line_id,
+                                ),
                             });
                           }
 
@@ -2770,29 +2817,6 @@ export default function OrdersPage() {
                                 </button>
 
                                 <div className="flex flex-wrap items-center gap-2">
-                                  {orderHasInvoice && (
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        handleInvoiceDownload(group.order_id)
-                                      }
-                                      disabled={isInvoiceLoading}
-                                      className="inline-flex items-center gap-1.5 rounded-[8px] border border-[#D7D7D5] bg-white px-3.5 py-2 text-[11px] font-semibold text-[#171717] transition hover:border-[#BDBDBA] hover:bg-[#FAFAF9] disabled:cursor-not-allowed disabled:opacity-50"
-                                    >
-                                      {isInvoiceLoading ? (
-                                        <>
-                                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                          Loading...
-                                        </>
-                                      ) : (
-                                        <>
-                                          <FileText className="h-3.5 w-3.5" />
-                                          Invoice
-                                        </>
-                                      )}
-                                    </button>
-                                  )}
-
                                   <button
                                     type="button"
                                     onClick={() => setBreakupOrder(group)}
@@ -2898,7 +2922,10 @@ export default function OrdersPage() {
                               </p>
 
                               <p className="mt-0.5 text-[10px] text-[#888888]">
-                                Qty: {item.quantity} • GST: {item.gst_rate}%
+                                Qty: {item.quantity}
+                                {Number(item.gst_amount) > 0
+                                  ? ` • GST: ${item.gst_rate}%`
+                                  : ""}
                               </p>
                             </div>
                           </div>

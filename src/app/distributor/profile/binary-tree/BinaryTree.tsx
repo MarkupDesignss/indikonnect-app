@@ -1471,9 +1471,7 @@ const BinaryTree = () => {
                               </span>
                             </span>
 
-                            <span className="shrink-0 whitespace-nowrap rounded-full bg-[#F0F5FC] px-2.5 py-1 text-[10px] font-medium text-[#64748b]">
-                              Level {node.member.level}
-                            </span>
+                          
                           </button>
                         );
                       })}
