@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -31,6 +30,7 @@ const WALLET_ENDPOINT =
 
 type Amount = number | string | null | undefined;
 type CoinType = "yellow_bal" | "blue_bal";
+type DateFilter = "all" | "week" | "month" | "year";
 
 interface WalletBalances {
   cash_bal_usd?: Amount;
@@ -53,6 +53,7 @@ interface WalletTransaction {
   net_payable_inr?: Amount;
   wallet_change_usd?: Amount;
   point_type?: string;
+  direction?: string;
   green_value_inr?: Amount;
   yellow_value_inr?: Amount;
   blue_value_inr?: Amount;
@@ -98,6 +99,18 @@ const PANEL =
 const BLACK_BUTTON =
   "inline-flex min-h-11 items-center justify-center gap-2 rounded-[12px] bg-[#0E1B3D] px-5 py-2.5 text-[12px] font-bold text-white shadow-[0_7px_18px_-9px_rgba(14,27,61,0.8)] transition-all hover:bg-[#1E3564] hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-500/20 disabled:cursor-not-allowed disabled:bg-[#CBD0D7] disabled:text-white disabled:shadow-none";
 
+const PAGE_SIZES = [10, 20, 50];
+
+const DATE_FILTER_OPTIONS: {
+  label: string;
+  value: DateFilter;
+}[] = [
+  { label: "All", value: "all" },
+  { label: "Week", value: "week" },
+  { label: "Month", value: "month" },
+  { label: "Year", value: "year" },
+];
+
 const fmt = (n: Amount, maximumFractionDigits = 2) =>
   n === null || n === undefined || n === "" || !Number.isFinite(Number(n))
     ? "—"
@@ -123,14 +136,112 @@ const friendly = (s: string) =>
     .replace(/[_-]+/g, " ")
     .replace(/\b\w/g, (ch) => ch.toUpperCase());
 
+/**
+ * Parses API date values as local dates.
+ * Supports:
+ * 2026-11-14
+ * 2026-11-14 10:00:05
+ * 2026-11-14 10:00:05.427
+ */
+const parseWalletDate = (value: string): Date | null => {
+  if (!value) return null;
+
+  const match = String(value).match(
+    /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d+))?)?)?/,
+  );
+
+  if (!match) return null;
+
+  const [, year, month, day, hours, minutes, seconds, milliseconds] = match;
+
+  const parsed = new Date(
+    Number(year),
+    Number(month) - 1,
+    Number(day),
+    Number(hours || 0),
+    Number(minutes || 0),
+    Number(seconds || 0),
+    Number((milliseconds || "").slice(0, 3).padEnd(3, "0") || 0),
+  );
+
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
 const dateFmt = (date: string) => {
   if (!date) return "—";
 
-  const m = date.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2}))?/);
+  const parsed = parseWalletDate(date);
 
-  return m
-    ? `${m[3]}/${m[2]}/${m[1]}${m[4] ? ` · ${m[4]}:${m[5]}` : ""}`
-    : date;
+  if (!parsed) return date;
+
+  const datePart = parsed.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+
+  const hasTime = /[ T]\d{2}:\d{2}/.test(date);
+
+  if (!hasTime) return datePart;
+
+  const timePart = parsed.toLocaleTimeString("en-IN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+
+  return `${datePart} · ${timePart}`;
+};
+
+/**
+ * Date filter logic:
+ * All   -> No date restriction
+ * Week  -> Current Monday to Sunday
+ * Month -> Current calendar month
+ * Year  -> Current calendar year
+ */
+const isWithinDateFilter = (
+  date: string,
+  filter: DateFilter,
+  now = new Date(),
+): boolean => {
+  if (filter === "all") return true;
+
+  const transactionDate = parseWalletDate(date);
+
+  if (!transactionDate) return false;
+
+  const start = new Date(now);
+  start.setHours(0, 0, 0, 0);
+
+  const end = new Date(start);
+
+  if (filter === "week") {
+    // Monday is the first day of the week.
+    const day = start.getDay();
+    const daysFromMonday = (day + 6) % 7;
+
+    start.setDate(start.getDate() - daysFromMonday);
+
+    end.setTime(start.getTime());
+    end.setDate(end.getDate() + 7);
+  }
+
+  if (filter === "month") {
+    start.setDate(1);
+
+    end.setFullYear(start.getFullYear(), start.getMonth() + 1, 1);
+    end.setHours(0, 0, 0, 0);
+  }
+
+  if (filter === "year") {
+    start.setMonth(0, 1);
+
+    end.setFullYear(start.getFullYear() + 1, 0, 1);
+    end.setHours(0, 0, 0, 0);
+  }
+
+  return transactionDate >= start && transactionDate < end;
 };
 
 const getErrorMessage = (e: unknown) => {
@@ -150,7 +261,6 @@ const getErrorMessage = (e: unknown) => {
 };
 
 /**
- * No direction field is used.
  * Withdrawal and payout transactions reduce the wallet balance.
  */
 const getWalletTransactionAmount = (t: WalletTransaction): number => {
@@ -446,8 +556,6 @@ function RedeemModal({
   );
 }
 
-const PAGE_SIZES = [10, 20, 50];
-
 export default function WalletPage() {
   const router = useRouter();
 
@@ -464,6 +572,8 @@ export default function WalletPage() {
   );
 
   const [search, setSearch] = useState("");
+  const [dateFilter, setDateFilter] = useState<DateFilter>("all");
+
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
@@ -548,16 +658,19 @@ export default function WalletPage() {
 
   const balances = wallet?.balances;
 
-  const nonWithdrawalTransactions = useMemo(
-    () => wallet?.transactions ?? [],
-    [wallet?.transactions],
-  );
-
+  /**
+   * Transactions:
+   * Search + selected date filter are applied together.
+   */
   const visibleTransactions = useMemo(() => {
     const needle = search.toLowerCase().trim();
 
-    return nonWithdrawalTransactions.filter(
-      (item) =>
+    return (wallet?.transactions ?? []).filter((item) => {
+      const matchesDate = isWithinDateFilter(item.date, dateFilter);
+
+      if (!matchesDate) return false;
+
+      const matchesSearch =
         !needle ||
         [
           item.date,
@@ -571,15 +684,25 @@ export default function WalletPage() {
           item.yellow_coin,
           item.green_coin,
           item.blue_coin,
-        ].some((v) => String(v ?? "").toLowerCase().includes(needle)),
-    );
-  }, [nonWithdrawalTransactions, search]);
+        ].some((v) => String(v ?? "").toLowerCase().includes(needle));
 
+      return matchesSearch;
+    });
+  }, [wallet?.transactions, search, dateFilter]);
+
+  /**
+   * Withdrawals:
+   * Search + selected date filter are applied together.
+   */
   const visibleWithdrawals = useMemo(() => {
     const needle = search.toLowerCase().trim();
 
-    return (wallet?.withdrawals ?? []).filter(
-      (item) =>
+    return (wallet?.withdrawals ?? []).filter((item) => {
+      const matchesDate = isWithinDateFilter(item.date, dateFilter);
+
+      if (!matchesDate) return false;
+
+      const matchesSearch =
         !needle ||
         [
           item.id,
@@ -588,9 +711,11 @@ export default function WalletPage() {
           item.net_payable_inr,
           item.status,
           item.remark,
-        ].some((v) => String(v ?? "").toLowerCase().includes(needle)),
-    );
-  }, [wallet, search]);
+        ].some((v) => String(v ?? "").toLowerCase().includes(needle));
+
+      return matchesSearch;
+    });
+  }, [wallet?.withdrawals, search, dateFilter]);
 
   const rows =
     tab === "transactions" ? visibleTransactions : visibleWithdrawals;
@@ -653,6 +778,7 @@ export default function WalletPage() {
       <div className="relative flex min-w-0 flex-1 items-stretch">
         <main className="min-w-0 flex-1 bg-[#F4F7FB] px-3 py-4 sm:px-5 sm:py-6 lg:px-8 lg:py-8">
           <div className="mx-auto w-full max-w-[1300px] min-w-0 space-y-5 pb-8 sm:space-y-6">
+            {/* Header */}
             <header className="relative isolate flex flex-col gap-5 overflow-hidden rounded-[24px] bg-gradient-to-br from-[#0C1735] via-[#173464] to-[#285499] p-5 text-white shadow-[0_20px_48px_-26px_rgba(16,44,98,0.62)] sm:flex-row sm:items-center sm:justify-between sm:p-7 lg:p-8">
               <div
                 aria-hidden="true"
@@ -687,6 +813,7 @@ export default function WalletPage() {
               </button>
             </header>
 
+            {/* Fetch Error */}
             {fetchError && (
               <div
                 role="alert"
@@ -707,6 +834,7 @@ export default function WalletPage() {
               </div>
             )}
 
+            {/* Coin Balances */}
             <section className={`${PANEL} p-4 sm:p-6`}>
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div className="flex items-center gap-2.5">
@@ -742,11 +870,13 @@ export default function WalletPage() {
                   balance={balances?.yellow_bal}
                   color="#F4B51E"
                 />
+
                 <CoinTile
                   label="Green Coin"
                   balance={balances?.green_bal}
                   color="#16B65E"
                 />
+
                 <CoinTile
                   label="Blue Coin"
                   balance={balances?.blue_bal}
@@ -760,7 +890,9 @@ export default function WalletPage() {
               </p>
             </section>
 
+            {/* Wallet Activity */}
             <section className={`${PANEL} overflow-hidden`}>
+              {/* Activity Header */}
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#EBEEF3] px-4 py-5 sm:px-6">
                 <div className="flex items-center gap-2.5">
                   <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-[#F0F3F8] text-[#627890]">
@@ -779,12 +911,13 @@ export default function WalletPage() {
 
                 <span className="rounded-full border border-[#E6EAF0] bg-[#F8F9FB] px-2.5 py-1 text-[10px] font-bold text-[#7C8797]">
                   {tab === "transactions"
-                    ? nonWithdrawalTransactions.length
-                    : (wallet?.withdrawals.length ?? 0)}{" "}
+                    ? visibleTransactions.length
+                    : visibleWithdrawals.length}{" "}
                   records
                 </span>
               </div>
 
+              {/* Tabs */}
               <div className="flex flex-wrap items-center justify-between gap-4 px-4 pt-5 sm:px-6">
                 <div
                   role="tablist"
@@ -828,26 +961,55 @@ export default function WalletPage() {
                   </button>
                 </div>
 
-                <div className="relative w-full sm:max-w-[340px]">
-                  <Search
-                    size={15}
-                    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#98A3B2]"
-                  />
+                {/* Search + Date Filter */}
+                <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+                  {/* Search */}
+                  <div className="relative w-full sm:w-[270px]">
+                    <Search
+                      size={15}
+                      className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#98A3B2]"
+                    />
 
-                  <input
-                    type="search"
-                    aria-label="Search wallet activity"
-                    value={search}
-                    onChange={(e) => {
-                      setSearch(e.target.value);
-                      setPage(1);
-                    }}
-                    placeholder={`Search ${tab}...`}
-                    className="h-11 w-full rounded-[12px] border border-[#DCE4EE] bg-[#F9FBFF] pl-10 pr-4 text-[13px] font-medium text-[#193052] outline-none placeholder:text-[#9BA9BA] focus:border-[#5B7FBB] focus:bg-white focus:ring-4 focus:ring-blue-500/10"
-                  />
+                    <input
+                      type="search"
+                      aria-label="Search wallet activity"
+                      value={search}
+                      onChange={(e) => {
+                        setSearch(e.target.value);
+                        setPage(1);
+                      }}
+                      placeholder={`Search ${tab}...`}
+                      className="h-11 w-full rounded-[12px] border border-[#DCE4EE] bg-[#F9FBFF] pl-10 pr-4 text-[13px] font-medium text-[#193052] outline-none placeholder:text-[#9BA9BA] focus:border-[#5B7FBB] focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+                    />
+                  </div>
+
+                  {/* Date Filter */}
+                  <div className="relative w-full sm:w-[130px]">
+                    <select
+                      aria-label="Filter wallet activity by date"
+                      value={dateFilter}
+                      onChange={(e) => {
+                        setDateFilter(e.target.value as DateFilter);
+                        setPage(1);
+                      }}
+                      className="h-11 w-full cursor-pointer appearance-none rounded-[12px] border border-[#DCE4EE] bg-[#F9FBFF] px-3 pr-9 text-[12px] font-bold text-[#193052] outline-none transition focus:border-[#5B7FBB] focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+                    >
+                      {DATE_FILTER_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+
+                    <ChevronRight
+                      size={15}
+                      className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rotate-90 text-[#7D8CA0]"
+                    />
+                  </div>
                 </div>
               </div>
 
+              {/* Table / Cards */}
               <div className="px-4 pt-4 sm:px-6">
                 {!loading && displayRows.length > 0 && (
                   <div className="grid gap-3 lg:hidden">
@@ -923,6 +1085,7 @@ export default function WalletPage() {
                                     <p className="text-[10px] font-medium text-[#77869A]">
                                       {label}
                                     </p>
+
                                     <p
                                       className={`mt-1 text-[12px] font-bold tabular-nums ${amountColor(value)}`}
                                     >
@@ -986,6 +1149,7 @@ export default function WalletPage() {
                   </div>
                 )}
 
+                {/* Desktop Transactions Table */}
                 <div className="hidden max-w-full overflow-x-auto lg:block">
                   {tab === "transactions" ? (
                     <table className="w-full min-w-[790px] border-collapse text-left">
@@ -1138,17 +1302,34 @@ export default function WalletPage() {
                   )}
                 </div>
 
+                {/* Empty State */}
                 {!loading && !rows.length && (
                   <div className="flex min-h-[175px] flex-col items-center justify-center gap-2 text-center">
                     <History size={24} className="text-[#AFB8C5]" />
+
                     <p className="text-[12px] font-semibold text-[#6E7A8C]">
-                      {search
+                      {search || dateFilter !== "all"
                         ? "No matching records"
                         : "No records available"}
                     </p>
+
+                    {(search || dateFilter !== "all") && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSearch("");
+                          setDateFilter("all");
+                          setPage(1);
+                        }}
+                        className="mt-1 text-[11px] font-bold text-[#315E9E] underline underline-offset-2"
+                      >
+                        Clear search and filters
+                      </button>
+                    )}
                   </div>
                 )}
 
+                {/* Loading */}
                 {loading && (
                   <div className="flex min-h-[175px] items-center justify-center gap-2 text-[12px] text-[#8793A3]">
                     <Loader2 size={17} className="animate-spin" />
@@ -1157,10 +1338,12 @@ export default function WalletPage() {
                 )}
               </div>
 
+              {/* Pagination */}
               <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#ECEFF3] px-4 py-3.5 sm:px-5">
                 <div className="flex flex-wrap items-center gap-3 text-[10px] text-[#7E8A9A]">
                   <label className="flex items-center gap-2">
                     <span>Rows</span>
+
                     <select
                       aria-label="Rows per page"
                       className="rounded-[8px] border border-[#E0E5EC] bg-white px-2 py-1.5 text-[#303A49]"
@@ -1216,17 +1399,21 @@ export default function WalletPage() {
                 </div>
               </div>
 
-              {wallet?.has_more_transactions && tab === "transactions" && (
-                <p className="border-t border-[#F0F2F4] px-5 py-3 text-[10px] text-[#8C6B34]">
-                  The API reports additional transactions beyond this response.
-                  Pagination here covers the currently returned records only.
-                </p>
-              )}
+              {/* API Pagination Note */}
+              {wallet?.has_more_transactions &&
+                tab === "transactions" && (
+                  <p className="border-t border-[#F0F2F4] px-5 py-3 text-[10px] text-[#8C6B34]">
+                    The API reports additional transactions beyond this
+                    response. Pagination here covers the currently returned
+                    records only.
+                  </p>
+                )}
             </section>
           </div>
         </main>
       </div>
 
+      {/* Redeem Modal */}
       {redeemOpen && balances && (
         <RedeemModal
           balances={balances}

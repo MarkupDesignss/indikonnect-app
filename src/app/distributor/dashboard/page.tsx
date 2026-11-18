@@ -391,7 +391,7 @@ function QuickStatsCards({ ignite }: { ignite?: IgniteDashboard | null }) {
       bg: "#F4EDFF",
     },
     {
-      label: "Unilevel Green Coins",
+      label: " Green Coins",
       value: info?.unilevel_green_coin,
       prefix: "",
       icon: Coins,
@@ -2833,7 +2833,7 @@ function FinancialSummary({ ignite }: { ignite?: ExtendedIgnite | null }) {
           : `₹${formatNumber(ignite.weekly_pairing_usd)}`,
     },
     {
-      label: "Unilevel green coins",
+      label: " green coins",
       value:
         ignite?.unilevel_green_coin == null
           ? "—"
