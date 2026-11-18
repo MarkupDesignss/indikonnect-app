@@ -1,34 +1,61 @@
+
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
-// Try multiple logo paths - use relative path that works in both dev and prod
+import Logo from "../../../public/indiekonnect-web/images/logo.png";
+
+// =====================================================
+// CONFIGURATION
+// =====================================================
+
 const LOGO_PATHS = [
+  Logo.src,
   "/indiekonnect-web/images/logo.png",
   "/images/logo.png",
   "/logo.png",
-  "/indiekonnect-web/images/logo.svg",
 ];
 
-// ===== HELPER: image URL ko base64 data URL me convert karta hai =====
+const PAGE_MARGIN = 15;
+const FOOTER_HEIGHT = 20;
+
+type InvoiceRecord = Record<string, any>;
+
+// =====================================================
+// IMAGE HELPERS
+// =====================================================
+
 const loadImageAsBase64 = (url: string): Promise<string> => {
   return new Promise((resolve, reject) => {
     const img = new Image();
+
     img.crossOrigin = "anonymous";
+
     img.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) {
-        reject(new Error("Canvas context not available"));
-        return;
+      try {
+        const canvas = document.createElement("canvas");
+
+        canvas.width = img.naturalWidth || img.width;
+        canvas.height = img.naturalHeight || img.height;
+
+        const ctx = canvas.getContext("2d");
+
+        if (!ctx) {
+          reject(new Error("Canvas context is unavailable"));
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0);
+
+        resolve(canvas.toDataURL("image/png"));
+      } catch (error) {
+        reject(error);
       }
-      ctx.drawImage(img, 0, 0);
-      resolve(canvas.toDataURL("image/png"));
     };
+
     img.onerror = () => {
-      reject(new Error(`Failed to load image from: ${url}`));
+      reject(new Error(`Unable to load image: ${url}`));
     };
+
     img.src = url;
   });
 };
@@ -36,488 +63,1396 @@ const loadImageAsBase64 = (url: string): Promise<string> => {
 const loadLogoWithFallback = async (): Promise<string | null> => {
   for (const path of LOGO_PATHS) {
     try {
-      const base64 = await loadImageAsBase64(path);
-      return base64;
-    } catch (err) {
-      console.warn(`Logo not found at ${path}, trying next...`);
+      if (!path) continue;
+
+      return await loadImageAsBase64(path);
+    } catch {
+      console.warn(`Invoice logo unavailable: ${path}`);
     }
   }
+
   return null;
 };
 
-// ===== FORMAT HELPERS =====
-const formatPrice = (amount: string | number) => {
-  const num = typeof amount === "string" ? parseFloat(amount) : amount;
-  const safeNum = isNaN(num) ? 0 : num;
-  return `Rs. ${safeNum.toLocaleString("en-IN", {
+// =====================================================
+// COMMON HELPERS
+// =====================================================
+
+const isPresent = (value: any): boolean => {
+  return value !== undefined && value !== null && value !== "";
+};
+
+const firstValue = (...values: any[]): any => {
+  return values.find(isPresent);
+};
+
+const toNumber = (value: any): number | null => {
+  if (!isPresent(value)) return null;
+
+  const number = Number(
+    String(value).replace(/,/g, "").replace(/[₹$]/g, "").trim(),
+  );
+
+  return Number.isFinite(number) ? number : null;
+};
+
+const firstNumber = (...values: any[]): number | null => {
+  for (const value of values) {
+    const result = toNumber(value);
+
+    if (result !== null) {
+      return result;
+    }
+  }
+
+  return null;
+};
+
+const formatPrice = (amount: any): string => {
+  const number = toNumber(amount);
+
+  if (number === null) return "N/A";
+
+  return `Rs. ${number.toLocaleString("en-IN", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
 };
 
-const formatDate = (dateString: string) => {
+const formatMoneyCell = (amount: any): string => {
+  return amount === null || amount === undefined
+    ? "-"
+    : formatPrice(amount);
+};
+
+const formatDate = (dateString: any): string => {
   if (!dateString) return "N/A";
-  try {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-  } catch {
+
+  const date = new Date(dateString);
+
+  if (Number.isNaN(date.getTime())) {
     return "N/A";
   }
+
+  return date.toLocaleDateString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 };
 
-// ===== FORMAT ADDRESS =====
-const formatFullAddress = (addr: any): string => {
-  if (!addr) return "N/A";
-  
-  const parts: string[] = [];
-  
-  if (addr.address_line_1) parts.push(addr.address_line_1);
-  if (addr.address_line_2) parts.push(addr.address_line_2);
-  
-  const cityStateParts: string[] = [];
-  if (addr.city) cityStateParts.push(addr.city);
-  if (addr.state) cityStateParts.push(addr.state);
-  if (addr.pincode) cityStateParts.push(addr.pincode);
-  
-  if (cityStateParts.length > 0) {
-    parts.push(cityStateParts.join(", "));
-  }
-  
-  if (addr.country) parts.push(addr.country);
-  
-  return parts.join(", ") || "N/A";
+const normalizePaymentGateway = (value: any): string => {
+  if (!value) return "N/A";
+
+  return String(value)
+    .replace(/[_-]/g, " ")
+    .toUpperCase();
 };
 
-// ===== MAIN INVOICE GENERATOR =====
-export const generateInvoicePDF = async (data: any) => {
-  const doc = new jsPDF("p", "mm", "a4");
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
+const safeText = (value: any, fallback = "N/A"): string => {
+  if (!isPresent(value)) return fallback;
 
-  // ===== HEADER =====
-  const headerHeight = 40;
-  doc.setFillColor(251, 248, 242);
-  doc.rect(0, 0, pageWidth, headerHeight, "F");
+  return String(value);
+};
 
-  // Thin accent bar
-  doc.setFillColor(26, 26, 46);
-  doc.rect(0, headerHeight, pageWidth, 1.2, "F");
+// =====================================================
+// API RESPONSE NORMALIZATION
+// =====================================================
 
-  doc.setFontSize(24);
-  doc.setTextColor(26, 26, 46);
-  doc.setFont("helvetica", "bold");
-  doc.text("INVOICE", 20, 20);
+const normalizeInvoiceResponse = (response: any) => {
+  const root = response || {};
 
-  doc.setFontSize(10);
-  doc.setTextColor(100, 100, 100);
-  doc.setFont("helvetica", "normal");
+  // Supports:
+  // 1. API response: { success, data: { invoice, order } }
+  // 2. RTK response with nested data
+  // 3. Direct payload: { invoice, order }
 
-  const invoiceNumber = data?.invoice?.invoice_number || "N/A";
-  doc.text(`#${invoiceNumber}`, 20, 28);
-
-  doc.setFontSize(9);
-  doc.setTextColor(140, 140, 140);
-  doc.setFont("helvetica", "normal");
-  doc.text("TAX INVOICE", 20, 34);
-
-  // ===== LOGO =====
-  try {
-    const logoBase64 = await loadLogoWithFallback();
-    if (logoBase64) {
-      const logoWidth = 22;
-      const logoHeight = 22;
-      doc.addImage(
-        logoBase64,
-        "PNG",
-        pageWidth - 20 - logoWidth,
-        6,
-        logoWidth,
-        logoHeight
-      );
-    }
-  } catch (err) {
-    console.warn("Could not load logo for invoice:", err);
-  }
-
-  // Seller details (right side)
-  const sellerName = data?.invoice?.seller?.name || data?.invoice?.seller_details?.name || "IndieKonnect";
-  doc.setFontSize(10);
-  doc.setTextColor(26, 26, 46);
-  doc.setFont("helvetica", "bold");
-  doc.text(sellerName, pageWidth - 20, 33, { align: "right" });
-
-  const sellerGstin = data?.invoice?.seller?.gstin || data?.invoice?.seller_details?.gstin || "N/A";
-  doc.setFontSize(8);
-  doc.setTextColor(100, 100, 100);
-  doc.setFont("helvetica", "normal");
-  doc.text(`GSTIN: ${sellerGstin}`, pageWidth - 20, 38, { align: "right" });
-
-  // ===== ORDER DETAILS =====
-  doc.setFontSize(9);
-  doc.setTextColor(80, 80, 80);
-  doc.setFont("helvetica", "normal");
-
-  const orderRef = data?.order?.order_reference || "N/A";
-  doc.text(`Order Reference: ${orderRef}`, 20, 52);
-
-  const orderDate = formatDate(data?.order?.confirmed_at || data?.order?.order_date);
-  doc.text(`Order Date: ${orderDate}`, 20, 59);
-
-  const issueDate = formatDate(data?.invoice?.issued_at);
-  doc.text(`Issue Date: ${issueDate}`, 20, 66);
-
-  // ===== BILLING & SHIPPING ADDRESSES =====
-  const billingAddress = data?.order?.billing_address || {};
-  const deliveryAddress = data?.order?.delivery_address || {};
-  const buyerName = data?.invoice?.buyer?.name || data?.invoice?.buyer_details?.name || data?.order?.user?.name || "N/A";
-  
-  const billingAddrStr = formatFullAddress(billingAddress);
-  const deliveryAddrStr = formatFullAddress(deliveryAddress);
-
-  // Address section start Y
-  let addressStartY = 74;
-  const boxWidth = 82;
-  const boxHeight = 35;
-  const gap = 6;
-  
-  // ===== BILLING ADDRESS BOX =====
-  doc.setFillColor(245, 245, 245);
-  doc.rect(20, addressStartY, boxWidth, boxHeight, "F");
-  doc.setDrawColor(225, 225, 225);
-  doc.rect(20, addressStartY, boxWidth, boxHeight);
-
-  doc.setFontSize(9);
-  doc.setTextColor(26, 26, 46);
-  doc.setFont("helvetica", "bold");
-  doc.text("Billing Address:", 24, addressStartY + 7);
-
-  doc.setFontSize(8.5);
-  doc.setTextColor(60, 60, 60);
-  doc.setFont("helvetica", "normal");
-  
-  const billBuyerName = data?.invoice?.buyer?.name || data?.invoice?.buyer_details?.name || buyerName;
-  doc.text(billBuyerName, 24, addressStartY + 14);
-  
-  const billAddrLines = doc.splitTextToSize(billingAddrStr, boxWidth - 10);
-  let billY = addressStartY + 20;
-  billAddrLines.forEach((line: string) => {
-    if (billY < addressStartY + boxHeight - 3) {
-      doc.text(line, 24, billY);
-      billY += 4.5;
-    }
-  });
-
-  // ===== SHIPPING ADDRESS BOX =====
-  const shipX = 20 + boxWidth + gap;
-  doc.setFillColor(245, 245, 245);
-  doc.rect(shipX, addressStartY, boxWidth, boxHeight, "F");
-  doc.setDrawColor(225, 225, 225);
-  doc.rect(shipX, addressStartY, boxWidth, boxHeight);
-
-  doc.setFontSize(9);
-  doc.setTextColor(26, 26, 46);
-  doc.setFont("helvetica", "bold");
-  doc.text("Shipping Address:", shipX + 4, addressStartY + 7);
-
-  doc.setFontSize(8.5);
-  doc.setTextColor(60, 60, 60);
-  doc.setFont("helvetica", "normal");
-  
-  const shipName = data?.order?.user?.name || buyerName;
-  doc.text(shipName, shipX + 4, addressStartY + 14);
-  
-  const shipAddrLines = doc.splitTextToSize(deliveryAddrStr, boxWidth - 10);
-  let shipY = addressStartY + 20;
-  shipAddrLines.forEach((line: string) => {
-    if (shipY < addressStartY + boxHeight - 3) {
-      doc.text(line, shipX + 4, shipY);
-      shipY += 4.5;
-    }
-  });
-
-  addressStartY += boxHeight + 6;
-
-  // ===== ITEMS TABLE =====
-  let lineItems: any[] = [];
-  try {
-    if (Array.isArray(data?.order?.order_items)) {
-      lineItems = data.order.order_items;
-    } else if (typeof data?.invoice?.line_items === "string") {
-      lineItems = JSON.parse(data.invoice.line_items);
-    } else if (Array.isArray(data?.invoice?.line_items)) {
-      lineItems = data.invoice.line_items;
-    } else if (Array.isArray(data?.order_lines)) {
-      lineItems = data.order_lines;
-    }
-  } catch (e) {
-    console.warn("Could not parse line items:", e);
-  }
-
-  if (lineItems.length === 0) {
-    lineItems = [{
-      product_name: "Product",
-      quantity: 1,
-      unit_price: 0,
-      gst_rate: 0,
-      cgst_amount: 0,
-      sgst_amount: 0,
-      igst_amount: 0,
-      line_total: 0,
-    }];
-  }
-
-  const tableHeaders = [
-    "#", 
-    "Product", 
-    "Qty", 
-    "Unit Price", 
-    "GST %", 
-    "CGST", 
-    "SGST", 
-    "IGST", 
-    "Total"
-  ];
-  
-  const tableRows = lineItems.map((item: any, index: number) => {
-    const cgstAmount = parseFloat(item.cgst_amount || 0);
-    const sgstAmount = parseFloat(item.sgst_amount || 0);
-    const igstAmount = parseFloat(item.igst_amount || 0);
-    const gstRate = parseFloat(item.gst_rate || 0);
-    const hasTax = gstRate > 0 || cgstAmount > 0 || sgstAmount > 0 || igstAmount > 0;
-    
-    return [
-      (index + 1).toString(),
-      item.product_name || "Product",
-      (item.quantity || 1).toString(),
-      formatPrice(item.unit_price || 0),
-      hasTax ? `${gstRate}%` : "-",
-      hasTax ? formatPrice(cgstAmount) : "-",
-      hasTax ? formatPrice(sgstAmount) : "-",
-      hasTax ? formatPrice(igstAmount) : "-",
-      formatPrice(item.line_total || 0),
-    ];
-  });
-
-  const startY = addressStartY + 2;
-
-  autoTable(doc, {
-    startY: startY,
-    head: [tableHeaders],
-    body: tableRows,
-    theme: "striped",
-    headStyles: {
-      fillColor: [26, 26, 46],
-      textColor: [255, 255, 255],
-      fontStyle: "bold",
-      fontSize: 7.5,
-      halign: "center",
-      cellPadding: 2,
-    },
-    bodyStyles: {
-      fontSize: 7.5,
-      textColor: [60, 60, 60],
-      cellPadding: 2,
-    },
-    alternateRowStyles: {
-      fillColor: [248, 248, 250],
-    },
-    columnStyles: {
-      0: { cellWidth: 10, halign: "center" },
-      1: { cellWidth: 45, halign: "left" },
-      2: { cellWidth: 10, halign: "center" },
-      3: { cellWidth: 22, halign: "right" },
-      4: { cellWidth: 15, halign: "center" },
-      5: { cellWidth: 18, halign: "right" },
-      6: { cellWidth: 18, halign: "right" },
-      7: { cellWidth: 18, halign: "right" },
-      8: { cellWidth: 22, halign: "right" },
-    },
-    styles: {
-      overflow: "linebreak",
-      cellWidth: "wrap",
-    },
-    margin: { left: 20, right: 20 },
-  });
-
-  // ===== SUMMARY =====
-  const finalY = (doc as any).lastAutoTable.finalY + 6;
-
-  let summaryStartY = finalY;
-  if (summaryStartY > pageHeight - 80) {
-    doc.addPage();
-    summaryStartY = 20;
-  }
-
-  const orderSubtotal = parseFloat(data?.order?.subtotal || 0);
-  const shippingCharge = parseFloat(data?.order?.shipping_charge || 0);
-  const couponDiscount = parseFloat(data?.invoice?.coupon_discount || data?.order?.coupon_discount || 0);
-  const totalGst = parseFloat(data?.order?.total_gst || data?.invoice?.total_tax || 0);
-  const totalPayable = parseFloat(data?.order?.total_payable || data?.invoice?.total_payable || 0);
-  const coinRedeemed = parseFloat(data?.order?.coin_redeemed_amount || data?.invoice?.coin_redeemed || 0);
-  const totalCgst = parseFloat(data?.order?.total_cgst || data?.invoice?.total_cgst || 0);
-  const totalSgst = parseFloat(data?.order?.total_sgst || data?.invoice?.total_sgst || 0);
-  const totalIgst = parseFloat(data?.order?.total_igst || data?.invoice?.total_igst || 0);
-
-  const summaryData: string[][] = [
-    ["Subtotal", formatPrice(orderSubtotal)],
+  const candidates = [
+    root?.data?.data,
+    root?.data,
+    root,
   ];
 
-  if (shippingCharge > 0) {
-    summaryData.push(["Shipping Charges", formatPrice(shippingCharge)]);
+  const payload =
+    candidates.find(
+      (candidate: any) =>
+        candidate &&
+        typeof candidate === "object" &&
+        candidate.invoice,
+    ) || {};
+
+  return {
+    invoice: payload.invoice || {},
+    order: payload.order || {},
+    invoiceType:
+      root?.invoice_type ||
+      root?.data?.invoice_type ||
+      payload?.invoice_type ||
+      "complete",
+  };
+};
+
+// =====================================================
+// ADDRESS HELPERS
+// =====================================================
+
+const formatFullAddress = (address: InvoiceRecord | null): string => {
+  if (!address) return "N/A";
+
+  const parts = [
+    address.address_line_1,
+    address.address_line_2,
+    address.post_office,
+    address.city,
+    address.state,
+    address.pincode,
+    address.country,
+  ]
+    .filter(isPresent)
+    .map((part) => String(part).trim())
+    .filter(Boolean);
+
+  return [...new Set(parts)].join(", ") || "N/A";
+};
+
+// =====================================================
+// ITEM NORMALIZATION
+// =====================================================
+
+const normalizeItems = (value: any): InvoiceRecord[] => {
+  if (!isPresent(value)) return [];
+
+  if (Array.isArray(value)) {
+    return value.filter(
+      (item) => item && typeof item === "object",
+    );
   }
 
-  if (couponDiscount > 0) {
-    summaryData.push(["Coupon Discount", `-${formatPrice(couponDiscount)}`]);
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      return normalizeItems(parsed);
+    } catch {
+      console.warn("Unable to parse invoice line items");
+      return [];
+    }
   }
 
-  if (coinRedeemed > 0) {
-    summaryData.push(["Coin Redeemed", `-${formatPrice(coinRedeemed)}`]);
+  if (typeof value === "object") {
+    return [value];
   }
 
-  if (totalCgst > 0) {
-    summaryData.push(["CGST", formatPrice(totalCgst)]);
-  }
-  if (totalSgst > 0) {
-    summaryData.push(["SGST", formatPrice(totalSgst)]);
-  }
-  if (totalIgst > 0) {
-    summaryData.push(["IGST", formatPrice(totalIgst)]);
-  }
+  return [];
+};
 
-  summaryData.push(
-    ["Total GST", formatPrice(totalGst)],
-    ["", ""],
-    ["Total Payable", formatPrice(totalPayable)]
+const getItemTaxableAmount = (
+  item: InvoiceRecord,
+): number | null => {
+  const quantity = firstNumber(item.quantity) ?? 1;
+
+  const directAmount = firstNumber(
+    item.line_price_excl_gst,
+    item.line_total_excl_gst,
+    item.line_subtotal,
   );
 
-  autoTable(doc, {
-    startY: summaryStartY,
-    body: summaryData,
-    theme: "plain",
-    styles: {
-      fontSize: 9,
-      textColor: [60, 60, 60],
-    },
-    columnStyles: {
-      0: { cellWidth: 140, halign: "right" },
-      1: { cellWidth: 40, halign: "right" },
-    },
-    margin: { left: 20, right: 20 },
-    didParseCell: (cellData: any) => {
-      if (cellData.section === "body") {
-        if (cellData.row.index === summaryData.length - 1) {
-          cellData.cell.styles.fontStyle = "bold";
-          cellData.cell.styles.fontSize = 12;
-          cellData.cell.styles.textColor = [26, 26, 46];
-          cellData.cell.styles.fillColor = [251, 248, 242];
-        }
-        if (cellData.row.index === summaryData.length - 3) {
-          cellData.cell.styles.fontStyle = "bold";
-          cellData.cell.styles.fontSize = 9;
-          cellData.cell.styles.textColor = [60, 60, 60];
-        }
-      }
-    },
-  });
-
-  const totalRowY = (doc as any).lastAutoTable.finalY - 8;
-  if (totalRowY > 0) {
-    doc.setDrawColor(26, 26, 46);
-    doc.setLineWidth(0.4);
-    doc.line(pageWidth - 60 - 140, totalRowY, pageWidth - 20, totalRowY);
+  if (directAmount !== null) {
+    return directAmount;
   }
 
-  // ===== TAX BREAKDOWN (if available) =====
-  const taxBreakdown = data?.order?.summary_data?.tax_breakdown || [];
-  let taxY = (doc as any).lastAutoTable.finalY + 8;
-  
-  if (taxBreakdown.length > 0 && taxY < pageHeight - 60) {
-    doc.setFontSize(9);
-    doc.setTextColor(26, 26, 46);
+  const unitPrice = firstNumber(
+    item.price_excl_gst,
+    item.unit_price,
+  );
+
+  if (unitPrice !== null) {
+    return unitPrice * quantity;
+  }
+
+  const inclusiveAmount = firstNumber(
+    item.line_price_incl_gst,
+    item.line_total_incl_gst,
+    item.line_total,
+  );
+
+  return inclusiveAmount;
+};
+
+const getItemsTotal = (
+  items: InvoiceRecord[],
+): number | null => {
+  if (!items.length) return null;
+
+  let total = 0;
+
+  for (const item of items) {
+    const amount = getItemTaxableAmount(item);
+
+    if (amount === null) {
+      return null;
+    }
+
+    total += amount;
+  }
+
+  return total;
+};
+
+const getInvoiceItems = (
+  invoice: InvoiceRecord,
+  order: InvoiceRecord,
+  invoiceType: string,
+): InvoiceRecord[] => {
+  // First preference: actual invoice-specific item data.
+
+  const invoiceItems = normalizeItems(
+    firstValue(
+      invoice.invoice_items,
+      invoice.line_items,
+      invoice.items,
+    ),
+  );
+
+  if (invoiceItems.length > 0) {
+    return invoiceItems;
+  }
+
+  // Fallback: order item data.
+  // For a single-item invoice, verify that its amount agrees
+  // with the invoice taxable amount before using it.
+
+  const orderItems = normalizeItems(
+    firstValue(
+      order.order_items,
+      order.order_lines,
+      order.items,
+    ),
+  );
+
+  if (!orderItems.length) {
+    return [];
+  }
+
+  const isSingleItem = invoiceType === "single_item";
+
+  if (!isSingleItem) {
+    return orderItems;
+  }
+
+  const invoiceAmount = firstNumber(
+    invoice.total_taxable,
+    invoice.subtotal_after_discount,
+    invoice.subtotal_before_redemption,
+    invoice.total,
+  );
+
+  const orderItemsAmount = getItemsTotal(orderItems);
+
+  // Do not display a complete-order item as an invoice item
+  // when its amount clearly conflicts with the invoice.
+
+  if (
+    invoiceAmount !== null &&
+    orderItemsAmount !== null &&
+    Math.abs(invoiceAmount - orderItemsAmount) > 1
+  ) {
+    console.warn(
+      "Invoice API mismatch: order item amount does not match the single-item invoice.",
+      {
+        invoiceAmount,
+        orderItemsAmount,
+        invoiceItems,
+        orderItems,
+      },
+    );
+
+    return [];
+  }
+
+  return orderItems;
+};
+
+// =====================================================
+// ITEM TABLE MAPPING
+// =====================================================
+
+const getItemTableRow = (
+  item: InvoiceRecord,
+  index: number,
+): string[] => {
+  const quantity = firstNumber(item.quantity) ?? 1;
+
+  const productName = safeText(
+    firstValue(
+      item.product_name,
+      item.name,
+      item.title,
+    ),
+    "Product",
+  );
+
+  const hsnCode = safeText(
+    firstValue(item.hsn_code, item.hsn_sac_code),
+    "-",
+  );
+
+  const uom = firstValue(item.uom, item.unit_of_measure);
+
+  const description = uom
+    ? `${productName}\nUOM: ${uom}`
+    : productName;
+
+  const unitPrice = firstNumber(
+    item.unit_price,
+    item.price_excl_gst,
+    item.price_incl_gst,
+  );
+
+  const gstRate = firstValue(
+    item.gst_rate_percent,
+    item.gst_rate,
+    item.tax_rate_percent,
+    item.tax_rate,
+  );
+
+  const gstLabel = isPresent(gstRate)
+    ? `${String(gstRate).replace(/%$/, "")}%`
+    : "-";
+
+  const cgst = firstNumber(
+    item.line_cgst_amount,
+    item.cgst_amount,
+  );
+
+  const sgst = firstNumber(
+    item.line_sgst_amount,
+    item.sgst_amount,
+  );
+
+  const igst = firstNumber(
+    item.line_igst_amount,
+    item.igst_amount,
+  );
+
+  let lineAmount = firstNumber(
+    item.line_price_incl_gst,
+    item.line_total,
+    item.line_total_incl_gst,
+    item.line_price_excl_gst,
+    item.line_total_excl_gst,
+    item.total_amount,
+    item.amount,
+  );
+
+  if (lineAmount === null && unitPrice !== null) {
+    lineAmount = unitPrice * quantity;
+  }
+
+  return [
+    String(index + 1),
+    description,
+    hsnCode,
+    String(quantity),
+    formatMoneyCell(unitPrice),
+    gstLabel,
+    formatMoneyCell(cgst),
+    formatMoneyCell(sgst),
+    formatMoneyCell(igst),
+    formatMoneyCell(lineAmount),
+  ];
+};
+
+// =====================================================
+// INVOICE AMOUNT RESOLUTION
+// =====================================================
+
+const getInvoiceAmounts = (
+  invoice: InvoiceRecord,
+  order: InvoiceRecord,
+  invoiceType: string,
+) => {
+  const isSingleItem = invoiceType === "single_item";
+
+  // Never use whole-order totals as invoice totals
+  // for a single-item invoice.
+
+  const orderSubtotal = isSingleItem
+    ? undefined
+    : order.subtotal;
+
+  const orderShipping = isSingleItem
+    ? undefined
+    : order.shipping_charge;
+
+  const orderCoin = isSingleItem
+    ? undefined
+    : firstValue(
+        order.coin_redeemed_amount,
+        order.coin_redeemed,
+      );
+
+  const orderCoupon = isSingleItem
+    ? undefined
+    : order.coupon_discount;
+
+  const orderCGST = isSingleItem ? undefined : order.total_cgst;
+  const orderSGST = isSingleItem ? undefined : order.total_sgst;
+  const orderIGST = isSingleItem ? undefined : order.total_igst;
+  const orderTax = isSingleItem ? undefined : order.total_gst;
+  const orderTotal = isSingleItem ? undefined : order.total_payable;
+
+  const subtotal = firstNumber(
+    invoice.subtotal_before_redemption,
+    invoice.subtotal_after_discount,
+    invoice.total_taxable,
+    orderSubtotal,
+  );
+
+  const coinRedeemed = firstNumber(
+    invoice.coin_redeemed,
+    invoice.coin_redeemed_amount,
+    orderCoin,
+  );
+
+  const couponDiscount = firstNumber(
+    invoice.coupon_discount,
+    orderCoupon,
+  );
+
+  const shippingCharge = firstNumber(
+    invoice.shipping_charge,
+    orderShipping,
+  );
+
+  const taxableAmount = firstNumber(
+    invoice.total_taxable,
+    invoice.subtotal_after_discount,
+    !isSingleItem ? order.summary_data?.net_subtotal : undefined,
+  );
+
+  const cgst = firstNumber(
+    invoice.total_cgst,
+    orderCGST,
+  );
+
+  const sgst = firstNumber(
+    invoice.total_sgst,
+    orderSGST,
+  );
+
+  const igst = firstNumber(
+    invoice.total_igst,
+    orderIGST,
+  );
+
+  const taxComponentsProvided = [
+    invoice.total_cgst,
+    invoice.total_sgst,
+    invoice.total_igst,
+  ].some(isPresent);
+
+  const calculatedTax =
+    taxComponentsProvided
+      ? (cgst ?? 0) + (sgst ?? 0) + (igst ?? 0)
+      : null;
+
+  const totalTax = firstNumber(
+    invoice.total_tax,
+    calculatedTax,
+    orderTax,
+  );
+
+  const invoiceTotal = firstNumber(
+    invoice.total,
+    !isSingleItem ? order.total : undefined,
+  );
+
+  const totalPayable = firstNumber(
+    invoice.total_payable,
+    orderTotal,
+    invoice.total,
+  );
+
+  return {
+    subtotal,
+    coinRedeemed,
+    couponDiscount,
+    shippingCharge,
+    taxableAmount,
+    cgst,
+    sgst,
+    igst,
+    totalTax,
+    invoiceTotal,
+    totalPayable,
+  };
+};
+
+// =====================================================
+// ADDRESS CARD
+// =====================================================
+
+const drawAddressCard = (
+  doc: jsPDF,
+  config: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    title: string;
+    recipient: string;
+    phone: string;
+    meta: string;
+    address: string;
+    addressLines: string[];
+    nameLines: string[];
+  },
+) => {
+  const {
+    x,
+    y,
+    width,
+    height,
+    title,
+    phone,
+    meta,
+    addressLines,
+    nameLines,
+  } = config;
+
+  doc.setFillColor(247, 249, 252);
+  doc.setDrawColor(224, 231, 240);
+
+  doc.roundedRect(
+    x,
+    y,
+    width,
+    height,
+    2,
+    2,
+    "FD",
+  );
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8.5);
+  doc.setTextColor(26, 42, 64);
+
+  doc.text(title, x + 4, y + 7);
+
+  let currentY = y + 14;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.setTextColor(45, 58, 78);
+
+  doc.text(nameLines, x + 4, currentY);
+
+  currentY += nameLines.length * 3.5;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.3);
+  doc.setTextColor(78, 91, 108);
+
+  doc.text(`Contact: ${phone}`, x + 4, currentY + 2);
+
+  currentY += 5;
+
+  doc.text(meta, x + 4, currentY + 2);
+
+  currentY += 5;
+
+  doc.setFontSize(7.2);
+  doc.setTextColor(75, 87, 103);
+
+  doc.text(addressLines, x + 4, currentY + 2);
+};
+
+// =====================================================
+// MAIN INVOICE GENERATOR
+// =====================================================
+
+export const generateInvoicePDF = async (
+  response: any,
+): Promise<void> => {
+  // Open a window immediately to avoid popup blockers
+  // while the asynchronous logo is being loaded.
+
+  const previewWindow = window.open("", "_blank");
+
+  try {
+    const {
+      invoice,
+      order,
+      invoiceType,
+    } = normalizeInvoiceResponse(response);
+
+    if (!Object.keys(invoice).length) {
+      throw new Error("Invoice information was not found in API response.");
+    }
+
+    const doc = new jsPDF("p", "mm", "a4");
+
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+
+    // =================================================
+    // EXTRACT ACTUAL API DETAILS
+    // =================================================
+
+    const seller = invoice.seller || invoice.seller_details || {};
+
+    const buyer = invoice.buyer || invoice.buyer_details || {};
+
+    // IMPORTANT:
+    // Billing and delivery addresses are under invoice.buyer.
+
+    const billingAddress =
+      buyer.billing_address ||
+      invoice.billing_address ||
+      {};
+
+    const deliveryAddress =
+      buyer.delivery_address ||
+      invoice.delivery_address ||
+      {};
+
+    const buyerName = safeText(
+      firstValue(
+        buyer.name,
+        order.user?.name,
+      ),
+      "N/A",
+    );
+
+    const billingRecipient = safeText(
+      firstValue(
+        billingAddress.recipient_name,
+        buyerName,
+      ),
+    );
+
+    const deliveryRecipient = safeText(
+      firstValue(
+        deliveryAddress.recipient_name,
+        buyerName,
+      ),
+    );
+
+    const sellerName = safeText(seller.name, "IndieKonnect");
+    const sellerGSTIN = safeText(seller.gstin);
+    const sellerAddress = safeText(seller.address);
+
+    const buyerGSTIN = safeText(buyer.gstin);
+
+    const invoiceNumber = safeText(
+      invoice.invoice_number,
+      `INV-${invoice.id || "N/A"}`,
+    );
+
+    const orderReference = safeText(
+      order.order_reference,
+    );
+
+    const issueDate = formatDate(
+      invoice.issued_at || invoice.created_at,
+    );
+
+    const orderDate = formatDate(
+      order.confirmed_at || order.created_at,
+    );
+
+    const deliveryState = safeText(
+      invoice.delivery_state || order.delivery_state,
+    );
+
+    const items = getInvoiceItems(
+      invoice,
+      order,
+      invoiceType,
+    );
+
+    const amounts = getInvoiceAmounts(
+      invoice,
+      order,
+      invoiceType,
+    );
+
+    // =================================================
+    // HEADER
+    // =================================================
+
+    const headerHeight = 52;
+
+    doc.setFillColor(248, 250, 253);
+    doc.rect(0, 0, pageWidth, headerHeight, "F");
+
+    doc.setFillColor(23, 58, 117);
+    doc.rect(0, headerHeight, pageWidth, 1.2, "F");
+
+    // Invoice title
+
     doc.setFont("helvetica", "bold");
-    doc.text("Tax Breakdown:", 20, taxY);
-    
-    doc.setFontSize(8);
-    doc.setTextColor(80, 80, 80);
+    doc.setFontSize(23);
+    doc.setTextColor(26, 42, 64);
+
+    doc.text("TAX INVOICE", 20, 19);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(55, 72, 95);
+
+    doc.text(`# ${invoiceNumber}`, 20, 27);
+
     doc.setFont("helvetica", "normal");
-    
-    let taxTextY = taxY + 5;
-    taxBreakdown.forEach((tax: any, index: number) => {
-      const productName = tax.product_name || `Item ${index + 1}`;
-      const rate = tax.rate || "0%";
-      const category = tax.tax_category || "GST";
-      const text = `${productName}: ${category} @ ${rate}`;
-      const splitText = doc.splitTextToSize(text, 160);
-      splitText.forEach((line: string) => {
-        if (taxTextY < pageHeight - 30) {
-          doc.text(line, 24, taxTextY);
-          taxTextY += 4.5;
-        }
+    doc.setFontSize(8);
+    doc.setTextColor(110, 123, 141);
+
+    doc.text("ORIGINAL FOR RECIPIENT", 20, 34);
+
+    // Seller logo
+
+    try {
+      const logoBase64 = await loadLogoWithFallback();
+
+      if (logoBase64) {
+        doc.addImage(
+          logoBase64,
+          "PNG",
+          pageWidth - 39,
+          5,
+          19,
+          19,
+        );
+      }
+    } catch (error) {
+      console.warn("Invoice logo could not be added:", error);
+    }
+
+    // Seller details
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9.5);
+    doc.setTextColor(26, 42, 64);
+
+    doc.text(
+      sellerName,
+      pageWidth - 20,
+      29,
+      { align: "right" },
+    );
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.3);
+    doc.setTextColor(92, 105, 122);
+
+    doc.text(
+      `GSTIN: ${sellerGSTIN}`,
+      pageWidth - 20,
+      35,
+      { align: "right" },
+    );
+
+    const sellerAddressLines = doc.splitTextToSize(
+      sellerAddress,
+      85,
+    );
+
+    doc.text(
+      sellerAddressLines.slice(0, 2),
+      pageWidth - 20,
+      40,
+      { align: "right" },
+    );
+
+    // =================================================
+    // ORDER / INVOICE INFORMATION
+    // =================================================
+
+    const informationY = 62;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(73, 86, 104);
+
+    doc.text(
+      `Order Reference: ${orderReference}`,
+      20,
+      informationY,
+    );
+
+    doc.text(
+      `Order Date: ${orderDate}`,
+      20,
+      informationY + 7,
+    );
+
+    doc.text(
+      `Issue Date: ${issueDate}`,
+      pageWidth / 2 + 5,
+      informationY,
+    );
+
+    doc.text(
+      `Place of Supply: ${deliveryState}`,
+      pageWidth / 2 + 5,
+      informationY + 7,
+    );
+
+    // =================================================
+    // BILLING AND DELIVERY ADDRESSES
+    // =================================================
+
+    const addressY = 79;
+    const boxGap = 6;
+
+    const boxWidth =
+      (pageWidth - PAGE_MARGIN * 2 - boxGap) / 2;
+
+    const billingAddressText = formatFullAddress(
+      billingAddress,
+    );
+
+    const deliveryAddressText = formatFullAddress(
+      deliveryAddress,
+    );
+
+    const billingAddressLines = doc.splitTextToSize(
+      billingAddressText,
+      boxWidth - 8,
+    );
+
+    const deliveryAddressLines = doc.splitTextToSize(
+      deliveryAddressText,
+      boxWidth - 8,
+    );
+
+    const billingNameLines = doc.splitTextToSize(
+      billingRecipient,
+      boxWidth - 8,
+    ).slice(0, 2);
+
+    const deliveryNameLines = doc.splitTextToSize(
+      deliveryRecipient,
+      boxWidth - 8,
+    ).slice(0, 2);
+
+    const addressLineHeight = 3.5;
+
+    const billingCardHeight =
+      32 +
+      billingNameLines.length * addressLineHeight +
+      billingAddressLines.length * addressLineHeight;
+
+    const deliveryCardHeight =
+      32 +
+      deliveryNameLines.length * addressLineHeight +
+      deliveryAddressLines.length * addressLineHeight;
+
+    const addressBoxHeight = Math.max(
+      43,
+      billingCardHeight,
+      deliveryCardHeight,
+    );
+
+    drawAddressCard(doc, {
+      x: PAGE_MARGIN,
+      y: addressY,
+      width: boxWidth,
+      height: addressBoxHeight,
+      title: "BILL TO",
+      recipient: billingRecipient,
+      phone: safeText(billingAddress.contact_number),
+      meta: `Buyer GSTIN: ${buyerGSTIN}`,
+      address: billingAddressText,
+      addressLines: billingAddressLines,
+      nameLines: billingNameLines,
+    });
+
+    drawAddressCard(doc, {
+      x: PAGE_MARGIN + boxWidth + boxGap,
+      y: addressY,
+      width: boxWidth,
+      height: addressBoxHeight,
+      title: "SHIP TO",
+      recipient: deliveryRecipient,
+      phone: safeText(deliveryAddress.contact_number),
+      meta: `Place of Supply: ${deliveryState}`,
+      address: deliveryAddressText,
+      addressLines: deliveryAddressLines,
+      nameLines: deliveryNameLines,
+    });
+
+    // =================================================
+    // ITEM TABLE
+    // =================================================
+
+    const tableStartY = addressY + addressBoxHeight + 9;
+
+    const tableHeaders = [
+      "#",
+      "Description",
+      "HSN",
+      "Qty",
+      "Unit Price",
+      "GST %",
+      "CGST",
+      "SGST",
+      "IGST",
+      "Amount",
+    ];
+
+    const tableRows: string[][] = items.length
+      ? items.map(getItemTableRow)
+      : [
+          [
+            "1",
+            invoiceType === "single_item"
+              ? "Invoice-specific item details not provided by API"
+              : "Item details unavailable",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+          ],
+        ];
+
+    autoTable(doc, {
+      startY: tableStartY,
+
+      head: [tableHeaders],
+
+      body: tableRows,
+
+      theme: "striped",
+
+      showHead: "everyPage",
+
+      tableLineColor: [228, 234, 242],
+
+      tableLineWidth: 0.1,
+
+      headStyles: {
+        fillColor: [23, 58, 117],
+        textColor: [255, 255, 255],
+        fontStyle: "bold",
+        fontSize: 7,
+        halign: "center",
+        cellPadding: 2.3,
+      },
+
+      bodyStyles: {
+        fontSize: 7,
+        textColor: [58, 70, 87],
+        cellPadding: 2.4,
+        valign: "middle",
+        lineColor: [232, 237, 244],
+        lineWidth: 0.1,
+      },
+
+      alternateRowStyles: {
+        fillColor: [248, 250, 253],
+      },
+
+      columnStyles: {
+        0: {
+          cellWidth: 7,
+          halign: "center",
+        },
+
+        1: {
+          cellWidth: 42,
+          halign: "left",
+        },
+
+        2: {
+          cellWidth: 14,
+          halign: "center",
+        },
+
+        3: {
+          cellWidth: 9,
+          halign: "center",
+        },
+
+        4: {
+          cellWidth: 21,
+          halign: "right",
+        },
+
+        5: {
+          cellWidth: 12,
+          halign: "center",
+        },
+
+        6: {
+          cellWidth: 16,
+          halign: "right",
+        },
+
+        7: {
+          cellWidth: 16,
+          halign: "right",
+        },
+
+        8: {
+          cellWidth: 16,
+          halign: "right",
+        },
+
+        9: {
+          cellWidth: 22,
+          halign: "right",
+          fontStyle: "bold",
+        },
+      },
+
+      styles: {
+        overflow: "linebreak",
+        cellWidth: "wrap",
+        font: "helvetica",
+      },
+
+      margin: {
+        left: PAGE_MARGIN,
+        right: PAGE_MARGIN,
+        bottom: FOOTER_HEIGHT,
+      },
+
+      rowPageBreak: "avoid",
+    });
+
+    // =================================================
+    // INVOICE SUMMARY
+    // =================================================
+
+    let summaryRows: {
+      label: string;
+      value: string;
+      isTotal?: boolean;
+    }[] = [];
+
+    const addSummaryRow = (
+      label: string,
+      amount: number | null,
+    ) => {
+      if (amount === null) return;
+
+      summaryRows.push({
+        label,
+        value: formatPrice(amount),
       });
-    });
-    
-    // Update Y position after tax breakdown
-    taxY = taxTextY + 4;
-  } else {
-    taxY = (doc as any).lastAutoTable.finalY + 6;
-  }
+    };
 
-  // ===== PAYMENT DETAILS =====
-  let paymentY = taxY + 4;
-  
-  if (paymentY < pageHeight - 30) {
-    doc.setFontSize(8);
-    doc.setTextColor(100, 100, 100);
+    // Subtotal
+
+    addSummaryRow(
+      "Subtotal",
+      amounts.subtotal,
+    );
+
+    // Redemptions and discounts
+
+    if (
+      amounts.coinRedeemed !== null &&
+      amounts.coinRedeemed > 0
+    ) {
+      summaryRows.push({
+        label: "Coin Redeemed",
+        value: `-${formatPrice(amounts.coinRedeemed)}`,
+      });
+    }
+
+    if (
+      amounts.couponDiscount !== null &&
+      amounts.couponDiscount > 0
+    ) {
+      summaryRows.push({
+        label: `Coupon Discount${
+          invoice.coupon_code
+            ? ` (${invoice.coupon_code})`
+            : ""
+        }`,
+        value: `-${formatPrice(amounts.couponDiscount)}`,
+      });
+    }
+
+    // Taxable amount, only when different from subtotal.
+
+    if (
+      amounts.taxableAmount !== null &&
+      (
+        amounts.subtotal === null ||
+        Math.abs(
+          amounts.taxableAmount - amounts.subtotal,
+        ) > 0.01
+      )
+    ) {
+      addSummaryRow(
+        "Taxable Amount",
+        amounts.taxableAmount,
+      );
+    }
+
+    // GST components
+
+    const hasTaxComponents =
+      (amounts.cgst ?? 0) > 0 ||
+      (amounts.sgst ?? 0) > 0 ||
+      (amounts.igst ?? 0) > 0;
+
+    if (hasTaxComponents) {
+      addSummaryRow("CGST", amounts.cgst);
+      addSummaryRow("SGST", amounts.sgst);
+      addSummaryRow("IGST", amounts.igst);
+    } else {
+      addSummaryRow(
+        "Total GST",
+        amounts.totalTax,
+      );
+    }
+
+    // Shipping
+
+    if (
+      amounts.shippingCharge !== null &&
+      amounts.shippingCharge > 0
+    ) {
+      addSummaryRow(
+        "Shipping Charges",
+        amounts.shippingCharge,
+      );
+    }
+
+    // Invoice total and payable
+
+    if (
+      amounts.invoiceTotal !== null &&
+      (
+        amounts.totalPayable === null ||
+        Math.abs(
+          amounts.invoiceTotal - amounts.totalPayable,
+        ) > 0.01
+      )
+    ) {
+      addSummaryRow(
+        "Invoice Total",
+        amounts.invoiceTotal,
+      );
+    }
+
+    if (amounts.totalPayable !== null) {
+      summaryRows.push({
+        label: "TOTAL PAYABLE",
+        value: formatPrice(amounts.totalPayable),
+        isTotal: true,
+      });
+    }
+
+    let summaryStartY =
+      ((doc as any).lastAutoTable?.finalY ||
+        tableStartY) + 8;
+
+    // Give summary enough room and avoid placing
+    // it against the bottom of an item-table page.
+
+    if (summaryStartY > pageHeight - 85) {
+      doc.addPage();
+      summaryStartY = 22;
+    }
+
+    const summaryWidth = 94;
+
+    const summaryLeft =
+      pageWidth - PAGE_MARGIN - summaryWidth;
+
+    autoTable(doc, {
+      startY: summaryStartY,
+
+      body: summaryRows.map((row) => [
+        row.label,
+        row.value,
+      ]),
+
+      theme: "plain",
+
+      tableWidth: summaryWidth,
+
+      styles: {
+        font: "helvetica",
+        fontSize: 8.3,
+        textColor: [65, 78, 96],
+        cellPadding: 2.5,
+      },
+
+      columnStyles: {
+        0: {
+          cellWidth: 59,
+          halign: "right",
+        },
+
+        1: {
+          cellWidth: 35,
+          halign: "right",
+        },
+      },
+
+      margin: {
+        left: summaryLeft,
+        right: PAGE_MARGIN,
+        bottom: FOOTER_HEIGHT,
+      },
+
+      didParseCell: (hookData: any) => {
+        if (
+          hookData.section === "body" &&
+          summaryRows[hookData.row.index]?.isTotal
+        ) {
+          hookData.cell.styles.fontStyle = "bold";
+          hookData.cell.styles.fontSize = 10;
+          hookData.cell.styles.textColor = [23, 58, 117];
+          hookData.cell.styles.fillColor = [237, 243, 252];
+        }
+      },
+    });
+
+    // =================================================
+    // PAYMENT DETAILS
+    // =================================================
+
+    let paymentY =
+      ((doc as any).lastAutoTable?.finalY || summaryStartY) + 9;
+
+    if (paymentY > pageHeight - 43) {
+      doc.addPage();
+      paymentY = 24;
+    }
+
+    const paymentGateway = normalizePaymentGateway(
+      order.payment_gateway,
+    );
+
+    const transactionId = safeText(
+      order.gateway_transaction_id,
+    );
+
+    doc.setDrawColor(224, 231, 240);
+    doc.line(
+      PAGE_MARGIN,
+      paymentY,
+      pageWidth - PAGE_MARGIN,
+      paymentY,
+    );
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8.5);
+    doc.setTextColor(26, 42, 64);
+
+    doc.text(
+      "PAYMENT DETAILS",
+      PAGE_MARGIN,
+      paymentY + 7,
+    );
+
     doc.setFont("helvetica", "normal");
-    
-    const paymentMethod = data?.order?.payment_gateway?.toUpperCase() || "N/A";
-    doc.text(`Payment Method: ${paymentMethod}`, 20, paymentY);
-    
-    const transactionId = data?.order?.gateway_transaction_id || "N/A";
-    doc.text(`Transaction ID: ${transactionId}`, 20, paymentY + 5);
-    
-    const paymentStatus = data?.order?.status || "N/A";
-    doc.text(`Payment Status: ${paymentStatus.toUpperCase()}`, 20, paymentY + 10);
-    
-    const amountPaid = parseFloat(data?.order?.amount_paid || 0);
-    if (amountPaid > 0) {
-      doc.text(`Amount Paid: ${formatPrice(amountPaid)}`, 20, paymentY + 15);
+    doc.setFontSize(7.8);
+    doc.setTextColor(80, 92, 108);
+
+    doc.text(
+      `Payment Method: ${paymentGateway}`,
+      PAGE_MARGIN,
+      paymentY + 14,
+    );
+
+    doc.text(
+      `Transaction Reference: ${transactionId}`,
+      PAGE_MARGIN,
+      paymentY + 20,
+    );
+
+    // order.amount_paid is deliberately not shown for a
+    // single-item invoice because it represents the
+    // complete order amount, not necessarily this invoice.
+
+    if (invoiceType !== "single_item") {
+      const amountPaid = firstNumber(order.amount_paid);
+
+      if (amountPaid !== null) {
+        doc.text(
+          `Amount Paid: ${formatPrice(amountPaid)}`,
+          PAGE_MARGIN,
+          paymentY + 26,
+        );
+      }
     }
 
-    // ===== FOOTER =====
-    const footerY = paymentY + 22;
-    if (footerY < pageHeight - 15) {
-      doc.setDrawColor(200, 200, 200);
-      doc.line(20, footerY, pageWidth - 20, footerY);
+    // =================================================
+    // FOOTER AND PAGE NUMBERS
+    // =================================================
 
-      doc.setFontSize(8);
-      doc.setTextColor(150, 150, 150);
+    const pageCount = doc.getNumberOfPages();
+
+    for (let page = 1; page <= pageCount; page++) {
+      doc.setPage(page);
+
+      doc.setDrawColor(224, 231, 240);
+
+      doc.line(
+        PAGE_MARGIN,
+        pageHeight - 16,
+        pageWidth - PAGE_MARGIN,
+        pageHeight - 16,
+      );
+
       doc.setFont("helvetica", "normal");
-      doc.text("Thank you for your business!", pageWidth / 2, footerY + 10, { align: "center" });
-      doc.text("This is a system generated invoice. No signature required.", pageWidth / 2, footerY + 16, { align: "center" });
+      doc.setFontSize(7);
+      doc.setTextColor(135, 146, 160);
+
+      doc.text(
+        "This is a system-generated invoice. No signature required.",
+        PAGE_MARGIN,
+        pageHeight - 9,
+      );
+
+      doc.text(
+        `Page ${page} of ${pageCount}`,
+        pageWidth - PAGE_MARGIN,
+        pageHeight - 9,
+        { align: "right" },
+      );
     }
-  }
 
-  // Page numbers
-  const pageCount = doc.getNumberOfPages();
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
-    doc.setFontSize(7.5);
-    doc.setTextColor(170, 170, 170);
-    doc.text(`Page ${i} of ${pageCount}`, pageWidth - 20, doc.internal.pageSize.getHeight() - 8, {
-      align: "right",
-    });
-  }
+    // =================================================
+    // OPEN / DOWNLOAD PDF
+    // =================================================
 
-  // ===== SAVE / OPEN PDF =====
-  const pdfBlob = doc.output("blob");
-  const pdfUrl = URL.createObjectURL(pdfBlob);
-  window.open(pdfUrl, "_blank");
-  
-  setTimeout(() => {
-    URL.revokeObjectURL(pdfUrl);
-  }, 30000);
+    const pdfBlob = doc.output("blob");
+
+    const pdfUrl = URL.createObjectURL(pdfBlob);
+
+    if (previewWindow && !previewWindow.closed) {
+      previewWindow.location.href = pdfUrl;
+    } else {
+      // Browser blocked the popup: download instead.
+      doc.save(`${invoiceNumber}.pdf`);
+    }
+
+    // Keep the object URL available while the PDF opens.
+    window.setTimeout(() => {
+      URL.revokeObjectURL(pdfUrl);
+    }, 60000);
+
+  } catch (error) {
+    console.error("Invoice PDF generation failed:", error);
+
+    if (previewWindow && !previewWindow.closed) {
+      previewWindow.close();
+    }
+
+    throw error;
+  }
 };

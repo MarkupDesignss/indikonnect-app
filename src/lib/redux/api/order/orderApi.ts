@@ -1,4 +1,3 @@
-
 import { baseApi } from "../baseApi";
 
 import {
@@ -80,6 +79,15 @@ export interface RetryOrderResponse {
 }
 
 // =====================================================
+// INVOICE TYPES
+// =====================================================
+
+export interface GetInvoiceRequest {
+  orderId: number | string;
+  lineId: number | string;
+}
+
+// =====================================================
 // ORDER API
 // =====================================================
 
@@ -87,13 +95,28 @@ export const orderApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     // =====================================================
     // GET MY ORDERS
+    // GET /my-orders?search=Collection
     // =====================================================
 
-    getMyOrders: builder.query<MyOrdersResponse, void>({
-      query: () => ({
-        url: "/my-orders",
-        method: "GET",
-      }),
+    getMyOrders: builder.query<
+      MyOrdersResponse,
+      { search?: string } | void
+    >({
+      query: (params) => {
+        const search = params?.search?.trim();
+
+        return {
+          url: "/my-orders",
+          method: "GET",
+          ...(search
+            ? {
+                params: {
+                  search,
+                },
+              }
+            : {}),
+        };
+      },
       providesTags: ["Order"],
     }),
 
@@ -297,15 +320,17 @@ export const orderApi = baseApi.injectEndpoints({
     }),
 
     // =====================================================
-    // GET INVOICE BY ORDER ID
+    // GET INVOICE BY ORDER ID + LINE ID
+    // GET /invoice/order/{orderId}/{lineId}
+    // e.g. /invoice/order/16/27
     // =====================================================
 
     getInvoiceByOrderId: builder.query<
       InvoiceResponse,
-      number | string
+      GetInvoiceRequest
     >({
-      query: (orderId) => ({
-        url: `/invoice/order/${orderId}`,
+      query: ({ orderId, lineId }) => ({
+        url: `/invoice/order/${orderId}/${lineId}`,
         method: "GET",
       }),
     }),
@@ -371,23 +396,13 @@ export const orderApi = baseApi.injectEndpoints({
 export const {
   useGetMyOrdersQuery,
   useGetOrderStatusesQuery,
-
-  // Retry Payment
   useRetryOrderMutation,
-
-  // Cancel Order
   useCancelOrderMutation,
   useWithdrawCancelRequestMutation,
   useWithdrawCancelOrderMutation,
-
-  // Returns
   useInitiateReturnMutation,
   useCancelReturnMutation,
-
-  // Invoice
   useGetInvoiceByOrderIdQuery,
   useLazyGetInvoiceByOrderIdQuery,
-
-  // Reviews
   useAddRatingReviewMutation,
 } = orderApi;

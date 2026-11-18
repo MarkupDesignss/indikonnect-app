@@ -1,4 +1,3 @@
-
 "use client";
 
 import {
@@ -42,7 +41,6 @@ import Loding from "@/components/common/Loding";
 // COLORS
 // --------------------------------------------------
 
-const NAVY = "#162B4A";
 const BLUE = "#3268C8";
 const GREEN = "#0E9F75";
 const ORANGE = "#E78A35";
@@ -65,6 +63,13 @@ interface GenealogyTreeNode {
   left: GenealogyTreeNode | null;
   right: GenealogyTreeNode | null;
 }
+
+type GenealogyMemberWithMeta = GenealogyMember & {
+  full_name?: string | null;
+  display_ba_id?: string | null;
+  tc_label?: string | null;
+  tc_sequence?: number | string | null;
+};
 
 type TreeSide = "root" | "left" | "right";
 
@@ -94,7 +99,6 @@ function toNumber(
   }
 
   const parsed = Number(value);
-
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
@@ -107,10 +111,7 @@ function formatCV(
 }
 
 function getMemberName(member: GenealogyMember): string {
-  const namedMember = member as GenealogyMember & {
-    full_name?: string | null;
-  };
-
+  const namedMember = member as GenealogyMemberWithMeta;
   return namedMember.full_name?.trim() || "Unknown Member";
 }
 
@@ -122,6 +123,16 @@ function clampZoom(value: number): number {
   return Number(
     Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, value)).toFixed(2),
   );
+}
+
+/**
+ * Gets the base/display BA ID from the root BA ID when the API does not
+ * provide display_ba_id. Example: AIA1675197-001 -> AIA1675197.
+ */
+function deriveDisplayBaId(baId?: string | null): string {
+  if (!baId) return "";
+
+  return baId.match(/^(.*?)-\d+(?:-\d+)*$/)?.[1] || baId;
 }
 
 // --------------------------------------------------
@@ -140,9 +151,7 @@ function buildGenealogyTree(
     if (!parentBAId || !member.ba_id) return;
 
     const existing = childrenByParent.get(parentBAId) ?? [];
-
     existing.push(member);
-
     childrenByParent.set(parentBAId, existing);
   });
 
@@ -151,7 +160,6 @@ function buildGenealogyTree(
     ancestors: Set<string>,
   ): GenealogyTreeNode {
     const nextAncestors = new Set(ancestors);
-
     nextAncestors.add(member.ba_id);
 
     const children =
@@ -327,18 +335,14 @@ function MemberNodeCard({
 
       <div className="mt-3 grid grid-cols-2 gap-3">
         <div>
-          <p className="text-[10px] text-[#8a92a6]">
-            Floating Left
-          </p>
+          <p className="text-[10px] text-[#8a92a6]">Floating Left</p>
           <p className="mt-1 text-[12px] font-semibold text-[#3955A6]">
             {formatCV(member.floating_cv_left)}
           </p>
         </div>
 
         <div>
-          <p className="text-[10px] text-[#8a92a6]">
-            Floating Right
-          </p>
+          <p className="text-[10px] text-[#8a92a6]">Floating Right</p>
           <p className="mt-1 text-[12px] font-semibold text-[#3955A6]">
             {formatCV(member.floating_cv_right)}
           </p>
@@ -564,12 +568,16 @@ const BinaryTree = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchError, setSearchError] = useState("");
 
+  // TC dropdown state.
+  const [rootDropdownOpen, setRootDropdownOpen] = useState(false);
+
   const [contentSize, setContentSize] = useState<TreeSize>({
     w: 0,
     h: 0,
   });
 
   const searchRef = useRef<HTMLDivElement>(null);
+  const rootDropdownRef = useRef<HTMLDivElement>(null);
   const treeViewportRef = useRef<HTMLDivElement>(null);
   const treeContentRef = useRef<HTMLDivElement>(null);
 
@@ -591,6 +599,73 @@ const BinaryTree = () => {
   }, [invertScroll]);
 
   // --------------------------------------------------
+  // ROOT META + DISPLAY BA ID + TC OPTIONS
+  // --------------------------------------------------
+
+  const rootMeta = data?.root as GenealogyMemberWithMeta | undefined;
+
+  const displayBaId =
+    rootMeta?.display_ba_id?.trim() ||
+    deriveDisplayBaId(rootMeta?.ba_id);
+
+  // The requested full_name is displayed where VIEW ROOT was shown.
+  const rootDisplayName = rootMeta
+    ? getMemberName(rootMeta)
+    : "Unknown Member";
+
+  /**
+   * TC dropdown includes rows whose BA ID is either exactly the display BA ID
+   * or starts with `${display_ba_id}-`. Only rows carrying a TC label are shown.
+   */
+  const rootTCOptions = useMemo(() => {
+    if (!data || !displayBaId) return [];
+
+    const rows: GenealogyMemberWithMeta[] = [
+      ...((data.rows ?? []) as GenealogyMemberWithMeta[]),
+    ];
+
+    // Include root if the API does not also include it in rows.
+    if (
+      data.root &&
+      !rows.some((member) => member.ba_id === data.root?.ba_id)
+    ) {
+      rows.unshift(data.root as GenealogyMemberWithMeta);
+    }
+
+    const matchingMembers = rows.filter((member) => {
+      const baId = member.ba_id?.trim() || "";
+      const tcLabel = member.tc_label?.trim();
+
+      return (
+        Boolean(tcLabel) &&
+        (baId === displayBaId || baId.startsWith(`${displayBaId}-`))
+      );
+    });
+
+    // Avoid duplicate BA IDs in the dropdown.
+    const uniqueMembers = Array.from(
+      new Map(
+        matchingMembers.map((member) => [member.ba_id, member]),
+      ).values(),
+    );
+
+    return uniqueMembers.sort((a, b) => {
+      const sequenceA = Number(
+        a.tc_sequence ?? Number.MAX_SAFE_INTEGER,
+      );
+      const sequenceB = Number(
+        b.tc_sequence ?? Number.MAX_SAFE_INTEGER,
+      );
+
+      if (sequenceA !== sequenceB) {
+        return sequenceA - sequenceB;
+      }
+
+      return (a.tc_label || "").localeCompare(b.tc_label || "");
+    });
+  }, [data, displayBaId]);
+
+  // --------------------------------------------------
   // BUILD TREE
   // --------------------------------------------------
 
@@ -598,7 +673,6 @@ const BinaryTree = () => {
     if (!data) return null;
 
     const rows = data.rows ?? [];
-
     const root =
       data.root ??
       rows.find((member) => Number(member.level) === 0) ??
@@ -639,8 +713,14 @@ const BinaryTree = () => {
       ? activeRootId
       : (tree?.member.ba_id ?? "");
 
-  const displayedTree =
-    nodesById.get(currentRootId) ?? tree;
+  const displayedTree = nodesById.get(currentRootId) ?? tree;
+
+  const currentRootMember =
+    nodesById.get(currentRootId)?.member ?? tree?.member;
+
+  const currentRootTC =
+    (currentRootMember as GenealogyMemberWithMeta | undefined)
+      ?.tc_label || "Select TC";
 
   // --------------------------------------------------
   // SEARCH: NAME + BA ID
@@ -657,11 +737,7 @@ const BinaryTree = () => {
       const memberName = normalizeSearch(getMemberName(node.member));
       const baId = normalizeSearch(node.member.ba_id || "");
 
-      // Search by both member name and BA ID.
-      return (
-        memberName.includes(query) ||
-        baId.includes(query)
-      );
+      return memberName.includes(query) || baId.includes(query);
     });
 
     // Exact BA ID first, then exact name, then partial matches.
@@ -669,17 +745,13 @@ const BinaryTree = () => {
       .sort((a, b) => {
         const aId = normalizeSearch(a.member.ba_id || "");
         const bId = normalizeSearch(b.member.ba_id || "");
-
         const aName = normalizeSearch(getMemberName(a.member));
         const bName = normalizeSearch(getMemberName(b.member));
 
         const aPriority =
-          aId === query ? 0 :
-          aName === query ? 1 : 2;
-
+          aId === query ? 0 : aName === query ? 1 : 2;
         const bPriority =
-          bId === query ? 0 :
-          bName === query ? 1 : 2;
+          bId === query ? 0 : bName === query ? 1 : 2;
 
         if (aPriority !== bPriority) {
           return aPriority - bPriority;
@@ -705,9 +777,26 @@ const BinaryTree = () => {
     };
 
     document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, []);
 
+  // --------------------------------------------------
+  // CLOSE TC DROPDOWN
+  // --------------------------------------------------
+
+  useEffect(() => {
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (
+        rootDropdownRef.current &&
+        !rootDropdownRef.current.contains(event.target as Node)
+      ) {
+        setRootDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
     return () => {
-      document.removeEventListener("mousedown", close);
+      document.removeEventListener("mousedown", handleOutsideClick);
     };
   }, []);
 
@@ -719,7 +808,6 @@ const BinaryTree = () => {
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         const viewport = treeViewportRef.current;
-
         if (!viewport) return;
 
         viewport.scrollLeft = Math.max(
@@ -728,10 +816,7 @@ const BinaryTree = () => {
         );
 
         viewport.scrollTop = invertScrollRef.current
-          ? Math.max(
-              0,
-              viewport.scrollHeight - viewport.clientHeight,
-            )
+          ? Math.max(0, viewport.scrollHeight - viewport.clientHeight)
           : 0;
       });
     });
@@ -749,29 +834,26 @@ const BinaryTree = () => {
         setSearchError(
           "This BA ID is not in the currently loaded genealogy tree.",
         );
+        setRootDropdownOpen(false);
         return;
       }
 
       setSearchError("");
       setSearchQuery("");
       setSearchOpen(false);
+      setRootDropdownOpen(false);
 
       if (baId === currentRootId) {
         centerTreeInViewport();
         return;
       }
 
-      setBranchHistory((previous) => [
-        ...previous,
-        currentRootId,
-      ]);
-
+      setBranchHistory((previous) => [...previous, currentRootId]);
       setActiveRootId(baId);
       setCollapsed(false);
       setZoom(DEFAULT_ZOOM);
       setContentSize({ w: 0, h: 0 });
-    },
-    [nodesById, currentRootId, centerTreeInViewport],
+    }, [nodesById, currentRootId, centerTreeInViewport],
   );
 
   // --------------------------------------------------
@@ -779,9 +861,7 @@ const BinaryTree = () => {
   // --------------------------------------------------
 
   const goBackBranch = () => {
-    const previous =
-      branchHistory[branchHistory.length - 1];
-
+    const previous = branchHistory[branchHistory.length - 1];
     if (!previous) return;
 
     setBranchHistory((history) => history.slice(0, -1));
@@ -801,10 +881,10 @@ const BinaryTree = () => {
     setSearchQuery("");
     setSearchError("");
     setSearchOpen(false);
+    setRootDropdownOpen(false);
     setCollapsed(false);
     setZoom(DEFAULT_ZOOM);
     setContentSize({ w: 0, h: 0 });
-
     centerTreeInViewport();
   };
 
@@ -814,7 +894,6 @@ const BinaryTree = () => {
 
   useEffect(() => {
     const element = treeContentRef.current;
-
     if (!element) return;
 
     const update = () => {
@@ -839,7 +918,6 @@ const BinaryTree = () => {
     update();
 
     const observer = new ResizeObserver(update);
-
     observer.observe(element);
 
     return () => observer.disconnect();
@@ -851,7 +929,6 @@ const BinaryTree = () => {
 
   useEffect(() => {
     const viewport = treeViewportRef.current;
-
     if (!viewport) return;
 
     const onWheel = (event: WheelEvent) => {
@@ -866,10 +943,7 @@ const BinaryTree = () => {
         return;
       }
 
-      if (
-        viewport.scrollHeight >
-        viewport.clientHeight + 1
-      ) {
+      if (viewport.scrollHeight > viewport.clientHeight + 1) {
         return;
       }
 
@@ -887,9 +961,7 @@ const BinaryTree = () => {
       passive: false,
     });
 
-    return () => {
-      viewport.removeEventListener("wheel", onWheel);
-    };
+    return () => viewport.removeEventListener("wheel", onWheel);
   }, [displayedTree]);
 
   // --------------------------------------------------
@@ -899,10 +971,7 @@ const BinaryTree = () => {
   const onTreePointerDown = (
     event: ReactPointerEvent<HTMLDivElement>,
   ) => {
-    if (
-      event.pointerType !== "mouse" ||
-      event.button !== 0
-    ) {
+    if (event.pointerType !== "mouse" || event.button !== 0) {
       return;
     }
 
@@ -917,7 +986,6 @@ const BinaryTree = () => {
     }
 
     const viewport = treeViewportRef.current;
-
     if (!viewport) return;
 
     dragRef.current = {
@@ -941,10 +1009,7 @@ const BinaryTree = () => {
     const dx = event.clientX - drag.x;
     const dy = event.clientY - drag.y;
 
-    if (
-      !drag.moved &&
-      Math.abs(dx) + Math.abs(dy) <= 4
-    ) {
+    if (!drag.moved && Math.abs(dx) + Math.abs(dy) <= 4) {
       return;
     }
 
@@ -965,9 +1030,7 @@ const BinaryTree = () => {
 
     const viewport = treeViewportRef.current;
 
-    if (
-      viewport?.hasPointerCapture(event.pointerId)
-    ) {
+    if (viewport?.hasPointerCapture(event.pointerId)) {
       viewport.releasePointerCapture(event.pointerId);
     }
   };
@@ -978,14 +1041,10 @@ const BinaryTree = () => {
 
   const scrollHierarchyDown = () => {
     const viewport = treeViewportRef.current;
-
     if (!viewport) return;
 
     viewport.scrollBy({
-      top: Math.max(
-        240,
-        viewport.clientHeight * 0.65,
-      ),
+      top: Math.max(240, viewport.clientHeight * 0.65),
       behavior: "smooth",
     });
   };
@@ -1015,22 +1074,11 @@ const BinaryTree = () => {
     const realWidth = Math.max(1, element.offsetWidth);
     const realHeight = Math.max(1, element.offsetHeight);
 
-    const width = Math.max(
-      1,
-      viewport.clientWidth - 60,
-    );
-
-    const height = Math.max(
-      1,
-      viewport.clientHeight - 60,
-    );
+    const width = Math.max(1, viewport.clientWidth - 60);
+    const height = Math.max(1, viewport.clientHeight - 60);
 
     const nextZoom = clampZoom(
-      Math.min(
-        1,
-        width / realWidth,
-        height / realHeight,
-      ),
+      Math.min(1, width / realWidth, height / realHeight),
     );
 
     setZoom(nextZoom);
@@ -1072,7 +1120,6 @@ const BinaryTree = () => {
 
   const handleFullscreen = async () => {
     const viewport = treeViewportRef.current;
-
     if (!viewport) return;
 
     try {
@@ -1082,10 +1129,7 @@ const BinaryTree = () => {
         await viewport.requestFullscreen();
       }
     } catch (error) {
-      console.error(
-        "Unable to toggle fullscreen:",
-        error,
-      );
+      console.error("Unable to toggle fullscreen:", error);
     }
   };
 
@@ -1111,8 +1155,7 @@ const BinaryTree = () => {
         </h2>
 
         <p className="mt-1 max-w-md text-[13px] text-[#8a92a6]">
-          The genealogy data could not be loaded.
-          Please try again.
+          The genealogy data could not be loaded. Please try again.
         </p>
 
         <button
@@ -1157,9 +1200,7 @@ const BinaryTree = () => {
 
   return (
     <div className="w-full min-w-0 rounded-[24px] border border-[#E0E8F3] bg-white p-3 shadow-[0_12px_40px_-22px_rgba(23,43,77,.24)] sm:p-5">
-
       {/* HEADER */}
-
       <div className="relative mb-5 overflow-hidden rounded-[23px] bg-gradient-to-br from-[#172C4D] via-[#244C89] to-[#3673CE] px-5 py-6 text-white shadow-[0_16px_36px_-22px_rgba(23,44,77,.7)] sm:px-7 sm:py-7">
         <div
           aria-hidden="true"
@@ -1182,8 +1223,8 @@ const BinaryTree = () => {
               </h1>
 
               <p className="mt-1 max-w-2xl text-[12px] leading-5 text-[#DDEAFF] sm:text-[13px]">
-                Explore your team, search for a member or
-                open any member to see their complete downline.
+                Explore your team, search for a member or open any member to
+                see their complete downline.
               </p>
             </div>
           </div>
@@ -1191,50 +1232,143 @@ const BinaryTree = () => {
       </div>
 
       {/* SEARCH AND FILTERS */}
-
       <div className="flex flex-col gap-4 rounded-[19px] border border-[#DEE7F3] bg-[#F8FAFD] p-4 sm:p-5 xl:flex-row xl:items-end xl:justify-between">
         <div className="min-w-0 flex-1">
-
           <div className="mb-2 flex items-center gap-2 text-[12px] font-extrabold text-[#1F3C65]">
             <Search size={15} />
             Find a member or branch
           </div>
 
           <p className="mb-3 text-[12px] leading-5 text-[#667B96]">
-            Search across all loaded hierarchy levels.
-            Select a result to open its entire branch.
+            Search across all loaded hierarchy levels. Select a result to open
+            its entire branch.
           </p>
 
           <div className="flex flex-wrap items-center gap-2.5">
-
-            <span className="text-[11px] font-semibold text-[#5a6276]">
-              VIEW ROOT
-            </span>
-
-            <button
-              type="button"
-              onClick={showFullTree}
-              title="Show original complete tree"
-              className="flex h-[44px] max-w-full items-center gap-2 rounded-[11px] border border-[#C9D8EB] bg-white px-3.5 hover:bg-[#ECF4FF]"
-            >
-              <span className="max-w-[170px] break-all text-[12px] font-semibold text-[#1a2332]">
-                {currentRootId || "N/A"}
+            {/* ROOT FULL NAME + TC DROPDOWN */}
+            <div className="flex min-w-0 flex-wrap items-center gap-2.5">
+              <span
+                title={rootDisplayName}
+                className="max-w-[190px] truncate text-[12px] font-bold text-[#1a3559]"
+              >
+                {rootDisplayName}
               </span>
 
-              <ChevronDown
-                size={14}
-                className="shrink-0 text-[#8a92a6]"
-              />
-            </button>
+              <div ref={rootDropdownRef} className="relative">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setRootDropdownOpen((previous) => !previous)
+                  }
+                  aria-haspopup="listbox"
+                  aria-expanded={rootDropdownOpen}
+                  title="Select a TC member"
+                  className="flex h-[44px] min-w-[145px] items-center justify-between gap-3 rounded-[12px] border border-[#C9D8EB] bg-[#EDF4FF] px-4 text-left transition-all hover:border-[#8CAFE6] hover:bg-[#E5EFFF] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#3268C8]/10"
+                >
+                  <span className="text-[13px] font-extrabold tracking-[-.01em] text-[#1D3557]">
+                    {currentRootTC}
+                  </span>
+
+                  <ChevronDown
+                    size={16}
+                    className={`shrink-0 text-[#8394AC] transition-transform duration-200 ${
+                      rootDropdownOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+
+                {rootDropdownOpen && (
+                  <div
+                    role="listbox"
+                    aria-label="Select TC member"
+                    className="absolute left-0 top-[52px] z-[120] w-[280px] max-w-[calc(100vw-40px)] overflow-hidden rounded-[15px] border border-[#D9E6F5] bg-white shadow-[0_20px_50px_rgba(18,43,83,.18)]"
+                  >
+                    <div className="border-b border-[#EDF1F6] bg-[#F7FAFF] px-4 py-3">
+                      <p className="text-[12px] font-extrabold text-[#1D3557]">
+                        Select TC
+                      </p>
+                      <p className="mt-1 text-[10px] text-[#8493A8]">
+                        Choose a member to view their branch
+                      </p>
+                    </div>
+
+                    <div className="max-h-[300px] overflow-y-auto overscroll-contain p-2">
+                      {rootTCOptions.length > 0 ? (
+                        <div className="space-y-1">
+                          {rootTCOptions.map((member) => {
+                            const isActive =
+                              member.ba_id === currentRootId;
+                            const tcLabel = member.tc_label || "N/A";
+
+                            return (
+                              <button
+                                key={member.ba_id}
+                                type="button"
+                                role="option"
+                                aria-selected={isActive}
+                                onClick={() =>
+                                  openBranch(member.ba_id)
+                                }
+                                className={`flex w-full items-center justify-between gap-3 rounded-[10px] border px-3 py-3 text-left transition-colors ${
+                                  isActive
+                                    ? "border-[#C9DDFB] bg-[#EEF5FF]"
+                                    : "border-transparent hover:bg-[#F3F7FD]"
+                                }`}
+                              >
+                                <span className="min-w-0 flex-1">
+                                  <span
+                                    className={`block text-[13px] font-extrabold ${
+                                      isActive
+                                        ? "text-[#245BB0]"
+                                        : "text-[#1D3557]"
+                                    }`}
+                                  >
+                                    {tcLabel}
+                                  </span>
+
+                                  <span
+                                    className="mt-1 block truncate text-[10px] font-medium text-[#8291A7]"
+                                    title={member.ba_id}
+                                  >
+                                    {member.ba_id}
+                                  </span>
+                                </span>
+
+                                {isActive && (
+                                  <span className="shrink-0 rounded-full bg-[#DCEBFF] px-2 py-1 text-[9px] font-bold text-[#285DAE]">
+                                    Selected
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="px-3 py-6 text-center">
+                          <Network
+                            size={22}
+                            className="mx-auto text-[#A0AEC0]"
+                          />
+                          <p className="mt-2 text-[12px] font-semibold text-[#475569]">
+                            No TC members found
+                          </p>
+                          <p className="mt-1 text-[10px] text-[#94A3B8]">
+                            No matching TC records are available.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
 
             {/* SEARCH DROPDOWN */}
-
             <div
               ref={searchRef}
               className="relative w-full min-w-[220px] sm:w-[310px]"
             >
               <div className="flex h-[54px] items-center gap-2.5 rounded-[13px] border border-[#C7D7EB] bg-white px-3 focus-within:border-[#3268C8] focus-within:ring-4 focus-within:ring-[#3268C8]/10">
-
                 <Search
                   size={18}
                   className="shrink-0 text-[#64748b]"
@@ -1252,33 +1386,23 @@ const BinaryTree = () => {
                   onKeyDown={(event) => {
                     if (event.key === "Enter") {
                       event.preventDefault();
-
                       const query = normalizeSearch(searchQuery);
-
                       if (!query) return;
 
-                      const exactBAId = [
-                        ...nodesById.values(),
-                      ].find(
+                      const exactBAId = [...nodesById.values()].find(
                         (node) =>
-                          normalizeSearch(
-                            node.member.ba_id || "",
-                          ) === query,
+                          normalizeSearch(node.member.ba_id || "") ===
+                          query,
                       );
 
-                      const exactName = [
-                        ...nodesById.values(),
-                      ].find(
+                      const exactName = [...nodesById.values()].find(
                         (node) =>
-                          normalizeSearch(
-                            getMemberName(node.member),
-                          ) === query,
+                          normalizeSearch(getMemberName(node.member)) ===
+                          query,
                       );
 
                       const match =
-                        exactBAId ||
-                        exactName ||
-                        searchResults[0];
+                        exactBAId || exactName || searchResults[0];
 
                       if (match) {
                         openBranch(match.member.ba_id);
@@ -1314,20 +1438,13 @@ const BinaryTree = () => {
                 )}
               </div>
 
-              {/* UPDATED DROPDOWN */}
-
               {searchOpen && searchQuery.trim() && (
                 <div className="absolute left-0 right-0 top-[62px] z-[100] max-h-[400px] overflow-y-auto overscroll-contain rounded-[16px] border border-[#D9E6F5] bg-white p-2 shadow-[0_20px_50px_rgba(18,43,83,.18)]">
-
                   {searchResults.length > 0 ? (
                     <div className="space-y-1">
                       {searchResults.map((node) => {
-                        const memberName = getMemberName(
-                          node.member,
-                        );
-
-                        const memberBAId =
-                          node.member.ba_id || "N/A";
+                        const memberName = getMemberName(node.member);
+                        const memberBAId = node.member.ba_id || "N/A";
 
                         return (
                           <button
@@ -1338,8 +1455,6 @@ const BinaryTree = () => {
                             }
                             className="flex w-full items-center justify-between gap-3 rounded-[10px] px-3.5 py-3 text-left transition-colors hover:bg-[#EFF5FF] active:bg-[#E4EEFC]"
                           >
-                            {/* NAME + BA ID */}
-
                             <span className="min-w-0 flex-1">
                               <span
                                 className="block truncate text-[13px] font-bold leading-5 text-[#172C4D]"
@@ -1356,8 +1471,6 @@ const BinaryTree = () => {
                               </span>
                             </span>
 
-                            {/* LEVEL */}
-
                             <span className="shrink-0 whitespace-nowrap rounded-full bg-[#F0F5FC] px-2.5 py-1 text-[10px] font-medium text-[#64748b]">
                               Level {node.member.level}
                             </span>
@@ -1371,11 +1484,9 @@ const BinaryTree = () => {
                         size={20}
                         className="mx-auto text-[#A0AEC0]"
                       />
-
                       <p className="mt-2 text-[12px] font-semibold text-[#475569]">
                         No matching member found
                       </p>
-
                       <p className="mt-1 text-[10px] text-[#94A3B8]">
                         Try searching with another name or BA ID.
                       </p>
@@ -1384,8 +1495,8 @@ const BinaryTree = () => {
 
                   {searchResults.length === 60 && (
                     <div className="mt-1 border-t border-[#EDF1F6] px-3 py-2.5 text-center text-[10px] text-[#64748b]">
-                      Showing first 60 matches. Type more
-                      characters to narrow results.
+                      Showing first 60 matches. Type more characters to
+                      narrow results.
                     </div>
                   )}
                 </div>
@@ -1393,7 +1504,6 @@ const BinaryTree = () => {
             </div>
 
             {/* REFRESH */}
-
             <button
               type="button"
               onClick={() => refetch()}
@@ -1402,20 +1512,15 @@ const BinaryTree = () => {
             >
               <RefreshCw
                 size={15}
-                className={
-                  isFetching ? "animate-spin" : ""
-                }
+                className={isFetching ? "animate-spin" : ""}
               />
               Refresh
             </button>
 
             {/* REVERSE TREE */}
-
             <button
               type="button"
-              onClick={() =>
-                setInvertScroll((value) => !value)
-              }
+              onClick={() => setInvertScroll((value) => !value)}
               aria-pressed={invertScroll}
               aria-label={
                 invertScroll
@@ -1431,16 +1536,12 @@ const BinaryTree = () => {
             >
               <span
                 className={`relative h-5 w-9 rounded-full transition-colors ${
-                  invertScroll
-                    ? "bg-[#1a2332]"
-                    : "bg-[#e5e9ef]"
+                  invertScroll ? "bg-[#1a2332]" : "bg-[#e5e9ef]"
                 }`}
               >
                 <span
                   className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-all ${
-                    invertScroll
-                      ? "left-[18px]"
-                      : "left-0.5"
+                    invertScroll ? "left-[18px]" : "left-0.5"
                   }`}
                 />
               </span>
@@ -1454,12 +1555,9 @@ const BinaryTree = () => {
       </div>
 
       {/* MAIN CONTENT */}
-
       <div className="mt-5 w-full min-w-0">
         <div className="w-full min-w-0">
-
           {/* TOOLBAR */}
-
           <div className="flex flex-wrap items-center justify-between gap-4 rounded-t-[18px] border border-[#DCE6F2] bg-[#F4F8FD] px-4 py-4 sm:px-5">
             <div className="min-w-0">
               <h3 className="text-[17px] font-extrabold text-[#1A3559]">
@@ -1468,7 +1566,6 @@ const BinaryTree = () => {
             </div>
 
             <div className="flex flex-wrap items-center gap-2.5">
-
               <button
                 type="button"
                 onClick={scrollHierarchyDown}
@@ -1545,19 +1642,15 @@ const BinaryTree = () => {
                 className="flex h-[42px] items-center gap-1.5 rounded-[11px] border border-[#D7E2F0] bg-white px-3.5 text-[12px] font-bold text-[#244269] hover:bg-[#EAF2FC]"
               >
                 <Maximize2 size={14} />
-                <span className="hidden sm:inline">
-                  Fullscreen
-                </span>
+                <span className="hidden sm:inline">Fullscreen</span>
               </button>
             </div>
           </div>
 
           {/* TREE INSTRUCTIONS */}
-
           <div className="flex flex-wrap items-center justify-between gap-2 border-x border-[#DCE6F2] bg-[#EDF5FF] px-4 py-3 text-[12px] sm:px-5">
             <span className="text-[#64748b]">
-              Double-click a member (double-tap on mobile)
-              to open their branch
+              Double-click a member (double-tap on mobile) to open their branch
             </span>
           </div>
 
@@ -1571,7 +1664,6 @@ const BinaryTree = () => {
           )}
 
           {/* TREE VIEWPORT */}
-
           <div
             ref={treeViewportRef}
             onPointerDown={onTreePointerDown}
@@ -1599,9 +1691,7 @@ const BinaryTree = () => {
                 height: contentSize.h
                   ? contentSize.h * zoom
                   : undefined,
-                transform: invertScroll
-                  ? "scaleY(-1)"
-                  : undefined,
+                transform: invertScroll ? "scaleY(-1)" : undefined,
               }}
             >
               <div
@@ -1626,7 +1716,6 @@ const BinaryTree = () => {
       </div>
 
       {/* LEGEND */}
-
       <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-3 rounded-[12px] border border-[#edf0f3] bg-[#fafcff] p-4">
         <span className="text-[12px] font-bold text-[#1a2332]">
           LEGEND
@@ -1634,23 +1723,17 @@ const BinaryTree = () => {
 
         <div className="flex items-center gap-2">
           <span className="h-3 w-3 rounded-full bg-[#3c78e9]" />
-          <span className="text-[11px] text-[#5a6276]">
-            Root member
-          </span>
+          <span className="text-[11px] text-[#5a6276]">Root member</span>
         </div>
 
         <div className="flex items-center gap-2">
           <span className="h-3 w-3 rounded-full bg-[#17b963]" />
-          <span className="text-[11px] text-[#5a6276]">
-            Left leg
-          </span>
+          <span className="text-[11px] text-[#5a6276]">Left leg</span>
         </div>
 
         <div className="flex items-center gap-2">
           <span className="h-3 w-3 rounded-full bg-[#f97316]" />
-          <span className="text-[11px] text-[#5a6276]">
-            Right leg
-          </span>
+          <span className="text-[11px] text-[#5a6276]">Right leg</span>
         </div>
 
         <div className="ml-auto">
@@ -1666,7 +1749,6 @@ const BinaryTree = () => {
       </div>
 
       {/* API REFRESH STATUS */}
-
       {isFetching && (
         <div className="mt-3 flex items-center justify-end gap-2 text-[11px] font-medium text-[#8a92a6]">
           <Loader2 size={13} className="animate-spin" />

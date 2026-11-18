@@ -161,7 +161,7 @@ function getSideColor(side: number): string {
 function formatWeek(week?: { year: number; week_no: number } | null): string {
   if (!week) return "—";
 
-  return `${week.year} · Week ${String(week.week_no).padStart(2, "0")}`;
+  return `Week ${String(week.week_no).padStart(2, "0")}`;
 }
 
 function getWeekKey(week?: { year: number; week_no: number } | null): string {
@@ -1156,7 +1156,7 @@ const Penidngcv = () => {
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-wider text-[#8b9ab0]">
-                      Buyer / Member
+                      Buyer
                     </p>
                     <p className="mt-1 break-all text-[14px] font-bold text-[#172b4d]">
                       {getBuyer(transaction)}
@@ -1259,7 +1259,7 @@ const Penidngcv = () => {
 
               <span>Side</span>
 
-              <span>Buyer / Member</span>
+              <span>Buyer</span>
 
               <span>Amount CV</span>
 
@@ -1300,9 +1300,7 @@ const Penidngcv = () => {
                       {getBuyer(transaction)}
                     </p>
 
-                    <p className="mt-1 text-[10px] text-[#8a92a6]">
-                      Member ID: {transaction.buyer_member_id ?? "—"}
-                    </p>
+                  
                   </div>
 
                   {/* Amount */}
@@ -1314,9 +1312,7 @@ const Penidngcv = () => {
                       color={getSideColor(transaction.side)}
                     />
 
-                    <p className="mt-1 text-[10px] text-[#8a92a6]">
-                      {humanize(transaction.description)}
-                    </p>
+                   
                   </div>
 
                   {/* Order */}
@@ -1336,11 +1332,7 @@ const Penidngcv = () => {
                       {formatWeek(transaction.sales_week)}
                     </p>
 
-                    {transaction.sales_week && (
-                      <p className="mt-1 text-[10px] text-[#8a92a6]">
-                        Year {transaction.sales_week.year}
-                      </p>
-                    )}
+                    
                   </div>
 
                   {/* Settlement week */}
@@ -1350,11 +1342,7 @@ const Penidngcv = () => {
                       {formatWeek(transaction.settlement_week)}
                     </p>
 
-                    {transaction.settlement_week && (
-                      <p className="mt-1 text-[10px] text-[#8a92a6]">
-                        Year {transaction.settlement_week.year}
-                      </p>
-                    )}
+
                   </div>
                 </div>
               ))

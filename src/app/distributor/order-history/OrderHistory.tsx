@@ -142,6 +142,9 @@ interface OrderLineItem {
   // ✅ NEW: API flag controlling cancel + return eligibility
   is_cancel_return_allowed?: number | string | boolean;
 
+  // ✅ NEW: API flag controlling invoice button visibility (per line)
+  invoice_available?: number | string | boolean | null;
+
   timeline: {
     order_placed: string;
     order_confirmed: string | null;
@@ -722,7 +725,32 @@ function getOrderStatusBadge(order: OrderLineItem) {
 /* INVOICE ELIGIBILITY                                                        */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * ✅ UPDATED:
+ * 1. Primary source: `invoice_available` from the GET /my-orders item.
+ *    - true / 1 / "1" / "true"  → show invoice button (download allowed)
+ *    - false / 0 / "0" / "false" → hide invoice button
+ * 2. Fallback (only when API doesn't send `invoice_available` at all):
+ *    old logic → eligible delivery status + invoice number present.
+ */
 function canShowInvoice(order: OrderLineItem): boolean {
+  const raw = order?.invoice_available;
+
+  // ✅ API flag present → it is the single source of truth
+  if (raw !== null && raw !== undefined && raw !== "") {
+    if (typeof raw === "boolean") return raw;
+    if (typeof raw === "number") return raw === 1;
+
+    const normalized = String(raw).trim().toLowerCase();
+
+    if (["1", "true", "yes", "y", "available"].includes(normalized)) {
+      return true;
+    }
+
+    return false;
+  }
+
+  // ↩️ Fallback: legacy logic when API doesn't send invoice_available
   const status = normalizeStatus(order.delivery_status);
 
   const INVOICE_ELIGIBLE_STATUSES = [
@@ -5042,10 +5070,21 @@ export default function OrderHistory() {
   }, []);
 
   const [searchQuery, setSearchQuery] = useState("");
+  // ✅ NEW: debounced value that is actually sent to the API
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [page, setPage] = useState(1);
   const [perPage] = useState(10);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+
+  // ✅ NEW: 500ms debounce for search
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedSearch(searchQuery.trim());
+    }, 500);
+
+    return () => window.clearTimeout(timer);
+  }, [searchQuery]);
 
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [viewReviewModalOpen, setViewReviewModalOpen] = useState(false);
@@ -5065,7 +5104,8 @@ export default function OrderHistory() {
   const [selectedReturnId, setSelectedReturnId] = useState<number | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
-  const [invoiceLoadingOrders, setInvoiceLoadingOrders] = useState<
+  // ✅ CHANGED: keyed by line_id (invoice is now per line)
+  const [invoiceLoadingLines, setInvoiceLoadingLines] = useState<
     Record<number, boolean>
   >({});
 
@@ -5073,14 +5113,14 @@ export default function OrderHistory() {
     page,
     per_page: perPage,
     ...(statusFilter ? { status: statusFilter } : {}),
+    // ✅ NEW: server-side search (GET /my-orders?search=...)
+    ...(debouncedSearch ? { search: debouncedSearch } : {}),
   };
 
-  const { data, isLoading, isError, refetch } = useGetMyOrdersQuery(
-    orderQueryArgs as any,
-    {
+  const { data, isLoading, isFetching, isError, refetch } =
+    useGetMyOrdersQuery(orderQueryArgs as any, {
       refetchOnMountOrArgChange: true,
-    },
-  );
+    });
 
   const [cancelOrder, { isLoading: isCancelling }] = useCancelOrderMutation();
   const [initiateReturn, { isLoading: isReturning }] =
@@ -5292,6 +5332,8 @@ export default function OrderHistory() {
     );
   }, [apiStatusOptions, orders]);
 
+  // ✅ CHANGED: text search is now done by the server (debounced),
+  // only the status filter is applied locally.
   const filteredOrders = useMemo(() => {
     let result = orders;
 
@@ -5319,22 +5361,8 @@ export default function OrderHistory() {
       });
     }
 
-    if (!searchQuery.trim()) {
-      return result;
-    }
-
-    const q = searchQuery.toLowerCase();
-
-    return result.filter(
-      (order) =>
-        order.order_reference?.toLowerCase().includes(q) ||
-        order.product_name?.toLowerCase().includes(q) ||
-        order.order_status?.toLowerCase().includes(q) ||
-        order.item_reference_id?.toLowerCase().includes(q) ||
-        order.delivery_status?.toLowerCase().includes(q) ||
-        order.return_status?.toLowerCase().includes(q),
-    );
-  }, [orders, searchQuery, statusFilter]);
+    return result;
+  }, [orders, statusFilter]);
 
   const serverTotal = (data as any)?.meta?.total ??
     (data as any)?.data?.total ?? (data as any)?.total;
@@ -5721,29 +5749,34 @@ export default function OrderHistory() {
     }
   };
 
+  // ✅ UPDATED: invoice is fetched per line → /invoice/order/{order_id}/{line_id}
   const handleInvoiceDownload = async (order: OrderLineItem) => {
     if (!canShowInvoice(order)) return;
+
     const orderId = order.order_id;
-    const expectedInvoiceNumber = String(order.invoice.invoice_number).trim();
-    if (invoiceLoadingOrders[orderId]) return;
-    setInvoiceLoadingOrders((prev) => ({
+    const lineId = order.line_id;
+
+    if (!orderId || !lineId) {
+      dispatch(
+        showToast({
+          message: "Order or item ID is missing for invoice.",
+          type: "error",
+        }),
+      );
+      return;
+    }
+
+    if (invoiceLoadingLines[lineId]) return;
+
+    setInvoiceLoadingLines((prev) => ({
       ...prev,
-      [orderId]: true,
+      [lineId]: true,
     }));
 
     try {
-      const result = await getInvoice(orderId).unwrap();
+      const result = await getInvoice({ orderId, lineId }).unwrap();
 
       if (result?.data) {
-        // This existing endpoint is order-ID based. Do not download another
-        // product's invoice if it returns a different invoice for this order.
-        const payload: any = result.data;
-        const invoice = payload.invoice ?? payload;
-        const actualInvoiceNumber = String(invoice?.invoice_number ?? "").trim();
-        if (actualInvoiceNumber !== expectedInvoiceNumber ||
-          (invoice?.order_line_id != null && Number(invoice.order_line_id) !== Number(order.line_id))) {
-          throw new Error("The correct invoice for this item was not returned. Please contact support.");
-        }
         await generateInvoicePDF(result.data);
 
         dispatch(
@@ -5755,7 +5788,7 @@ export default function OrderHistory() {
       } else {
         dispatch(
           showToast({
-            message: "Invoice not available for this order",
+            message: "Invoice not available for this item",
             type: "error",
           }),
         );
@@ -5773,9 +5806,9 @@ export default function OrderHistory() {
         }),
       );
     } finally {
-      setInvoiceLoadingOrders((prev) => ({
+      setInvoiceLoadingLines((prev) => ({
         ...prev,
-        [orderId]: false,
+        [lineId]: false,
       }));
     }
   };
@@ -6094,7 +6127,7 @@ export default function OrderHistory() {
           {/* FILTER BAR */}
 
           <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            {/* SEARCH */}
+            {/* SEARCH (debounced, server-side) */}
             <div className="relative w-full sm:max-w-md">
               <Search
                 size={16}
@@ -6105,9 +6138,35 @@ export default function OrderHistory() {
                 type="text"
                 placeholder="Search by order ID, reference or product"
                 value={searchQuery}
-                onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
-                className="h-[44px] w-full rounded-[11px] border border-[#E3EAF5] bg-[#F8FAFD] pl-10 pr-4 text-[13px] text-[#101828] outline-none placeholder:text-[#b0b6c3] focus:border-[#0E1B3D] focus:bg-white"
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setPage(1);
+                  setExpandedRows(new Set());
+                }}
+                className="h-[44px] w-full rounded-[11px] border border-[#E3EAF5] bg-[#F8FAFD] pl-10 pr-10 text-[13px] text-[#101828] outline-none placeholder:text-[#b0b6c3] focus:border-[#0E1B3D] focus:bg-white"
               />
+
+              {/* Loader while debounce/API is in progress, clear button otherwise */}
+              {(isFetching ||
+                searchQuery.trim() !== debouncedSearch) && searchQuery ? (
+                <Loader2
+                  size={15}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-[#8a92a6]"
+                />
+              ) : searchQuery ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery("");
+                    setDebouncedSearch("");
+                    setPage(1);
+                  }}
+                  aria-label="Clear search"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#98a2b3] hover:text-[#344054]"
+                >
+                  <X size={15} />
+                </button>
+              ) : null}
             </div>
 
             {/* STATUS FILTER */}
@@ -6175,7 +6234,7 @@ export default function OrderHistory() {
                     onWithdrawCancel={() => openWithdrawCancel(order)}
                     onWithdrawReturn={() => openWithdrawReturn(order)}
                     onInvoiceDownload={handleInvoiceDownload}
-                    isInvoiceLoading={!!invoiceLoadingOrders[order.order_id]}
+                    isInvoiceLoading={!!invoiceLoadingLines[order.line_id]}
                     now={now}
                     retryBusy={retryingReference === order.order_reference}
                     onRetry={handleRetryPayment}
@@ -6399,7 +6458,7 @@ export default function OrderHistory() {
                                   openWithdrawReturn(order)
                                 }
                                 onInvoiceDownload={() => handleInvoiceDownload(order)}
-                                isInvoiceLoading={!!invoiceLoadingOrders[order.order_id]}
+                                isInvoiceLoading={!!invoiceLoadingLines[order.line_id]}
                               />
                             </div>
                           </div>
@@ -6416,7 +6475,7 @@ export default function OrderHistory() {
                                 onReturn={openReturn}
                                 onInvoiceDownload={handleInvoiceDownload}
                                 isInvoiceLoading={
-                                  !!invoiceLoadingOrders[order.order_id]
+                                  !!invoiceLoadingLines[order.line_id]
                                 }
                               />
                             )}

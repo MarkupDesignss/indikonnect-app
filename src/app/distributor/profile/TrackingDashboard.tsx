@@ -13,6 +13,7 @@ import {
   ArrowRight,
   Target,
   ListChecks,
+  CheckCircle2,
 } from "lucide-react";
 
 import { useGetDistributorStatsQuery } from "../../../lib/redux/api/distributor/distributorStatsApi";
@@ -174,21 +175,28 @@ function AccountCard({
   );
 }
 
+
+
 function NextProgressCard({ progress }: { progress: RankProgress }) {
   const next = nextRankOf(progress);
-  const entries = conditionsOf(next);
-  const completed = entries.filter(({ condition }) => condition.met).length;
-  const progressPercent = entries.length
-    ? Math.round((completed / entries.length) * 100)
-    : 0;
   const steps = next?.conditions?.steps;
+
+  const current = progress.ranks.find(
+    (rank) => rank.rank_no === progress.current.rank_no
+  );
+
+  const stepsCurrent = number(steps?.current);
+  const stepsRequired = number(steps?.required);
 
   return (
     <section className="flex min-h-[282px] flex-col rounded-[22px] border border-[#E1E9F4] bg-white p-5 shadow-[0_12px_38px_-26px_rgba(21,43,80,.25)] sm:p-6">
+
+      {/* Existing Next Rank Card - Unchanged */}
       <div className="flex items-center gap-3">
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EFF5FF] text-[#3269C5]">
           <Trophy size={20} />
         </span>
+
         <div className="min-w-0">
           <h2 className="break-words text-[22px] font-extrabold leading-tight text-[#172B4D]">
             {next?.name ?? "All ranks achieved"}
@@ -197,40 +205,83 @@ function NextProgressCard({ progress }: { progress: RankProgress }) {
       </div>
 
       {next ? (
-        <>
-          <div className="mt-7">
-            <p className="text-[12px] font-semibold text-[#66758D]">Requirements met</p>
-            <div className="mt-3 flex items-center gap-3">
-              <div className="min-w-0 flex-1">
-                <ProgressBar value={progressPercent} />
-              </div>
-              <span className="min-w-[46px] shrink-0 text-right text-[17px] font-extrabold tabular-nums text-[#3269C5]">
-                {completed}/{entries.length}
-              </span>
-            </div>
-          </div>
+        <div className="mt-7">
+          {steps ? (
+            <>
+              <div className="mt-3 flex items-center justify-between gap-3">
+                <span className="text-[13px] font-semibold text-[#172B4D]">
+                  Requirements met
+                </span>
 
-          <div className="mt-auto pt-8">
-            <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-[#65758D]">
-              Steps to complete
+                <span className="text-[20px] font-extrabold tabular-nums text-[#3269C5]">
+                  {fmt(stepsCurrent)} / {fmt(stepsRequired)}
+                </span>
+              </div>
+
+              <div className="mt-3">
+                <ProgressBar
+                  value={pct(stepsCurrent, stepsRequired)}
+                />
+              </div>
+            </>
+          ) : (
+            <p className="mt-3 text-[12px] text-[#65758D]">
+              No pairing steps requirement provided.
             </p>
-            {steps ? (
-              <span className={`inline-flex items-center rounded-lg px-3 py-2 text-[12px] font-bold ${steps.met ? "bg-[#E5F8EF] text-[#18875B]" : "bg-[#FFF1DF] text-[#A76513]"}`}>
-                {fmt(steps.current)} of {fmt(steps.required)} steps
-              </span>
-            ) : (
-              <span className="text-[12px] text-[#65758D]">No steps requirement provided</span>
-            )}
-          </div>
-        </>
+          )}
+        </div>
       ) : (
         <p className="mt-6 rounded-xl bg-[#EAF7F0] p-4 text-[13px] font-semibold text-[#168255]">
           All available ranks have been achieved.
         </p>
       )}
+
+      {/* Divider */}
+      <div className="my-5 border-t border-dashed border-[#DCE5F0]" />
+
+      {/* Current Rank - Added Below Existing Card */}
+      {current && (
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-[#D9F0E2] bg-[#F2FBF5] p-4">
+          <div className="flex min-w-0 items-center gap-3">
+          
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-[#168255]">
+               Title Rank
+              </p>
+
+              <h3 className="truncate text-[20px] font-extrabold text-[#172B4D]">
+                {current.name}
+              </h3>
+            </div>
+          </div>
+
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#E5F7ED] text-[#168255]">
+            <CheckCircle2 size={21} strokeWidth={2.8} />
+          </span>
+        </div>
+      )}
+
+      {/* Steps to Complete - Below Current Rank */}
+      {next && steps && (
+        <div className="mt-4 rounded-xl border border-[#F1E5D2] bg-[#FFFAF2] p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-[12px] font-bold uppercase tracking-wide text-[#66758D]">
+              Steps to Complete
+            </p>
+
+            <span className="rounded-lg bg-[#FFF0D9] px-3 py-1 text-[13px] font-extrabold tabular-nums text-[#B7791F]">
+              {fmt(stepsCurrent)} of {fmt(stepsRequired)} steps
+            </span>
+          </div>
+
+     
+        </div>
+      )}
     </section>
   );
 }
+
+
 
 // Sales calendar is authoritative. Bare timestamps are interpreted in Asia/Kolkata;
 // explicitly offset timestamps preserve their timezone. No browser-local date parsing.
@@ -766,7 +817,7 @@ function CalendarCard({
         })}
       </div>
 
-      <div className="mt-auto pt-6">
+      {/* <div className="mt-auto pt-6">
         <div className="mb-2 flex justify-between text-[12px] text-[#65758D]">
           <span>
             {clock?.upcoming
@@ -787,7 +838,7 @@ function CalendarCard({
                 ? `Countdown ends at ${clock.endLabel} IST.`
                 : "Waiting for valid sales calendar start and end dates from the dashboard API."}
         </p>
-      </div>
+      </div> */}
     </section>
   );
 }
@@ -801,7 +852,7 @@ function RankTable({ progress }: { progress: RankProgress }) {
   const baseCriteria: { key: string; label: string }[] = [
     { key: "qualification", label: "Previous rank" },
     { key: "steps", label: "Steps" },
-    { key: "direct_cv", label: "Direct CV per annum" },
+    { key: "direct_cv", label: "Direct CV per month" },
     { key: "downlines_one_below", label: "Downlines · one rank below" },
     { key: "downlines_two_below", label: "Downlines · two ranks below" },
     { key: "tenure", label: "Consecutive months" },
@@ -846,9 +897,7 @@ function RankTable({ progress }: { progress: RankProgress }) {
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E9EFF7] px-5 py-4 sm:px-6">
         <div>
           <h2 className="text-[17px] font-extrabold text-[#172B4D]">Rank requirements comparison</h2>
-          <p className="mt-1 text-[12px] text-[#65758D]">
-            Compare each rank side by side. Values are taken from your rank API.
-          </p>
+
         </div>
         <span className="rounded-full border border-[#DFE8F5] bg-[#F5F8FD] px-3 py-1.5 text-[11px] font-semibold text-[#65758D]">
           {ranks.length} ranks
@@ -1035,32 +1084,7 @@ export default function TrackingDashboard({ variant = "cv" }: Props) {
               <span className="break-words text-[22px] font-extrabold text-white">
                 {nextRank?.name || "All available ranks met"}
               </span>
-              {nextRank ? (
-                <>
-                  <div className="flex items-end justify-between gap-4">
-                    <span className="text-[12px] text-blue-100">
-                      Requirements complete
-                    </span>
-                    <span className="text-[18px] font-extrabold">
-                      {completion}%
-                    </span>
-                  </div>
-                  <div className="h-2.5 overflow-hidden rounded-full bg-white/20">
-                    <div
-                      className="h-full rounded-full bg-[#8CDAFF] transition-[width] duration-500"
-                      style={{ width: `${completion}%` }}
-                    />
-                  </div>
-                  <span className="text-[12px] text-blue-100">
-                    {pendingCount} remaining • {doneCount} completed
-                  </span>
-                </>
-              ) : (
-                <span className="text-[12px] text-blue-100">
-                  You're up to date with the rank definitions returned by the
-                  API.
-                </span>
-              )}
+
               <button
                 type="button"
                 onClick={() =>
@@ -1118,7 +1142,7 @@ export default function TrackingDashboard({ variant = "cv" }: Props) {
                 All rank criteria at a glance, just like a comparison chart.
               </p>
             </div>
-            {nextRank?.conditions?.steps && (
+            {/* {nextRank?.conditions?.steps && (
               <div className="inline-flex items-center gap-3 rounded-xl border border-[#DCE7F7] bg-white px-4 py-3 shadow-sm">
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#EDF4FF] text-[#3269C5]">
                   <Target size={18} />
@@ -1132,7 +1156,7 @@ export default function TrackingDashboard({ variant = "cv" }: Props) {
                   </p>
                 </div>
               </div>
-            )}
+            )} */}
           </div>
           <RankTable progress={progress} />
         </section>
@@ -1147,6 +1171,47 @@ export default function TrackingDashboard({ variant = "cv" }: Props) {
           </p>
         )}
       </div>
+      {/* Rank Information Note */}
+      <footer className="overflow-hidden rounded-[20px] border mt-6 border-[#DCE7F7] bg-gradient-to-r from-[#F0F6FF] to-white p-5 shadow-[0_12px_38px_-26px_rgba(21,43,80,.25)] sm:p-6">
+        <div className="flex items-start gap-3 sm:gap-4">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#E0ECFF] text-[#3269C5]">
+            <AlertCircle size={21} />
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <h3 className="text-[15px] font-extrabold text-[#17458E]">
+              Note
+            </h3>
+
+            <div className="mt-3 space-y-3">
+              <div className="flex items-start gap-2.5">
+                <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#3269C5]" />
+                <p className="text-[12px] leading-6 text-[#465875] sm:text-[13px]">
+                  All ranks other than Silver Star require{" "}
+                  <strong className="font-extrabold text-[#172B4D]">
+                    300 Direct CV per annum
+                  </strong>
+                  ; this may overlap with monthly requirements for certain ranks.
+                </p>
+              </div>
+
+              <div className="flex items-start gap-2.5">
+                <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#3269C5]" />
+                <p className="text-[12px] leading-6 text-[#465875] sm:text-[13px]">
+                  Direct CV refers to CVs earned from your own purchase, CVs from
+                  sales to new direct referrals and CVs from Retail sales. Direct
+                  CV requirements can be carried forward if not utilised (for a
+                  maximum of{" "}
+                  <strong className="font-extrabold text-[#172B4D]">
+                    12 months
+                  </strong>
+                  ).
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </footer>
     </main>
   );
 }

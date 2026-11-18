@@ -382,10 +382,7 @@ const Referral = () => {
                 />
               </span>
             </label>
-            <p className="flex max-w-sm items-start gap-2 text-[11px] leading-5 text-[#7F8DA2]">
-              <Info size={15} className="mt-0.5 shrink-0" /> Filters search the
-              referrals returned by your account API.
-            </p>
+            
           </div>
         )}
         <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-[#EDF0F6] pt-4">

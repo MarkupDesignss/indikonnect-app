@@ -657,9 +657,7 @@ export default function DownlineTreePage() {
             <span className="inline-flex items-center gap-2">
               <Layers3 size={14} /> {maxLevel} highest reported level
             </span>
-            <span className="inline-flex items-center gap-2">
-              <ShieldCheck size={14} /> Live API hierarchy
-            </span>
+            
           </div>
         </header>
 

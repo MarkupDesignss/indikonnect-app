@@ -52,7 +52,6 @@ import {
   CorrectionRequestType,
 } from "@/lib/redux/api/distributor/userDashboardApi";
 
-// NOTE: apni beneficiary API file ka sahi path yahan set kar lena
 import {
   useAddBeneficiaryMutation,
   useUpdateBeneficiaryMutation,

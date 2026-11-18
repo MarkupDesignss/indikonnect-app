@@ -746,29 +746,7 @@ export default function DashboardHeader({
                             <Menu size={20} strokeWidth={2} />
                         </button>
 
-                        {/* Distributor ID */}
-                        <div
-                            title={`Distributor ID: ${distributorId}`}
-                            className="flex h-10 min-w-0 flex-1 items-center gap-2 overflow-hidden rounded-lg border border-[#E5E9EF] bg-[#F7F8FA] px-2.5 sm:px-3 lg:w-fit lg:flex-none lg:gap-2.5 lg:px-4"
-                        >
-                            <UserRound
-                                size={15}
-                                strokeWidth={1.7}
-                                className="shrink-0"
-                                style={{ color: NAVY }}
-                            />
-
-                            <span className="shrink-0 text-[11px] font-semibold text-[#667085] sm:text-xs">
-                                <span className="sm:hidden">ID:</span>
-                                <span className="hidden sm:inline">
-                                    Distributor ID:
-                                </span>
-                            </span>
-
-                            <span className="min-w-0 truncate text-[11px] font-bold text-[#101828] sm:text-xs">
-                                {distributorId}
-                            </span>
-                        </div>
+                     
 
                         {/* Compact logo for smaller screens */}
                         <Link
