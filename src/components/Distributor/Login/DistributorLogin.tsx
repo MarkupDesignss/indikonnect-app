@@ -458,7 +458,7 @@ export const DistributorLogin: React.FC = () => {
                     />
                   </div>
                   <span className="text-white/40 text-[10px] tracking-[0.2em] font-light uppercase">
-                    Indiekonnet
+                    Indiekonnect
                   </span>
                 </div>
               </div>
