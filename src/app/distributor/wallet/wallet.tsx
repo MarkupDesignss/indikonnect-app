@@ -31,6 +31,7 @@ const WALLET_ENDPOINT =
 type Amount = number | string | null | undefined;
 type CoinType = "yellow_bal" | "blue_bal";
 type DateFilter = "all" | "week" | "month" | "year";
+type WalletTab = "transactions" | "withdrawals" | "matchingBonus";
 
 interface WalletBalances {
   cash_bal_usd?: Amount;
@@ -75,11 +76,23 @@ interface WalletWithdrawal {
   remark: string;
 }
 
+/**
+ * Matching bonus response is typed for the API's future use.
+ * It is intentionally not rendered in the Matching Bonus tab yet.
+ */
+interface MatchingBonusPayload {
+  total_usd?: Amount;
+  total_inr?: Amount;
+  count?: number;
+  rows?: unknown[];
+}
+
 interface WalletPayload {
   balances: WalletBalances;
   transactions: WalletTransaction[];
   withdrawals: WalletWithdrawal[];
   has_more_transactions: boolean;
+  matching_bonus?: MatchingBonusPayload;
 }
 
 interface WalletApiResponse {
@@ -91,6 +104,13 @@ interface WalletApiResponse {
     display?: string;
     exchange_rate?: Amount;
   };
+  tds?: {
+    gst_in?: string;
+    pan_verified?: boolean;
+    section?: string;
+    applied_rate?: Amount;
+    reason?: string;
+  };
 }
 
 const PANEL =
@@ -101,10 +121,7 @@ const BLACK_BUTTON =
 
 const PAGE_SIZES = [10, 20, 50];
 
-const DATE_FILTER_OPTIONS: {
-  label: string;
-  value: DateFilter;
-}[] = [
+const DATE_FILTER_OPTIONS: { label: string; value: DateFilter }[] = [
   { label: "All", value: "all" },
   { label: "Week", value: "week" },
   { label: "Month", value: "month" },
@@ -125,7 +142,6 @@ const signed = (n: Amount, prefix = "") => {
   if (n == null || !Number.isFinite(Number(n))) return "—";
 
   const value = Number(n);
-
   return `${value > 0 ? "+" : value < 0 ? "−" : ""}${prefix}${fmt(
     Math.abs(value),
   )}`;
@@ -171,7 +187,6 @@ const dateFmt = (date: string) => {
   if (!date) return "—";
 
   const parsed = parseWalletDate(date);
-
   if (!parsed) return date;
 
   const datePart = parsed.toLocaleDateString("en-IN", {
@@ -181,7 +196,6 @@ const dateFmt = (date: string) => {
   });
 
   const hasTime = /[ T]\d{2}:\d{2}/.test(date);
-
   if (!hasTime) return datePart;
 
   const timePart = parsed.toLocaleTimeString("en-IN", {
@@ -208,7 +222,6 @@ const isWithinDateFilter = (
   if (filter === "all") return true;
 
   const transactionDate = parseWalletDate(date);
-
   if (!transactionDate) return false;
 
   const start = new Date(now);
@@ -567,9 +580,7 @@ export default function WalletPage() {
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [redeemOpen, setRedeemOpen] = useState(false);
 
-  const [tab, setTab] = useState<"transactions" | "withdrawals">(
-    "transactions",
-  );
+  const [tab, setTab] = useState<WalletTab>("transactions");
 
   const [search, setSearch] = useState("");
   const [dateFilter, setDateFilter] = useState<DateFilter>("all");
@@ -667,7 +678,6 @@ export default function WalletPage() {
 
     return (wallet?.transactions ?? []).filter((item) => {
       const matchesDate = isWithinDateFilter(item.date, dateFilter);
-
       if (!matchesDate) return false;
 
       const matchesSearch =
@@ -699,7 +709,6 @@ export default function WalletPage() {
 
     return (wallet?.withdrawals ?? []).filter((item) => {
       const matchesDate = isWithinDateFilter(item.date, dateFilter);
-
       if (!matchesDate) return false;
 
       const matchesSearch =
@@ -717,8 +726,13 @@ export default function WalletPage() {
     });
   }, [wallet?.withdrawals, search, dateFilter]);
 
-  const rows =
-    tab === "transactions" ? visibleTransactions : visibleWithdrawals;
+  // Matching Bonus intentionally has no rows or UI content for now.
+  const rows: WalletTransaction[] | WalletWithdrawal[] =
+    tab === "transactions"
+      ? visibleTransactions
+      : tab === "withdrawals"
+        ? visibleWithdrawals
+        : [];
 
   const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
   const currentPage = Math.min(page, totalPages);
@@ -730,6 +744,12 @@ export default function WalletPage() {
 
   const startRow = rows.length ? (currentPage - 1) * pageSize + 1 : 0;
   const endRow = Math.min(currentPage * pageSize, rows.length);
+
+  const handleTabChange = (nextTab: WalletTab) => {
+    setTab(nextTab);
+    setSearch("");
+    setPage(1);
+  };
 
   const handleRedeem = async (type: CoinType, amount: number) => {
     if (
@@ -753,7 +773,6 @@ export default function WalletPage() {
       }
 
       toast.success(response.message || "Coins redeemed successfully");
-
       setRedeemOpen(false);
 
       await Promise.all([fetchWallet(true), dashboard.refetch()]);
@@ -909,31 +928,28 @@ export default function WalletPage() {
                   </div>
                 </div>
 
-                <span className="rounded-full border border-[#E6EAF0] bg-[#F8F9FB] px-2.5 py-1 text-[10px] font-bold text-[#7C8797]">
-                  {tab === "transactions"
-                    ? visibleTransactions.length
-                    : visibleWithdrawals.length}{" "}
-                  records
-                </span>
+                {tab !== "matchingBonus" && (
+                  <span className="rounded-full border border-[#E6EAF0] bg-[#F8F9FB] px-2.5 py-1 text-[10px] font-bold text-[#7C8797]">
+                    {tab === "transactions"
+                      ? visibleTransactions.length
+                      : visibleWithdrawals.length} records
+                  </span>
+                )}
               </div>
 
-              {/* Tabs */}
+              {/* Tabs: always visible independently of wallet/API data */}
               <div className="flex flex-wrap items-center justify-between gap-4 px-4 pt-5 sm:px-6">
                 <div
                   role="tablist"
                   aria-label="Wallet history"
-                  className="flex gap-1 rounded-[12px] bg-[#F1F5FA] p-1"
+                  className="grid w-full max-w-full grid-cols-3 gap-1 rounded-[12px] bg-[#F1F5FA] p-1 sm:w-fit"
                 >
                   <button
                     type="button"
                     role="tab"
                     aria-selected={tab === "transactions"}
-                    onClick={() => {
-                      setTab("transactions");
-                      setSearch("");
-                      setPage(1);
-                    }}
-                    className={`rounded-[9px] px-4 py-2.5 text-[12px] font-bold transition-colors ${
+                    onClick={() => handleTabChange("transactions")}
+                    className={`min-w-0 whitespace-nowrap rounded-[9px] px-2 py-2.5 text-[10px] font-bold transition-colors sm:px-4 sm:text-[12px] ${
                       tab === "transactions"
                         ? "bg-white text-[#0E1B3D] shadow-sm"
                         : "text-[#6C7D96] hover:text-[#0E1B3D]"
@@ -946,12 +962,8 @@ export default function WalletPage() {
                     type="button"
                     role="tab"
                     aria-selected={tab === "withdrawals"}
-                    onClick={() => {
-                      setTab("withdrawals");
-                      setSearch("");
-                      setPage(1);
-                    }}
-                    className={`rounded-[9px] px-4 py-2.5 text-[12px] font-bold transition-colors ${
+                    onClick={() => handleTabChange("withdrawals")}
+                    className={`min-w-0 whitespace-nowrap rounded-[9px] px-2 py-2.5 text-[10px] font-bold transition-colors sm:px-4 sm:text-[12px] ${
                       tab === "withdrawals"
                         ? "bg-white text-[#0E1B3D] shadow-sm"
                         : "text-[#6C7D96] hover:text-[#0E1B3D]"
@@ -959,455 +971,487 @@ export default function WalletPage() {
                   >
                     Payouts
                   </button>
+
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={tab === "matchingBonus"}
+                    onClick={() => handleTabChange("matchingBonus")}
+                    className={`min-w-0 whitespace-nowrap rounded-[9px] px-2 py-2.5 text-[10px] font-bold transition-colors sm:px-4 sm:text-[12px] ${
+                      tab === "matchingBonus"
+                        ? "bg-white text-[#0E1B3D] shadow-sm"
+                        : "text-[#6C7D96] hover:text-[#0E1B3D]"
+                    }`}
+                  >
+                    Matching Bonus
+                  </button>
                 </div>
 
-                {/* Search + Date Filter */}
-                <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-                  {/* Search */}
-                  <div className="relative w-full sm:w-[270px]">
-                    <Search
-                      size={15}
-                      className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#98A3B2]"
-                    />
+                {/* Search + Date Filter: hidden for Matching Bonus for now */}
+                {tab !== "matchingBonus" && (
+                  <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+                    {/* Search */}
+                    <div className="relative w-full sm:w-[270px]">
+                      <Search
+                        size={15}
+                        className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#98A3B2]"
+                      />
 
-                    <input
-                      type="search"
-                      aria-label="Search wallet activity"
-                      value={search}
-                      onChange={(e) => {
-                        setSearch(e.target.value);
-                        setPage(1);
-                      }}
-                      placeholder={`Search ${tab}...`}
-                      className="h-11 w-full rounded-[12px] border border-[#DCE4EE] bg-[#F9FBFF] pl-10 pr-4 text-[13px] font-medium text-[#193052] outline-none placeholder:text-[#9BA9BA] focus:border-[#5B7FBB] focus:bg-white focus:ring-4 focus:ring-blue-500/10"
-                    />
+                      <input
+                        type="search"
+                        aria-label="Search wallet activity"
+                        value={search}
+                        onChange={(e) => {
+                          setSearch(e.target.value);
+                          setPage(1);
+                        }}
+                        placeholder={`Search ${tab}...`}
+                        className="h-11 w-full rounded-[12px] border border-[#DCE4EE] bg-[#F9FBFF] pl-10 pr-4 text-[13px] font-medium text-[#193052] outline-none placeholder:text-[#9BA9BA] focus:border-[#5B7FBB] focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+                      />
+                    </div>
+
+                    {/* Date Filter */}
+                    <div className="relative w-full sm:w-[130px]">
+                      <select
+                        aria-label="Filter wallet activity by date"
+                        value={dateFilter}
+                        onChange={(e) => {
+                          setDateFilter(e.target.value as DateFilter);
+                          setPage(1);
+                        }}
+                        className="h-11 w-full cursor-pointer appearance-none rounded-[12px] border border-[#DCE4EE] bg-[#F9FBFF] px-3 pr-9 text-[12px] font-bold text-[#193052] outline-none transition focus:border-[#5B7FBB] focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+                      >
+                        {DATE_FILTER_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+
+                      <ChevronRight
+                        size={15}
+                        className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rotate-90 text-[#7D8CA0]"
+                      />
+                    </div>
                   </div>
-
-                  {/* Date Filter */}
-                  <div className="relative w-full sm:w-[130px]">
-                    <select
-                      aria-label="Filter wallet activity by date"
-                      value={dateFilter}
-                      onChange={(e) => {
-                        setDateFilter(e.target.value as DateFilter);
-                        setPage(1);
-                      }}
-                      className="h-11 w-full cursor-pointer appearance-none rounded-[12px] border border-[#DCE4EE] bg-[#F9FBFF] px-3 pr-9 text-[12px] font-bold text-[#193052] outline-none transition focus:border-[#5B7FBB] focus:bg-white focus:ring-4 focus:ring-blue-500/10"
-                    >
-                      {DATE_FILTER_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-
-                    <ChevronRight
-                      size={15}
-                      className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rotate-90 text-[#7D8CA0]"
-                    />
-                  </div>
-                </div>
+                )}
               </div>
 
-              {/* Table / Cards */}
-              <div className="px-4 pt-4 sm:px-6">
-                {!loading && displayRows.length > 0 && (
-                  <div className="grid gap-3 lg:hidden">
-                    {tab === "transactions"
-                      ? (displayRows as WalletTransaction[]).map((t) => {
-                          const walletAmount =
-                            getWalletTransactionAmount(t);
+              {/* Matching Bonus has its own empty state until the API returns rows. */}
+              {tab === "matchingBonus" ? (
+                <div className="px-4 pb-6 pt-4 sm:px-6">
+                  <div className="flex min-h-[220px] flex-col items-center justify-center gap-2 rounded-[16px] border border-dashed border-[#E2E8F0] bg-[#FCFDFF] text-center">
+                    <History size={26} className="text-[#AFB8C5]" />
+                    <p className="text-[13px] font-semibold text-[#6E7A8C]">
+                      {loading ? "Loading matching bonus..." : "Data Not Found"}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* Table / Cards */}
+                  <div className="px-4 pt-4 sm:px-6">
+                    {!loading && displayRows.length > 0 && (
+                      <div className="grid gap-3 lg:hidden">
+                        {tab === "transactions"
+                          ? (displayRows as WalletTransaction[]).map((t) => {
+                              const walletAmount =
+                                getWalletTransactionAmount(t);
 
-                          const netPayableAmount =
-                            getNetPayableTransactionAmount(t);
+                              const netPayableAmount =
+                                getNetPayableTransactionAmount(t);
 
-                          const coins = [
-                            {
-                              label: "Green",
-                              value: getCoinTransactionAmount(
-                                t.green_coin,
-                                t,
-                              ),
-                            },
-                            {
-                              label: "Yellow",
-                              value: getCoinTransactionAmount(
-                                t.yellow_coin,
-                                t,
-                              ),
-                            },
-                            {
-                              label: "Blue",
-                              value: getCoinTransactionAmount(
-                                t.blue_coin,
-                                t,
-                              ),
-                            },
-                          ];
+                              const coins = [
+                                {
+                                  label: "Green",
+                                  value: getCoinTransactionAmount(
+                                    t.green_coin,
+                                    t,
+                                  ),
+                                },
+                                {
+                                  label: "Yellow",
+                                  value: getCoinTransactionAmount(
+                                    t.yellow_coin,
+                                    t,
+                                  ),
+                                },
+                                {
+                                  label: "Blue",
+                                  value: getCoinTransactionAmount(
+                                    t.blue_coin,
+                                    t,
+                                  ),
+                                },
+                              ];
 
-                          return (
-                            <article
-                              key={t.id}
-                              className="rounded-[16px] border border-[#E4EAF2] bg-[#FCFDFF] p-4 shadow-sm"
-                            >
-                              <div className="flex items-start justify-between gap-3">
-                                <div className="min-w-0">
-                                  <p className="text-[11px] font-semibold text-[#76869B]">
-                                    {dateFmt(t.date)}
-                                  </p>
+                              return (
+                                <article
+                                  key={t.id}
+                                  className="rounded-[16px] border border-[#E4EAF2] bg-[#FCFDFF] p-4 shadow-sm"
+                                >
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0">
+                                      <p className="text-[11px] font-semibold text-[#76869B]">
+                                        {dateFmt(t.date)}
+                                      </p>
 
-                                  <span className="mt-2 inline-flex rounded-full bg-[#EDF2F9] px-2.5 py-1 text-[10px] font-semibold text-[#527099]">
-                                    {friendly(t.category)}
-                                  </span>
-                                </div>
+                                      <span className="mt-2 inline-flex rounded-full bg-[#EDF2F9] px-2.5 py-1 text-[10px] font-semibold text-[#527099]">
+                                        {friendly(t.category)}
+                                      </span>
+                                    </div>
 
-                                <div className="shrink-0 text-right">
-                                  <p
-                                    className={`text-[16px] font-extrabold tabular-nums ${amountColor(walletAmount)}`}
-                                  >
-                                    {signed(walletAmount, "₹")}
-                                  </p>
+                                    <div className="shrink-0 text-right">
+                                      <p
+                                        className={`text-[16px] font-extrabold tabular-nums ${amountColor(walletAmount)}`}
+                                      >
+                                        {signed(walletAmount, "₹")}
+                                      </p>
 
-                                  {t.net_payable_inr != null && (
-                                    <p
-                                      className={`mt-1 text-[11px] font-semibold tabular-nums ${amountColor(netPayableAmount)}`}
-                                    >
-                                      Net Payable:{" "}
-                                      {signed(netPayableAmount, "₹")}
+                                      {t.net_payable_inr != null && (
+                                        <p
+                                          className={`mt-1 text-[11px] font-semibold tabular-nums ${amountColor(netPayableAmount)}`}
+                                        >
+                                          Net Payable: {signed(
+                                            netPayableAmount,
+                                            "₹",
+                                          )}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  <div className="mt-4 grid grid-cols-3 gap-2 rounded-[11px] bg-white p-3 text-center ring-1 ring-[#EDF1F5]">
+                                    {coins.map(({ label, value }) => (
+                                      <div key={label}>
+                                        <p className="text-[10px] font-medium text-[#77869A]">
+                                          {label}
+                                        </p>
+
+                                        <p
+                                          className={`mt-1 text-[12px] font-bold tabular-nums ${amountColor(value)}`}
+                                        >
+                                          {signed(value)}
+                                        </p>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </article>
+                              );
+                            })
+                          : (displayRows as WalletWithdrawal[]).map((w) => (
+                              <article
+                                key={w.id}
+                                className="rounded-[16px] border border-[#E4EAF2] bg-[#FCFDFF] p-4"
+                              >
+                                <div className="flex items-start justify-between gap-3">
+                                  <div>
+                                    <p className="text-[11px] text-[#77869A]">
+                                      {dateFmt(w.date)}
                                     </p>
-                                  )}
-                                </div>
-                              </div>
-
-                              <div className="mt-4 grid grid-cols-3 gap-2 rounded-[11px] bg-white p-3 text-center ring-1 ring-[#EDF1F5]">
-                                {coins.map(({ label, value }) => (
-                                  <div key={label}>
-                                    <p className="text-[10px] font-medium text-[#77869A]">
-                                      {label}
-                                    </p>
-
-                                    <p
-                                      className={`mt-1 text-[12px] font-bold tabular-nums ${amountColor(value)}`}
-                                    >
-                                      {signed(value)}
+                                    <p className="mt-1 text-[13px] font-bold text-[#1A2D4D]">
+                                      Withdrawal #{w.id}
                                     </p>
                                   </div>
-                                ))}
-                              </div>
-                            </article>
-                          );
-                        })
-                      : (displayRows as WalletWithdrawal[]).map((w) => (
-                          <article
-                            key={w.id}
-                            className="rounded-[16px] border border-[#E4EAF2] bg-[#FCFDFF] p-4"
-                          >
-                            <div className="flex items-start justify-between gap-3">
-                              <div>
-                                <p className="text-[11px] text-[#77869A]">
-                                  {dateFmt(w.date)}
-                                </p>
-                                <p className="mt-1 text-[13px] font-bold text-[#1A2D4D]">
-                                  Withdrawal #{w.id}
-                                </p>
-                              </div>
 
-                              <div className="text-right">
-                                <p className="text-[17px] font-extrabold text-[#DC4545]">
+                                  <div className="text-right">
+                                    <p className="text-[17px] font-extrabold text-[#DC4545]">
+                                      {signed(
+                                        -Math.abs(numberOf(w.amount_inr)),
+                                        "₹",
+                                      )}
+                                    </p>
+
+                                    {w.net_payable_inr != null && (
+                                      <p className="mt-1 text-[11px] font-bold text-[#DC4545]">
+                                        Net Payable: ₹{fmt(w.net_payable_inr)}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                                  <span
+                                    className={`rounded-full px-3 py-1 text-[11px] font-bold ${
+                                      String(w.status ?? "").toLowerCase() ===
+                                      "paid"
+                                        ? "bg-[#E9F7EF] text-[#168452]"
+                                        : "bg-[#FFF5E5] text-[#9F7626]"
+                                    }`}
+                                  >
+                                    {friendly(w.status)}
+                                  </span>
+
+                                  <span className="text-[11px] text-[#68788B]">
+                                    {friendly(w.remark)}
+                                  </span>
+                                </div>
+                              </article>
+                            ))}
+                      </div>
+                    )}
+
+                    {/* Desktop Transactions / Payouts Table */}
+                    <div className="hidden max-w-full overflow-x-auto lg:block">
+                      {tab === "transactions" ? (
+                        <table className="w-full min-w-[790px] border-collapse text-left">
+                          <thead>
+                            <tr className="border-b border-[#E9EDF2] bg-[#F7F9FD] text-[11px] font-bold uppercase tracking-[.03em] text-[#677992]">
+                              {[
+                                "Date",
+                                "Category",
+                                "Wallet Change",
+                                "Net Payable",
+                                "Green",
+                                "Yellow",
+                                "Blue",
+                              ].map((h) => (
+                                <th
+                                  key={h}
+                                  className="whitespace-nowrap px-3 py-3 first:pl-0"
+                                >
+                                  {h}
+                                </th>
+                              ))}
+                            </tr>
+                          </thead>
+
+                          <tbody>
+                            {(displayRows as WalletTransaction[]).map((t) => {
+                              const walletAmount =
+                                getWalletTransactionAmount(t);
+
+                              const netPayableAmount =
+                                getNetPayableTransactionAmount(t);
+
+                              const coinValues = [
+                                getCoinTransactionAmount(t.green_coin, t),
+                                getCoinTransactionAmount(t.yellow_coin, t),
+                                getCoinTransactionAmount(t.blue_coin, t),
+                              ];
+
+                              return (
+                                <tr
+                                  key={t.id}
+                                  className="border-b border-[#EFF1F4] text-[12px] text-[#475367] transition-colors hover:bg-[#F7FAFF] last:border-0"
+                                >
+                                  <td className="whitespace-nowrap px-3 py-3.5 pl-0">
+                                    {dateFmt(t.date)}
+                                  </td>
+
+                                  <td className="px-3 py-3.5">
+                                    <span className="rounded-md bg-[#F3F5F8] px-2 py-1 font-semibold text-[#515F73]">
+                                      {friendly(t.category)}
+                                    </span>
+                                  </td>
+
+                                  <td
+                                    className={`px-3 py-3.5 font-bold ${amountColor(walletAmount)}`}
+                                  >
+                                    {signed(walletAmount, "₹")}
+                                  </td>
+
+                                  <td
+                                    className={`whitespace-nowrap px-3 py-3.5 font-bold ${amountColor(netPayableAmount)}`}
+                                  >
+                                    {t.net_payable_inr != null
+                                      ? signed(netPayableAmount, "₹")
+                                      : "—"}
+                                  </td>
+
+                                  {coinValues.map((value, i) => (
+                                    <td
+                                      key={i}
+                                      className={`px-3 py-3.5 font-semibold ${amountColor(value)}`}
+                                    >
+                                      {signed(value)}
+                                    </td>
+                                  ))}
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      ) : (
+                        <table className="w-full min-w-[720px] border-collapse text-left">
+                          <thead>
+                            <tr className="border-b border-[#E9EDF2] bg-[#F7F9FD] text-[11px] font-bold uppercase tracking-[.03em] text-[#677992]">
+                              {[
+                                "Date",
+                                "Withdrawal ID",
+                                "Amount",
+                                "Net Payable",
+                                "Status",
+                                "Remark",
+                              ].map((h) => (
+                                <th
+                                  key={h}
+                                  className="px-3 py-3 first:pl-0"
+                                >
+                                  {h}
+                                </th>
+                              ))}
+                            </tr>
+                          </thead>
+
+                          <tbody>
+                            {(displayRows as WalletWithdrawal[]).map((w) => (
+                              <tr
+                                key={w.id}
+                                className="border-b border-[#EFF1F4] text-[12px] text-[#475367] transition-colors hover:bg-[#F7FAFF] last:border-0"
+                              >
+                                <td className="whitespace-nowrap px-3 py-4 pl-0">
+                                  {dateFmt(w.date)}
+                                </td>
+
+                                <td className="px-3 py-4 font-bold">
+                                  #{w.id}
+                                </td>
+
+                                <td className="px-3 py-4 font-bold text-[#DC4545]">
                                   {signed(
                                     -Math.abs(numberOf(w.amount_inr)),
                                     "₹",
                                   )}
-                                </p>
-
-                                {w.net_payable_inr != null && (
-                                  <p className="mt-1 text-[11px] font-bold text-[#DC4545]">
-                                    Net Payable: ₹{fmt(w.net_payable_inr)}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-
-                            <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-                              <span
-                                className={`rounded-full px-3 py-1 text-[11px] font-bold ${
-                                  String(w.status ?? "").toLowerCase() ===
-                                  "paid"
-                                    ? "bg-[#E9F7EF] text-[#168452]"
-                                    : "bg-[#FFF5E5] text-[#9F7626]"
-                                }`}
-                              >
-                                {friendly(w.status)}
-                              </span>
-
-                              <span className="text-[11px] text-[#68788B]">
-                                {friendly(w.remark)}
-                              </span>
-                            </div>
-                          </article>
-                        ))}
-                  </div>
-                )}
-
-                {/* Desktop Transactions Table */}
-                <div className="hidden max-w-full overflow-x-auto lg:block">
-                  {tab === "transactions" ? (
-                    <table className="w-full min-w-[790px] border-collapse text-left">
-                      <thead>
-                        <tr className="border-b border-[#E9EDF2] bg-[#F7F9FD] text-[11px] font-bold uppercase tracking-[.03em] text-[#677992]">
-                          {[
-                            "Date",
-                            "Category",
-                            "Wallet Change",
-                            "Net Payable",
-                            "Green",
-                            "Yellow",
-                            "Blue",
-                          ].map((h) => (
-                            <th
-                              key={h}
-                              className="whitespace-nowrap px-3 py-3 first:pl-0"
-                            >
-                              {h}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-
-                      <tbody>
-                        {(displayRows as WalletTransaction[]).map((t) => {
-                          const walletAmount =
-                            getWalletTransactionAmount(t);
-
-                          const netPayableAmount =
-                            getNetPayableTransactionAmount(t);
-
-                          const coinValues = [
-                            getCoinTransactionAmount(t.green_coin, t),
-                            getCoinTransactionAmount(t.yellow_coin, t),
-                            getCoinTransactionAmount(t.blue_coin, t),
-                          ];
-
-                          return (
-                            <tr
-                              key={t.id}
-                              className="border-b border-[#EFF1F4] text-[12px] text-[#475367] transition-colors hover:bg-[#F7FAFF] last:border-0"
-                            >
-                              <td className="whitespace-nowrap px-3 py-3.5 pl-0">
-                                {dateFmt(t.date)}
-                              </td>
-
-                              <td className="px-3 py-3.5">
-                                <span className="rounded-md bg-[#F3F5F8] px-2 py-1 font-semibold text-[#515F73]">
-                                  {friendly(t.category)}
-                                </span>
-                              </td>
-
-                              <td
-                                className={`px-3 py-3.5 font-bold ${amountColor(walletAmount)}`}
-                              >
-                                {signed(walletAmount, "₹")}
-                              </td>
-
-                              <td
-                                className={`whitespace-nowrap px-3 py-3.5 font-bold ${amountColor(netPayableAmount)}`}
-                              >
-                                {t.net_payable_inr != null
-                                  ? signed(netPayableAmount, "₹")
-                                  : "—"}
-                              </td>
-
-                              {coinValues.map((value, i) => (
-                                <td
-                                  key={i}
-                                  className={`px-3 py-3.5 font-semibold ${amountColor(value)}`}
-                                >
-                                  {signed(value)}
                                 </td>
-                              ))}
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  ) : (
-                    <table className="w-full min-w-[720px] border-collapse text-left">
-                      <thead>
-                        <tr className="border-b border-[#E9EDF2] bg-[#F7F9FD] text-[11px] font-bold uppercase tracking-[.03em] text-[#677992]">
-                          {[
-                            "Date",
-                            "Withdrawal ID",
-                            "Amount",
-                            "Net Payable",
-                            "Status",
-                            "Remark",
-                          ].map((h) => (
-                            <th
-                              key={h}
-                              className="px-3 py-3 first:pl-0"
-                            >
-                              {h}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
 
-                      <tbody>
-                        {(displayRows as WalletWithdrawal[]).map((w) => (
-                          <tr
-                            key={w.id}
-                            className="border-b border-[#EFF1F4] text-[12px] text-[#475367] transition-colors hover:bg-[#F7FAFF] last:border-0"
+                                <td className="whitespace-nowrap px-3 py-4 font-bold text-[#DC4545]">
+                                  {w.net_payable_inr != null
+                                    ? `₹${fmt(w.net_payable_inr)}`
+                                    : "—"}
+                                </td>
+
+                                <td className="px-3 py-4">
+                                  <span
+                                    className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${
+                                      String(w.status ?? "").toLowerCase() ===
+                                      "paid"
+                                        ? "bg-[#ECF8F1] text-[#238C5D]"
+                                        : "bg-[#F7F3E9] text-[#9F7A2D]"
+                                    }`}
+                                  >
+                                    {friendly(w.status)}
+                                  </span>
+                                </td>
+
+                                <td className="px-3 py-4">
+                                  {friendly(w.remark || "Commission Payout")}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      )}
+                    </div>
+
+                    {/* Empty State */}
+                    {!loading && !rows.length && (
+                      <div className="flex min-h-[175px] flex-col items-center justify-center gap-2 text-center">
+                        <History size={24} className="text-[#AFB8C5]" />
+
+                        <p className="text-[12px] font-semibold text-[#6E7A8C]">
+                          {search || dateFilter !== "all"
+                            ? "No matching records"
+                            : "No records available"}
+                        </p>
+
+                        {(search || dateFilter !== "all") && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSearch("");
+                              setDateFilter("all");
+                              setPage(1);
+                            }}
+                            className="mt-1 text-[11px] font-bold text-[#315E9E] underline underline-offset-2"
                           >
-                            <td className="whitespace-nowrap px-3 py-4 pl-0">
-                              {dateFmt(w.date)}
-                            </td>
+                            Clear search and filters
+                          </button>
+                        )}
+                      </div>
+                    )}
 
-                            <td className="px-3 py-4 font-bold">
-                              #{w.id}
-                            </td>
-
-                            <td className="px-3 py-4 font-bold text-[#DC4545]">
-                              {signed(
-                                -Math.abs(numberOf(w.amount_inr)),
-                                "₹",
-                              )}
-                            </td>
-
-                            <td className="whitespace-nowrap px-3 py-4 font-bold text-[#DC4545]">
-                              {w.net_payable_inr != null
-                                ? `₹${fmt(w.net_payable_inr)}`
-                                : "—"}
-                            </td>
-
-                            <td className="px-3 py-4">
-                              <span
-                                className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${
-                                  String(w.status ?? "").toLowerCase() ===
-                                  "paid"
-                                    ? "bg-[#ECF8F1] text-[#238C5D]"
-                                    : "bg-[#F7F3E9] text-[#9F7A2D]"
-                                }`}
-                              >
-                                {friendly(w.status)}
-                              </span>
-                            </td>
-
-                            <td className="px-3 py-4">
-                              {friendly(w.remark || "Commission Payout")}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
-                </div>
-
-                {/* Empty State */}
-                {!loading && !rows.length && (
-                  <div className="flex min-h-[175px] flex-col items-center justify-center gap-2 text-center">
-                    <History size={24} className="text-[#AFB8C5]" />
-
-                    <p className="text-[12px] font-semibold text-[#6E7A8C]">
-                      {search || dateFilter !== "all"
-                        ? "No matching records"
-                        : "No records available"}
-                    </p>
-
-                    {(search || dateFilter !== "all") && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSearch("");
-                          setDateFilter("all");
-                          setPage(1);
-                        }}
-                        className="mt-1 text-[11px] font-bold text-[#315E9E] underline underline-offset-2"
-                      >
-                        Clear search and filters
-                      </button>
+                    {/* Loading */}
+                    {loading && (
+                      <div className="flex min-h-[175px] items-center justify-center gap-2 text-[12px] text-[#8793A3]">
+                        <Loader2 size={17} className="animate-spin" />
+                        Loading wallet data...
+                      </div>
                     )}
                   </div>
-                )}
 
-                {/* Loading */}
-                {loading && (
-                  <div className="flex min-h-[175px] items-center justify-center gap-2 text-[12px] text-[#8793A3]">
-                    <Loader2 size={17} className="animate-spin" />
-                    Loading wallet data...
+                  {/* Pagination */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#ECEFF3] px-4 py-3.5 sm:px-5">
+                    <div className="flex flex-wrap items-center gap-3 text-[10px] text-[#7E8A9A]">
+                      <label className="flex items-center gap-2">
+                        <span>Rows</span>
+
+                        <select
+                          aria-label="Rows per page"
+                          className="rounded-[8px] border border-[#E0E5EC] bg-white px-2 py-1.5 text-[#303A49]"
+                          value={pageSize}
+                          onChange={(e) => {
+                            setPageSize(Number(e.target.value));
+                            setPage(1);
+                          }}
+                        >
+                          {PAGE_SIZES.map((n) => (
+                            <option key={n} value={n}>
+                              {n}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+
+                      <span>
+                        Showing {startRow}–{endRow} of {rows.length}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        aria-label="Previous page"
+                        type="button"
+                        disabled={currentPage <= 1}
+                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#E6E9EE] text-[#647084] disabled:opacity-35"
+                      >
+                        <ChevronLeft size={15} />
+                      </button>
+
+                      <span className="flex h-8 min-w-8 items-center justify-center rounded-lg bg-[#171717] px-2 text-[11px] font-bold text-white">
+                        {currentPage}
+                      </span>
+
+                      <span className="text-[10px] text-[#8791A0]">
+                        / {totalPages}
+                      </span>
+
+                      <button
+                        aria-label="Next page"
+                        type="button"
+                        disabled={currentPage >= totalPages}
+                        onClick={() =>
+                          setPage((p) => Math.min(totalPages, p + 1))
+                        }
+                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#E6E9EE] text-[#647084] disabled:opacity-35"
+                      >
+                        <ChevronRight size={15} />
+                      </button>
+                    </div>
                   </div>
-                )}
-              </div>
 
-              {/* Pagination */}
-              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#ECEFF3] px-4 py-3.5 sm:px-5">
-                <div className="flex flex-wrap items-center gap-3 text-[10px] text-[#7E8A9A]">
-                  <label className="flex items-center gap-2">
-                    <span>Rows</span>
-
-                    <select
-                      aria-label="Rows per page"
-                      className="rounded-[8px] border border-[#E0E5EC] bg-white px-2 py-1.5 text-[#303A49]"
-                      value={pageSize}
-                      onChange={(e) => {
-                        setPageSize(Number(e.target.value));
-                        setPage(1);
-                      }}
-                    >
-                      {PAGE_SIZES.map((n) => (
-                        <option key={n} value={n}>
-                          {n}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <span>
-                    Showing {startRow}–{endRow} of {rows.length}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    aria-label="Previous page"
-                    type="button"
-                    disabled={currentPage <= 1}
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#E6E9EE] text-[#647084] disabled:opacity-35"
-                  >
-                    <ChevronLeft size={15} />
-                  </button>
-
-                  <span className="flex h-8 min-w-8 items-center justify-center rounded-lg bg-[#171717] px-2 text-[11px] font-bold text-white">
-                    {currentPage}
-                  </span>
-
-                  <span className="text-[10px] text-[#8791A0]">
-                    / {totalPages}
-                  </span>
-
-                  <button
-                    aria-label="Next page"
-                    type="button"
-                    disabled={currentPage >= totalPages}
-                    onClick={() =>
-                      setPage((p) => Math.min(totalPages, p + 1))
-                    }
-                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#E6E9EE] text-[#647084] disabled:opacity-35"
-                  >
-                    <ChevronRight size={15} />
-                  </button>
-                </div>
-              </div>
-
-              {/* API Pagination Note */}
-              {wallet?.has_more_transactions &&
-                tab === "transactions" && (
-                  <p className="border-t border-[#F0F2F4] px-5 py-3 text-[10px] text-[#8C6B34]">
-                    The API reports additional transactions beyond this
-                    response. Pagination here covers the currently returned
-                    records only.
-                  </p>
-                )}
+                  {/* API Pagination Note */}
+                  {wallet?.has_more_transactions &&
+                    tab === "transactions" && (
+                      <p className="border-t border-[#F0F2F4] px-5 py-3 text-[10px] text-[#8C6B34]">
+                        The API reports additional transactions beyond this
+                        response. Pagination here covers the currently returned
+                        records only.
+                      </p>
+                    )}
+                </>
+              )}
             </section>
           </div>
         </main>
