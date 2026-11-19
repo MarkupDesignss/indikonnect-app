@@ -611,11 +611,7 @@ export const generateInvoicePDF = async (response: any): Promise<void> => {
       ["Order Date", formatDate(order.created_at)],
       ["Place of Supply", placeOfSupply],
       ["Payment Mode", prettyStatus(order.payment_gateway)],
-      ["Order Status", prettyStatus(order.status)],
     ];
-    if (isSingleItem && items[0]?.order_line_id) {
-      orderFields.push(["Order Item ID", items[0].order_line_id]);
-    }
     const orderRows = orderFields.map(([label, value]) => ({
       label,
       lines: wrap(value, orderW - 20, 7.5),
