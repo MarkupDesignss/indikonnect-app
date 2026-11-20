@@ -1711,7 +1711,7 @@ export default function ProductsPage() {
               <div className="mb-3">
                 <div className="relative overflow-hidden rounded-[8px] bg-[#f8f8f8]">
                   <div className="relative aspect-[4/1] min-h-[85px] w-full overflow-hidden sm:aspect-[6.5/1] sm:min-h-[80px] md:aspect-[8/1] md:min-h-[75px] lg:aspect-[9.5/1] lg:min-h-[70px] xl:min-h-[65px]">
-                    <AnimatePresence initial={false} mode="wait">
+                    <AnimatePresence  initial={false} mode="wait">
                       <motion.img
                         key={brandBanners[activeBanner]?.url}
                         src={brandBanners[activeBanner]?.url}

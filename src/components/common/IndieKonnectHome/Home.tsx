@@ -2436,11 +2436,9 @@ export default function IndieKonnectHome() {
           }
         />
 
-        {/* HERO BANNER */}
+        
 
-        <div className="relative isolate flow-root w-full">
-          <HeroBannerCarousel />
-        </div>
+   
 
         {/* =================================================
             BEST SELLERS
@@ -2740,9 +2738,7 @@ export default function IndieKonnectHome() {
           <ReviewCarousel />
         </div>
 
-        <div className="relative isolate flow-root w-full">
-          <StyleTestimonials />
-        </div>
+  
 
         <div className="relative isolate flow-root w-full">
           <PurchaseTrustBar />

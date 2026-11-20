@@ -68,9 +68,6 @@ import Loding from "@/components/common/Loding";
 const CARD =
   "min-w-0 rounded-[20px] border border-[#E2E9F3] bg-white shadow-[0_6px_22px_rgba(36,55,90,.04)]";
 
-const CARD_HOVER =
-  "transition-all duration-200 hover:border-[#C8CFD9] hover:shadow-[0_12px_28px_rgba(24,39,75,0.06)] motion-reduce:transition-none";
-
 // --------------------------------------------------
 // Font
 // --------------------------------------------------
@@ -83,8 +80,8 @@ const FontImport = () => (
     .distributor-dashboard button { -webkit-tap-highlight-color: transparent; }
     .distributor-dashboard ::selection { background: #dadada; color: #101010; }
     .distributor-dashboard .dashboard-number { font-variant-numeric: tabular-nums; }
-    .distributor-dashboard .dashboard-card { transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease; }
-    .distributor-dashboard .dashboard-card:hover { border-color: #d8d8d8; box-shadow: 0 14px 32px rgba(17,17,17,.045); }
+
+
     @media (prefers-reduced-motion: reduce) {
       .distributor-dashboard *, .distributor-dashboard *::before, .distributor-dashboard *::after {
         scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important;
@@ -201,11 +198,9 @@ function DashboardLoader() {
 function WelcomeHero({
   user,
   distributorId,
-  gstIn,
 }: {
   user?: DashboardUser;
   distributorId: string;
-  gstIn?: string | null;
 }) {
   const displayName = user?.name?.trim() || "Distributor";
   const initials = displayName
@@ -241,14 +236,14 @@ function WelcomeHero({
         aria-hidden="true"
         className="pointer-events-none absolute -bottom-28 right-1/3 h-52 w-52 rounded-full bg-[#6C96EA]/20 blur-3xl"
       />
-      <div className="relative grid items-center gap-6 p-5 sm:p-7 lg:grid-cols-[minmax(0,1fr)_minmax(240px,320px)] lg:p-8">
+      <div className="relative grid items-center gap-3 p-3 sm:p-4 lg:grid-cols-[minmax(0,1fr)_minmax(240px,320px)] lg:p-4">
         <div className="min-w-0">
           <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[11px] font-bold tracking-wide text-[#DBE8FF]">
             <span className="h-2 w-2 rounded-full bg-[#7BE5B7]" /> Your
             distributor dashboard
           </span>
-          <div className="mt-5 flex items-center gap-3.5">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/15 bg-white/15 text-base font-extrabold sm:h-14 sm:w-14 sm:text-lg">
+          <div className="mt-3 flex items-center gap-2.5">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/15 bg-white/15 text-base font-extrabold sm:h-12 sm:w-12 sm:text-lg">
               {initials || "D"}
             </div>
             <div className="min-w-0">
@@ -258,11 +253,11 @@ function WelcomeHero({
               </h1>
             </div>
           </div>
-          <p className="mt-4 max-w-xl text-[13px] leading-6 text-[#D6E2F7] sm:text-[14px]">
+          <p className="mt-2 text-[13px] leading-6 text-[#D6E2F7] sm:text-[14px]">
             Everything you need in one place. Check your earnings, track your TC
             accounts and manage your coins.
           </p>
-          <div className="mt-5 flex flex-wrap gap-2">
+          <div className="mt-3 flex flex-wrap gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-[11px] font-semibold text-white">
               <ShieldCheck size={14} />{" "}
               {formatStatus(user?.account_type || "distributor")} account
@@ -272,23 +267,18 @@ function WelcomeHero({
                 {user.email}
               </span>
             )}
-            {gstIn != null && String(gstIn).trim() !== "" && (
-              <span className="inline-flex max-w-full items-center gap-1.5 rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-[11px] text-[#DFE9FC] break-all">
-                <span className="font-bold text-white">GSTIN:</span> {gstIn}
-              </span>
-            )}
           </div>
         </div>
-        <div className="min-w-0 rounded-[20px] border border-white/20 bg-white/[.11] p-5 backdrop-blur-sm sm:p-6">
-          <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0 rounded-[20px] border border-white/20 bg-white/[.11] p-3 backdrop-blur-sm sm:p-3.5">
+          <div className="flex items-center justify-between gap-2.5">
             <p className="text-[11px] font-bold uppercase tracking-[.12em] text-[#CFDDF5]">
               Your BA ID
             </p>
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15">
               <UsersRound size={19} />
             </span>
           </div>
-          <p className="dashboard-number mt-4 break-all text-[21px] font-extrabold tracking-tight sm:text-[24px]">
+          <p className="dashboard-number mt-2 break-all text-[21px] font-extrabold tracking-tight sm:text-[24px]">
             {cleanId || "Not available"}
           </p>
           <p className="mt-2 text-[11px] leading-5 text-[#CBDCF8]">
@@ -298,7 +288,7 @@ function WelcomeHero({
             type="button"
             onClick={copyId}
             disabled={!cleanId || cleanId === "N/A"}
-            className="mt-4 inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-white px-4 text-[12px] font-extrabold text-[#203B6C] transition hover:bg-[#ECF3FF] disabled:opacity-50"
+            className="mt-2 inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-white px-4 text-[12px] font-extrabold text-[#203B6C] transition disabled:opacity-50"
           >
             {copied ? <Check size={15} /> : <span aria-hidden="true">⧉</span>}
             {copied ? "Copied!" : "Copy ID"}
@@ -346,14 +336,6 @@ type ExtendedIgnite = IgniteDashboard & {
   far_right_ba_id?: string | null;
   commissions_history?: LedgerEntry[] | null;
   commission_breakdown?: CommissionBreakdown | null;
-  tds_summary?: {
-    gst_in?: string | null;
-    pan_verified?: boolean | null;
-    section?: string | null;
-    applied_rate?: number | string | null;
-    reason?: string | null;
-    action_hint?: string | null;
-  } | null;
 };
 
 // --------------------------------------------------
@@ -391,7 +373,7 @@ function QuickStatsCards({ ignite }: { ignite?: IgniteDashboard | null }) {
       bg: "#F4EDFF",
     },
     {
-      label: " Green Coins",
+      label: "Unilevel Green Coins",
       value: info?.unilevel_green_coin,
       prefix: "",
       icon: Coins,
@@ -404,9 +386,9 @@ function QuickStatsCards({ ignite }: { ignite?: IgniteDashboard | null }) {
     <section
       id="earnings"
       aria-label="Key dashboard earnings"
-      className="mt-6 scroll-mt-6"
+      className="mt-3 scroll-mt-3"
     >
-      <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
+      <div className="mb-2 flex flex-wrap items-end justify-between gap-2">
         <div>
           <h2 className="text-[19px] font-extrabold tracking-tight text-[#1D2C46] sm:text-[22px]">
             Your earnings at a glance
@@ -419,32 +401,32 @@ function QuickStatsCards({ ignite }: { ignite?: IgniteDashboard | null }) {
           Live account data
         </span>
       </div>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2.5 xl:grid-cols-4">
         {cards.map((item) => {
           const Icon = item.icon;
           return (
             <div
               key={item.label}
-              className="dashboard-card relative flex min-h-[154px] flex-col justify-between rounded-[19px] border border-[#E2E9F3] bg-white p-5 shadow-[0_6px_22px_rgba(36,55,90,.045)]"
+              className="dashboard-card relative flex flex-col rounded-[19px] border border-[#E2E9F3] bg-white p-3 shadow-[0_6px_22px_rgba(36,55,90,.045)]"
             >
               <div className="flex items-start justify-between gap-2">
                 <p className="text-[13px] font-bold text-[#526179]">
                   {item.label}
                 </p>
                 <span
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px]"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[13px]"
                   style={{ color: item.tone, backgroundColor: item.bg }}
                 >
                   <Icon size={21} strokeWidth={2} />
                 </span>
               </div>
-              <div className="mt-3">
-                <p className="dashboard-number break-words text-[29px] font-extrabold leading-tight tracking-tight text-[#192944] sm:text-[32px]">
+              <div className="mt-2">
+                <p className="dashboard-number break-words text-[23px] font-extrabold leading-tight tracking-tight text-[#192944] sm:text-[27px]">
                   {item.value == null
                     ? "—"
                     : `${item.prefix}${formatNumber(item.value)}`}
                 </p>
-                <p className="mt-1.5 text-[11px] leading-5 text-[#718097]">
+                <p className="mt-1.5 text-[11px] leading-4 text-[#718097]">
                   {item.value == null ? "Not provided by API" : item.note}
                 </p>
               </div>
@@ -524,7 +506,7 @@ function DashboardOverview({ stats }: { stats?: DashboardStats }) {
           return (
             <div
               key={item.label}
-              className="group flex min-h-[112px] min-w-0 flex-col justify-between rounded-[14px] border border-[#E8EDF5] bg-white p-3 shadow-[0_3px_12px_rgba(52,72,120,.03)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_26px_rgba(52,72,120,.08)] sm:p-4"
+              className="group flex min-h-[112px] min-w-0 flex-col justify-between rounded-[14px] border border-[#E8EDF5] bg-white p-3 shadow-[0_3px_12px_rgba(52,72,120,.03)] transition-all sm:p-4"
             >
               <div className="flex items-start justify-between">
                 <span
@@ -576,14 +558,10 @@ type IgniteCoinValues = {
 function CoinCard({
   color,
   value,
-  valueUsd,
-  valueInr,
   label,
 }: {
   color: "yellow" | "green" | "blue";
   value: string | number;
-  valueUsd?: number | string | null;
-  valueInr?: number | string | null;
   label: string;
 }) {
   const theme = {
@@ -603,25 +581,26 @@ function CoinCard({
   }[color];
   return (
     <div
-      className="flex min-w-0 flex-col rounded-[17px] border p-3.5 sm:p-4"
+      className="flex min-w-0 items-center gap-2.5 rounded-[14px] border p-3"
       style={{ borderColor: theme.border, backgroundColor: theme.bg }}
-      title={`${label} • USD: ${valueUsd == null ? "Not available" : formatCurrency(valueUsd, "USD")} • INR: ${valueInr == null ? "Not available" : formatCurrency(valueInr, "INR")}`}
     >
       <span
-        className="flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-sm"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm"
         style={{ color: theme.solid }}
       >
         <Coins size={21} strokeWidth={2} />
       </span>
-      <p className="dashboard-number mt-4 break-words text-[27px] font-extrabold leading-none tracking-tight text-[#1B2A44] sm:text-[30px]">
-        {value == null ? "—" : formatNumber(value)}
-      </p>
-      <p className="mt-2 text-[12px] font-bold leading-5 text-[#41516B] sm:text-[13px]">
-        {label}
-      </p>
-      <p className="mt-0.5 text-[10px] leading-4 text-[#66758D]">
-        Available balance
-      </p>
+      <div className="min-w-0 flex-1">
+        <p className="dashboard-number break-words text-[23px] font-extrabold leading-none tracking-tight text-[#1B2A44] sm:text-[26px]">
+          {value == null ? "—" : formatNumber(value)}
+        </p>
+        <p className="mt-1 text-[12px] font-bold leading-5 text-[#41516B] sm:text-[13px]">
+          {label}
+        </p>
+        <p className="mt-0.5 text-[10px] leading-4 text-[#66758D]">
+          Available balance
+        </p>
+      </div>
     </div>
   );
 }
@@ -725,7 +704,7 @@ function RedeemCoinsModal({
                 onClick={onClose}
                 disabled={isRedeeming}
                 aria-label="Close redeem dialog"
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] border border-[#E9E9E9] text-[#666666] hover:bg-[#F5F5F5] disabled:opacity-50"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] border border-[#E9E9E9] text-[#666666] disabled:opacity-50"
               >
                 <span className="text-[21px] leading-none">×</span>
               </button>
@@ -746,7 +725,7 @@ function RedeemCoinsModal({
                     className={`flex min-w-0 items-center justify-between gap-2 rounded-[12px] border px-3 py-3 text-left transition-all disabled:cursor-not-allowed disabled:opacity-60 ${
                       selectedRedeemPoint === "yellow_bal"
                         ? "border-[#DCC58F] bg-[#FFF9EA] shadow-[0_3px_10px_rgba(183,139,48,.07)]"
-                        : "border-[#E6E9EF] bg-white hover:border-[#D5D9E1]"
+                        : "border-[#E6E9EF] bg-white"
                     }`}
                   >
                     <span className="flex min-w-0 items-center gap-2.5">
@@ -791,7 +770,7 @@ function RedeemCoinsModal({
                     className={`flex min-w-0 items-center justify-between gap-2 rounded-[12px] border px-3 py-3 text-left transition-all disabled:cursor-not-allowed disabled:opacity-60 ${
                       selectedRedeemPoint === "blue_bal"
                         ? "border-[#BFCBF0] bg-[#F0F4FE] shadow-[0_3px_10px_rgba(79,106,192,.07)]"
-                        : "border-[#E6E9EF] bg-white hover:border-[#D5D9E1]"
+                        : "border-[#E6E9EF] bg-white"
                     }`}
                   >
                     <span className="flex min-w-0 items-center gap-2.5">
@@ -927,7 +906,7 @@ function RedeemCoinsModal({
                   type="button"
                   onClick={onClose}
                   disabled={isRedeeming}
-                  className="inline-flex h-[47px] w-full items-center justify-center rounded-[12px] border border-[#E2E6ED] bg-white px-4 text-[12px] font-bold text-[#4A5568] transition-all hover:bg-[#F5F6F8] active:scale-[.98] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex h-[47px] w-full items-center justify-center rounded-[12px] border border-[#E2E6ED] bg-white px-4 text-[12px] font-bold text-[#4A5568] transition-all active:scale-[.98] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Cancel
                 </button>
@@ -936,7 +915,7 @@ function RedeemCoinsModal({
                   type="button"
                   onClick={onRedeem}
                   disabled={!canRedeem}
-                  className="inline-flex h-[47px] w-full items-center justify-center gap-2 rounded-[12px] bg-[#171717] px-4 text-[12px] font-bold text-white shadow-[0_5px_14px_rgba(0,0,0,.09)] transition-all hover:bg-[#333333] active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#171717]/30 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-[#C9CDD4] disabled:text-white disabled:shadow-none"
+                  className="inline-flex h-[47px] w-full items-center justify-center gap-2 rounded-[12px] bg-[#171717] px-4 text-[12px] font-bold text-white shadow-[0_5px_14px_rgba(0,0,0,.09)] transition-all active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#171717]/30 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-[#C9CDD4] disabled:text-white disabled:shadow-none"
                 >
                   {isRedeeming ? (
                     <>
@@ -1057,8 +1036,8 @@ function CoinsSection({
   };
 
   return (
-    <section className="min-w-0 rounded-[20px] border border-[#E2E9F3] bg-white p-5 shadow-[0_6px_22px_rgba(36,55,90,.04)] sm:p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <section className="min-w-0 rounded-[20px] border border-[#E2E9F3] bg-white p-3 shadow-[0_6px_22px_rgba(36,55,90,.04)] sm:p-3.5">
+      <div className="flex flex-wrap items-center justify-between gap-2.5">
         <div>
           <h2 className="text-[16px] font-extrabold text-[#1D2C46]">
             My coin wallet
@@ -1068,26 +1047,20 @@ function CoinsSection({
           </p>
         </div>
       </div>
-      <div className="mt-5 grid grid-cols-1 gap-3 min-[440px]:grid-cols-3">
+      <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-3">
         <CoinCard
           color="yellow"
           value={coinValues?.yellow_bal ?? 0}
-          valueUsd={coinValues?.yellow_value_usd}
-          valueInr={coinValues?.yellow_value_inr}
           label="Yellow Coin"
         />
         <CoinCard
           color="green"
           value={coinValues?.green_bal ?? 0}
-          valueUsd={coinValues?.green_value_usd}
-          valueInr={coinValues?.green_value_inr}
           label="Green Coin"
         />
         <CoinCard
           color="blue"
           value={coinValues?.blue_bal ?? 0}
-          valueUsd={coinValues?.blue_value_usd}
-          valueInr={coinValues?.blue_value_inr}
           label="Blue Coin"
         />
       </div>
@@ -1241,6 +1214,7 @@ function AccountSummary({ ignite }: { ignite?: IgniteDashboard | null }) {
   //     </div>
   //   </section>
   // );
+  return null;
 }
 
 // --------------------------------------------------
@@ -1308,7 +1282,7 @@ function AccountTable({
   //             type="button"
   //             aria-expanded={expanded}
   //             onClick={() => setExpanded((v) => !v)}
-  //             className="group grid min-h-[72px] w-full grid-cols-[minmax(0,1.25fr)_minmax(0,.6fr)_minmax(0,.85fr)_16px] items-center gap-2 bg-white px-3 text-left transition-colors hover:bg-[#FBFBFB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#333333] sm:px-4"
+  //             className="group grid min-h-[72px] w-full grid-cols-[minmax(0,1.25fr)_minmax(0,.6fr)_minmax(0,.85fr)_16px] items-center gap-2 bg-white px-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#333333] sm:px-4"
   //           >
   //             <span className="min-w-0 break-all text-[11px] font-bold text-[#252525] sm:text-[13px]">
   //               {ignite.ba_id || "N/A"}
@@ -1376,7 +1350,7 @@ function AccountTable({
   //         <button
   //           type="button"
   //           onClick={onOpenBankedTc}
-  //           className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-[11px] bg-[#171717] px-4 text-[12px] font-semibold text-white shadow-[0_6px_14px_rgba(0,0,0,.12)] transition-all hover:bg-[#333333] active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#333333]/30 focus-visible:ring-offset-2"
+  //           className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-[11px] bg-[#171717] px-4 text-[12px] font-semibold text-white shadow-[0_6px_14px_rgba(0,0,0,.12)] transition-all active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#333333]/30 focus-visible:ring-offset-2"
   //         >
   //           <HandCoins size={15} /> Place Banked TC <ArrowRight size={14} />
   //         </button>
@@ -1388,6 +1362,7 @@ function AccountTable({
   //     </div>
   //   </section>
   // );
+  return null;
 }
 
 // --------------------------------------------------
@@ -1453,7 +1428,7 @@ function BankedTcModal({
                   onClick={onClose}
                   disabled={isLoading}
                   aria-label="Close placement dialog"
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] border border-[#E9E9E9] text-[#666666] hover:bg-[#F5F5F5] disabled:opacity-50"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] border border-[#E9E9E9] text-[#666666] disabled:opacity-50"
                 >
                   <span className="text-[21px] leading-none">×</span>
                 </button>
@@ -1483,7 +1458,7 @@ function BankedTcModal({
                     type="button"
                     disabled={isLoading}
                     onClick={() => onSelectSide(side)}
-                    className="group flex min-h-[134px] flex-col items-center justify-center rounded-[15px] border border-[#E5E7EB] bg-[#FAFAFB] px-3 py-4 transition-all hover:border-[#A9B1BE] hover:bg-[#F2F4F7] disabled:cursor-not-allowed disabled:opacity-50"
+                    className="group flex min-h-[134px] flex-col items-center justify-center rounded-[15px] border border-[#E5E7EB] bg-[#FAFAFB] px-3 py-4 transition-all disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <span className="flex h-11 w-11 items-center justify-center rounded-[12px] bg-[#607CDA] text-[16px] font-bold text-white">
                       {isLoading && pendingSide === side ? (
@@ -1600,6 +1575,7 @@ function RecentActivity({ activity }: { activity: DashboardActivity[] }) {
   //     )}
   //   </section>
   // );
+  return null;
 }
 
 // --------------------------------------------------
@@ -1695,6 +1671,7 @@ function LatestOrderSection({ order }: { order: DashboardLatestOrder | null }) {
   //     )}
   //   </section>
   // );
+  return null;
 }
 
 // --------------------------------------------------
@@ -1946,7 +1923,7 @@ function PosterCalendarTable({
                 return (
                   <tr
                     key={`${month.month_no}-${week.week_no}`}
-                    className={`transition-colors ${selected ? "bg-[#edf4ff]" : "bg-white hover:bg-[#f5f8ff]"}`}
+                    className={`transition-colors ${selected ? "bg-[#edf4ff]" : "bg-white"}`}
                   >
                     {index === 0 && (
                       <td
@@ -1961,31 +1938,21 @@ function PosterCalendarTable({
                     <td className={`${cell} w-[8%] font-black text-[#123d84]`}>
                       <button
                         type="button"
-                        title={`Week ${week.week_no} · ${week.is_settled ? "Settled" : "Pending"}${active ? " · Current week" : ""}`}
                         onClick={() => onSelectWeek(week.week_no!)}
                         aria-label={`Select week ${week.week_no} for CV search`}
                         aria-pressed={selected}
-                        className={`mx-auto flex h-[22px] min-w-[24px] items-center justify-center rounded px-0.5 text-[10px] font-bold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[#f2a91b] ${selected ? "bg-[#123d84] text-white" : active ? "bg-[#ffe6a0] text-[#123d84] hover:bg-[#fbd473]" : "text-[#123d84] hover:bg-[#dceaff]"}`}
+                        className={`mx-auto flex h-[22px] min-w-[24px] items-center justify-center rounded px-0.5 text-[10px] font-bold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[#f2a91b] ${selected ? "bg-[#123d84] text-white" : active ? "bg-[#ffe6a0] text-[#123d84]" : "text-[#123d84]"}`}
                       >
                         {week.week_no}
                       </button>
                     </td>
-                    <td
-                      className={`${cell} whitespace-nowrap text-[#364b67]`}
-                      title={week.start ?? ""}
-                    >
+                    <td className={`${cell} whitespace-nowrap text-[#364b67]`}>
                       {formatPosterApiDate(week.start)}
                     </td>
-                    <td
-                      className={`${cell} whitespace-nowrap text-[#364b67]`}
-                      title={week.end ?? ""}
-                    >
+                    <td className={`${cell} whitespace-nowrap text-[#364b67]`}>
                       {formatPosterApiDate(week.end)}
                     </td>
-                    <td
-                      className={`${cell} whitespace-nowrap bg-[#fff0b5]`}
-                      title={week.payout_date ?? ""}
-                    >
+                    <td className={`${cell} whitespace-nowrap bg-[#fff0b5]`}>
                       <span className="rounded-sm bg-[#f8e6a9] px-0.5 py-0.5 font-bold text-[#143f82]">
                         {formatPosterApiDate(week.payout_date)}
                       </span>
@@ -2335,7 +2302,7 @@ function SearchableDropdown<T extends string | number>({
         aria-controls={`${id}-listbox`}
         disabled={disabled}
         onClick={() => setOpen((previous) => !previous)}
-        className="group flex h-12 w-full min-w-0 items-center justify-between gap-3 rounded-[13px] border border-[#E4E4E4] bg-white px-3.5 text-left outline-none transition-all hover:border-[#ABABAB] hover:bg-[#FCFCFC] focus-visible:border-[#242424] focus-visible:ring-4 focus-visible:ring-[#242424]/10 disabled:cursor-not-allowed disabled:bg-[#f7f8fa] disabled:text-[#98a2b3] sm:px-4"
+        className="group flex h-12 w-full min-w-0 items-center justify-between gap-3 rounded-[13px] border border-[#E4E4E4] bg-white px-3.5 text-left outline-none transition-all focus-visible:border-[#242424] focus-visible:ring-4 focus-visible:ring-[#242424]/10 disabled:cursor-not-allowed disabled:bg-[#f7f8fa] disabled:text-[#98a2b3] sm:px-4"
       >
         <span className="flex min-w-0 flex-1 flex-col">
           <span
@@ -2354,7 +2321,7 @@ function SearchableDropdown<T extends string | number>({
 
         <ChevronDown
           size={16}
-          className={`shrink-0 text-[#7c879b] transition-transform duration-200 group-hover:text-[#262626] ${
+          className={`shrink-0 text-[#7c879b] transition-transform duration-200 ${
             open ? "rotate-180 text-[#262626]" : ""
           }`}
         />
@@ -2388,7 +2355,7 @@ function SearchableDropdown<T extends string | number>({
                     type="button"
                     onClick={() => setQuery("")}
                     aria-label="Clear search"
-                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[16px] leading-none text-[#8a92a6] hover:bg-[#e9edf4] hover:text-[#101828]"
+                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[16px] leading-none text-[#8a92a6]"
                   >
                     ×
                   </button>
@@ -2420,7 +2387,7 @@ function SearchableDropdown<T extends string | number>({
                     className={`flex w-full items-center gap-2.5 rounded-[11px] border px-3 py-2.5 text-left transition-colors ${
                       featuredOption.value === value
                         ? "border-[#D0D0D0] bg-[#F2F2F2]"
-                        : "border-[#E7E7E7] bg-[#FAFAFA] hover:bg-[#EFEFEF]"
+                        : "border-[#E7E7E7] bg-[#FAFAFA]"
                     }`}
                   >
                     <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] bg-white text-[#1f9d6b] ring-1 ring-[#d9eee2]">
@@ -2461,7 +2428,7 @@ function SearchableDropdown<T extends string | number>({
                         className={`flex w-full items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-left transition-colors ${
                           isSelected
                             ? "bg-[#EFEFEF] text-[#202020]"
-                            : "text-[#344054] hover:bg-[#F7F7F7]"
+                            : "text-[#344054]"
                         }`}
                       >
                         <span className="min-w-0 flex-1">
@@ -2661,7 +2628,7 @@ function CvFilters({
           type="button"
           onClick={onSearch}
           disabled={isFetching || weekOptions.length === 0}
-          className="inline-flex h-12 w-full min-w-0 items-center justify-center gap-2 rounded-[12px] bg-[#171717] px-5 text-[13px] font-semibold text-white shadow-[0_6px_14px_rgba(0,0,0,0.10)] transition-all hover:bg-[#333333] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#171717]/30 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 sm:text-[13.5px] xl:w-auto xl:min-w-[128px]"
+          className="inline-flex h-12 w-full min-w-0 items-center justify-center gap-2 rounded-[12px] bg-[#171717] px-5 text-[13px] font-semibold text-white shadow-[0_6px_14px_rgba(0,0,0,0.10)] transition-all active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#171717]/30 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 sm:text-[13.5px] xl:w-auto xl:min-w-[128px]"
         >
           {isFetching ? (
             <Loader2 size={15} className="animate-spin" />
@@ -2795,6 +2762,7 @@ function EarnedCoinsAndNetwork({ ignite }: { ignite?: ExtendedIgnite | null }) {
   //     </div>
   //   </section>
   // );
+  return null;
 }
 
 function FinancialSummary({ ignite }: { ignite?: ExtendedIgnite | null }) {
@@ -2833,7 +2801,7 @@ function FinancialSummary({ ignite }: { ignite?: ExtendedIgnite | null }) {
           : `₹${formatNumber(ignite.weekly_pairing_usd)}`,
     },
     {
-      label: " green coins",
+      label: "Unilevel green coins",
       value:
         ignite?.unilevel_green_coin == null
           ? "—"
@@ -2933,7 +2901,7 @@ function LedgerHistory({ entries }: { entries?: LedgerEntry[] | null }) {
   //           className={`rounded-full border px-3 py-1 text-[10px] font-semibold transition-colors ${
   //             filter === cat
   //               ? "border-[#171717] bg-[#171717] text-white"
-  //               : "border-[#E4E7EC] bg-white text-[#475467] hover:bg-[#F5F6F8]"
+  //               : "border-[#E4E7EC] bg-white text-[#475467]"
   //           }`}
   //         >
   //           {cat === "all" ? "All" : formatStatus(cat)}
@@ -2956,7 +2924,7 @@ function LedgerHistory({ entries }: { entries?: LedgerEntry[] | null }) {
   //             {shown.map((entry, i) => (
   //               <tr
   //                 key={`${entry.id}-${i}`}
-  //                 className="border-t border-[#EFEFEF] text-[#303030] hover:bg-[#FBFBFB]"
+  //                 className="border-t border-[#EFEFEF] text-[#303030]"
   //               >
   //                 <td className="px-3 py-2">{formatLedgerDate(entry.date_created)}</td>
   //                 <td className="px-3 py-2">{formatStatus(entry.category)}</td>
@@ -3002,6 +2970,7 @@ function LedgerHistory({ entries }: { entries?: LedgerEntry[] | null }) {
   //     )}
   //   </section>
   // );
+  return null;
 }
 
 function ApiDetailsExplorer({
@@ -3053,6 +3022,7 @@ function ApiDetailsExplorer({
   //     )}
   //   </section>
   // );
+  return null;
 }
 
 // ============================================================================
@@ -3106,9 +3076,117 @@ type TrackHistory = {
 };
 
 // --------------------------------------------------
-// Tracking Center resolves the Base BA ID internally from the logged-in
-// distributor account; it is never displayed as a separate form field.
+// Searchable Base BA ID selector for Tracking Center
 // --------------------------------------------------
+function TrackingBaseIdSearch({
+  ids,
+  value,
+  onChange,
+  loading,
+}: {
+  ids: string[];
+  value: string;
+  onChange: (id: string) => void;
+  loading?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [activeIndex, setActiveIndex] = useState(0);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const filtered = ids.filter((id) =>
+    id.toLowerCase().includes(query.trim().toLowerCase()),
+  );
+  const disabled = loading || ids.length === 0;
+
+  useEffect(() => {
+    const handleOutside = (event: PointerEvent) => {
+      if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("pointerdown", handleOutside);
+    return () => document.removeEventListener("pointerdown", handleOutside);
+  }, []);
+
+  useEffect(() => {
+    if (open) inputRef.current?.focus();
+  }, [open]);
+
+  const choose = (id: string) => {
+    onChange(id);
+    setOpen(false);
+    setQuery("");
+    setActiveIndex(0);
+  };
+
+  return (
+    <div ref={rootRef} className="relative min-w-0">
+      <button
+        type="button"
+        aria-label="Select Base BA ID"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        disabled={disabled}
+        onClick={() => {
+          setQuery("");
+          setActiveIndex(0);
+          setOpen((prev) => !prev);
+        }}
+        className="flex h-11 w-full min-w-0 items-center gap-2 rounded-xl border border-[#D8E2F0] bg-white px-3 text-left text-[13px] font-semibold text-[#293447] outline-none focus:border-[#3768C6] focus:ring-4 focus:ring-[#3768C6]/10 disabled:cursor-not-allowed disabled:bg-[#F4F6F9]"
+      >
+        <Search size={15} className="shrink-0 text-[#8190A7]" />
+        <span
+          className={`min-w-0 flex-1 truncate ${!value ? "text-[#98A2B3]" : ""}`}
+        >
+          {value ||
+            (loading
+              ? "Loading accounts..."
+              : ids.length
+                ? "Search / select Base BA ID"
+                : "No Base BA IDs available")}
+        </span>
+        <ChevronDown
+          size={15}
+          className={`shrink-0 text-[#64748B] transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {open && !disabled && (
+        <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-[100] min-w-[240px] overflow-hidden rounded-xl border border-[#D8E2F0] bg-white shadow-[0_16px_40px_rgba(18,35,70,.17)]">
+          <div
+            id="tracking-base-ids"
+            role="listbox"
+            aria-label="Base BA IDs"
+            className="max-h-[260px] overflow-y-auto overscroll-contain py-1"
+          >
+            {filtered.length ? (
+              filtered.map((id, index) => (
+                <button
+                  key={id}
+                  type="button"
+                  role="option"
+                  aria-selected={value === id}
+                  onClick={() => choose(id)}
+                  className={`flex w-full items-center justify-between gap-2 px-3.5 py-2.5 text-left text-[12px] font-semibold transition ${activeIndex === index ? "bg-[#EFF5FF]" : ""}`}
+                >
+                  <span className="truncate text-[#293447]">{id}</span>
+                  {value === id && (
+                    <Check size={15} className="shrink-0 text-[#2A7E60]" />
+                  )}
+                </button>
+              ))
+            ) : (
+              <p className="px-4 py-3 text-center text-[12px] text-[#8793A5]">
+                No matching Base BA ID
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 // --------------------------------------------------
 // Searchable selectors for TC Slot, Sales Week and Year
@@ -3176,7 +3254,7 @@ function TrackingSearchSelect({
           setQuery("");
           setActiveIndex(0);
         }}
-        className="flex h-12 w-full min-w-0 items-center gap-2 rounded-xl border border-[#D8E2F0] bg-white px-3 text-left text-[13px] font-semibold text-[#293447] outline-none focus:border-[#3768C6] focus:ring-4 focus:ring-[#3768C6]/10 disabled:cursor-not-allowed disabled:bg-[#F4F6F9]"
+        className="flex h-11 w-full min-w-0 items-center gap-2 rounded-xl border border-[#D8E2F0] bg-white px-3 text-left text-[13px] font-semibold text-[#293447] outline-none focus:border-[#3768C6] focus:ring-4 focus:ring-[#3768C6]/10 disabled:cursor-not-allowed disabled:bg-[#F4F6F9]"
       >
         <Search size={15} className="shrink-0 text-[#8190A7]" />
         <span
@@ -3246,9 +3324,8 @@ function TrackingSearchSelect({
                   type="button"
                   role="option"
                   aria-selected={option.value === value}
-                  onMouseEnter={() => setActiveIndex(index)}
                   onClick={() => choose(option.value)}
-                  className={`flex w-full items-center justify-between gap-2 px-3.5 py-2.5 text-left text-[12px] transition ${activeIndex === index ? "bg-[#EFF5FF]" : "hover:bg-[#F7F9FC]"}`}
+                  className={`flex w-full items-center justify-between gap-2 px-3.5 py-2.5 text-left text-[12px] transition ${activeIndex === index ? "bg-[#EFF5FF]" : ""}`}
                 >
                   <span className="min-w-0">
                     <span className="block font-semibold text-[#293447]">
@@ -3266,7 +3343,7 @@ function TrackingSearchSelect({
                 </button>
               ))
             ) : (
-              <p className="px-4 py-5 text-center text-[12px] text-[#8793A5]">
+              <p className="px-4 py-3 text-center text-[12px] text-[#8793A5]">
                 No matching results
               </p>
             )}
@@ -3287,6 +3364,7 @@ function DashboardTrackingCenter({
   const accountsQuery = useGetMyAccountsQuery();
   const [loadCv, cvRequest] = useLazyGetTrackingCvCounterQuery();
   const [accountId, setAccountId] = useState("");
+  const [baseAccountId, setBaseAccountId] = useState("");
   const [year, setYear] = useState("");
   const [weekNo, setWeekNo] = useState("");
   const [response, setResponse] = useState<unknown>(null);
@@ -3336,16 +3414,8 @@ function DashboardTrackingCenter({
         a.sequence - b.sequence ||
         a.baId.localeCompare(b.baId),
     );
-  // Automatically use the authenticated distributor's Base BA ID.
-  // The full TC account ID remains available internally for the Show CV API.
   const baseIds = [...new Set(accounts.map((a) => a.baseId))];
-  const loggedInBaId = String(ignite?.ba_id ?? "").trim();
-  const loggedInBaseId = loggedInBaId.replace(/-\d+$/, "");
-  const activeBaseId =
-    baseIds.find((id) => id === loggedInBaseId || id === loggedInBaId) ??
-    baseIds[0] ??
-    "";
-  const visibleAccounts = accounts.filter((a) => a.baseId === activeBaseId);
+  const visibleAccounts = accounts.filter((a) => a.baseId === baseAccountId);
 
   const db = trackObj(dashboardData);
   const calendar = trackObj(db.sales_calendar);
@@ -3380,14 +3450,22 @@ function DashboardTrackingCenter({
   const currentWeek = weeks.find((w) => w.isCurrent);
 
   useEffect(() => {
-    // Select the first TC slot for the resolved Base BA ID without showing it.
+    if (!baseIds.length) {
+      if (baseAccountId) setBaseAccountId("");
+      if (accountId) setAccountId("");
+      return;
+    }
+    if (!baseIds.includes(baseAccountId)) {
+      setBaseAccountId(baseIds[0]);
+      return;
+    }
     if (!visibleAccounts.some((a) => a.baId === accountId)) {
       setAccountId(visibleAccounts[0]?.baId ?? "");
       setResponse(null);
       setHasSearched(false);
       setRequestError("");
     }
-  }, [accountsQuery.data, ignite?.ba_id, accountId]);
+  }, [accountsQuery.data, baseAccountId, accountId]);
   useEffect(() => {
     if (years.length && !years.some((y) => String(y) === year))
       setYear(String(currentWeek?.year ?? years[0]));
@@ -3411,7 +3489,7 @@ function DashboardTrackingCenter({
     setHasSearched(false);
     setRequestError("");
   };
-  const selectedAccount = visibleAccounts.find((a) => a.baId === accountId);
+  const selectedAccount = accounts.find((a) => a.baId === accountId);
   const chosenWeek = weeksOfYear.find((w) => String(w.weekNo) === weekNo);
   const canSearch =
     Boolean(selectedAccount && chosenWeek) && !cvRequest.isFetching;
@@ -3624,16 +3702,16 @@ function DashboardTrackingCenter({
       )
       .join(" ");
   const formClass =
-    "h-12 w-full min-w-0 appearance-none rounded-xl border border-[#D8E2F0] bg-white px-3 text-[13px] font-semibold text-[#293447] outline-none focus:border-[#3768C6] focus:ring-4 focus:ring-[#3768C6]/10 disabled:bg-[#F4F6F9]";
+    "h-11 w-full min-w-0 appearance-none rounded-xl border border-[#D8E2F0] bg-white px-3 text-[13px] font-semibold text-[#293447] outline-none focus:border-[#3768C6] focus:ring-4 focus:ring-[#3768C6]/10 disabled:bg-[#F4F6F9]";
   const panel =
-    "min-w-0 rounded-[20px] border border-[#E2E9F3] bg-white p-5 shadow-[0_6px_22px_rgba(36,55,90,.04)] sm:p-6";
+    "min-w-0 rounded-[20px] border border-[#E2E9F3] bg-white p-3 shadow-[0_6px_22px_rgba(36,55,90,.04)] sm:p-3.5";
   return (
     <section
       id="tracking"
-      className="mt-6 min-w-0 scroll-mt-6"
+      className="mt-3 min-w-0 scroll-mt-3"
       aria-label="Tracking Center"
     >
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2.5">
         <div>
           <SectionTitle large>Tracking Center</SectionTitle>
           <p className="ml-11 mt-1 text-[11px] text-[#8893a5]">
@@ -3647,7 +3725,7 @@ function DashboardTrackingCenter({
             void accountsQuery.refetch();
           }}
           disabled={accountsQuery.isFetching}
-          className="inline-flex h-9 items-center gap-2 rounded-[9px] border border-[#e3e7ed] bg-white px-3 text-[11px] font-semibold text-[#516075] hover:bg-[#f6f7f9] disabled:opacity-50"
+          className="inline-flex h-9 items-center gap-2 rounded-[9px] border border-[#e3e7ed] bg-white px-3 text-[11px] font-semibold text-[#516075] disabled:opacity-50"
         >
           <RefreshCw
             size={14}
@@ -3657,7 +3735,24 @@ function DashboardTrackingCenter({
         </button>
       </div>
       <div className={panel}>
-        <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)_minmax(110px,.5fr)_auto]">
+        <div className="grid grid-cols-1 items-start gap-2.5 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.3fr)_minmax(110px,.5fr)_auto]">
+          <div className="min-w-0">
+            <span className="mb-1.5 block text-[11px] font-semibold text-[#566174]">
+              Base BA ID
+            </span>
+            <TrackingBaseIdSearch
+              ids={baseIds}
+              value={baseAccountId}
+              loading={accountsQuery.isLoading}
+              onChange={(nextBaseId) => {
+                setBaseAccountId(nextBaseId);
+                setAccountId(
+                  accounts.find((a) => a.baseId === nextBaseId)?.baId ?? "",
+                );
+                onChange();
+              }}
+            />
+          </div>
           <label className="min-w-0">
             <span className="mb-1.5 block text-[11px] font-semibold text-[#566174]">
               TC Slot
@@ -3666,7 +3761,7 @@ function DashboardTrackingCenter({
               options={visibleAccounts.map((a) => ({
                 value: a.baId,
                 label: a.label,
-                detail: `${a.rank} · ${a.status}`,
+                detail: `${a.baId} · ${a.rank} · ${a.status}`,
               }))}
               value={
                 visibleAccounts.some((a) => a.baId === accountId)
@@ -3675,7 +3770,7 @@ function DashboardTrackingCenter({
               }
               disabled={!visibleAccounts.length}
               placeholder="Select TC slot"
-              searchPlaceholder="Search TC slot..."
+              searchPlaceholder="Search TC label or BA ID..."
               onChange={(nextAccountId) => {
                 setAccountId(nextAccountId);
                 onChange();
@@ -3683,7 +3778,8 @@ function DashboardTrackingCenter({
             />
             {selectedAccount && (
               <span className="mt-1 block text-[10px] text-[#8893a5]">
-                {selectedAccount.rank} · {selectedAccount.status}
+                {selectedAccount.baId} · {selectedAccount.rank} ·{" "}
+                {selectedAccount.status}
               </span>
             )}
           </label>
@@ -3729,7 +3825,7 @@ function DashboardTrackingCenter({
           <div className="min-w-0">
             <span
               aria-hidden="true"
-              className="mb-1.5 block text-[11px] font-semibold text-transparent select-none"
+              className="mb-1.5 hidden text-[11px] font-semibold text-transparent select-none lg:block"
             >
               Action
             </span>
@@ -3737,7 +3833,7 @@ function DashboardTrackingCenter({
               type="button"
               onClick={() => void showCv()}
               disabled={!canSearch}
-              className="inline-flex h-12 w-full items-center justify-center gap-2 whitespace-nowrap rounded-[10px] bg-[#171717] px-5 text-[12px] font-bold text-white hover:bg-[#333] disabled:cursor-not-allowed disabled:bg-[#d0d5dd]"
+              className="inline-flex h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-[10px] bg-[#171717] px-3 text-[12px] font-bold text-white disabled:cursor-not-allowed disabled:bg-[#d0d5dd]"
             >
               {cvRequest.isFetching ? (
                 <Loader2 size={15} className="animate-spin" />
@@ -3749,26 +3845,30 @@ function DashboardTrackingCenter({
           </div>
         </div>
         {accountsQuery.isError && (
-          <p role="alert" className="mt-3 text-[11px] text-[#b42318]">
+          <p role="alert" className="mt-2 text-[11px] text-[#b42318]">
             Unable to load My Accounts. Check your session or account API.
           </p>
         )}
         {requestError && (
           <p
             role="alert"
-            className="mt-3 rounded-lg bg-[#fff3f2] p-3 text-[11px] text-[#b42318]"
+            className="mt-2 rounded-lg bg-[#fff3f2] p-3 text-[11px] text-[#b42318]"
           >
             {requestError}
           </p>
         )}
       </div>
-      <div className="mt-3 grid min-w-0 gap-3 xl:grid-cols-[minmax(0,1.65fr)_minmax(300px,.85fr)]">
+      <div
+        className={`mt-2 grid min-w-0 items-start gap-2.5 ${validResponse ? "lg:grid-cols-[minmax(0,1.4fr)_minmax(280px,1fr)] xl:grid-cols-[minmax(0,1.45fr)_minmax(360px,1fr)]" : "grid-cols-1"}`}
+      >
         <div className="min-w-0 space-y-3">
           <div className={panel}>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <h3 className="text-[15px] font-bold text-[#263449]">
-                  CV Overview
+                  {validResponse
+                    ? String(cvPayload.ba_id ?? accountId)
+                    : "CV Overview"}
                 </h3>
                 <p className="mt-1 text-[11px] text-[#8390a2]">
                   Live CV Counter API result for selected account and sales week
@@ -3791,9 +3891,9 @@ function DashboardTrackingCenter({
             {validResponse ? (
               <>
                 {/* Rank and steps sit above the CV grid for a clear visual hierarchy. */}
-                <div className="mt-5 grid min-w-0 gap-3 sm:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
-                  <div className="flex min-w-0 items-center gap-3 rounded-2xl border border-[#DCE7FA] bg-[#F2F6FF] p-4 sm:gap-4 sm:p-5">
-                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] bg-[#E1EBFF] text-[#3966B0]">
+                <div className="mt-3 grid min-w-0 gap-2.5 sm:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
+                  <div className="flex min-w-0 items-center gap-2.5 rounded-2xl border border-[#DCE7FA] bg-[#F2F6FF] p-3 sm:gap-3 sm:p-3.5">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[#E1EBFF] text-[#3966B0]">
                       <Trophy size={23} strokeWidth={1.9} />
                     </span>
                     <div className="min-w-0 flex-1">
@@ -3805,7 +3905,7 @@ function DashboardTrackingCenter({
                       </p>
                     </div>
                   </div>
-                  <div className="flex min-w-0 items-center justify-between gap-3 rounded-2xl border border-[#E5EAF3] bg-[#FAFBFD] p-4 sm:p-5">
+                  <div className="flex min-w-0 items-center justify-between gap-2.5 rounded-2xl border border-[#E5EAF3] bg-[#FAFBFD] p-3 sm:p-3.5">
                     <div className="min-w-0">
                       <p className="text-[11px] font-semibold text-[#78869A]">
                         Total Steps
@@ -3814,19 +3914,19 @@ function DashboardTrackingCenter({
                         {trackFmt(currentTotalSteps)}
                       </p>
                     </div>
-                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px] bg-[#EAF0F9] text-[#58749C]">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] bg-[#EAF0F9] text-[#58749C]">
                       <TrendingUp size={21} strokeWidth={1.9} />
                     </span>
                   </div>
                 </div>
 
-                <div className="mt-3 grid min-w-0 grid-cols-2 gap-2.5 sm:grid-cols-3">
+                <div className="mt-2 grid min-w-0 grid-cols-2 gap-2.5 sm:grid-cols-3">
                   {currentMetrics.map((m, i) => {
                     const isFloating = i === 2 || i === 3;
                     return (
                       <div
                         key={m.label}
-                        className={`flex min-h-[92px] min-w-0 flex-col justify-between rounded-[14px] border p-3.5 sm:min-h-[100px] sm:p-4 ${
+                        className={`flex min-w-0 flex-col justify-between rounded-[14px] border p-2.5 sm:p-3 ${
                           isFloating
                             ? "border-[#DCE7F8] bg-[#F7FAFF]"
                             : "border-[#E7ECF3] bg-white"
@@ -3836,7 +3936,7 @@ function DashboardTrackingCenter({
                           {m.label}
                         </p>
                         <p
-                          className={`dashboard-number mt-3 break-words text-[20px] font-extrabold leading-tight tracking-tight sm:text-[23px] ${
+                          className={`dashboard-number mt-2 break-words text-[20px] font-extrabold leading-tight tracking-tight sm:text-[23px] ${
                             isFloating ? "text-[#416CB1]" : "text-[#26374F]"
                           }`}
                         >
@@ -3847,8 +3947,8 @@ function DashboardTrackingCenter({
                   })}
                 </div>
                 {resultPresent ? (
-                  <div className="mt-3 rounded-[15px] border border-[#E7ECF3] bg-[#FAFBFD] p-3.5 sm:p-4">
-                    <p className="mb-3 text-[11px] font-bold text-[#4B5C74]">
+                  <div className="mt-2 rounded-[15px] border border-[#E7ECF3] bg-[#FAFBFD] p-2.5 sm:p-3">
+                    <p className="mb-2 text-[11px] font-bold text-[#4B5C74]">
                       Weekly Settlement
                     </p>
                     <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-5">
@@ -3868,7 +3968,7 @@ function DashboardTrackingCenter({
                     </div>
                   </div>
                 ) : (
-                  <div className="mt-3 flex items-start gap-2.5 rounded-[13px] border border-[#F2E4CC] bg-[#FFFBF4] px-3.5 py-3 text-[11px] leading-5 text-[#906B35]">
+                  <div className="mt-2 flex items-start gap-2.5 rounded-[13px] border border-[#F2E4CC] bg-[#FFFBF4] px-3.5 py-2 text-[11px] leading-5 text-[#906B35]">
                     <Info size={16} className="mt-0.5 shrink-0" />
                     <p>
                       Weekly settlement is not available yet. Current CV and
@@ -3878,7 +3978,7 @@ function DashboardTrackingCenter({
                 )}
               </>
             ) : (
-              <div className="flex min-h-[165px] flex-col items-center justify-center gap-2 text-center">
+              <div className="flex min-h-[48px] flex-wrap items-center justify-center gap-2 text-center">
                 <BarChart3 size={23} className="text-[#a6b1c0]" />
                 <p className="text-[12px] font-semibold text-[#66758b]">
                   {cvRequest.isFetching
@@ -3888,8 +3988,7 @@ function DashboardTrackingCenter({
               </div>
             )}
           </div>
-          <div className="grid gap-3 md:grid-cols-2">
-            {/* <div className={panel}>
+          {/* <div className={panel}>
               <h3 className="text-[14px] font-bold text-[#253449]">
                 Weekly Cash Activity
               </h3>
@@ -3897,12 +3996,12 @@ function DashboardTrackingCenter({
                 Actual Dashboard commission-history cash credits and debits ·
                 USD
               </p>
-              <div className="mt-3 flex gap-4 text-[10px]">
+              <div className="mt-2 flex gap-2 text-[10px]">
                 <span className="text-[#5275b5]">● Credits</span>
                 <span className="text-[#d59b51]">● Debits</span>
               </div>
               {plottedWeeks.length ? (
-                <div className="mt-3 overflow-x-auto">
+                <div className="mt-2 overflow-x-auto">
                   <svg
                     viewBox="0 0 420 205"
                     className="h-auto w-full min-w-[300px]"
@@ -3944,7 +4043,6 @@ function DashboardTrackingCenter({
                             r="3.5"
                             fill="#5275b5"
                           >
-                            <title>{`Week ${w.weekNo} credits: $${trackFmt(w.credit)}`}</title>
                           </circle>
                           <circle
                             cx={x}
@@ -3952,7 +4050,6 @@ function DashboardTrackingCenter({
                             r="3.5"
                             fill="#d59b51"
                           >
-                            <title>{`Week ${w.weekNo} debits: $${trackFmt(w.debit)}`}</title>
                           </circle>
                           <text
                             x={x}
@@ -3974,14 +4071,14 @@ function DashboardTrackingCenter({
                 </p>
               )}
             </div> */}
-            {/* <div className={panel}>
+          {/* <div className={panel}>
               <h3 className="text-[14px] font-bold text-[#253449]">
                 My Tree{" "}
                 <span className="inline-flex items-center align-middle ml-1">
                   <Network size={18} className="text-[#7185a4]" />
                 </span>
               </h3>
-              <div className="mt-4 flex items-center gap-3 rounded-xl bg-[#f7f9fc] p-3">
+              <div className="mt-2 flex items-center gap-2.5 rounded-xl bg-[#f7f9fc] p-3">
                 <div className="min-w-0">
                   <p className="text-[10px] text-[#8390a1]">Far Left BA</p>
                   <p className="break-all text-[12px] font-bold text-[#2c3950]">
@@ -3997,12 +4094,11 @@ function DashboardTrackingCenter({
                     "—"}
                 </p>
               </div>
-              <p className="mt-3 text-[10px] text-[#8d98a7]">
+              <p className="mt-2 text-[10px] text-[#8d98a7]">
                 Direct/downline counts are not included in the supplied
                 Dashboard response.
               </p>
             </div> */}
-          </div>
         </div>
         <div className={panel}>
           <div className="flex items-center gap-2">
@@ -4014,46 +4110,56 @@ function DashboardTrackingCenter({
           <p className="mt-1 text-[10px] text-[#8993a3]">
             Transaction counts by wallet category
           </p>
-          <div
-            className="mx-auto my-6 flex h-[180px] w-[180px] items-center justify-center rounded-full"
-            role="img"
-            aria-label={`${sumCount} commission history transactions`}
-            style={{
-              background: sumCount
-                ? `conic-gradient(${donutStops.join(", ")})`
-                : "#e8edf3",
-            }}
-          >
-            <div className="flex h-[122px] w-[122px] flex-col items-center justify-center rounded-full bg-white">
-              <span className="text-[29px] font-bold text-[#263449]">
-                {sumCount}
-              </span>
-              <span className="text-[10px] text-[#8a95a5]">Transactions</span>
-            </div>
-          </div>
-          <div className="overflow-hidden rounded-xl border border-[#e9edf2]">
-            <div className="flex justify-between bg-[#f7f9fc] px-3 py-2 text-[10px] font-bold text-[#778397]">
-              <span>Wallet category</span>
-              <span>Entries</span>
-            </div>
-            {allGroups.map((g) => (
+          <div className="mt-3 flex min-w-0 flex-wrap items-center gap-x-5 gap-y-3">
+            <div className="flex grow-0 basis-full justify-center sm:basis-auto">
               <div
-                key={g.category}
-                className="flex items-center justify-between gap-3 border-t border-[#e9edf2] px-3 py-3 text-[11px]"
+                className="relative flex h-[132px] w-[132px] shrink-0 items-center justify-center rounded-full sm:h-[152px] sm:w-[152px]"
+                role="img"
+                aria-label={`${formatNumber(sumCount)} commission history transactions`}
+                style={{
+                  background: sumCount
+                    ? `conic-gradient(${donutStops.join(", ")})`
+                    : "#e8edf3",
+                }}
               >
-                <span className="inline-flex items-center gap-2 text-[#576375]">
+                <div className="flex h-[100px] w-[100px] flex-col items-center justify-center rounded-full bg-white sm:h-[116px] sm:w-[116px]">
+                  <span className="dashboard-number max-w-[90%] break-all text-center text-[26px] font-extrabold leading-none tracking-tight text-[#263449]">
+                    {formatNumber(sumCount)}
+                  </span>
+                  <span className="mt-1.5 text-[10px] font-semibold text-[#738197]">
+                    Total entries
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div
+              className="grid min-w-0 flex-[1_1_240px] gap-2.5"
+              style={{
+                gridTemplateColumns:
+                  "repeat(auto-fit, minmax(min(100%, 132px), 1fr))",
+              }}
+            >
+              {allGroups.map((g) => (
+                <div
+                  key={g.category}
+                  className="flex min-w-0 items-start gap-2.5 rounded-xl border border-[#E5EBF3] bg-[#F8FAFD] px-3 py-3"
+                >
                   <span
-                    className="h-2.5 w-2.5 rounded-full"
+                    aria-hidden="true"
+                    className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full"
                     style={{ backgroundColor: g.color }}
                   />
-                  {g.label}
-                </span>
-                <span className="font-bold text-[#253449]">{g.count}</span>
-              </div>
-            ))}
-            <div className="flex justify-between border-t border-[#e6eaf1] bg-[#f7f9fc] text-black px-3 py-3 text-[12px] font-bold">
-              <span>Total</span>
-              <span>{sumCount}</span>
+                  <div className="min-w-0">
+                    <p className="text-[12px] font-semibold leading-4 text-[#65748A]">
+                      {g.label}
+                    </p>
+                    <p className="dashboard-number mt-1 break-words text-[23px] font-extrabold leading-tight tracking-tight text-[#253449]">
+                      {formatNumber(g.count)}
+                    </p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -4111,9 +4217,9 @@ function CoinsAndAccountStatusOverview({
     <section
       id="accounts"
       aria-label="Coin wallet and account status"
-      className="mt-6 scroll-mt-6"
+      className="mt-3 scroll-mt-3"
     >
-      <div className="mb-3">
+      <div className="mb-2">
         <h2 className="text-[19px] font-extrabold tracking-tight text-[#1D2C46] sm:text-[22px]">
           Coins & account status
         </h2>
@@ -4121,11 +4227,11 @@ function CoinsAndAccountStatusOverview({
           Redeem eligible coins and check your account status.
         </p>
       </div>
-      <div className="grid min-w-0 grid-cols-1 items-start">
+      <div className="min-w-0">
         <div className="min-w-0">
           <CoinsSection ignite={ignite} onRedeemSuccess={onRedeemSuccess} />
         </div>
-        {/* <div className="min-w-0 rounded-[20px] border border-[#E2E9F3] bg-white p-5 shadow-[0_6px_22px_rgba(36,55,90,.04)] sm:p-6">
+        {/* <div className="min-w-0 rounded-[20px] border border-[#E2E9F3] bg-white p-3 shadow-[0_6px_22px_rgba(36,55,90,.04)] sm:p-3.5">
           <div className="flex items-center gap-2.5">
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#EDF3FF] text-[#3768C6]">
               <BarChart3 size={19} />
@@ -4139,7 +4245,7 @@ function CoinsAndAccountStatusOverview({
               </p>
             </div>
           </div>
-          <div className="mt-4 grid grid-cols-3 gap-2 sm:gap-3">
+          <div className="mt-2 grid grid-cols-3 gap-2 sm:gap-3">
             {[
               {
                 label: "Registered",
@@ -4178,7 +4284,7 @@ function CoinsAndAccountStatusOverview({
             ))}
           </div>
           {accountQuery.isError && (
-            <p className="mt-3 text-[12px] font-medium text-[#B42318]">
+            <p className="mt-2 text-[12px] font-medium text-[#B42318]">
               Unable to load account statuses. Please refresh.
             </p>
           )}
@@ -4265,7 +4371,7 @@ export default function DistributorDashboardPage() {
 
   const user: DashboardUser | undefined = dashboard?.user;
   const stats = dashboard?.stats;
-  const ignite: ExtendedIgnite | null | undefined = dashboard?.ignite as ExtendedIgnite | null | undefined;
+  const ignite: IgniteDashboard | null | undefined = dashboard?.ignite;
   const activity: DashboardActivity[] = dashboard?.recent_activity ?? [];
   const salesCalendar = (dashboard as any)?.sales_calendar as
     SalesCalendar | undefined;
@@ -4384,18 +4490,14 @@ export default function DistributorDashboardPage() {
       <div className="relative flex min-h-0 min-w-0 flex-1 overflow-hidden">
         <Sidebar />
 
-        <main className="thin-scroll min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain bg-[#F5F7FC] px-3 pb-9 pt-4 sm:px-5 sm:pb-12 sm:pt-5 lg:px-7 lg:pt-7 xl:px-8">
-          <div className="mx-auto w-full min-w-0 max-w-[1390px]">
-            <WelcomeHero
-              user={user}
-              distributorId={ignite?.ba_id || "N/A"}
-              gstIn={ignite?.tds_summary?.gst_in}
-            />
+        <main className="thin-scroll min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain bg-[#F5F7FC] px-2.5 py-3 sm:px-3 lg:px-4">
+          <div className="w-full min-w-0">
+            <WelcomeHero user={user} distributorId={ignite?.ba_id || "N/A"} />
 
             {isError && (
               <div
                 role="alert"
-                className="mt-5 flex min-w-0 flex-col items-start gap-3 rounded-[14px] border border-[#f2c6c3] bg-[#fff4f3] px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4"
+                className="mt-3 flex min-w-0 flex-col items-start gap-2 rounded-[12px] border border-[#f2c6c3] bg-[#fff4f3] px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:px-4"
               >
                 <p className="break-words text-[12px] font-semibold leading-5 text-[#b42318] sm:text-[13px]">
                   Unable to load the dashboard data. Please try again.
@@ -4404,7 +4506,7 @@ export default function DistributorDashboardPage() {
                 <button
                   type="button"
                   onClick={() => refetch()}
-                  className="shrink-0 rounded-[9px] bg-[#171717] px-4 py-2.5 text-[12px] font-semibold text-white transition-colors hover:bg-[#333333]"
+                  className="shrink-0 rounded-[9px] bg-[#171717] px-4 py-2 text-[12px] font-semibold text-white transition-colors"
                 >
                   Retry
                 </button>
@@ -4413,9 +4515,9 @@ export default function DistributorDashboardPage() {
 
             <nav
               aria-label="Quick dashboard navigation"
-              className="mt-5 rounded-[20px] border border-[#E2E9F3] bg-white p-4 shadow-[0_5px_18px_rgba(36,55,90,.035)] sm:p-5"
+              className="mt-3 rounded-[20px] border border-[#E2E9F3] bg-white p-3 shadow-[0_5px_18px_rgba(36,55,90,.035)] sm:p-3.5"
             >
-              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <h2 className="text-[15px] font-extrabold text-[#1D2C46]">
                     What would you like to do?
@@ -4468,10 +4570,10 @@ export default function DistributorDashboardPage() {
                             }
                           : undefined
                       }
-                      className="group flex min-w-0 items-center gap-2.5 rounded-[14px] border border-[#E7ECF4] bg-[#FCFDFF] p-3 transition hover:border-[#B9CDEF] hover:bg-[#F2F7FF] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3972CB] sm:p-3.5"
+                      className="group flex min-w-0 items-center gap-2 rounded-[12px] border border-[#E7ECF4] bg-[#FCFDFF] p-3 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3972CB] sm:p-3"
                     >
                       <span
-                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${action.tone} ${action.bg}`}
+                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${action.tone} ${action.bg}`}
                       >
                         <Icon size={19} />
                       </span>
@@ -4507,19 +4609,13 @@ export default function DistributorDashboardPage() {
               }}
             />
 
-            <section className="mt-5 grid min-w-0 grid-cols-1 gap-3 sm:mt-6 sm:gap-4 xl:grid-cols-2">
-              <LatestOrderSection order={dashboard?.latest_order ?? null} />
-
-              <RecentActivity activity={activity} />
-            </section>
-
-            <section className="mt-3 grid min-w-0 gap-3 lg:grid-cols-2">
-              <AccountSummary ignite={ignite} />
-              <AccountTable
-                ignite={ignite}
-                onOpenBankedTc={() => setIsBankedTcModalOpen(true)}
-              />
-            </section>
+            <LatestOrderSection order={dashboard?.latest_order ?? null} />
+            <RecentActivity activity={activity} />
+            <AccountSummary ignite={ignite} />
+            <AccountTable
+              ignite={ignite}
+              onOpenBankedTc={() => setIsBankedTcModalOpen(true)}
+            />
 
             <EarnedCoinsAndNetwork
               ignite={ignite as ExtendedIgnite | null | undefined}
@@ -4532,7 +4628,7 @@ export default function DistributorDashboardPage() {
             />
 
             {isFetching && !isLoading && (
-              <div className="mt-4 flex items-center justify-end gap-2 text-[11px] font-semibold text-[#777777]">
+              <div className="mt-2 flex items-center justify-end gap-2 text-[11px] font-semibold text-[#777777]">
                 <Loader2 size={13} className="animate-spin" />
 
                 <span>Updating dashboard...</span>
