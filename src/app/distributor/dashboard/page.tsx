@@ -198,9 +198,11 @@ function DashboardLoader() {
 function WelcomeHero({
   user,
   distributorId,
+  gstValue,
 }: {
   user?: DashboardUser;
   distributorId: string;
+  gstValue: string;
 }) {
   const displayName = user?.name?.trim() || "Distributor";
   const initials = displayName
@@ -267,6 +269,10 @@ function WelcomeHero({
                 {user.email}
               </span>
             )}
+            <span className="inline-flex max-w-full items-center gap-1.5 rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-[11px] font-semibold text-[#DFE9FC]">
+              <span className="shrink-0">GST:</span>
+              <span className="min-w-0 break-all text-white">{gstValue}</span>
+            </span>
           </div>
         </div>
         <div className="min-w-0 rounded-[20px] border border-white/20 bg-white/[.11] p-3 backdrop-blur-sm sm:p-3.5">
@@ -327,6 +333,7 @@ type ExtendedIgnite = IgniteDashboard & {
   retail_profit_usd?: number | string | null;
   weekly_pairing_usd?: number | string | null;
   unilevel_green_coin?: number | string | null;
+  tds_summary?: { gst_in?: string | null } | null;
   strong_leg?: string | null;
   exchange_rate?: number | string | null;
   green_note?: string | null;
@@ -342,75 +349,71 @@ type ExtendedIgnite = IgniteDashboard & {
 // Quick stats cards
 // --------------------------------------------------
 
+// GSTIN is provided by the dashboard API in ignite.tds_summary.gst_in.
+function getDashboardGstValue(ignite?: IgniteDashboard | null): string {
+  if (!ignite) return "—";
+  const gst = (ignite as ExtendedIgnite).tds_summary?.gst_in?.trim();
+  return gst || "URP";
+}
+
 function QuickStatsCards({ ignite }: { ignite?: IgniteDashboard | null }) {
   const info = ignite as ExtendedIgnite | null | undefined;
+  const money = (value: number | string | null | undefined) =>
+    value == null || value === "" ? "—" : `₹${formatNumber(value)}`;
+
   const cards = [
     {
       label: "Cash Wallet",
-      value: info?.cash_bal_inr,
-      prefix: "₹",
+      value: money(info?.cash_bal_inr),
       icon: Wallet,
-      note: "Your available INR cash balance",
       tone: "#0B855A",
       bg: "#E6F8F0",
     },
     {
       label: "Retail Profit",
-      value: info?.retail_profit_usd,
-      prefix: "₹",
+      value: money(info?.retail_profit_usd),
       icon: ShoppingBag,
-      note: "Retail profit shown by your API",
       tone: "#2B67C5",
       bg: "#EAF2FF",
     },
     {
       label: "Weekly Pairing",
-      value: info?.weekly_pairing_usd,
-      prefix: "₹",
+      value: money(info?.weekly_pairing_usd),
       icon: TrendingUp,
-      note: "Pairing earnings reported for the week",
       tone: "#8754BF",
       bg: "#F4EDFF",
     },
     {
-      label: "Unilevel Green Coins",
-      value: info?.unilevel_green_coin,
-      prefix: "",
+      label: "Green Coins",
+      value:
+        info?.unilevel_green_coin == null || info.unilevel_green_coin === ""
+          ? "—"
+          : formatNumber(info.unilevel_green_coin),
       icon: Coins,
-      note: "Coins earned from your network",
       tone: "#B77A18",
       bg: "#FFF4DF",
     },
   ];
+
   return (
     <section
       id="earnings"
-      aria-label="Key dashboard earnings"
+      aria-label="Dashboard earnings"
       className="mt-3 scroll-mt-3"
     >
-      <div className="mb-2 flex flex-wrap items-end justify-between gap-2">
-        <div>
-          <h2 className="text-[19px] font-extrabold tracking-tight text-[#1D2C46] sm:text-[22px]">
-            Your earnings at a glance
-          </h2>
-          <p className="mt-1 text-[12px] text-[#66758D] sm:text-[13px]">
-            Understand your wallet and earnings without opening another page.
-          </p>
-        </div>
-        <span className="rounded-full bg-[#EAF0FA] px-3 py-1.5 text-[11px] font-bold text-[#45648C]">
-          Live account data
-        </span>
-      </div>
+      <h2 className="mb-2 text-[19px] font-extrabold tracking-tight text-[#1D2C46] sm:text-[22px]">
+        Earnings
+      </h2>
       <div className="grid grid-cols-2 gap-2.5 xl:grid-cols-4">
         {cards.map((item) => {
           const Icon = item.icon;
           return (
             <div
               key={item.label}
-              className="dashboard-card relative flex flex-col rounded-[19px] border border-[#E2E9F3] bg-white p-3 shadow-[0_6px_22px_rgba(36,55,90,.045)]"
+              className="dashboard-card min-w-0 rounded-[19px] border border-[#E2E9F3] bg-white p-3 shadow-[0_6px_22px_rgba(36,55,90,.045)]"
             >
-              <div className="flex items-start justify-between gap-2">
-                <p className="text-[13px] font-bold text-[#526179]">
+              <div className="flex items-center justify-between gap-2">
+                <p className="min-w-0 text-[13px] font-bold text-[#526179]">
                   {item.label}
                 </p>
                 <span
@@ -420,16 +423,9 @@ function QuickStatsCards({ ignite }: { ignite?: IgniteDashboard | null }) {
                   <Icon size={21} strokeWidth={2} />
                 </span>
               </div>
-              <div className="mt-2">
-                <p className="dashboard-number break-words text-[23px] font-extrabold leading-tight tracking-tight text-[#192944] sm:text-[27px]">
-                  {item.value == null
-                    ? "—"
-                    : `${item.prefix}${formatNumber(item.value)}`}
-                </p>
-                <p className="mt-1.5 text-[11px] leading-4 text-[#718097]">
-                  {item.value == null ? "Not provided by API" : item.note}
-                </p>
-              </div>
+              <p className="dashboard-number mt-2 min-w-0 break-words text-[23px] font-extrabold leading-tight tracking-tight text-[#192944] sm:text-[27px]">
+                {item.value}
+              </p>
             </div>
           );
         })}
@@ -2800,13 +2796,6 @@ function FinancialSummary({ ignite }: { ignite?: ExtendedIgnite | null }) {
           ? "—"
           : `₹${formatNumber(ignite.weekly_pairing_usd)}`,
     },
-    {
-      label: "Unilevel green coins",
-      value:
-        ignite?.unilevel_green_coin == null
-          ? "—"
-          : formatNumber(ignite.unilevel_green_coin),
-    },
   ];
 
   return (
@@ -4492,7 +4481,11 @@ export default function DistributorDashboardPage() {
 
         <main className="thin-scroll min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain bg-[#F5F7FC] px-2.5 py-3 sm:px-3 lg:px-4">
           <div className="w-full min-w-0">
-            <WelcomeHero user={user} distributorId={ignite?.ba_id || "N/A"} />
+            <WelcomeHero
+              user={user}
+              distributorId={ignite?.ba_id || "N/A"}
+              gstValue={getDashboardGstValue(ignite)}
+            />
 
             {isError && (
               <div
