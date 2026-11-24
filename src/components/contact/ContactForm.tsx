@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -24,6 +25,12 @@ const subjects = [
   "Something else",
 ];
 
+const RequiredStar = () => (
+  <span className="ml-1 inline-block text-red-500" aria-hidden="true">
+    *
+  </span>
+);
+
 export default function ContactForm({ onSubmit }: ContactFormProps) {
   const [submitContact, { isLoading }] = useSubmitContactMutation();
 
@@ -39,6 +46,7 @@ export default function ContactForm({ onSubmit }: ContactFormProps) {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+
   const [formErrors, setFormErrors] = useState<{
     firstName?: string;
     lastName?: string;
@@ -185,17 +193,18 @@ export default function ContactForm({ onSubmit }: ContactFormProps) {
       transition={{ duration: 0.5 }}
       className="w-full"
     >
-     
       <form onSubmit={handleSubmit} className="space-y-5">
-        {/* Name + Email */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* First Name + Last Name */}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {/* First Name */}
           <div>
-            <label className="block text-[12px] font-semibold uppercase tracking-wider text-[#172044] mb-2">
+            <label className="mb-2 block text-[12px] font-semibold uppercase tracking-wider text-[#172044]">
               First Name
+              <RequiredStar />
             </label>
 
             <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
 
               <input
                 type="text"
@@ -203,8 +212,11 @@ export default function ContactForm({ onSubmit }: ContactFormProps) {
                 value={formData.firstName}
                 onChange={handleChange}
                 disabled={isLoading}
+                required
+                aria-required="true"
+                aria-invalid={Boolean(formErrors.firstName)}
                 placeholder="Your first name"
-                className={`w-full h-[44px] pl-10 pr-4 rounded-lg border bg-white text-[14px] text-gray-800 placeholder:text-gray-400 outline-none transition-all ${
+                className={`h-[44px] w-full rounded-lg border bg-white pl-10 pr-4 text-[14px] text-gray-800 outline-none transition-all placeholder:text-gray-400 ${
                   formErrors.firstName
                     ? "border-red-400 focus:ring-1 focus:ring-red-300"
                     : "border-[#E5DCCF] focus:border-[#C89B3C] focus:ring-1 focus:ring-[#C89B3C]/20"
@@ -225,13 +237,15 @@ export default function ContactForm({ onSubmit }: ContactFormProps) {
             </AnimatePresence>
           </div>
 
+          {/* Last Name */}
           <div>
-            <label className="block text-[12px] font-semibold uppercase tracking-wider text-[#172044] mb-2">
+            <label className="mb-2 block text-[12px] font-semibold uppercase tracking-wider text-[#172044]">
               Last Name
+              <RequiredStar />
             </label>
 
             <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
 
               <input
                 type="text"
@@ -239,8 +253,11 @@ export default function ContactForm({ onSubmit }: ContactFormProps) {
                 value={formData.lastName}
                 onChange={handleChange}
                 disabled={isLoading}
+                required
+                aria-required="true"
+                aria-invalid={Boolean(formErrors.lastName)}
                 placeholder="Your last name"
-                className={`w-full h-[44px] pl-10 pr-4 rounded-lg border bg-white text-[14px] text-gray-800 placeholder:text-gray-400 outline-none transition-all ${
+                className={`h-[44px] w-full rounded-lg border bg-white pl-10 pr-4 text-[14px] text-gray-800 outline-none transition-all placeholder:text-gray-400 ${
                   formErrors.lastName
                     ? "border-red-400 focus:ring-1 focus:ring-red-300"
                     : "border-[#E5DCCF] focus:border-[#C89B3C] focus:ring-1 focus:ring-[#C89B3C]/20"
@@ -264,12 +281,13 @@ export default function ContactForm({ onSubmit }: ContactFormProps) {
 
         {/* Email */}
         <div>
-          <label className="block text-[12px] font-semibold uppercase tracking-wider text-[#172044] mb-2">
+          <label className="mb-2 block text-[12px] font-semibold uppercase tracking-wider text-[#172044]">
             Email Address
+            <RequiredStar />
           </label>
 
           <div className="relative">
-            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
 
             <input
               type="email"
@@ -277,8 +295,11 @@ export default function ContactForm({ onSubmit }: ContactFormProps) {
               value={formData.email}
               onChange={handleChange}
               disabled={isLoading}
+              required
+              aria-required="true"
+              aria-invalid={Boolean(formErrors.email)}
               placeholder="you@email.com"
-              className={`w-full h-[44px] pl-10 pr-4 rounded-lg border bg-white text-[14px] text-gray-800 placeholder:text-gray-400 outline-none transition-all ${
+              className={`h-[44px] w-full rounded-lg border bg-white pl-10 pr-4 text-[14px] text-gray-800 outline-none transition-all placeholder:text-gray-400 ${
                 formErrors.email
                   ? "border-red-400 focus:ring-1 focus:ring-red-300"
                   : "border-[#E5DCCF] focus:border-[#C89B3C] focus:ring-1 focus:ring-[#C89B3C]/20"
@@ -301,12 +322,13 @@ export default function ContactForm({ onSubmit }: ContactFormProps) {
 
         {/* Phone */}
         <div>
-          <label className="block text-[12px] font-semibold uppercase tracking-wider text-[#172044] mb-2">
+          <label className="mb-2 block text-[12px] font-semibold uppercase tracking-wider text-[#172044]">
             Phone Number
+            <RequiredStar />
           </label>
 
           <div className="relative">
-            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
 
             <input
               type="tel"
@@ -314,8 +336,11 @@ export default function ContactForm({ onSubmit }: ContactFormProps) {
               value={formData.phone}
               onChange={handleChange}
               disabled={isLoading}
+              required
+              aria-required="true"
+              aria-invalid={Boolean(formErrors.phone)}
               placeholder="Enter your phone number"
-              className={`w-full h-[44px] pl-10 pr-4 rounded-lg border bg-white text-[14px] text-gray-800 placeholder:text-gray-400 outline-none transition-all ${
+              className={`h-[44px] w-full rounded-lg border bg-white pl-10 pr-4 text-[14px] text-gray-800 outline-none transition-all placeholder:text-gray-400 ${
                 formErrors.phone
                   ? "border-red-400 focus:ring-1 focus:ring-red-300"
                   : "border-[#E5DCCF] focus:border-[#C89B3C] focus:ring-1 focus:ring-[#C89B3C]/20"
@@ -336,10 +361,13 @@ export default function ContactForm({ onSubmit }: ContactFormProps) {
           </AnimatePresence>
         </div>
 
-        {/* Subject */}
+        {/* Subject - Optional */}
         <div>
-          <label className="block text-[12px] font-semibold uppercase tracking-wider text-[#172044] mb-2.5">
+          <label className="mb-2.5 block text-[12px] font-semibold uppercase tracking-wider text-[#172044]">
             Subject
+            <span className="ml-2 text-[10px] font-normal normal-case tracking-normal text-gray-400">
+              (Optional)
+            </span>
           </label>
 
           <div className="flex flex-wrap gap-2.5">
@@ -356,9 +384,9 @@ export default function ContactForm({ onSubmit }: ContactFormProps) {
                       subject,
                     }))
                   }
-                  className={`px-4 py-2 rounded-full border text-[12px] transition-all ${
+                  className={`rounded-full border px-4 py-2 text-[12px] transition-all ${
                     active
-                      ? "border-[#C89B3C] bg-[#FFF9EC] text-[#16213E] font-medium"
+                      ? "border-[#C89B3C] bg-[#FFF9EC] font-medium text-[#16213E]"
                       : "border-[#E5DCCF] bg-white text-gray-500 hover:border-[#C89B3C] hover:text-[#16213E]"
                   }`}
                 >
@@ -371,21 +399,25 @@ export default function ContactForm({ onSubmit }: ContactFormProps) {
 
         {/* Message */}
         <div>
-          <label className="block text-[12px] font-semibold uppercase tracking-wider text-[#172044] mb-2">
+          <label className="mb-2 block text-[12px] font-semibold uppercase tracking-wider text-[#172044]">
             Message
+            <RequiredStar />
           </label>
 
           <div className="relative">
-            <MessageCircle className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+            <MessageCircle className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
 
             <textarea
               name="message"
               value={formData.message}
               onChange={handleChange}
               disabled={isLoading}
+              required
+              aria-required="true"
+              aria-invalid={Boolean(formErrors.message)}
               rows={5}
               placeholder="Tell us how we can help"
-              className={`w-full pl-10 pr-4 py-3 rounded-lg border bg-white text-[14px] text-gray-800 placeholder:text-gray-400 resize-none outline-none transition-all ${
+              className={`w-full resize-none rounded-lg border bg-white py-3 pl-10 pr-4 text-[14px] text-gray-800 outline-none transition-all placeholder:text-gray-400 ${
                 formErrors.message
                   ? "border-red-400 focus:ring-1 focus:ring-red-300"
                   : "border-[#E5DCCF] focus:border-[#C89B3C] focus:ring-1 focus:ring-[#C89B3C]/20"
@@ -406,16 +438,16 @@ export default function ContactForm({ onSubmit }: ContactFormProps) {
           </AnimatePresence>
         </div>
 
-        {/* Messages */}
+        {/* Success / Error Messages */}
         <AnimatePresence>
           {successMessage && (
             <motion.div
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
-              className="p-3 bg-green-50 border border-green-200 rounded-lg text-[13px] text-green-700 flex items-center gap-2.5"
+              className="flex items-center gap-2.5 rounded-lg border border-green-200 bg-green-50 p-3 text-[13px] text-green-700"
             >
-              <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+              <CheckCircle2 className="h-5 w-5 flex-shrink-0" />
               {successMessage}
             </motion.div>
           )}
@@ -425,15 +457,15 @@ export default function ContactForm({ onSubmit }: ContactFormProps) {
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
-              className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-600 flex items-center gap-2.5"
+              className="flex items-center gap-2.5 rounded-lg border border-red-200 bg-red-50 p-3 text-[13px] text-red-600"
             >
-              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+              <AlertCircle className="h-5 w-5 flex-shrink-0" />
               {errorMessage}
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Submit Button with Hover Shimmer Effect */}
+        {/* Submit Button */}
         <div className="relative inline-block">
           <motion.button
             type="submit"
@@ -442,9 +474,8 @@ export default function ContactForm({ onSubmit }: ContactFormProps) {
               !isLoading && !isSubmitted ? { scale: 1.02 } : undefined
             }
             whileTap={!isLoading && !isSubmitted ? { scale: 0.98 } : undefined}
-            className="relative overflow-hidden inline-flex items-center justify-center gap-2.5 px-8 h-[46px] rounded-full bg-[#101B3D] text-white text-[11px] font-bold tracking-[0.12em] uppercase shadow-sm hover:bg-[#182650] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+            className="relative inline-flex h-[46px] items-center justify-center gap-2.5 overflow-hidden rounded-full bg-[#101B3D] px-8 text-[11px] font-bold uppercase tracking-[0.12em] text-white shadow-sm transition-all hover:bg-[#182650] disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {/* Hover Shimmer Effect - Slides across on hover */}
             {!isLoading && !isSubmitted && (
               <motion.div
                 className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent"
@@ -461,13 +492,15 @@ export default function ContactForm({ onSubmit }: ContactFormProps) {
               </>
             ) : isSubmitted ? (
               <>
-                <CheckCircle2 className="w-4 h-4" />
+                <CheckCircle2 className="h-4 w-4" />
                 <span className="text-[11px]">Message Sent</span>
               </>
             ) : (
               <>
-                <span className="relative z-10 text-[11px]">Send Message</span>
-                <Send className="relative z-10 w-3.5 h-3.5" />
+                <span className="relative z-10 text-[11px]">
+                  Send Message
+                </span>
+                <Send className="relative z-10 h-3.5 w-3.5" />
               </>
             )}
           </motion.button>

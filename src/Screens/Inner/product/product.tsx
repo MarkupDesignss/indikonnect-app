@@ -46,6 +46,7 @@ interface FilterState {
   brands: string[];
   categories: string[];
   subCategories: string[];
+  colors: string[];
   priceRange: [number, number];
   availability: {
     inStock: boolean;
@@ -273,6 +274,16 @@ const getDiscountPercentage = (product: any, accountType?: string): number => {
   return 0;
 };
 
+/** Only products explicitly marked as primary belong in the main listing. */
+const isPrimaryProduct = (product: any): boolean => {
+  const flag = product?.is_primary ?? product?.isPrimary;
+  return (
+    flag === true ||
+    flag === 1 ||
+    (typeof flag === "string" && ["1", "true"].includes(flag.trim().toLowerCase()))
+  );
+};
+
 const getAccountType = (profile: any): string => {
   const accountType =
     profile?.user?.account_type ??
@@ -423,6 +434,11 @@ export default function ProductsPage() {
       : [];
   };
 
+  const getInitialColors = (): string[] => {
+    const value = searchParams.get("color") || "";
+    return value.split(",").map((item) => item.trim()).filter(Boolean);
+  };
+
   const getInitialPriceRange = (): [number, number] => {
     const min = Number(searchParams.get("min_price") || 0);
     const max = Number(searchParams.get("max_price") || MAX_PRICE_LIMIT);
@@ -452,6 +468,7 @@ export default function ProductsPage() {
     brands: getInitialBrands(),
     categories: getInitialCategories(),
     subCategories: getInitialSubCategories(),
+    colors: getInitialColors(),
     priceRange: getInitialPriceRange(),
     availability: getInitialAvailability(),
   }));
@@ -569,70 +586,6 @@ export default function ProductsPage() {
     return map;
   }, [categoriesData]);
 
-  /* ------------------------------------------------------------------------ */
-  /* BRAND - CATEGORY RELATIONSHIP MAPS                                      */
-  /* ------------------------------------------------------------------------ */
-
-  const brandCategoryMap = useMemo(() => {
-    const map = new Map<string, string>();
-
-    categoriesData?.brands?.forEach((brand: any) => {
-      if (brand?.id != null && brand?.category_id != null) {
-        map.set(String(brand.id), String(brand.category_id));
-      }
-    });
-
-    categoriesData?.data?.forEach((category: any) => {
-      const categoryId = category?.id;
-
-      if (categoryId == null) return;
-
-      (category?.brands || []).forEach((brand: any) => {
-        if (brand?.id != null) {
-          map.set(
-            String(brand.id),
-            String(brand.category_id ?? categoryId),
-          );
-        }
-      });
-    });
-
-    return map;
-  }, [categoriesData]);
-
-  const categoryBrandMap = useMemo(() => {
-    const map = new Map<string, string[]>();
-
-    const addBrandToCategory = (categoryId: string, brandId: string) => {
-      const existingBrands = map.get(categoryId) || [];
-
-      if (!existingBrands.includes(brandId)) {
-        map.set(categoryId, [...existingBrands, brandId]);
-      }
-    };
-
-    categoriesData?.brands?.forEach((brand: any) => {
-      if (brand?.id == null || brand?.category_id == null) return;
-
-      addBrandToCategory(String(brand.category_id), String(brand.id));
-    });
-
-    categoriesData?.data?.forEach((category: any) => {
-      if (category?.id == null) return;
-
-      (category?.brands || []).forEach((brand: any) => {
-        if (brand?.id == null) return;
-
-        addBrandToCategory(
-          String(brand.category_id ?? category.id),
-          String(brand.id),
-        );
-      });
-    });
-
-    return map;
-  }, [categoriesData]);
-
   /* ---------------------------- URL sync --------------------------------- */
 
   const searchParamsString = searchParams.toString();
@@ -690,6 +643,12 @@ export default function ProductsPage() {
         )
       : urlSubCategoryIds;
 
+    const colorParam = searchParams.get("color") || "";
+    const urlColors = colorParam
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+
     const minPrice = Number(searchParams.get("min_price") || 0);
     const maxPrice = Number(searchParams.get("max_price") || MAX_PRICE_LIMIT);
 
@@ -716,6 +675,7 @@ export default function ProductsPage() {
       brands: validBrands,
       categories: validCategories,
       subCategories: validSubCategoryIds,
+      colors: urlColors,
       priceRange: [
         Number.isFinite(minPrice) && minPrice >= 0 ? minPrice : 0,
         Number.isFinite(maxPrice) && maxPrice > 0 ? maxPrice : MAX_PRICE_LIMIT,
@@ -738,6 +698,8 @@ export default function ProductsPage() {
 
   /* --------------------------- URL updater ------------------------------- */
 
+  // ProductsPage is the single owner of the listing URL. FilterSidebar only
+  // emits selections; it never races this updater with a second router.replace.
   const updateBrowserUrl = useCallback(
     ({
       nextFilters = filtersRef.current,
@@ -750,65 +712,66 @@ export default function ProductsPage() {
       nextSort?: SortOption;
       nextSearch?: string;
     } = {}) => {
-      const params = new URLSearchParams();
+      const params = new URLSearchParams(searchParamsString);
 
-      if (isNewArrivals) {
-        params.set("new-arrivals", "true");
-      }
+      // Remove the parameters owned by this page, then write one canonical
+      // representation. Unrelated query parameters remain untouched.
+      [
+        "new-arrivals",
+        "brand_ids",
+        "category",
+        "subcategory_ids",
+        "color",
+        "min_price",
+        "max_price",
+        "stock_status[]",
+        "stock_status",
+        "in_stock",
+        "out_of_stock",
+        "low_stock",
+        "search",
+        "q",
+        "query",
+        "search_query",
+        "keyword",
+        "sort",
+        "page",
+      ].forEach((key) => params.delete(key));
 
-      if (nextFilters.brands.length) {
-        params.set("brand_ids", nextFilters.brands.join(","));
-      }
+      if (isNewArrivals) params.set("new-arrivals", "true");
 
-      if (nextFilters.categories.length) {
-        params.set("category", nextFilters.categories.join(","));
-      }
+      const setCsv = (key: string, values: string[]) => {
+        const clean = [...new Set((values || []).map((v) => String(v).trim()).filter(Boolean))];
+        if (clean.length) params.set(key, clean.join(","));
+      };
 
-      if (nextFilters.subCategories.length) {
-        params.set("subcategory_ids", nextFilters.subCategories.join(","));
-      }
+      setCsv("brand_ids", nextFilters.brands);
+      setCsv("category", nextFilters.categories);
+      setCsv("subcategory_ids", nextFilters.subCategories);
+      setCsv("color", nextFilters.colors || []);
 
       if (nextFilters.priceRange[0] > 0) {
         params.set("min_price", String(nextFilters.priceRange[0]));
       }
-
       if (nextFilters.priceRange[1] < MAX_PRICE_LIMIT) {
         params.set("max_price", String(nextFilters.priceRange[1]));
       }
 
-      /* -------------------------------------------------------------------- */
-      /* AVAILABILITY: single array format `stock_status[]=...` (multi-select) */
-      /* -------------------------------------------------------------------- */
-
       const selectedStatuses: string[] = [];
       if (nextFilters.availability.inStock) selectedStatuses.push("in_stock");
-      if (nextFilters.availability.outOfStock)
-        selectedStatuses.push("out_of_stock");
+      if (nextFilters.availability.outOfStock) selectedStatuses.push("out_of_stock");
       if (nextFilters.availability.lowStock) selectedStatuses.push("low_stock");
+      selectedStatuses.forEach((status) => params.append("stock_status[]", status));
 
-      selectedStatuses.forEach((status) => {
-        params.append("stock_status[]", status);
-      });
-
-      if (nextSearch.trim()) {
-        params.set("search", nextSearch.trim());
-      }
-
-      if (nextSort !== "recommended") {
-        params.set("sort", nextSort);
-      }
-
-      if (nextPage > 1) {
-        params.set("page", String(nextPage));
-      }
+      if (nextSearch.trim()) params.set("search", nextSearch.trim());
+      if (nextSort !== "recommended") params.set("sort", nextSort);
+      if (nextPage > 1) params.set("page", String(nextPage));
 
       const queryString = params.toString();
-
       const newUrl = queryString ? `/products/?${queryString}` : "/products/";
-
       router.replace(newUrl, { scroll: false });
     },
-    [isNewArrivals, router],
+    [isNewArrivals, router, searchParamsString],
   );
 
   /* --------------------------- Query parameters --------------------------- */
@@ -857,6 +820,10 @@ export default function ProductsPage() {
       }
     }
 
+    if (filters.colors.length) {
+      params.color = filters.colors.join(",");
+    }
+
     if (filters.priceRange[0] > 0) {
       params.min_price = filters.priceRange[0];
     }
@@ -879,10 +846,6 @@ export default function ProductsPage() {
 
     if (selectedStatuses.length) {
       params.stock_status = selectedStatuses;
-    }
-
-    if (lowStock) {
-      params.low_stock = true;
     }
 
     if (searchQuery.trim()) {
@@ -1167,7 +1130,7 @@ export default function ProductsPage() {
 
     const bannerMap = new Map<string, { url: string; brandName: string }>();
 
-    productsData.data.forEach((product: any) => {
+    productsData.data.filter(isPrimaryProduct).forEach((product: any) => {
       const banner = String(
         product?.brand_banner ?? product?.brand?.brand_banner ?? "",
       ).trim();
@@ -1197,7 +1160,8 @@ export default function ProductsPage() {
 
   /* --------------------------- Infinite scroll --------------------------- */
 
-  const products = currentPage === 1 ? transformedProducts : allProducts;
+  const allProductRecords = currentPage === 1 ? transformedProducts : allProducts;
+  const products = allProductRecords.filter(isPrimaryProduct);
 
   const hasMore = currentPage < lastPage;
 
@@ -1295,26 +1259,16 @@ export default function ProductsPage() {
   }, [products.length, gridColumns]);
 
   /* ------------------------------------------------------------------------ */
-  /* FILTER CHANGE: AUTOMATIC BRAND AND CATEGORY SELECTION                    */
+  /* FILTER CHANGE: INDEPENDENT MULTI-SELECT                                  */
   /* ------------------------------------------------------------------------ */
 
   const handleFilterChange = useCallback(
     (newFilters: FilterState) => {
-      const previousFilters = filtersRef.current;
-
-      const categoryChanged =
-        JSON.stringify(previousFilters.categories) !==
-        JSON.stringify(newFilters.categories);
-
-      const brandChanged =
-        JSON.stringify(previousFilters.brands) !==
-        JSON.stringify(newFilters.brands);
-
-      const syncedFilters: FilterState = {
-        ...newFilters,
-        brands: [...newFilters.brands],
-        categories: [...newFilters.categories],
-        subCategories: [...newFilters.subCategories],
+      const nextFilters: FilterState = {
+        brands: [...new Set(newFilters.brands || [])],
+        categories: [...new Set(newFilters.categories || [])],
+        subCategories: [...new Set(newFilters.subCategories || [])],
+        colors: [...new Set(newFilters.colors || [])],
         priceRange: [...newFilters.priceRange] as [number, number],
         availability: {
           inStock: Boolean(newFilters.availability?.inStock),
@@ -1323,157 +1277,19 @@ export default function ProductsPage() {
         },
       };
 
-      const categoryTitleById = new Map<string, string>();
+      // Update refs immediately to retain rapid successive checkbox selections.
+      filtersRef.current = nextFilters;
+      currentPageRef.current = 1;
 
-      categoryIdMap.forEach((categoryId, categoryTitle) => {
-        categoryTitleById.set(String(categoryId), categoryTitle);
-      });
-
-      /* CASE 1: category changed */
-
-      if (categoryChanged && !brandChanged) {
-        const previousCategorySet = new Set(previousFilters.categories);
-        const nextCategorySet = new Set(newFilters.categories);
-
-        const removedCategoryIds = new Set<string>();
-
-        previousCategorySet.forEach((categoryTitle) => {
-          if (!nextCategorySet.has(categoryTitle)) {
-            const categoryId = categoryIdMap.get(categoryTitle);
-
-            if (categoryId != null) {
-              removedCategoryIds.add(String(categoryId));
-            }
-          }
-        });
-
-        const nextBrands = new Set(
-          newFilters.brands.filter((brandId) => {
-            const categoryId = brandCategoryMap.get(String(brandId));
-
-            return !categoryId || !removedCategoryIds.has(categoryId);
-          }),
-        );
-
-        newFilters.categories.forEach((categoryTitle) => {
-          const categoryId = categoryIdMap.get(categoryTitle);
-
-          if (categoryId == null) return;
-
-          const relatedBrands = categoryBrandMap.get(String(categoryId)) || [];
-
-          relatedBrands.forEach((brandId) => {
-            nextBrands.add(brandId);
-          });
-        });
-
-        syncedFilters.brands = Array.from(nextBrands);
-      }
-
-      /* CASE 2: brand changed */
-
-      else if (brandChanged && !categoryChanged) {
-        const previousBrandCategoryIds = new Set<string>();
-
-        previousFilters.brands.forEach((brandId) => {
-          const categoryId = brandCategoryMap.get(String(brandId));
-
-          if (categoryId) previousBrandCategoryIds.add(categoryId);
-        });
-
-        const nextBrandCategoryIds = new Set<string>();
-
-        newFilters.brands.forEach((brandId) => {
-          const categoryId = brandCategoryMap.get(String(brandId));
-
-          if (categoryId) nextBrandCategoryIds.add(categoryId);
-        });
-
-        const categoriesToRemove = new Set<string>();
-
-        previousFilters.categories.forEach((categoryTitle) => {
-          const categoryId = categoryIdMap.get(categoryTitle);
-
-          if (categoryId == null) return;
-
-          const categoryIdString = String(categoryId);
-
-          const wasLinkedToSelectedBrand =
-            previousBrandCategoryIds.has(categoryIdString);
-
-          const stillHasSelectedBrand =
-            nextBrandCategoryIds.has(categoryIdString);
-
-          if (wasLinkedToSelectedBrand && !stillHasSelectedBrand) {
-            categoriesToRemove.add(categoryTitle);
-          }
-        });
-
-        const nextCategories = new Set(
-          newFilters.categories.filter(
-            (categoryTitle) => !categoriesToRemove.has(categoryTitle),
-          ),
-        );
-
-        newFilters.brands.forEach((brandId) => {
-          const categoryId = brandCategoryMap.get(String(brandId));
-
-          if (!categoryId) return;
-
-          const categoryTitle = categoryTitleById.get(categoryId);
-
-          if (categoryTitle) nextCategories.add(categoryTitle);
-        });
-
-        syncedFilters.categories = Array.from(nextCategories);
-      }
-
-      /* CASE 3: both changed */
-
-      else if (categoryChanged && brandChanged) {
-        const nextBrands = new Set(newFilters.brands);
-        const nextCategories = new Set(newFilters.categories);
-
-        newFilters.categories.forEach((categoryTitle) => {
-          const categoryId = categoryIdMap.get(categoryTitle);
-
-          if (categoryId == null) return;
-
-          const relatedBrands = categoryBrandMap.get(String(categoryId)) || [];
-
-          relatedBrands.forEach((brandId) => {
-            nextBrands.add(brandId);
-          });
-        });
-
-        nextBrands.forEach((brandId) => {
-          const categoryId = brandCategoryMap.get(String(brandId));
-
-          if (!categoryId) return;
-
-          const categoryTitle = categoryTitleById.get(categoryId);
-
-          if (categoryTitle) nextCategories.add(categoryTitle);
-        });
-
-        syncedFilters.brands = Array.from(nextBrands);
-        syncedFilters.categories = Array.from(nextCategories);
-      }
-
-      setFilters(syncedFilters);
-
+      setFilters(nextFilters);
       setCurrentPage(1);
-
+      setAllProducts([]);
       hasTriggeredRef.current = false;
-
       setShowEndMessage(false);
 
-      updateBrowserUrl({
-        nextFilters: syncedFilters,
-        nextPage: 1,
-      });
+      updateBrowserUrl({ nextFilters, nextPage: 1 });
     },
-    [updateBrowserUrl, categoryIdMap, brandCategoryMap, categoryBrandMap],
+    [updateBrowserUrl],
   );
 
   /* -------------------------------- Search -------------------------------- */
@@ -1623,7 +1439,9 @@ export default function ProductsPage() {
     filters.brands.length +
     filters.categories.length +
     filters.subCategories.length +
-    Object.values(filters.availability).filter(Boolean).length;
+    filters.colors.length +
+    Object.values(filters.availability).filter(Boolean).length +
+    Number(filters.priceRange[0] > 0 || filters.priceRange[1] < MAX_PRICE_LIMIT);
 
   const pageTitle = isNewArrivals ? "New Arrivals" : "Collection";
 
@@ -1660,7 +1478,7 @@ export default function ProductsPage() {
                     onFilterChange={handleFilterChange}
                     maxPrice={MAX_PRICE_LIMIT}
                     products={allProducts}
-                    facetProducts={transformedProducts}
+                    facetProducts={allProductRecords}
                     productsComplete={currentPage >= lastPage && !isFetching}
                   />
                 </div>
@@ -1815,6 +1633,7 @@ export default function ProductsPage() {
                           <ProductCard
                             product={product}
                             hasToken={hasToken === true}
+                            allProducts={allProductRecords}
                           />
                         </div>
 
@@ -1914,7 +1733,7 @@ export default function ProductsPage() {
         {isMobileFilterOpen && (
           <>
             <motion.div
-              className="fixed inset-0 z-50 bg-black/45 backdrop-blur-[2px] md:hidden"
+              className="fixed inset-0 z-[9998] bg-black/45 backdrop-blur-[2px] md:hidden"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -1923,7 +1742,7 @@ export default function ProductsPage() {
             />
 
             <motion.div
-              className="fixed inset-x-0 bottom-0 z-[60] md:hidden"
+              className="fixed inset-x-0 bottom-0 z-[9999] md:hidden"
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
@@ -1942,7 +1761,7 @@ export default function ProductsPage() {
                     onFilterChange={handleFilterChange}
                     maxPrice={MAX_PRICE_LIMIT}
                     products={allProducts}
-                    facetProducts={transformedProducts}
+                    facetProducts={allProductRecords}
                     productsComplete={currentPage >= lastPage && !isFetching}
                   />
                 </div>
@@ -1956,7 +1775,7 @@ export default function ProductsPage() {
 
       <div className="h-20 md:hidden" />
 
-      <StyleFinder />
+      {/* <StyleFinder /> */}
     </div>
   );
 }

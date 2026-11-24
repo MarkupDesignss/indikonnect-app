@@ -29,6 +29,16 @@ import { useGetTestimonialsQuery } from "@/lib/redux/api/testimonialApi";
 /* Types                                                              */
 /* ------------------------------------------------------------------ */
 
+const TESTIMONIAL_SYNC_EVENT = "indiekonnect:testimonial-sync";
+type TestimonialSyncSource = "video" | "text";
+
+function notifyTestimonialChange(id: number, source: TestimonialSyncSource) {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(
+    new CustomEvent(TESTIMONIAL_SYNC_EVENT, { detail: { id, source } })
+  );
+}
+
 interface Testimonial {
   id: number;
   video_path: string;
@@ -239,12 +249,7 @@ function MobileTestimonialCard({
 
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/25 via-transparent to-black/45" />
 
-      <div className="absolute left-3 top-3 z-20 flex items-center gap-1.5 rounded-md bg-black/70 px-2 py-1 text-white backdrop-blur-[3px]">
-        <Eye size={12} strokeWidth={2.3} />
-        <span className="text-[11px] font-semibold leading-none">
-          {formatNumber(viewCount)}
-        </span>
-      </div>
+     
 
       <div className="absolute bottom-3 left-3 right-3 z-20">
         <h3 className="truncate text-[15px] font-semibold leading-tight text-white">
@@ -349,8 +354,14 @@ function TestimonialSidePreview({
 export default function CustomerTestimonials() {
   const { data, isLoading, isError } = useGetTestimonialsQuery();
 
+  // Keep the same active/order sequence as the text review carousel.
   const testimonials: Testimonial[] = useMemo(() => {
-    return data?.data?.data ?? [];
+    return (data?.data?.data ?? [])
+      .filter((item: Testimonial) => item.is_active)
+      .sort(
+        (a: Testimonial, b: Testimonial) =>
+          a.display_order - b.display_order
+      );
   }, [data]);
 
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
@@ -388,6 +399,20 @@ export default function CustomerTestimonials() {
     );
   }, [testimonials.length]);
 
+  const scrollToMobileIndex = useCallback(
+    (index: number, behavior: ScrollBehavior = "smooth") => {
+      const el = mobileScrollRef.current;
+      if (!el) return;
+      const child = el.children[index] as HTMLElement | undefined;
+      if (!child) return;
+      el.scrollTo({
+        left: child.offsetLeft - el.offsetLeft,
+        behavior,
+      });
+    },
+    []
+  );
+
   const getRelativeOffset = useCallback(
     (index: number, currentIndex: number) => {
       if (testimonials.length === 0) return 0;
@@ -402,21 +427,63 @@ export default function CustomerTestimonials() {
 
   const nextSlide = useCallback(() => {
     if (testimonials.length <= 1) return;
-    setActiveIndex((p) => (p + 1) % testimonials.length);
-  }, [testimonials.length]);
+    const nextIndex = (activeIndex + 1) % testimonials.length;
+    setActiveIndex(nextIndex);
+    setMobileActiveIndex(nextIndex);
+    scrollToMobileIndex(nextIndex, "auto");
+    notifyTestimonialChange(testimonials[nextIndex].id, "video");
+  }, [activeIndex, testimonials, scrollToMobileIndex]);
 
   const previousSlide = useCallback(() => {
     if (testimonials.length <= 1) return;
-    setActiveIndex((p) => (p - 1 + testimonials.length) % testimonials.length);
-  }, [testimonials.length]);
+    const previousIndex =
+      (activeIndex - 1 + testimonials.length) % testimonials.length;
+    setActiveIndex(previousIndex);
+    setMobileActiveIndex(previousIndex);
+    scrollToMobileIndex(previousIndex, "auto");
+    notifyTestimonialChange(testimonials[previousIndex].id, "video");
+  }, [activeIndex, testimonials, scrollToMobileIndex]);
 
+  // Desktop autoplay is the source of truth for the matching review below.
+  // Mobile remains swipe-driven, just like its visible video carousel.
   useEffect(() => {
     if (isPaused || testimonials.length <= 1) return;
-    const interval = window.setInterval(() => {
-      setActiveIndex((p) => (p + 1) % testimonials.length);
-    }, 5000);
-    return () => window.clearInterval(interval);
-  }, [isPaused, testimonials.length]);
+
+    const mediaQuery = window.matchMedia("(min-width: 768px)");
+    let interval: number | undefined;
+
+    const stopAutoplay = () => {
+      if (interval !== undefined) {
+        window.clearInterval(interval);
+        interval = undefined;
+      }
+    };
+
+    const startAutoplay = () => {
+      if (!mediaQuery.matches || interval !== undefined) return;
+
+      interval = window.setInterval(() => {
+        const nextIndex = (activeIndex + 1) % testimonials.length;
+        setActiveIndex(nextIndex);
+        setMobileActiveIndex(nextIndex);
+        scrollToMobileIndex(nextIndex, "auto");
+        notifyTestimonialChange(testimonials[nextIndex].id, "video");
+      }, 5000);
+    };
+
+    const handleBreakpointChange = () => {
+      stopAutoplay();
+      startAutoplay();
+    };
+
+    startAutoplay();
+    mediaQuery.addEventListener("change", handleBreakpointChange);
+
+    return () => {
+      stopAutoplay();
+      mediaQuery.removeEventListener("change", handleBreakpointChange);
+    };
+  }, [activeIndex, isPaused, testimonials, scrollToMobileIndex]);
 
   const visibleCards = useMemo(() => {
     return testimonials.map((item, index) => ({
@@ -427,25 +494,55 @@ export default function CustomerTestimonials() {
 
   const handleMobileScroll = useCallback(() => {
     if (mobileScrollRaf.current !== null) return;
+
     mobileScrollRaf.current = window.requestAnimationFrame(() => {
       mobileScrollRaf.current = null;
       const el = mobileScrollRef.current;
-      if (!el) return;
+      if (!el || testimonials.length === 0) return;
+
       const firstChild = el.firstElementChild as HTMLElement | null;
       const childWidth = firstChild?.clientWidth || 1;
       const gap = parseFloat(getComputedStyle(el).columnGap || "0") || 0;
-      const index = Math.round(el.scrollLeft / (childWidth + gap));
-      setMobileActiveIndex((prev) => (prev === index ? prev : index));
-    });
-  }, []);
+      const nextIndex = Math.max(
+        0,
+        Math.min(
+          testimonials.length - 1,
+          Math.round(el.scrollLeft / (childWidth + gap))
+        )
+      );
 
-  const scrollToMobileIndex = useCallback((index: number) => {
-    const el = mobileScrollRef.current;
-    if (!el) return;
-    const child = el.children[index] as HTMLElement | undefined;
-    if (!child) return;
-    el.scrollTo({ left: child.offsetLeft - el.offsetLeft, behavior: "smooth" });
-  }, []);
+      if (nextIndex !== mobileActiveIndex) {
+        setMobileActiveIndex(nextIndex);
+        setActiveIndex(nextIndex);
+        notifyTestimonialChange(testimonials[nextIndex].id, "video");
+      }
+    });
+  }, [mobileActiveIndex, testimonials]);
+
+  // Receive changes made in the text carousel and select the same testimonial ID.
+  useEffect(() => {
+    const handleTextChange = (event: Event) => {
+      const detail = (event as CustomEvent<{
+        id: number;
+        source: TestimonialSyncSource;
+      }>).detail;
+
+      if (!detail || detail.source !== "text") return;
+
+      const targetIndex = testimonials.findIndex(
+        (item) => item.id === detail.id
+      );
+      if (targetIndex < 0) return;
+
+      setActiveIndex(targetIndex);
+      setMobileActiveIndex(targetIndex);
+      scrollToMobileIndex(targetIndex, "auto");
+    };
+
+    window.addEventListener(TESTIMONIAL_SYNC_EVENT, handleTextChange);
+    return () =>
+      window.removeEventListener(TESTIMONIAL_SYNC_EVENT, handleTextChange);
+  }, [testimonials, scrollToMobileIndex]);
 
   useEffect(() => {
     return () => {
@@ -455,13 +552,22 @@ export default function CustomerTestimonials() {
     };
   }, []);
 
-  const openModal = useCallback((index: number) => {
-    setSelectedIndex(index);
-    setDirection(1);
-    setIsMuted(true);
-    setIsPlaying(true);
-    setIsTransitioning(false);
-  }, []);
+  const openModal = useCallback(
+    (index: number) => {
+      setSelectedIndex(index);
+      setActiveIndex(index);
+      setMobileActiveIndex(index);
+      scrollToMobileIndex(index, "auto");
+      if (testimonials[index]) {
+        notifyTestimonialChange(testimonials[index].id, "video");
+      }
+      setDirection(1);
+      setIsMuted(true);
+      setIsPlaying(true);
+      setIsTransitioning(false);
+    },
+    [testimonials, scrollToMobileIndex]
+  );
 
   const closeModal = useCallback(() => {
     setSelectedIndex(null);
@@ -478,15 +584,18 @@ export default function CustomerTestimonials() {
       event?.preventDefault();
       event?.stopPropagation();
       if (!testimonials.length || selectedIndex === null || isTransitioning) return;
+      const nextIndex = (selectedIndex + 1) % testimonials.length;
       setDirection(1);
       setIsTransitioning(true);
       setIsPlaying(true);
-      setSelectedIndex((c) =>
-        c === null ? 0 : (c + 1) % testimonials.length
-      );
+      setSelectedIndex(nextIndex);
+      setActiveIndex(nextIndex);
+      setMobileActiveIndex(nextIndex);
+      scrollToMobileIndex(nextIndex, "auto");
+      notifyTestimonialChange(testimonials[nextIndex].id, "video");
       window.setTimeout(() => setIsTransitioning(false), 400);
     },
-    [testimonials.length, selectedIndex, isTransitioning]
+    [testimonials, selectedIndex, isTransitioning, scrollToMobileIndex]
   );
 
   const handlePrevious = useCallback(
@@ -494,15 +603,19 @@ export default function CustomerTestimonials() {
       event?.preventDefault();
       event?.stopPropagation();
       if (!testimonials.length || selectedIndex === null || isTransitioning) return;
+      const previousIndex =
+        (selectedIndex - 1 + testimonials.length) % testimonials.length;
       setDirection(-1);
       setIsTransitioning(true);
       setIsPlaying(true);
-      setSelectedIndex((c) =>
-        c === null ? 0 : (c - 1 + testimonials.length) % testimonials.length
-      );
+      setSelectedIndex(previousIndex);
+      setActiveIndex(previousIndex);
+      setMobileActiveIndex(previousIndex);
+      scrollToMobileIndex(previousIndex, "auto");
+      notifyTestimonialChange(testimonials[previousIndex].id, "video");
       window.setTimeout(() => setIsTransitioning(false), 400);
     },
-    [testimonials.length, selectedIndex, isTransitioning]
+    [testimonials, selectedIndex, isTransitioning, scrollToMobileIndex]
   );
 
   const togglePlay = useCallback((event: MouseEvent) => {
@@ -898,7 +1011,12 @@ export default function CustomerTestimonials() {
                   key={index}
                   type="button"
                   aria-label={`Go to testimonial ${index + 1}`}
-                  onClick={() => scrollToMobileIndex(index)}
+                  onClick={() => {
+                    scrollToMobileIndex(index);
+                    setActiveIndex(index);
+                    setMobileActiveIndex(index);
+                    notifyTestimonialChange(testimonials[index].id, "video");
+                  }}
                   className={`h-2 rounded-full transition-all duration-300 ${
                     mobileActiveIndex === index
                       ? "w-6 bg-[#0F1A3C]"
@@ -1003,12 +1121,7 @@ export default function CustomerTestimonials() {
 
                     <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/25 via-transparent to-black/40" />
 
-                    <div className="absolute left-3 top-3 z-20 flex items-center gap-1.5 rounded-md bg-black/70 px-2 py-1 text-white backdrop-blur-[3px]">
-                      <Eye size={12} strokeWidth={2.3} />
-                      <span className="text-[11px] font-semibold leading-none">
-                        {formatNumber(viewCount)}
-                      </span>
-                    </div>
+                 
 
                     <div className="absolute bottom-3 left-3 right-3 z-20">
                       <h3 className="truncate text-[14px] font-semibold leading-tight text-white sm:text-[16px]">

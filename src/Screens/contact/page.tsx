@@ -1,9 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-
 import { AnimatePresence, motion } from "framer-motion";
-
 import { ArrowRight, ChevronDown, Mail, Phone } from "lucide-react";
 
 import {
@@ -15,84 +13,50 @@ import {
 } from "react-icons/fa";
 
 import { FaXTwitter } from "react-icons/fa6";
-
 import Header from "../../components/common/Header";
-
 import Footer from "../../components/Footer/Footer";
-
 import ContactForm from "../../components/contact/ContactForm";
-
 import { useGetFAQsQuery } from "@/lib/redux/api/faqApi";
-
 import { useGetFooterQuery } from "@/lib/redux/api/Home/contentApi";
-
 import { useGetContactContentQuery } from "@/lib/redux/api/ContactApi";
 
-/* =========================================================*
-
-*   TYPES*
-
-*========================================================= */
 
 type ContactContentBlock = {
   id: number;
-
   heading: string;
-
   short_description: string;
-
   description: string | null;
-
   sort_order: number;
-
   images: string[];
-
   videos: string[];
 };
 
 type FAQItem = {
   id: number;
-
   section_id: number;
-
   question: string;
-
   answer: string;
-
   order: number;
-
   is_active: boolean | number;
-
   section?: {
     id: number;
-
     name: string;
-
     slug: string;
   } | null;
 };
 
 type FAQGroup = {
   id: string;
-
   name: string;
-
   items: FAQItem[];
 };
 
 type ContactTileProps = {
   icon: typeof Mail;
-
   block: ContactContentBlock;
-
   href: string;
 };
 
-/* =========================================================*
-
-*   ANIMATION*
-
-*========================================================= */
 
 const visible = {
   hidden: {
@@ -583,26 +547,8 @@ export default function ContactPage() {
     isError: faqError,
   } = useGetFAQsQuery({});
 
-  /* =====================================================*
-  
-  *     FOOTER API*
-  
-  *  ===================================================== */
-
   const { data: footerResponse } = useGetFooterQuery({});
 
-  /* =====================================================*
-  
-  *     CONTACT BLOCKS*
-  
-  *     1. Email us*
-  
-  *     2. Call us*
-  
-  * 
-  *     3. Get in touch*
-  
-  *  ===================================================== */
 
   const {
     emailBlock,

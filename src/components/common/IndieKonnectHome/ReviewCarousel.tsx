@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Star } from "lucide-react";
 
 import { useGetTestimonialsQuery } from "@/lib/redux/api/testimonialApi";
@@ -8,6 +8,16 @@ import { useGetTestimonialsQuery } from "@/lib/redux/api/testimonialApi";
 /* ------------------------------------------------------------------ */
 /* Types                                                              */
 /* ------------------------------------------------------------------ */
+
+const TESTIMONIAL_SYNC_EVENT = "indiekonnect:testimonial-sync";
+type TestimonialSyncSource = "video" | "text";
+
+function notifyTestimonialChange(id: number, source: TestimonialSyncSource) {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(
+    new CustomEvent(TESTIMONIAL_SYNC_EVENT, { detail: { id, source } })
+  );
+}
 
 interface TextTestimonial {
   id: number;
@@ -171,21 +181,24 @@ export default function ReviewCarousel() {
   /* API Data                                                         */
   /* ---------------------------------------------------------------- */
 
-  const reviews: TextTestimonial[] =
-    data?.data?.data
-      ?.filter((item) => item.is_active)
-      ?.sort((a, b) => a.display_order - b.display_order)
-      ?.map((item) => ({
-        id: item.id,
-        name: item.person_name,
-        date: new Date(item.created_at).toLocaleDateString("en-GB", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        }),
-        rating: Number(item.rating),
-        message: item.text,
-      })) ?? [];
+  const reviews: TextTestimonial[] = useMemo(
+    () =>
+      data?.data?.data
+        ?.filter((item) => item.is_active)
+        ?.sort((a, b) => a.display_order - b.display_order)
+        ?.map((item) => ({
+          id: item.id,
+          name: item.person_name,
+          date: new Date(item.created_at).toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          }),
+          rating: Number(item.rating),
+          message: item.text,
+        })) ?? [],
+    [data]
+  );
 
   /* ---------------------------------------------------------------- */
   /* Reset index when API data changes                                */
@@ -202,29 +215,39 @@ export default function ReviewCarousel() {
   /* Desktop Pagination                                               */
   /* ---------------------------------------------------------------- */
 
-  const perPage = 2;
+  const scrollToMobileIndex = useCallback(
+    (target: number, behavior: ScrollBehavior = "smooth") => {
+      const el = mobileScrollRef.current;
+      if (!el) return;
+      const child = el.children[target] as HTMLElement | undefined;
+      if (!child) return;
 
-  const pageCount =
-    reviews.length > 0 ? Math.ceil(reviews.length / perPage) : 0;
+      el.scrollTo({
+        left: child.offsetLeft - el.offsetLeft,
+        behavior,
+      });
+    },
+    []
+  );
+
+  // One review per slide ensures the text always belongs to the active video.
+  const pageCount = reviews.length;
 
   const go = (direction: "prev" | "next") => {
     if (pageCount <= 1) return;
 
-    setIndex((prev) => {
-      if (direction === "next") {
-        return (prev + 1) % pageCount;
-      }
+    const nextIndex =
+      direction === "next"
+        ? (index + 1) % pageCount
+        : (index - 1 + pageCount) % pageCount;
 
-      return (prev - 1 + pageCount) % pageCount;
-    });
+    setIndex(nextIndex);
+    setMobileActiveIndex(nextIndex);
+    scrollToMobileIndex(nextIndex, "auto");
+    notifyTestimonialChange(reviews[nextIndex].id, "text");
   };
 
-  const visible = reviews.slice(index * perPage, index * perPage + perPage);
-
-  const padded =
-    visible.length < perPage
-      ? [...visible, ...reviews.slice(0, perPage - visible.length)]
-      : visible;
+  const visible = reviews.slice(index, index + 1);
 
   /* ---------------------------------------------------------------- */
   /* Mobile Scroll Handlers                                           */
@@ -235,37 +258,50 @@ export default function ReviewCarousel() {
 
     mobileScrollRaf.current = window.requestAnimationFrame(() => {
       mobileScrollRaf.current = null;
-
       const el = mobileScrollRef.current;
-
-      if (!el) return;
+      if (!el || reviews.length === 0) return;
 
       const firstChild = el.firstElementChild as HTMLElement | null;
-
       const childWidth = firstChild?.clientWidth || 1;
-
       const gap = parseFloat(getComputedStyle(el).columnGap || "0") || 0;
+      const nextIndex = Math.max(
+        0,
+        Math.min(
+          reviews.length - 1,
+          Math.round(el.scrollLeft / (childWidth + gap))
+        )
+      );
 
-      const next = Math.round(el.scrollLeft / (childWidth + gap));
-
-      setMobileActiveIndex((prev) => (prev === next ? prev : next));
+      if (nextIndex !== mobileActiveIndex) {
+        setMobileActiveIndex(nextIndex);
+        setIndex(nextIndex);
+        notifyTestimonialChange(reviews[nextIndex].id, "text");
+      }
     });
   };
 
-  const scrollToMobileIndex = (target: number) => {
-    const el = mobileScrollRef.current;
+  // Receive the active video ID and show the corresponding written review.
+  useEffect(() => {
+    const handleVideoChange = (event: Event) => {
+      const detail = (event as CustomEvent<{
+        id: number;
+        source: TestimonialSyncSource;
+      }>).detail;
 
-    if (!el) return;
+      if (!detail || detail.source !== "video") return;
 
-    const child = el.children[target] as HTMLElement | undefined;
+      const targetIndex = reviews.findIndex((review) => review.id === detail.id);
+      if (targetIndex < 0) return;
 
-    if (!child) return;
+      setIndex(targetIndex);
+      setMobileActiveIndex(targetIndex);
+      scrollToMobileIndex(targetIndex, "auto");
+    };
 
-    el.scrollTo({
-      left: child.offsetLeft - el.offsetLeft,
-      behavior: "smooth",
-    });
-  };
+    window.addEventListener(TESTIMONIAL_SYNC_EVENT, handleVideoChange);
+    return () =>
+      window.removeEventListener(TESTIMONIAL_SYNC_EVENT, handleVideoChange);
+  }, [reviews, scrollToMobileIndex]);
 
   useEffect(() => {
     return () => {
@@ -391,7 +427,13 @@ export default function ReviewCarousel() {
                 <button
                   key={i}
                   type="button"
-                  onClick={() => scrollToMobileIndex(i)}
+                  onClick={() => {
+                    scrollToMobileIndex(i);
+                    setIndex(i);
+                    setMobileActiveIndex(i);
+                    scrollToMobileIndex(i, "auto");
+                    notifyTestimonialChange(reviews[i].id, "text");
+                  }}
                   aria-label={`Go to review ${i + 1}`}
                   className={`h-1.5 rounded-full transition-all ${
                     mobileActiveIndex === i
@@ -434,9 +476,13 @@ export default function ReviewCarousel() {
           )}
 
           {/* Grid */}
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-            {padded.map((review, i) => (
-              <ReviewCard key={`${review.id}-${i}`} review={review} index={i} />
+          <div className="mx-auto grid max-w-[760px] grid-cols-1 gap-5">
+            {visible.map((review, i) => (
+              <ReviewCard
+                key={`${review.id}-${index}`}
+                review={review}
+                index={index + i}
+              />
             ))}
           </div>
 
@@ -448,7 +494,11 @@ export default function ReviewCarousel() {
                 <button
                   key={i}
                   type="button"
-                  onClick={() => setIndex(i)}
+                  onClick={() => {
+                    setIndex(i);
+                    setMobileActiveIndex(i);
+                    notifyTestimonialChange(reviews[i].id, "text");
+                  }}
                   aria-label={`Go to review ${i + 1}`}
                   className={`h-1.5 rounded-full transition-all ${
                     i === index ? "w-8 bg-black" : "w-1.5 bg-[#bfc2c5]"

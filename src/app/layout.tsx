@@ -25,10 +25,11 @@ export default function RootLayout({
         />
       </head>
 
-      <body className="w-full min-h-screen antialiased">
+      <body className="min-h-screen w-full antialiased">
         <ReduxProvider>
-          <GetStartedDrawer />
+          {/* <GetStartedDrawer /> */}
 
+          {/* Route scroll reset + scroll-progress back-to-top button */}
           <ScrollToTop />
 
           {children}

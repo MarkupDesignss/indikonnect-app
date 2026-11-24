@@ -8,7 +8,6 @@ import {
   useAddRatingReviewMutation,
   useCancelReturnMutation,
   useWithdrawCancelOrderMutation,
-  useWithdrawCancelRequestMutation,
   useLazyGetInvoiceByOrderIdQuery,
 } from "@/lib/redux/api/order/orderApi";
 
@@ -46,7 +45,6 @@ import { motion, AnimatePresence } from "framer-motion";
 
 import Image from "next/image";
 
-// ✅ NEW IMPORT
 import { useRouter } from "next/navigation";
 
 import { showToast } from "@/lib/slices/toastSlice";
@@ -112,7 +110,6 @@ interface OrderLineItem {
 
   product_name: string;
   product_code: string;
-  // ✅ NEW: product_slug for navigation
   product_slug?: string;
 
   quantity: number;
@@ -139,10 +136,10 @@ interface OrderLineItem {
   available_for_return: number;
   is_returnable: boolean;
 
-  // ✅ NEW: API flag controlling cancel + return eligibility
+  // API flag controlling cancel + return eligibility
   is_cancel_return_allowed?: number | string | boolean;
 
-  // ✅ NEW: API flag controlling invoice button visibility (per line)
+  // API flag controlling invoice button visibility (per line)
   invoice_available?: number | string | boolean | null;
 
   timeline: {
@@ -198,6 +195,13 @@ interface OrderLineItem {
   credit_notes: any[];
 }
 
+// ✅ One parent order + all of its product lines
+interface OrderGroup {
+  orderId: number;
+  reference: string;
+  lines: OrderLineItem[];
+}
+
 // /my-orders returns parent orders with items[]. Preserve parent-level payment
 // and totals, but use the real item identity, amount, status and timeline.
 function flattenOrderItems(rows: unknown[]): OrderLineItem[] {
@@ -239,6 +243,24 @@ function flattenOrderItems(rows: unknown[]): OrderLineItem[] {
       } as unknown as OrderLineItem];
     });
   });
+}
+
+// ✅ Group flattened lines back into parent orders (keeps API order)
+function groupByOrder(lines: OrderLineItem[]): OrderGroup[] {
+  const map = new Map<number, OrderGroup>();
+  lines.forEach((line) => {
+    const existing = map.get(line.order_id);
+    if (existing) {
+      existing.lines.push(line);
+    } else {
+      map.set(line.order_id, {
+        orderId: line.order_id,
+        reference: line.order_reference,
+        lines: [line],
+      });
+    }
+  });
+  return Array.from(map.values());
 }
 
 interface ApiStatusOption {
@@ -474,7 +496,7 @@ function RetryPaymentButton({
 }
 
 /* -------------------------------------------------------------------------- */
-/* ✅ NEW: is_cancel_return_allowed parser                                    */
+/* is_cancel_return_allowed parser                                            */
 /* -------------------------------------------------------------------------- */
 
 function isCancelReturnAllowed(order: OrderLineItem): boolean {
@@ -595,20 +617,19 @@ function extractStatusOptionsFromApi(apiData: any): ApiStatusOption[] {
 }
 
 /**
- * ✅ Status priority order for badge display:
- * 1. Cancelled / Cancel Pending → show cancellation status
- * 2. Refunded / Returned / Buyback Refunded → show refund/return status
- * 3. Return Pending / Return Approved / Return Rejected → show return status
- * 4. Delivered / Partial Delivered → show delivery status
- * 5. Shipped / Dispatched → show shipping status
- * 6. Confirmed / Processing / Pending → show order status
+ * Status priority order for badge display:
+ * 1. Cancelled / Cancel Pending
+ * 2. Refunded / Returned / Buyback Refunded
+ * 3. Return Pending / Return Approved / Return Rejected
+ * 4. Delivered / Partial Delivered
+ * 5. Shipped / Dispatched
+ * 6. Confirmed / Processing / Pending
  */
 function getOrderStatusValue(order: OrderLineItem) {
   const deliveryStatus = normalizeStatus(order.delivery_status);
   const orderStatus = normalizeStatus(order.order_status);
   const returnStatus = normalizeStatus(order.return_status);
 
-  // ✅ Priority 1: Cancellation-related (highest priority)
   if (deliveryStatus === "cancelled" || orderStatus === "cancelled") {
     return "cancelled";
   }
@@ -617,7 +638,6 @@ function getOrderStatusValue(order: OrderLineItem) {
     return "cancel_pending";
   }
 
-  // ✅ Priority 2: Refund / Return completion
   if (deliveryStatus === "refunded" || returnStatus === "refunded") {
     return "refunded";
   }
@@ -646,7 +666,6 @@ function getOrderStatusValue(order: OrderLineItem) {
     return "buyback_pending";
   }
 
-  // ✅ Priority 3: Return flow
   if (deliveryStatus === "return_pending") {
     return "return_pending";
   }
@@ -659,7 +678,6 @@ function getOrderStatusValue(order: OrderLineItem) {
     return "return_rejected";
   }
 
-  // ✅ Priority 4: Delivered
   if (deliveryStatus === "delivered") {
     return "delivered";
   }
@@ -668,7 +686,6 @@ function getOrderStatusValue(order: OrderLineItem) {
     return "partial_delivered";
   }
 
-  // ✅ Priority 5: Shipping
   if (deliveryStatus === "shipped") {
     return "shipped";
   }
@@ -680,7 +697,6 @@ function getOrderStatusValue(order: OrderLineItem) {
   // Payment failure must override a generic pending state.
   if (isPaymentFailed(order)) return "payment_failed";
 
-  // ✅ Priority 6: Order lifecycle
   if (orderStatus === "confirmed") {
     return "confirmed";
   }
@@ -693,10 +709,8 @@ function getOrderStatusValue(order: OrderLineItem) {
     return "pending";
   }
 
-  // Prioritize payment failure over generic delivery state.
   if (isPaymentFailed(order)) return "payment_failed";
 
-  // Fallback to whatever is available
   return deliveryStatus || orderStatus || "";
 }
 
@@ -721,22 +735,44 @@ function getOrderStatusBadge(order: OrderLineItem) {
   };
 }
 
+// ✅ badge for the whole (parent) order — uses parent order_status
+function getGroupStatusBadge(group: OrderGroup) {
+  const first = group.lines[0];
+
+  let status = isPaymentFailed(first)
+    ? "payment_failed"
+    : normalizeStatus(first.order_status);
+
+  if (!status) {
+    status = getOrderStatusValue(first);
+  }
+
+  const style = STATUS_STYLES[status] ?? {
+    color: "#667085",
+    bg: "#f2f4f7",
+  };
+
+  return {
+    value: status,
+    label:
+      status === "payment_failed"
+        ? "Payment Failed"
+        : status
+          ? formatStatusLabel(status)
+          : "—",
+    color: style.color,
+    bg: style.bg,
+  };
+}
+
 /* -------------------------------------------------------------------------- */
 /* INVOICE ELIGIBILITY                                                        */
 /* -------------------------------------------------------------------------- */
 
-/**
- * ✅ UPDATED:
- * 1. Primary source: `invoice_available` from the GET /my-orders item.
- *    - true / 1 / "1" / "true"  → show invoice button (download allowed)
- *    - false / 0 / "0" / "false" → hide invoice button
- * 2. Fallback (only when API doesn't send `invoice_available` at all):
- *    old logic → eligible delivery status + invoice number present.
- */
 function canShowInvoice(order: OrderLineItem): boolean {
   const raw = order?.invoice_available;
 
-  // ✅ API flag present → it is the single source of truth
+  // API flag present → it is the single source of truth
   if (raw !== null && raw !== undefined && raw !== "") {
     if (typeof raw === "boolean") return raw;
     if (typeof raw === "number") return raw === 1;
@@ -750,7 +786,7 @@ function canShowInvoice(order: OrderLineItem): boolean {
     return false;
   }
 
-  // ↩️ Fallback: legacy logic when API doesn't send invoice_available
+  // Fallback: legacy logic when API doesn't send invoice_available
   const status = normalizeStatus(order.delivery_status);
 
   const INVOICE_ELIGIBLE_STATUSES = [
@@ -800,7 +836,7 @@ const TERMINAL_RETURN_STATUSES = [
 ];
 
 /* -------------------------------------------------------------------------- */
-/* RETURN HELPERS                                                              */
+/* RETURN HELPERS                                                             */
 /* -------------------------------------------------------------------------- */
 
 function findReturnForLine(order: OrderLineItem) {
@@ -1072,7 +1108,7 @@ function getReturnWindowInfo(order: OrderLineItem) {
 }
 
 function canInitiateReturn(order: OrderLineItem): boolean {
-  // ✅ HARD GATE: API flag must allow cancel/return
+  // HARD GATE: API flag must allow cancel/return
   if (!isCancelReturnAllowed(order)) {
     return false;
   }
@@ -1159,7 +1195,7 @@ function findCancellableReturn(order: OrderLineItem) {
 }
 
 function canCancelOrder(order: OrderLineItem) {
-  // ✅ HARD GATE: API flag must allow cancel/return
+  // HARD GATE: API flag must allow cancel/return
   if (!isCancelReturnAllowed(order)) {
     return false;
   }
@@ -1194,8 +1230,30 @@ function canWithdrawReturnRequest(order: OrderLineItem): boolean {
   return !!activeReturn;
 }
 
+/* -------------------------------------------------------------------------- */
+/* ORDER-LEVEL (whole order) HELPERS                                          */
+/* -------------------------------------------------------------------------- */
+
+const getReturnableLines = (lines: OrderLineItem[]) =>
+  lines.filter(canInitiateReturn);
+
+const getCancellableLines = (lines: OrderLineItem[]) =>
+  lines.filter(canCancelOrder);
+
+const getWithdrawCancelLines = (lines: OrderLineItem[]) =>
+  lines.filter(canWithdrawCancelOrder);
+
+const getActiveReturnIds = (lines: OrderLineItem[]): number[] =>
+  Array.from(
+    new Set(
+      lines
+        .map((l) => findCancellableReturn(l)?.returnId)
+        .filter((id): id is number => typeof id === "number"),
+    ),
+  );
+
 /**
- * ✅ UPDATED: Now prefers `refunded_amount` from the order line itself.
+ * Prefers `refunded_amount` from the order line itself.
  * Falls back to credit notes and return record totals.
  */
 function getRefundDetails(order: OrderLineItem) {
@@ -1213,7 +1271,7 @@ function getRefundDetails(order: OrderLineItem) {
     return null;
   }
 
-  // ✅ PRIORITY 1: refunded_amount directly on the order line (most accurate)
+  // PRIORITY 1: refunded_amount directly on the order line (most accurate)
   if (
     order.refunded_amount !== null &&
     order.refunded_amount !== undefined &&
@@ -1234,7 +1292,7 @@ function getRefundDetails(order: OrderLineItem) {
     }
   }
 
-  // ✅ PRIORITY 2: credit notes
+  // PRIORITY 2: credit notes
   const creditNotes = order.credit_notes || [];
 
   const matchingCreditNote = creditNotes.find(
@@ -1259,7 +1317,7 @@ function getRefundDetails(order: OrderLineItem) {
     };
   }
 
-  // ✅ PRIORITY 3: fallback to return record total_refund_amount
+  // PRIORITY 3: fallback to return record total_refund_amount
   const fallbackAmount = found?.returnObj?.total_refund_amount;
 
   if (fallbackAmount !== null && fallbackAmount !== undefined) {
@@ -1314,6 +1372,40 @@ const ModalShell = ({
       </motion.div>
     </motion.div>
   </AnimatePresence>
+);
+
+/* Compact product list shown inside Return / Cancel / Withdraw modals */
+const OrderLinesPreview = ({ lines }: { lines: OrderLineItem[] }) => (
+  <div className="mb-4 max-h-44 space-y-2 overflow-y-auto">
+    {lines.map((line) => (
+      <div
+        key={line.line_id}
+        className="flex items-center gap-3 rounded-[7px] border border-[#E4E4E2] bg-[#FAFAF9] p-2.5"
+      >
+        <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-white">
+          {line.primary_image ? (
+            <Image
+              src={line.primary_image}
+              alt={line.product_name || "Product"}
+              fill
+              sizes="44px"
+              className="object-cover"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center">
+              <Package className="h-4 w-4 text-[#999999]" />
+            </div>
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[12px] font-medium text-[#171717]">
+            {line.product_name}
+          </p>
+          <p className="mt-0.5 text-[10px] text-black">Qty: {line.quantity}</p>
+        </div>
+      </div>
+    ))}
+  </div>
 );
 
 /* ========================================================================== */
@@ -1996,7 +2088,6 @@ const OrderBreakupModal = ({
     (sum, l) => sum + moneyValue(l.refunded_amount),
     0,
   );
-  const paymentSummary = summary.tax_breakdown?.summary;
   const rowTax = (line: OrderLineItem) => {
     const item = Array.isArray(line.tax_breakdown?.items)
       ? line.tax_breakdown.items.find(
@@ -2323,158 +2414,6 @@ const OrderBreakupModal = ({
           </BreakupPanel>
         </div>
 
-        <BreakupPanel
-          title="Return / buyback & refund calculation"
-          description="Estimated eligibility does not mean a refund has been processed"
-        >
-          {orderLines.map((line) => {
-            const matchingReturns = uniqueReturns.filter((r: ReturnRecord) =>
-              r.items?.some(
-                (i) => Number(i.order_line_id) === Number(line.line_id),
-              ),
-            );
-            const refundProcessed = hasAmount(line.refunded_amount);
-            const hasRelatedReturn = matchingReturns.length > 0;
-            return (
-              <div
-                key={line.line_id}
-                className="border-b border-[#EEF1F4] py-3 last:border-0"
-              >
-                <div className="mb-1 flex flex-wrap justify-between gap-2">
-                  <h5 className="text-[12px] font-semibold text-[#1B293E]">
-                    {line.product_name}
-                  </h5>
-                  <span className="text-[10px] text-[#7E8C9B]">
-                    Line #{line.line_id}
-                  </span>
-                </div>
-                <div className="grid gap-x-6 sm:grid-cols-2">
-                  <div>
-                    <BreakupRow
-                      label="Item payable"
-                      value={showMoney(line.final_amount)}
-                    />
-                    <BreakupRow
-                      label="Shipping deduction"
-                      value={
-                        hasAmount(line.deducted_shipping_charges)
-                          ? `− ${showMoney(line.deducted_shipping_charges)}`
-                          : "—"
-                      }
-                      negative
-                    />
-                    <BreakupRow
-                      label="Gateway charges"
-                      value={
-                        hasAmount(line.gateway_charges)
-                          ? `− ${showMoney(line.gateway_charges)}`
-                          : "—"
-                      }
-                      negative
-                    />
-                    <BreakupRow
-                      label="Gateway charge %"
-                      value={
-                        hasAmount(line.gateway_charges_percent)
-                          ? `${line.gateway_charges_percent}%`
-                          : "—"
-                      }
-                    />
-                  </div>
-                  <div>
-                    <BreakupRow
-                      label="Potential returnable amount (API)"
-                      value={showMoney(line.total_returnable_amount)}
-                    />
-                    <BreakupRow
-                      label="Actual refunded (API)"
-                      value={
-                        refundProcessed
-                          ? showMoney(line.refunded_amount)
-                          : "Not refunded"
-                      }
-                      emphasized
-                    />
-                    <BreakupRow
-                      label="Returned qty"
-                      value={String(line.returned_quantity ?? 0)}
-                    />
-                    <BreakupRow
-                      label="Return status"
-                      value={formatStatusLabel(line.return_status)}
-                    />
-                  </div>
-                </div>
-                {matchingReturns.map((r: ReturnRecord) => (
-                  <div
-                    key={r.id}
-                    className="mt-2 rounded-xl border border-[#E7EDF2] bg-[#FAFCFE] p-3"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="text-[11px] font-semibold text-[#33445C]">
-                        {formatStatusLabel(r.type)} request #{r.id}
-                      </p>
-                      <span className="text-[10px] font-semibold text-[#58738B]">
-                        {formatStatusLabel(r.status)}
-                      </span>
-                    </div>
-                    <div className="grid gap-x-5 sm:grid-cols-2">
-                      <BreakupRow
-                        label="Requested refund (API)"
-                        value={showMoney(r.total_refund_amount)}
-                      />
-                      <BreakupRow
-                        label="Refund status"
-                        value={formatStatusLabel(r.refund_status)}
-                      />
-                      {r.refund_processed_at && (
-                        <BreakupRow
-                          label="Processed at"
-                          value={formatDate(r.refund_processed_at)}
-                        />
-                      )}
-                      {r.rejection_reason && (
-                        <BreakupRow
-                          label="Rejection reason"
-                          value={r.rejection_reason}
-                        />
-                      )}
-                    </div>
-                    {r.items
-                      ?.filter(
-                        (i) => Number(i.order_line_id) === Number(line.line_id),
-                      )
-                      .map((i, index) => (
-                        <p
-                          key={index}
-                          className="mt-1 text-[10px] leading-4 text-[#728095]"
-                        >
-                          Reason: {i.reason || "Not specified"} · Request qty:{" "}
-                          {i.quantity}
-                        </p>
-                      ))}
-                  </div>
-                ))}
-                {!hasRelatedReturn && (
-                  <p className="mt-2 text-[10px] text-[#8792A2]">
-                    No return/buyback request recorded for this item.
-                  </p>
-                )}
-              </div>
-            );
-          })}
-          {actualRefunds.length > 0 && (
-            <div className="flex items-center justify-between gap-3 py-3">
-              <span className="text-[12px] font-bold text-[#1E5948]">
-                Total actual refunds reported
-              </span>
-              <span className="text-[15px] font-bold text-[#1E7057]">
-                {formatCurrency(totalActualRefund)}
-              </span>
-            </div>
-          )}
-        </BreakupPanel>
-
         {creditNotes.length > 0 && (
           <BreakupPanel title="Credit notes">
             {creditNotes.map((n: any) => (
@@ -2509,39 +2448,8 @@ const OrderBreakupModal = ({
           </BreakupPanel>
         )}
 
-        <BreakupPanel
-          title="Order timeline"
-          description="Only milestones recorded by the API are displayed"
-        >
-          {timelineLabels
-            .filter(([key]) => (order.timeline as any)?.[key])
-            .map(([key, label]) => (
-              <BreakupRow
-                key={key}
-                label={label}
-                value={formatDate((order.timeline as any)[key])}
-              />
-            ))}
-          {order.timeline?.return_applicable_till && (
-            <BreakupRow
-              label="Return applicable until"
-              value={formatDate(order.timeline.return_applicable_till)}
-            />
-          )}
-        </BreakupPanel>
       </div>
-      <div className="flex shrink-0 items-center justify-between gap-3 border-t border-[#E8EBF0] bg-white px-4 py-3 sm:px-6">
-        <span className="text-[10px] text-[#9099A8]">
-          Figures shown directly from the order API
-        </span>
-        <button
-          type="button"
-          onClick={onClose}
-          className="inline-flex min-h-9 items-center justify-center rounded-lg bg-[#17243A] px-5 text-[11px] font-semibold text-white transition hover:bg-[#283B56]"
-        >
-          Close
-        </button>
-      </div>
+
     </ModalShell>
   );
 };
@@ -3174,15 +3082,15 @@ const ViewReviewModal = ({ isOpen, onClose, order }: ViewReviewModalProps) => {
 };
 
 /* ========================================================================== */
-/* RETURN MODAL                                                               */
+/* RETURN MODAL (whole order)                                                 */
 /* ========================================================================== */
 
 interface ReturnModalProps {
   isOpen: boolean;
   onClose: () => void;
-  order: OrderLineItem | null;
+  lines: OrderLineItem[];
+  reference: string;
   onSubmit: (data: {
-    quantity: number;
     reason: string;
     images: File[];
     return_method: ReturnMethod;
@@ -3195,7 +3103,8 @@ interface ReturnModalProps {
 const ReturnModal = ({
   isOpen,
   onClose,
-  order,
+  lines,
+  reference,
   onSubmit,
   isUploading,
 }: ReturnModalProps) => {
@@ -3297,8 +3206,8 @@ const ReturnModal = ({
   const handleSubmit = async () => {
     setError("");
 
-    if (!order) {
-      return setError("Order information is missing.");
+    if (!lines.length) {
+      return setError("No returnable items in this order.");
     }
 
     if (reason.trim().length < 10) {
@@ -3317,7 +3226,6 @@ const ReturnModal = ({
 
     try {
       await onSubmit({
-        quantity: order.available_for_return || order.quantity || 1,
         reason: reason.trim(),
         images,
         return_method: returnMethod,
@@ -3341,11 +3249,16 @@ const ReturnModal = ({
     return null;
   }
 
-  const maxReturn = order?.available_for_return || order?.quantity || 1;
+  // earliest closing return window among all products
+  const till = lines
+    .map((l) => l.timeline?.return_applicable_till)
+    .filter((v): v is string => !!v)
+    .sort(
+      (a, b) =>
+        (parseDate(a)?.getTime() ?? 0) - (parseDate(b)?.getTime() ?? 0),
+    )[0];
 
-  const till = order?.timeline?.return_applicable_till;
-
-  const windowInfo = order ? getReturnWindowInfo(order) : null;
+  const windowOpen = !!till && isReturnWindowOpen(till);
 
   const reasonLength = reason.trim().length;
 
@@ -3353,7 +3266,7 @@ const ReturnModal = ({
     !isSubmitting &&
     !isUploading &&
     reasonLength >= 10 &&
-    !!order &&
+    lines.length > 0 &&
     (returnMethod !== "courier" ||
       (courierName.trim().length > 0 && trackingId.trim().length > 0));
 
@@ -3367,11 +3280,12 @@ const ReturnModal = ({
 
           <div>
             <h3 className="text-[15px] font-semibold text-[#171717]">
-              Return Request
+              Return Order
             </h3>
 
             <p className="mt-0.5 text-[9.5px] text-[#999999]">
-              Provide the details below to request a return.
+              Order {reference} • {lines.length} item
+              {lines.length === 1 ? "" : "s"}
             </p>
           </div>
         </div>
@@ -3387,41 +3301,11 @@ const ReturnModal = ({
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-5 py-3.5">
-        {order && (
-          <div className="mb-3 flex items-center gap-3 rounded-[7px] border border-[#E4E4E2] bg-[#FAFAF9] p-2.5">
-            <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-white">
-              {order.primary_image ? (
-                <Image
-                  src={order.primary_image}
-                  alt={order.product_name || "Product"}
-                  fill
-                  sizes="48px"
-                  className="object-cover"
-                />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center">
-                  <Package className="h-4 w-4 text-[#999999]" />
-                </div>
-              )}
-            </div>
+        <OrderLinesPreview lines={lines} />
 
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-[12px] font-medium text-[#171717]">
-                {order.product_name}
-              </p>
-
-              <p className="mt-0.5 text-[10px] text-black">
-                Ordered: {order.quantity}
-                {" • "}
-                Returnable: {maxReturn}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {till && windowInfo && (
+        {till && (
           <div
-            className={`mb-3 flex items-center gap-1.5 rounded-[6px] border px-3 py-2 text-[10px] font-medium ${windowInfo.state === "open"
+            className={`mb-3 flex items-center gap-1.5 rounded-[6px] border px-3 py-2 text-[10px] font-medium ${windowOpen
               ? "border-[#CFE0D4] bg-[#F1F7F3] text-[#3F765A]"
               : "border-[#F0CFCF] bg-[#FDF2F2] text-[#B24C4C]"
               }`}
@@ -3429,9 +3313,7 @@ const ReturnModal = ({
             <Clock size={12} />
 
             <span>
-              {windowInfo.state === "open"
-                ? "Return window closes on"
-                : "Return window closed on"}{" "}
+              {windowOpen ? "Return window closes on" : "Return window closed on"}{" "}
               <span className="font-semibold">{formatDate(till)}</span>
             </span>
           </div>
@@ -3617,7 +3499,7 @@ const ReturnModal = ({
           <textarea
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            placeholder="Please describe why you want to return this item..."
+            placeholder="Please describe why you want to return this order..."
             maxLength={500}
             disabled={isSubmitting || isUploading}
             className="h-[82px] w-full resize-none rounded-[7px] border border-[#D7D7D5] bg-[#FAFAF9] px-3 py-2.5 text-[12px] leading-5 text-black outline-none placeholder:text-[#AAAAAA] disabled:opacity-60"
@@ -3768,13 +3650,14 @@ const ReturnModal = ({
 };
 
 /* ========================================================================== */
-/* CANCEL MODAL                                                               */
+/* CANCEL MODAL (whole order)                                                 */
 /* ========================================================================== */
 
 interface CancelModalProps {
   isOpen: boolean;
   onClose: () => void;
-  order: OrderLineItem | null;
+  lines: OrderLineItem[];
+  reference: string;
   onSubmit: (reason: string) => Promise<void>;
   isUploading?: boolean;
 }
@@ -3782,7 +3665,8 @@ interface CancelModalProps {
 const CancelModal = ({
   isOpen,
   onClose,
-  order,
+  lines,
+  reference,
   onSubmit,
   isUploading,
 }: CancelModalProps) => {
@@ -3830,9 +3714,12 @@ const CancelModal = ({
             <X className="h-4 w-4 text-[#DC2626]" />
           </div>
 
-          <h3 className="text-[15px] font-semibold text-[#171717]">
-            Cancel Order
-          </h3>
+          <div>
+            <h3 className="text-[15px] font-semibold text-[#171717]">
+              Cancel Order
+            </h3>
+            <p className="text-[10px] text-[#999999]">{reference}</p>
+          </div>
         </div>
 
         <button
@@ -3847,39 +3734,13 @@ const CancelModal = ({
       <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
         <div className="mb-4 rounded-[7px] border border-[#F0CFCF] bg-[#FDF2F2] p-3">
           <p className="text-[11px] leading-4 text-[#B24C4C]">
-            <strong>Warning:</strong> This action cannot be undone. The order
-            will be cancelled immediately.
+            <strong>Warning:</strong> All {lines.length} cancellable item
+            {lines.length === 1 ? "" : "s"} of this order will be cancelled.
+            This action cannot be undone.
           </p>
         </div>
 
-        {order && (
-          <div className="mb-4 flex items-center gap-3 rounded-[7px] border border-[#E4E4E2] bg-[#FAFAF9] p-3">
-            <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-white">
-              {order.primary_image ? (
-                <Image
-                  src={order.primary_image}
-                  alt={order.product_name}
-                  fill
-                  className="object-cover"
-                />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center">
-                  <Package className="h-4 w-4 text-[#999999]" />
-                </div>
-              )}
-            </div>
-
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-[12px] font-medium text-[#171717]">
-                {order.product_name}
-              </p>
-
-              <p className="mt-0.5 text-[10px] text-black">
-                Order #{order.order_reference}
-              </p>
-            </div>
-          </div>
-        )}
+        <OrderLinesPreview lines={lines} />
 
         <div className="mb-4">
           <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-black">
@@ -3930,7 +3791,7 @@ const CancelModal = ({
             ) : (
               <>
                 <X className="h-3.5 w-3.5" />
-                Cancel request
+                Cancel Order
               </>
             )}
           </button>
@@ -3941,14 +3802,14 @@ const CancelModal = ({
 };
 
 /* ========================================================================== */
-/* CANCEL RETURN MODAL                                                        */
+/* CANCEL RETURN MODAL (whole order)                                          */
 /* ========================================================================== */
 
 interface CancelReturnModalProps {
   isOpen: boolean;
   onClose: () => void;
-  order: OrderLineItem | null;
-  returnId: number | null;
+  lines: OrderLineItem[];
+  reference: string;
   onSubmit: () => Promise<void>;
   isUploading?: boolean;
 }
@@ -3956,8 +3817,8 @@ interface CancelReturnModalProps {
 const CancelReturnModal = ({
   isOpen,
   onClose,
-  order,
-  returnId,
+  lines,
+  reference,
   onSubmit,
   isUploading,
 }: CancelReturnModalProps) => {
@@ -3973,12 +3834,6 @@ const CancelReturnModal = ({
 
   const handleSubmit = async () => {
     setError("");
-
-    if (!returnId) {
-      setError("Return ID is missing.");
-      return;
-    }
-
     setIsSubmitting(true);
 
     try {
@@ -3999,7 +3854,9 @@ const CancelReturnModal = ({
     return null;
   }
 
-  const till = order?.timeline?.return_applicable_till;
+  const till = lines
+    .map((l) => l.timeline?.return_applicable_till)
+    .filter((v): v is string => !!v)[0];
 
   return (
     <ModalShell onClose={onClose} maxWidth="max-w-md">
@@ -4009,9 +3866,12 @@ const CancelReturnModal = ({
             <X className="h-4 w-4 text-[#DC2626]" />
           </div>
 
-          <h3 className="text-[15px] font-semibold text-[#171717]">
-            Cancel Return Request
-          </h3>
+          <div>
+            <h3 className="text-[15px] font-semibold text-[#171717]">
+              Withdraw Return Request
+            </h3>
+            <p className="text-[10px] text-[#999999]">{reference}</p>
+          </div>
         </div>
 
         <button
@@ -4026,44 +3886,12 @@ const CancelReturnModal = ({
       <div className="px-5 py-5">
         <div className="mb-4 rounded-[7px] border border-[#F0CFCF] bg-[#FDF2F2] p-3">
           <p className="text-[11px] leading-4 text-[#B24C4C]">
-            <strong>Warning:</strong> This will permanently cancel your return
-            request for this item.
+            <strong>Warning:</strong> Return request for all items below will
+            be cancelled.
           </p>
         </div>
 
-        {order && (
-          <div className="flex items-center gap-3 rounded-[7px] border border-[#E4E4E2] bg-[#FAFAF9] p-3">
-            <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-white">
-              {order.primary_image ? (
-                <Image
-                  src={order.primary_image}
-                  alt={order.product_name}
-                  fill
-                  className="object-cover"
-                />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center">
-                  <Package className="h-4 w-4 text-[#999999]" />
-                </div>
-              )}
-            </div>
-
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-[12px] font-medium text-[#171717]">
-                {order.product_name}
-              </p>
-
-              <p className="mt-0.5 text-[10px] text-black">
-                Order #{order.order_reference}
-                {returnId && (
-                  <span className="ml-1 text-[#AAAAAA]">
-                    • Return #{returnId}
-                  </span>
-                )}
-              </p>
-            </div>
-          </div>
-        )}
+        <OrderLinesPreview lines={lines} />
 
         {till && (
           <div className="mt-3 flex items-center gap-1.5 rounded-[6px] border border-[#FDE68A] bg-[#FFFBEB] px-3 py-2 text-[10.5px] font-medium text-[#B45309]">
@@ -4105,12 +3933,12 @@ const CancelReturnModal = ({
             {isSubmitting || isUploading ? (
               <>
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                Cancelling...
+                Withdrawing...
               </>
             ) : (
               <>
                 <X className="h-3.5 w-3.5" />
-                Confirm Cancel
+                Confirm Withdraw
               </>
             )}
           </button>
@@ -4121,13 +3949,14 @@ const CancelReturnModal = ({
 };
 
 /* ========================================================================== */
-/* WITHDRAW MODAL                                                             */
+/* WITHDRAW CANCEL MODAL (whole order)                                        */
 /* ========================================================================== */
 
 interface WithdrawModalProps {
   isOpen: boolean;
   onClose: () => void;
-  order: OrderLineItem | null;
+  lines: OrderLineItem[];
+  reference: string;
   title: string;
   message: string;
   onSubmit: () => Promise<void>;
@@ -4137,7 +3966,8 @@ interface WithdrawModalProps {
 const WithdrawModal = ({
   isOpen,
   onClose,
-  order,
+  lines,
+  reference,
   title,
   message,
   onSubmit,
@@ -4181,7 +4011,12 @@ const WithdrawModal = ({
             <Undo2 className="h-4 w-4 text-[#B45309]" />
           </div>
 
-          <h3 className="text-[15px] font-semibold text-[#171717]">{title}</h3>
+          <div>
+            <h3 className="text-[15px] font-semibold text-[#171717]">
+              {title}
+            </h3>
+            <p className="text-[10px] text-[#999999]">{reference}</p>
+          </div>
         </div>
 
         <button
@@ -4200,34 +4035,7 @@ const WithdrawModal = ({
           </p>
         </div>
 
-        {order && (
-          <div className="flex items-center gap-3 rounded-[7px] border border-[#E4E4E2] bg-[#FAFAF9] p-3">
-            <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-white">
-              {order.primary_image ? (
-                <Image
-                  src={order.primary_image}
-                  alt={order.product_name}
-                  fill
-                  className="object-cover"
-                />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center">
-                  <Package className="h-4 w-4 text-[#999999]" />
-                </div>
-              )}
-            </div>
-
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-[12px] font-medium text-[#171717]">
-                {order.product_name}
-              </p>
-
-              <p className="mt-0.5 text-[10px] text-black">
-                Order #{order.order_reference}
-              </p>
-            </div>
-          </div>
-        )}
+        <OrderLinesPreview lines={lines} />
 
         {error && (
           <div className="mt-3 flex items-start gap-2 rounded-[7px] border border-[#F0CFCF] bg-[#FDF2F2] p-3">
@@ -4274,19 +4082,14 @@ const WithdrawModal = ({
 };
 
 /* ========================================================================== */
-/* ACTION DROPDOWN                                                            */
+/* ACTION DROPDOWN (three-dot menu, per product): Track / Invoice / Review    */
 /* ========================================================================== */
 
 interface ActionDropdownProps {
   order: OrderLineItem;
   onReview: () => void;
   onViewReview: () => void;
-  onReturn: () => void;
-  onCancel: () => void;
   onTrack: () => void;
-  onCancelReturn: (returnId: number) => void;
-  onWithdrawCancel: () => void;
-  onWithdrawReturn: () => void;
   onInvoiceDownload: () => void;
   isInvoiceLoading?: boolean;
 }
@@ -4295,12 +4098,7 @@ const ActionDropdown = ({
   order,
   onReview,
   onViewReview,
-  onReturn,
-  onCancel,
   onTrack,
-  onCancelReturn,
-  onWithdrawCancel,
-  onWithdrawReturn,
   onInvoiceDownload,
   isInvoiceLoading = false,
 }: ActionDropdownProps) => {
@@ -4316,7 +4114,7 @@ const ActionDropdown = ({
   const buttonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const MENU_WIDTH = 180;
+  const MENU_WIDTH = 190;
   const MENU_OFFSET_X = 12;
 
   const updateCoords = () => {
@@ -4326,7 +4124,7 @@ const ActionDropdown = ({
 
     const rect = buttonRef.current.getBoundingClientRect();
 
-    const menuHeight = 360;
+    const menuHeight = 200;
 
     const spaceBelow = window.innerHeight - rect.bottom;
 
@@ -4402,14 +4200,6 @@ const ActionDropdown = ({
 
   const canReview =
     deliveryStatus === "delivered" || orderStatus === "delivered";
-
-  const canReturn = canInitiateReturn(order);
-  const canCancel = canCancelOrder(order);
-
-  const canWithdrawCancel = canWithdrawCancelOrder(order);
-
-  const cancellableReturn = findCancellableReturn(order);
-  const canCancelReturn = !!cancellableReturn;
 
   const handleAction = (action: () => void) => {
     action();
@@ -4488,52 +4278,6 @@ const ActionDropdown = ({
               <span>{hasReview ? "View Review" : "Write Review"}</span>
             </button>
           )}
-
-          {canReturn && (
-            <button
-              onClick={() => handleAction(onReturn)}
-              className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#344054] hover:bg-[#f7f8fa]"
-            >
-              <RotateCcw className="h-3.5 w-3.5 flex-shrink-0 text-[#EA580C]" />
-
-              <span>Return Item</span>
-            </button>
-          )}
-
-          {canCancelReturn && cancellableReturn && (
-            <button
-              onClick={() =>
-                handleAction(() => onCancelReturn(cancellableReturn.returnId))
-              }
-              className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#DC2626] hover:bg-[#FEF2F2]"
-            >
-              <X className="h-3.5 w-3.5 flex-shrink-0" />
-
-              <span>Withdraw Return Request</span>
-            </button>
-          )}
-
-          {canCancel && (
-            <button
-              onClick={() => handleAction(onCancel)}
-              className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#DC2626] hover:bg-[#FEF2F2]"
-            >
-              <X className="h-3.5 w-3.5 flex-shrink-0" />
-
-              <span>Cancel Order</span>
-            </button>
-          )}
-
-          {canWithdrawCancel && (
-            <button
-              onClick={() => handleAction(onWithdrawCancel)}
-              className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] text-[#DC2626] hover:bg-[#FFFBEB]"
-            >
-              <Undo2 className="h-3.5 w-3.5 flex-shrink-0" />
-
-              <span>Withdraw Cancel Request</span>
-            </button>
-          )}
         </motion.div>
       </AnimatePresence>,
       document.body,
@@ -4560,491 +4304,607 @@ const ActionDropdown = ({
 };
 
 /* ========================================================================== */
-/* ORDER DETAILS                                                              */
+/* ORDER ACTION DROPDOWN (three-dot menu on ORDER header)                     */
 /* ========================================================================== */
 
-interface OrderDetailsProps {
-  order: OrderLineItem;
-  allOrders: OrderLineItem[];
-  onTrack: () => void;
-  onViewBreakup: () => void;
-  onReturn: (order: OrderLineItem) => void;
-  onInvoiceDownload: (order: OrderLineItem) => void;
-  isInvoiceLoading?: boolean;
+interface OrderActionDropdownProps {
+  group: OrderGroup;
+  onReturn: () => void;
+  onCancel: () => void;
+  onWithdrawReturn: () => void;
+  onWithdrawCancel: () => void;
 }
 
-const OrderDetails = ({
-  order,
-  allOrders,
-  onTrack,
-  onViewBreakup,
+const OrderActionDropdown = ({
+  group,
   onReturn,
-  onInvoiceDownload,
-  isInvoiceLoading = false,
-}: OrderDetailsProps) => {
-  const orderLines = useMemo(() => {
-    const lines = allOrders.filter(
-      (item) => Number(item.order_id) === Number(order.order_id),
-    );
+  onCancel,
+  onWithdrawReturn,
+  onWithdrawCancel,
+}: OrderActionDropdownProps) => {
+  const router = useRouter();
+  const [isOpen, setIsOpen] = useState(false);
+  const [coords, setCoords] = useState({
+    top: 0,
+    left: 0,
+    width: 0,
+    openUp: false,
+  });
 
-    const fallback = lines.length > 0 ? lines : [order];
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
-    return [...fallback].sort((a, b) => Number(a.line_id) - Number(b.line_id));
-  }, [allOrders, order]);
+  const MENU_WIDTH = 210;
 
-  const refundDetails = orderLines
-    .map((line) => getRefundDetails(line))
-    .find((refund) => refund?.amount !== null && refund?.amount !== undefined);
+  const updateCoords = () => {
+    if (!buttonRef.current) return;
 
-  return (
-    <motion.div
-      initial={{ opacity: 0, height: 0 }}
-      animate={{ opacity: 1, height: "auto" }}
-      exit={{ opacity: 0, height: 0 }}
-      transition={{ duration: 0.25, ease: "easeInOut" }}
-      className="overflow-hidden border-b border-[#e7e9ee] bg-[#fafbfc]"
-    >
-      <div className="px-4 py-4 sm:px-6 sm:py-5">
-        <div className="mb-5 overflow-hidden rounded-[11px] border border-[#e1e5eb] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.03)]">
-          <div className="grid grid-cols-1 gap-x-8 gap-y-5 px-4 py-5 sm:grid-cols-2 sm:px-5 md:grid-cols-3">
-            <div>
-              <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#8a92a6]">
-                Item Reference
-              </p>
-              <p className="mt-1.5 truncate text-[13px] font-semibold text-[#101828]">
-                {order.item_reference_id || `#${order.line_id}`}
-              </p>
-            </div>
+    const rect = buttonRef.current.getBoundingClientRect();
+    const openUp = window.innerHeight - rect.bottom < 220;
 
-            <div>
-              <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#8a92a6]">
-                Payment Status
-              </p>
-              <span
-                className="mt-1.5 inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold capitalize"
-                style={{
-                  color:
-                    normalizeStatus(order.payment_status) === "paid"
-                      ? EMERALD
-                      : BRASS,
-                  backgroundColor:
-                    normalizeStatus(order.payment_status) === "paid"
-                      ? "#eaf7f0"
-                      : "#f8f1e4",
-                }}
-              >
-                {order.payment_status || "—"}
-              </span>
-            </div>
+    let left = rect.right - MENU_WIDTH;
 
-            <div>
-              <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#8a92a6]">
-                Payment Method
-              </p>
-              <p className="mt-1.5 text-[13px] font-medium capitalize text-[#101828]">
-                {order.payment_gateway || "—"}
-              </p>
-            </div>
+    if (left < 8) left = 8;
+    if (left + MENU_WIDTH > window.innerWidth - 8) {
+      left = window.innerWidth - MENU_WIDTH - 8;
+    }
 
-            <div>
-              <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#8a92a6]">
-                Transaction ID
-              </p>
-              <p className="mt-1.5 truncate text-[12.5px] font-medium text-[#101828]">
-                {order.gateway_transaction_id || "—"}
-              </p>
-            </div>
+    setCoords({
+      top: openUp ? rect.top - 6 : rect.bottom + 6,
+      left,
+      width: MENU_WIDTH,
+      openUp,
+    });
+  };
 
-            <div>
-              <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#8a92a6]">
-                Total Payable
-              </p>
-              <p className="mt-1.5 text-[16px] font-bold text-[#101828]">
-                {formatCurrency(
-                  order.final_amount ??
-                  order.total_payable ??
-                  order.amount_paid ??
-                  0,
-                )}
-              </p>
-            </div>
+  const handleToggle = () => {
+    if (!isOpen) updateCoords();
+    setIsOpen((v) => !v);
+  };
 
-            <div>
-              <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#8a92a6]">
-                Coins
-              </p>
-              <p className="mt-1.5 inline-flex items-center gap-1 text-[13px] font-semibold text-[#1F7A56]">
-                <Coins size={13} />
-                {order.coin_redeemed || 0}
-              </p>
-            </div>
-          </div>
+  useEffect(() => {
+    if (!isOpen) return;
 
-          <div className="border-t border-[#edf0f3] px-4 py-4 sm:px-5">
-            <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#8a92a6]">
-              Shipping Address
-            </p>
-            <div className="mt-1.5 flex items-start gap-2 text-[12.5px] leading-5 text-[#344054]">
-              <MapPin
-                size={14}
-                className="mt-0.5 flex-shrink-0 text-[#98a2b3]"
-              />
-              <span className="break-words">
-                {order.delivery_address?.full_address ||
-                  order.delivery_address?.address ||
-                  "—"}
-              </span>
-            </div>
-          </div>
+    const handler = () => updateCoords();
 
-          {/* ✅ REFUND PROCESSED — Uses actual refunded_amount */}
-          {refundDetails?.amount !== null &&
-            refundDetails?.amount !== undefined && (
-              <div className="border-t border-[#edf0f3] px-4 py-4 sm:px-5">
-                <div className="rounded-[9px] border border-[#CFE0D4] bg-[#F6FBF7] p-3.5">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="flex items-center gap-1.5 text-[9.5px] font-semibold uppercase tracking-[0.08em] text-[#6D8679]">
-                        <Check size={12} />
-                        Refund Processed
-                      </p>
-                      <p className="mt-1 text-[20px] font-bold text-[#1F7A56]">
-                        {formatCurrency(refundDetails.amount)}
-                      </p>
-                    </div>
+    window.addEventListener("scroll", handler, true);
+    window.addEventListener("resize", handler);
 
-                    <span className="inline-flex rounded-full border border-[#CFE0D4] bg-white px-2.5 py-1 text-[9.5px] font-semibold uppercase tracking-wide text-[#1F7A56]">
-                      {refundDetails.status}
-                    </span>
-                  </div>
+    return () => {
+      window.removeEventListener("scroll", handler, true);
+      window.removeEventListener("resize", handler);
+    };
+  }, [isOpen]);
 
-                  {refundDetails.issuedAt && (
-                    <p className="mt-2 text-[9.5px] text-[#789084]">
-                      Processed on{" "}
-                      <span className="font-semibold">
-                        {formatDate(refundDetails.issuedAt)}
-                      </span>
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
+  useEffect(() => {
+    if (!isOpen) return;
 
-          <div className="flex flex-wrap items-center justify-between gap-2.5 border-t border-[#edf0f3] px-4 py-4 sm:px-5">
+    const handler = (e: MouseEvent) => {
+      if (
+        buttonRef.current?.contains(e.target as Node) ||
+        menuRef.current?.contains(e.target as Node)
+      )
+        return;
+
+      setIsOpen(false);
+    };
+
+    document.addEventListener("mousedown", handler);
+
+    return () => document.removeEventListener("mousedown", handler);
+  }, [isOpen]);
+
+  const canReturn = getReturnableLines(group.lines).length > 0;
+  const canCancel = getCancellableLines(group.lines).length > 0;
+  const canWithdrawReturn = getActiveReturnIds(group.lines).length > 0;
+  const canWithdrawCancel = getWithdrawCancelLines(group.lines).length > 0;
+
+  // is_cancel_return_allowed = false → Cancel / Return buttons hidden completely
+  const permissionAllowed = group.lines.some(isCancelReturnAllowed);
+
+  const handleAction = (action: () => void) => {
+    action();
+    setIsOpen(false);
+  };
+
+  const itemBase =
+    "flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] disabled:cursor-not-allowed disabled:opacity-40";
+
+  const menu = isOpen
+    ? createPortal(
+      <AnimatePresence>
+        <motion.div
+          ref={menuRef}
+          initial={{ opacity: 0, y: coords.openUp ? 6 : -6, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: coords.openUp ? 6 : -6, scale: 0.98 }}
+          transition={{ duration: 0.15 }}
+          style={{
+            position: "fixed",
+            top: coords.top,
+            left: coords.left,
+            width: coords.width,
+            transform: coords.openUp ? "translateY(-100%)" : "translateY(0)",
+            zIndex: 9999,
+          }}
+          className="overflow-hidden rounded-[8px] border border-[#e5e9ef] bg-white shadow-[0_8px_24px_rgba(16,24,40,0.15)]"
+        >
+          {/* Before delivery → Cancel. After delivery → Return. */}
+          {permissionAllowed && (canCancel || (!canCancel && !canReturn)) && (
             <button
               type="button"
-              onClick={onTrack}
-              className="inline-flex items-center gap-1.5 rounded-[7px] border border-[#C9D5F7] bg-[#F4F6FC] px-3.5 py-2 text-[11px] font-semibold text-[#3955A6] transition-colors hover:bg-[#ECEFFC]"
+              disabled={!canCancel}
+              onClick={() => handleAction(onCancel)}
+              className={`${itemBase} text-[#DC2626] hover:bg-[#FEF2F2]`}
             >
-              <Truck size={14} />
-              Track Shipment
+              <X className="h-3.5 w-3.5 flex-shrink-0" />
+              <span>Cancel Order</span>
             </button>
+          )}
 
-            <div className="flex items-center gap-2">
-              {canShowInvoice(order) && (
-                <button
-                  type="button"
-                  onClick={() => onInvoiceDownload(order)}
-                  disabled={isInvoiceLoading}
-                  className="inline-flex items-center gap-1.5 rounded-[7px] border border-[#D7D7D5] bg-white px-3.5 py-2 text-[11px] font-semibold text-[#171717] transition-colors hover:bg-[#FAFAF9] disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {isInvoiceLoading ? (
-                    <>
-                      <Loader2 size={14} className="animate-spin" />
-                      Loading...
-                    </>
-                  ) : (
-                    <>
-                      <FileText size={14} />
-                      Invoice
-                    </>
-                  )}
-                </button>
-              )}
+          {permissionAllowed && (canReturn || (!canCancel && !canReturn)) && (
+            <button
+              type="button"
+              disabled={!canReturn}
+              onClick={() => handleAction(onReturn)}
+              className={`${itemBase} text-[#344054] hover:bg-[#f7f8fa]`}
+            >
+              <RotateCcw className="h-3.5 w-3.5 flex-shrink-0 text-[#EA580C]" />
+              <span>Return Order</span>
+            </button>
+          )}
 
-              <button
-                type="button"
-                onClick={onViewBreakup}
-                className="inline-flex items-center gap-1.5 rounded-[7px] border border-[#C9D5F7] bg-[#F4F6FC] px-3.5 py-2 text-[11px] font-semibold text-[#3955A6] transition-colors hover:bg-[#ECEFFC]"
-              >
-                <LuReceiptIndianRupee size={14} />
-                Full Breakdown
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </motion.div>
+          {canWithdrawReturn && (
+            <button
+              type="button"
+              onClick={() => handleAction(onWithdrawReturn)}
+              className={`${itemBase} border-t border-[#f0f2f5] text-[#DC2626] hover:bg-[#FEF2F2]`}
+            >
+              <Undo2 className="h-3.5 w-3.5 flex-shrink-0" />
+              <span>Withdraw Return Request</span>
+            </button>
+          )}
+
+          {canWithdrawCancel && (
+            <button
+              type="button"
+              onClick={() => handleAction(onWithdrawCancel)}
+              className={`${itemBase} border-t border-[#f0f2f5] text-[#B45309] hover:bg-[#FFFBEB]`}
+            >
+              <Undo2 className="h-3.5 w-3.5 flex-shrink-0" />
+              <span>Withdraw Cancel Request</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => handleAction(() => router.push("/contact/"))}
+            className={`${itemBase} border-t border-[#f0f2f5] text-[#344054] hover:bg-[#f7f8fa]`}
+          >
+            <Info className="h-3.5 w-3.5 flex-shrink-0 text-[#3955A6]" />
+            <span>Support</span>
+          </button>
+        </motion.div>
+      </AnimatePresence>,
+      document.body,
+    )
+    : null;
+
+  return (
+    <div className="relative">
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={handleToggle}
+        aria-label="Order actions"
+        className={`flex h-8 w-8 items-center justify-center rounded-[6px] border transition-colors ${isOpen
+          ? "border-[#0E1B3D]/30 bg-[#f7f8fa] text-[#0E1B3D]"
+          : "border-[#e5e9ef] bg-white text-[#344054] hover:bg-[#f7f8fa]"
+          }`}
+      >
+        <MoreVertical size={16} />
+      </button>
+
+      {menu}
+    </div>
   );
 };
 
 /* ========================================================================== */
-/* MOBILE ORDER CARD                                                          */
+/* ORDER ITEM ROW (one product inside an order)                               */
 /* ========================================================================== */
 
-interface MobileOrderCardProps {
+interface OrderItemRowProps {
   order: OrderLineItem;
-  allOrders: OrderLineItem[];
-  isExpanded: boolean;
-  onToggle: () => void;
-  // ✅ NEW: onProductClick replaces onImageClick
   onProductClick: () => void;
   onTrack: () => void;
-  onViewBreakup: () => void;
   onReview: () => void;
   onViewReview: () => void;
-  onReturn: (order: OrderLineItem) => void;
-  onCancel: () => void;
-  onCancelReturn: (returnId: number) => void;
-  onWithdrawCancel: () => void;
-  onWithdrawReturn: () => void;
-  onInvoiceDownload: (order: OrderLineItem) => void;
+  onInvoiceDownload: () => void;
   isInvoiceLoading?: boolean;
+}
+
+const OrderItemRow = ({
+  order,
+  onProductClick,
+  onTrack,
+  onReview,
+  onViewReview,
+  onInvoiceDownload,
+  isInvoiceLoading = false,
+}: OrderItemRowProps) => {
+  const statusBadge = getOrderStatusBadge(order);
+  const returnBadge = getReturnStatusBadge(order);
+  const returnWindow = getReturnWindowInfo(order);
+  const refund = getRefundDetails(order);
+
+  return (
+    <div className="border-b border-dashed border-[#e7e9ee] px-3 py-4 last:border-b-0 sm:px-5">
+      <div className="flex items-start gap-3">
+        {/* Product image → product page */}
+        <button
+          type="button"
+          onClick={onProductClick}
+          className="relative h-16 w-16 shrink-0 cursor-pointer overflow-hidden rounded-[8px] border border-[#E4E4E2] bg-white transition-opacity hover:opacity-80 sm:h-[72px] sm:w-[72px]"
+          title={`View ${order.product_name}`}
+        >
+          {order.primary_image ? (
+            <Image
+              src={order.primary_image}
+              alt={order.product_name || "Product"}
+              fill
+              sizes="72px"
+              className="object-cover"
+            />
+          ) : (
+            <span className="flex h-full w-full items-center justify-center">
+              <Package className="h-5 w-5 text-[#999999]" />
+            </span>
+          )}
+        </button>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              {/* Product name → product page */}
+              <p
+                onClick={onProductClick}
+                className="cursor-pointer truncate text-[13px] font-semibold text-[#101828] transition-colors hover:text-[#0E1B3D] hover:underline"
+                title={`View ${order.product_name}`}
+              >
+                {order.product_name}
+              </p>
+
+              <p className="mt-0.5 truncate text-[10.5px] text-[#98a2b3]">
+                {order.item_reference_id || `Line #${order.line_id}`}
+                {order.product_code ? ` • ${order.product_code}` : ""}
+              </p>
+            </div>
+
+            {/* ✅ Item ⋮ menu: Track, Invoice, Review only */}
+            <ActionDropdown
+              order={order}
+              onReview={onReview}
+              onViewReview={onViewReview}
+              onTrack={onTrack}
+              onInvoiceDownload={onInvoiceDownload}
+              isInvoiceLoading={isInvoiceLoading}
+            />
+          </div>
+
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            <span
+              className="rounded-[6px] px-2 py-1 text-[10px] font-semibold capitalize"
+              style={{
+                color: statusBadge.color,
+                backgroundColor: statusBadge.bg,
+              }}
+            >
+              {statusBadge.label}
+            </span>
+
+            {returnBadge && (
+              <span
+                className="rounded-[6px] px-2 py-1 text-[10px] font-semibold capitalize"
+                style={{
+                  color: returnBadge.color,
+                  backgroundColor: returnBadge.bg,
+                }}
+              >
+                {returnBadge.label}
+              </span>
+            )}
+          </div>
+
+          <div className="mt-3 grid grid-cols-2 gap-2 text-[11px] sm:grid-cols-4">
+            <div>
+              <p className="text-[9.5px] uppercase tracking-wide text-[#98a2b3]">
+                Unit Price
+              </p>
+              <p className="mt-0.5 font-semibold text-[#101828]">
+                {formatCurrency(order.unit_price)}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-[9.5px] uppercase tracking-wide text-[#98a2b3]">
+                Qty
+              </p>
+              <p className="mt-0.5 font-semibold text-[#101828]">
+                {order.quantity}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-[9.5px] uppercase tracking-wide text-[#98a2b3]">
+                Shipping
+              </p>
+              <p className="mt-0.5 font-semibold text-[#101828]">
+                {formatCurrency(order.delivery_charges ?? 0)}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-[9.5px] uppercase tracking-wide text-[#98a2b3]">
+                Item Total
+              </p>
+              <p className="mt-0.5 font-bold text-[#101828]">
+                {formatCurrency(order.final_amount ?? order.line_total)}
+              </p>
+            </div>
+          </div>
+
+          {returnWindow?.state === "completed" && (
+            <div className="mt-2.5 flex items-center gap-1.5 rounded-[6px] border border-[#CFE0D4] bg-[#F1F7F3] px-2.5 py-2 text-[9.5px] font-medium text-[#3F765A]">
+              <RefreshCcw size={11} />
+              <span>Return completed</span>
+            </div>
+          )}
+
+          {refund?.amount !== null && refund?.amount !== undefined && (
+            <div className="mt-2.5 rounded-[6px] border border-[#CFE0D4] bg-[#F6FBF7] px-2.5 py-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="flex items-center gap-1 text-[9.5px] font-semibold text-[#4C6E5E]">
+                  <Check size={11} />
+                  Refund Processed
+                </span>
+
+                <span className="text-[11px] font-bold text-[#1F7A56]">
+                  {formatCurrency(refund.amount)}
+                </span>
+              </div>
+
+              {refund.issuedAt && (
+                <p className="mt-1 text-[9.5px] text-[#789084]">
+                  Processed on{" "}
+                  <span className="font-semibold">
+                    {formatDate(refund.issuedAt)}
+                  </span>
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ========================================================================== */
+/* ORDER GROUP CARD (one order → all of its products inside)                  */
+/* ========================================================================== */
+
+interface OrderGroupCardProps {
+  group: OrderGroup;
+  isOpen: boolean;
+  onToggle: () => void;
+  onProductClick: (order: OrderLineItem) => void;
+  onTrack: (order: OrderLineItem) => void;
+  onViewBreakup: (order: OrderLineItem) => void;
+  onReview: (order: OrderLineItem) => void;
+  onViewReview: (order: OrderLineItem) => void;
+  onReturnOrder: (group: OrderGroup) => void;
+  onCancelOrder: (group: OrderGroup) => void;
+  onWithdrawReturnOrder: (group: OrderGroup) => void;
+  onWithdrawCancelOrder: (group: OrderGroup) => void;
+  onInvoiceDownload: (order: OrderLineItem) => void;
+  invoiceLoadingLines: Record<number, boolean>;
   now: number;
-  retryBusy: boolean;
+  retryingReference: string | null;
   onRetry: (order: OrderLineItem) => void;
 }
 
-const MobileOrderCard = ({
-  now,
-  retryBusy,
-  onRetry,
-  order,
-  allOrders,
-  isExpanded,
+const OrderGroupCard = ({
+  group,
+  isOpen,
   onToggle,
-  onProductClick, // ✅ CHANGED
+  onProductClick,
   onTrack,
   onViewBreakup,
   onReview,
   onViewReview,
-  onReturn,
-  onCancel,
-  onCancelReturn,
-  onWithdrawCancel,
-  onWithdrawReturn,
+  onReturnOrder,
+  onCancelOrder,
+  onWithdrawReturnOrder,
+  onWithdrawCancelOrder,
   onInvoiceDownload,
-  isInvoiceLoading,
-}: MobileOrderCardProps) => {
-  const deliveryBadge = getDeliveryStatusBadge(order);
-  const returnWindow = getReturnWindowInfo(order);
-  const apiStatus = getOrderStatusBadge(order);
+  invoiceLoadingLines,
+  now,
+  retryingReference,
+  onRetry,
+}: OrderGroupCardProps) => {
+  const first = group.lines[0];
+  const statusBadge = getGroupStatusBadge(group);
+  const paid = normalizeStatus(first.payment_status) === "paid";
+  const totalQty = group.lines.reduce(
+    (sum, line) => sum + (Number(line.quantity) || 0),
+    0,
+  );
+  const totalPayable = first.total_payable ?? first.amount_paid ?? 0;
 
   return (
-    <div className="border-b border-[#EDF1F7] px-3 transition-colors hover:bg-[#F8FAFF] last:border-b-0">
-      <div className="px-3 py-4">
-        <div className="flex items-start gap-3">
-          {/* ✅ Product image → navigates to product page */}
-          <button
-            onClick={onProductClick}
-            className="relative h-16 w-16 shrink-0 cursor-pointer overflow-hidden rounded-[8px] border border-[#E4E4E2] bg-white transition-opacity hover:opacity-80"
-            title={`View ${order.product_name}`}
-          >
-            {order.primary_image ? (
-              <Image
-                src={order.primary_image}
-                alt={order.product_name || "Product"}
-                fill
-                sizes="64px"
-                className="object-cover"
-              />
-            ) : (
-              <span className="flex h-full w-full items-center justify-center">
-                <Package className="h-5 w-5 text-[#999999]" />
-              </span>
-            )}
-          </button>
+    <div className="overflow-hidden rounded-[16px] border border-[#E1E7F1] bg-white shadow-[0_2px_10px_rgba(20,35,65,0.04)]">
+      {/* ORDER HEADER (click to expand / collapse) */}
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={onToggle}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onToggle();
+          }
+        }}
+        aria-expanded={isOpen}
+        className="flex cursor-pointer flex-col gap-3 bg-[#F6F8FC] px-3.5 py-4 transition-colors hover:bg-[#F0F4FB] sm:flex-row sm:items-center sm:justify-between sm:px-5"
+      >
+        <div className="flex min-w-0 items-start gap-3">
+          <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] border border-[#e5e9ef] bg-white text-[#667085]">
+            <ChevronDown
+              size={16}
+              className={`transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+            />
+          </span>
 
-          <div className="min-w-0 flex-1">
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0 flex-1">
-                {/* ✅ Product name → navigates to product page */}
-                <p
-                  onClick={onProductClick}
-                  className="cursor-pointer truncate text-[12.5px] font-semibold text-[#101828] transition-colors hover:text-[#0E1B3D] hover:underline"
-                  title={`View ${order.product_name}`}
-                >
-                  {order.product_name}
-                </p>
-
-                <p className="mt-0.5 truncate text-[10.5px] text-[#98a2b3]">
-                  {order.order_reference}
-                  {" • "}
-                  {order.item_reference_id || `#${order.line_id}`}
-                </p>
-              </div>
-
-              <ActionDropdown
-                order={order}
-                onReview={onReview}
-                onViewReview={onViewReview}
-                onReturn={() => onReturn(order)}
-                onCancel={onCancel}
-                onTrack={onTrack}
-                onCancelReturn={onCancelReturn}
-                onWithdrawCancel={onWithdrawCancel}
-                onWithdrawReturn={onWithdrawReturn}
-                onInvoiceDownload={() => onInvoiceDownload(order)}
-                isInvoiceLoading={isInvoiceLoading}
-              />
-            </div>
-
-            <div className="mt-2 flex flex-wrap items-center gap-1.5">
-              <span
-                className="rounded-[6px] px-2 py-1 text-[10px] font-semibold capitalize"
-                style={{
-                  color: deliveryBadge.color,
-                  backgroundColor: deliveryBadge.bg,
-                }}
-              >
-                Delivery: {deliveryBadge.label}
-              </span>
-
-              <span className="rounded-[6px] bg-[#f2f4f7] px-2 py-1 text-[10px] font-semibold text-[#475066]">
-                {order.payment_gateway || "N/A"}
-              </span>
-
-              <span className="inline-flex h-6 min-w-7 items-center justify-center gap-1 rounded-[5px] border border-[#CFE0D4] bg-[#F1F7F3] px-1.5 text-[10px] font-bold text-[#1F7A56]">
-                <Coins size={11} />
-                {order.coin_redeemed || 0}
-              </span>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="truncate text-[13.5px] font-bold text-[#0E1B3D]">
+                {group.reference}
+              </p>
 
               <span
-                className="rounded-[6px] px-2 py-1 text-[10px] font-semibold capitalize"
+                className="rounded-[6px] px-2 py-0.5 text-[10px] font-semibold capitalize"
                 style={{
-                  color: apiStatus.color,
-                  backgroundColor: apiStatus.bg,
+                  color: statusBadge.color,
+                  backgroundColor: statusBadge.bg,
                 }}
               >
-                Status: {apiStatus.label}
+                {statusBadge.label}
               </span>
             </div>
 
-            {apiStatus.value === "payment_failed" && (
-              <div className="mt-2.5 rounded-lg border border-red-100 bg-red-50/60 p-2.5">
-                <p className="mb-2 text-[11px] font-semibold text-red-700">
-                  Payment Failed
-                </p>
-                <RetryPaymentButton
-                  order={order}
-                  now={now}
-                  busy={retryBusy}
-                  onRetry={onRetry}
-                />
-              </div>
-            )}
+            <p className="mt-1 text-[10.5px] text-[#8090A7]">
+              Placed on {first.order_date ? formatDate(first.order_date) : "—"}
+              {" • "}
+              {group.lines.length} product
+              {group.lines.length === 1 ? "" : "s"}
+              {" • "}
+              {totalQty} qty
+            </p>
+          </div>
+        </div>
 
-            {returnWindow && returnWindow.state !== "completed" && (
-              <div
-                className={`mt-2.5 flex items-center gap-1.5 rounded-[6px] border px-2.5 py-2 text-[9.5px] font-medium ${returnWindow.state === "open"
-                  ? "border-[#CFE0D4] bg-[#F1F7F3] text-[#3F765A]"
-                  : "border-[#F0CFCF] bg-[#FDF2F2] text-[#B24C4C]"
-                  }`}
-              >
-                <Clock size={11} />
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 pl-11 sm:pl-0">
+          <div>
+            <p className="text-[9.5px] uppercase tracking-wide text-[#98a2b3]">
+              Total
+            </p>
+            <p className="mt-0.5 text-[13px] font-bold text-[#101828]">
+              {formatCurrency(totalPayable)}
+            </p>
+          </div>
 
-                <span className="truncate">
-                  {returnWindow.state === "open"
-                    ? "Return window closes"
-                    : "Return window closed"}{" "}
-                  on{" "}
-                  <span className="font-semibold">
-                    {formatDate(returnWindow.deadline.toISOString())}
-                  </span>
-                </span>
-              </div>
-            )}
-
-            {returnWindow?.state === "completed" && (
-              <div className="mt-2.5 flex items-center gap-1.5 rounded-[6px] border border-[#CFE0D4] bg-[#F1F7F3] px-2.5 py-2 text-[9.5px] font-medium text-[#3F765A]">
-                <RefreshCcw size={11} />
-                <span>Return completed</span>
-              </div>
-            )}
-
-            {(() => {
-              const refund = getRefundDetails(order);
-
-              if (refund?.amount === null || refund?.amount === undefined) {
-                return null;
-              }
-
-              return (
-                <div className="mt-2.5 rounded-[6px] border border-[#CFE0D4] bg-[#F6FBF7] px-2.5 py-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-[9.5px] font-semibold text-[#4C6E5E]">
-                      Refund Processed
-                    </span>
-
-                    <span className="text-[11px] font-bold text-[#1F7A56]">
-                      {formatCurrency(refund.amount)}
-                    </span>
-                  </div>
-                </div>
-              );
-            })()}
-
-            <div className="mt-2.5 grid grid-cols-3 gap-2 text-[11px]">
-              <div>
-                <p className="text-[9.5px] uppercase tracking-wide text-[#98a2b3]">
-                  Total
-                </p>
-
-                <p className="mt-0.5 font-semibold text-[#101828]">
-                  {formatCurrency(order.final_amount)}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-[9.5px] uppercase tracking-wide text-[#98a2b3]">
-                  Qty
-                </p>
-
-                <p className="mt-0.5 font-semibold text-[#101828]">
-                  {order.quantity}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-[9.5px] uppercase tracking-wide text-[#98a2b3]">
-                  Date
-                </p>
-
-                <p className="mt-0.5 truncate font-medium text-[#667085]">
-                  {order.order_date
-                    ? formatDate(order.order_date).split(",")[0]
-                    : "—"}
-                </p>
-              </div>
-            </div>
-
-            <button
-              onClick={onToggle}
-              className="mt-3 inline-flex items-center gap-1 rounded-[6px] border border-[#e5e9ef] bg-white px-2.5 py-1.5 text-[10.5px] font-semibold text-[#475066] hover:bg-[#f7f8fa]"
+          <div>
+            <p className="text-[9.5px] uppercase tracking-wide text-[#98a2b3]">
+              Payment
+            </p>
+            <span
+              className="mt-0.5 inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize"
+              style={{
+                color: paid ? EMERALD : BRASS,
+                backgroundColor: paid ? "#eaf7f0" : "#f8f1e4",
+              }}
             >
-              <ChevronDown
-                size={13}
-                className={`transition-transform duration-200 ${isExpanded ? "rotate-180" : ""
-                  }`}
-              />
+              {first.payment_status || "—"}
+            </span>
+          </div>
 
-              {isExpanded ? "Hide Details" : "View Details"}
-            </button>
+          <span className="inline-flex h-6 min-w-7 items-center justify-center gap-1 rounded-[5px] border border-[#CFE0D4] bg-[#F1F7F3] px-1.5 text-[10px] font-bold text-[#1F7A56]">
+            <Coins size={11} />
+            {first.coin_redeemed || 0}
+          </span>
+
+          {/* ORDER-LEVEL three-dot menu: Return / Cancel */}
+          <div
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+          >
+            <OrderActionDropdown
+              group={group}
+              onReturn={() => onReturnOrder(group)}
+              onCancel={() => onCancelOrder(group)}
+              onWithdrawReturn={() => onWithdrawReturnOrder(group)}
+              onWithdrawCancel={() => onWithdrawCancelOrder(group)}
+            />
           </div>
         </div>
       </div>
 
-      <AnimatePresence initial={false}>
-        {isExpanded && (
-          <OrderDetails
-            order={order}
-            allOrders={allOrders}
-            onTrack={onTrack}
-            onViewBreakup={onViewBreakup}
-            onReturn={onReturn}
-            onInvoiceDownload={onInvoiceDownload}
-            isInvoiceLoading={isInvoiceLoading}
+      {/* PAYMENT FAILED + RETRY */}
+      {statusBadge.value === "payment_failed" && (
+        <div
+          className="flex flex-wrap items-center justify-between gap-2 border-t border-red-100 bg-red-50/60 px-3.5 py-3 sm:px-5"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <p className="text-[11px] font-semibold text-red-700">
+            Payment Failed
+          </p>
+
+          <RetryPaymentButton
+            order={first}
+            now={now}
+            busy={retryingReference === first.order_reference}
+            onRetry={onRetry}
           />
+        </div>
+      )}
+
+      {/* EXPANDED: ALL PRODUCTS + ORDER SUMMARY */}
+      <AnimatePresence initial={false}>
+        {isOpen && (
+          <motion.div
+            key="content"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.25, ease: "easeInOut" }}
+            className="overflow-hidden"
+          >
+            <div className="border-t border-[#E7EDF6]">
+              <div className="bg-white">
+                <p className="px-3.5 pb-1 pt-3.5 text-[10px] font-bold uppercase tracking-[0.1em] text-[#8a92a6] sm:px-5">
+                  Products in this order
+                </p>
+
+                {group.lines.map((line) => (
+                  <OrderItemRow
+                    key={line.line_id}
+                    order={line}
+                    onProductClick={() => onProductClick(line)}
+                    onTrack={() => onTrack(line)}
+                    onReview={() => onReview(line)}
+                    onViewReview={() => onViewReview(line)}
+                    onInvoiceDownload={() => onInvoiceDownload(line)}
+                    isInvoiceLoading={!!invoiceLoadingLines[line.line_id]}
+                  />
+                ))}
+              </div>
+
+              {/* ORDER-LEVEL SUMMARY */}
+              <div className="border-t border-[#edf0f3] bg-[#fafbfc] px-3.5 py-4 sm:px-5">
+                <div className="mt-4 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => onViewBreakup(first)}
+                    className="inline-flex items-center gap-1.5 rounded-[7px] border border-[#C9D5F7] bg-[#F4F6FC] px-3.5 py-2 text-[11px] font-semibold text-[#3955A6] transition-colors hover:bg-[#ECEFFC]"
+                  >
+                    <LuReceiptIndianRupee size={14} />
+                    Full Breakdown
+                  </button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
@@ -5057,7 +4917,6 @@ const MobileOrderCard = ({
 
 export default function OrderHistory() {
   const dispatch = useAppDispatch();
-  // ✅ NEW: router for product navigation
   const router = useRouter();
   const [now, setNow] = useState(() => Date.now());
   const [retryingReference, setRetryingReference] = useState<string | null>(
@@ -5070,14 +4929,17 @@ export default function OrderHistory() {
   }, []);
 
   const [searchQuery, setSearchQuery] = useState("");
-  // ✅ NEW: debounced value that is actually sent to the API
+  // debounced value that is actually sent to the API
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [page, setPage] = useState(1);
   const [perPage] = useState(10);
-  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
-  // ✅ NEW: 500ms debounce for search
+  // ✅ Manual open/close state per order. If an order has no manual state,
+  // the FIRST order is open by default and every other order is closed.
+  const [openOrders, setOpenOrders] = useState<Record<number, boolean>>({});
+
+  // 500ms debounce for search
   useEffect(() => {
     const timer = window.setTimeout(() => {
       setDebouncedSearch(searchQuery.trim());
@@ -5094,17 +4956,16 @@ export default function OrderHistory() {
   const [breakupModalOpen, setBreakupModalOpen] = useState(false);
   const [cancelReturnModalOpen, setCancelReturnModalOpen] = useState(false);
   const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
-  const [withdrawType, setWithdrawType] = useState<"cancel" | "return" | null>(
-    null,
-  );
   const [imageGalleryOpen, setImageGalleryOpen] = useState(false);
+  // single product (track / review / invoice / breakup)
   const [selectedOrder, setSelectedOrder] = useState<OrderLineItem | null>(
     null,
   );
-  const [selectedReturnId, setSelectedReturnId] = useState<number | null>(null);
+  // whole order (return / cancel / withdraw)
+  const [selectedGroup, setSelectedGroup] = useState<OrderGroup | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
-  // ✅ CHANGED: keyed by line_id (invoice is now per line)
+  // keyed by line_id (invoice is per line)
   const [invoiceLoadingLines, setInvoiceLoadingLines] = useState<
     Record<number, boolean>
   >({});
@@ -5113,7 +4974,7 @@ export default function OrderHistory() {
     page,
     per_page: perPage,
     ...(statusFilter ? { status: statusFilter } : {}),
-    // ✅ NEW: server-side search (GET /my-orders?search=...)
+    // server-side search (GET /my-orders?search=...)
     ...(debouncedSearch ? { search: debouncedSearch } : {}),
   };
 
@@ -5131,8 +4992,6 @@ export default function OrderHistory() {
     useCancelReturnMutation();
   const [withdrawCancelOrder, { isLoading: isWithdrawingCancelOrder }] =
     useWithdrawCancelOrderMutation();
-  const [withdrawCancelRequest, { isLoading: isWithdrawingCancelRequest }] =
-    useWithdrawCancelRequestMutation();
   const [getInvoice] = useLazyGetInvoiceByOrderIdQuery();
 
   // Query only the selected product when its tracking modal is open.
@@ -5193,7 +5052,7 @@ export default function OrderHistory() {
     [rawOrderRows],
   );
 
-  // ✅ NEW: Navigate to product detail page using product_slug
+  // Navigate to product detail page using product_slug
   const navigateToProduct = (order: OrderLineItem) => {
     const slug = order.product_slug;
 
@@ -5332,7 +5191,7 @@ export default function OrderHistory() {
     );
   }, [apiStatusOptions, orders]);
 
-  // ✅ CHANGED: text search is now done by the server (debounced),
+  // text search is done by the server (debounced),
   // only the status filter is applied locally.
   const filteredOrders = useMemo(() => {
     let result = orders;
@@ -5364,28 +5223,48 @@ export default function OrderHistory() {
     return result;
   }, [orders, statusFilter]);
 
+  // ✅ Group filtered product lines back into parent orders
+  const allGroups = useMemo(
+    () => groupByOrder(filteredOrders),
+    [filteredOrders],
+  );
+
   const serverTotal = (data as any)?.meta?.total ??
     (data as any)?.data?.total ?? (data as any)?.total;
   const serverPaginated = serverTotal != null && Number.isFinite(Number(serverTotal));
-  const totalRecords = serverPaginated ? Number(serverTotal) : filteredOrders.length;
+  // ✅ Pagination now counts ORDERS (parent), not product lines
+  const totalRecords = serverPaginated ? Number(serverTotal) : allGroups.length;
   const totalPages = Math.max(1, Math.ceil(totalRecords / perPage));
   const currentPage = Math.min(page, totalPages);
-  const displayedOrders = serverPaginated ? filteredOrders :
-    filteredOrders.slice((currentPage - 1) * perPage, currentPage * perPage);
-  const parentOrderCount = new Set(orders.map((o) => o.order_reference)).size;
+  const displayedGroups = serverPaginated
+    ? allGroups
+    : allGroups.slice((currentPage - 1) * perPage, currentPage * perPage);
+  // Flat product lines of the orders visible on this page (used for stats)
+  const displayedOrders = displayedGroups.flatMap((group) => group.lines);
 
-  const toggleRow = (rowKey: string) => {
-    setExpandedRows((prev) => {
-      const next = new Set(prev);
+  // ✅ First order is ALWAYS open by default, all others closed.
+  const isGroupOpen = (orderId: number, index: number) =>
+    openOrders[orderId] ?? index === 0;
 
-      if (next.has(rowKey)) {
-        next.delete(rowKey);
-      } else {
-        next.add(rowKey);
-      }
+  const toggleGroup = (orderId: number, index: number) => {
+    setOpenOrders((prev) => ({
+      ...prev,
+      [orderId]: !(prev[orderId] ?? index === 0),
+    }));
+  };
 
-      return next;
-    });
+  const goToPage = (nextPage: number) => {
+    setPage(nextPage);
+    // reset so that the first order of the new page opens by default
+    setOpenOrders({});
+  };
+
+  const errMsg = (error: any, fallback: string): string => {
+    if (error?.data?.message) return error.data.message;
+    if (error?.data?.errors) {
+      return (Object.values(error.data.errors).flat() as string[]).join(" ");
+    }
+    return error?.message || fallback;
   };
 
   const handleReviewSubmit = async (reviewData: any) => {
@@ -5446,62 +5325,37 @@ export default function OrderHistory() {
     }
   };
 
+  /* ---------- RETURN (whole order) ---------- */
   const handleReturnSubmit = async (returnData: {
-    quantity: number;
     reason: string;
     images: File[];
     return_method: ReturnMethod;
     courier?: string;
     tracking_id?: string;
   }) => {
-    if (!selectedOrder) {
-      return;
-    }
+    if (!selectedGroup) return;
 
     setIsUploading(true);
 
     try {
-      // ✅ NEW: hard block if API says not allowed
-      if (!isCancelReturnAllowed(selectedOrder)) {
-        throw new Error(
-          "Return is not allowed for this item. Please contact support.",
-        );
+      const lines = getReturnableLines(selectedGroup.lines);
+
+      if (lines.length === 0) {
+        throw new Error("No items in this order are eligible for return.");
       }
 
-      const till = selectedOrder.timeline?.return_applicable_till;
+      if (returnData.return_method === "courier") {
+        if (!returnData.courier?.trim()) {
+          throw new Error("Courier name is required for courier return.");
+        }
 
-      if (till) {
-        const deadline = parseDate(till);
-
-        if (deadline && deadline.getTime() <= Date.now()) {
-          throw new Error("Return window has expired for this item.");
+        if (!returnData.tracking_id?.trim()) {
+          throw new Error("Tracking ID is required for courier return.");
         }
       }
 
-      if (isReturnCompleted(selectedOrder)) {
-        throw new Error("This item has already been returned.");
-      }
-
-      if (
-        returnData.return_method === "courier" &&
-        !returnData.courier?.trim()
-      ) {
-        throw new Error(
-          "Courier name is required when courier return method is selected.",
-        );
-      }
-
-      if (
-        returnData.return_method === "courier" &&
-        !returnData.tracking_id?.trim()
-      ) {
-        throw new Error(
-          "Tracking ID is required when courier return method is selected.",
-        );
-      }
-
       const response = await initiateReturn({
-        order_reference: selectedOrder.order_reference,
+        order_reference: selectedGroup.reference,
         return_method: returnData.return_method,
         courier:
           returnData.return_method === "courier"
@@ -5511,15 +5365,12 @@ export default function OrderHistory() {
           returnData.return_method === "courier"
             ? returnData.tracking_id?.trim()
             : undefined,
-        items: [
-          {
-            order_line_id: selectedOrder.line_id,
-            quantity:
-              selectedOrder.available_for_return || selectedOrder.quantity || 1,
-            reason: returnData.reason,
-            images: returnData.images || [],
-          },
-        ],
+        items: lines.map((line) => ({
+          order_line_id: line.line_id,
+          quantity: line.available_for_return || line.quantity || 1,
+          reason: returnData.reason,
+          images: returnData.images || [],
+        })),
       }).unwrap();
 
       dispatch(
@@ -5534,21 +5385,9 @@ export default function OrderHistory() {
 
       return response;
     } catch (error: any) {
-      let errorMessage = "Failed to submit return request. Please try again.";
-
-      if (error?.data?.message) {
-        errorMessage = error.data.message;
-      } else if (error?.data?.errors) {
-        const errorMessages = Object.values(error.data.errors).flat();
-
-        errorMessage = (errorMessages as string[]).join(" ");
-      } else if (error?.message) {
-        errorMessage = error.message;
-      }
-
       dispatch(
         showToast({
-          message: errorMessage,
+          message: errMsg(error, "Failed to submit return request."),
           type: "error",
         }),
       );
@@ -5559,55 +5398,52 @@ export default function OrderHistory() {
     }
   };
 
+  /* ---------- CANCEL (whole order) ---------- */
   const handleCancelSubmit = async (reason: string) => {
-    if (!selectedOrder) {
-      return;
-    }
+    if (!selectedGroup) return;
 
     setIsUploading(true);
 
     try {
-      // ✅ NEW: hard block if API says not allowed
-      if (!isCancelReturnAllowed(selectedOrder)) {
-        throw new Error(
-          "Cancellation is not allowed for this item. Please contact support.",
-        );
+      const lines = getCancellableLines(selectedGroup.lines);
+
+      if (lines.length === 0) {
+        throw new Error("No items in this order can be cancelled.");
       }
 
-      const orderReference = selectedOrder.order_reference;
-      const orderLineId = selectedOrder.line_id;
+      let ok = 0;
+      let lastError: any = null;
 
-      if (!orderReference) {
-        throw new Error("Order reference is missing.");
+      for (const line of lines) {
+        try {
+          await cancelOrder({
+            orderReference: line.order_reference,
+            orderLineId: line.line_id,
+            reason,
+          }).unwrap();
+          ok++;
+        } catch (e) {
+          lastError = e;
+        }
       }
 
-      if (!orderLineId) {
-        throw new Error("Order line ID is missing.");
-      }
-
-      const response = await cancelOrder({
-        orderReference,
-        orderLineId,
-        reason,
-      }).unwrap();
+      if (ok === 0) throw lastError;
 
       dispatch(
         showToast({
           message:
-            response?.message ||
-            "Order cancellation request submitted successfully!",
-          type: "success",
+            ok === lines.length
+              ? "Order cancellation request submitted successfully!"
+              : `${ok} of ${lines.length} items cancelled. ${errMsg(lastError, "Some items failed.")}`,
+          type: ok === lines.length ? "success" : "error",
         }),
       );
 
       await refetch();
-
-      return response;
     } catch (error: any) {
       dispatch(
         showToast({
-          message:
-            error?.data?.message || error?.message || "Failed to cancel order.",
+          message: errMsg(error, "Failed to cancel order."),
           type: "error",
         }),
       );
@@ -5618,45 +5454,48 @@ export default function OrderHistory() {
     }
   };
 
+  /* ---------- WITHDRAW RETURN (whole order) ---------- */
   const handleCancelReturnSubmit = async () => {
-    if (!selectedReturnId) {
-      dispatch(
-        showToast({
-          message: "Return ID is missing.",
-          type: "error",
-        }),
-      );
-
-      throw new Error("Return ID is missing.");
-    }
+    if (!selectedGroup) return;
 
     setIsUploading(true);
 
     try {
-      const response = await cancelReturn({
-        returnId: selectedReturnId,
-      }).unwrap();
+      const ids = getActiveReturnIds(selectedGroup.lines);
+
+      if (ids.length === 0) {
+        throw new Error("No active return request found.");
+      }
+
+      let ok = 0;
+      let lastError: any = null;
+
+      for (const returnId of ids) {
+        try {
+          await cancelReturn({ returnId }).unwrap();
+          ok++;
+        } catch (e) {
+          lastError = e;
+        }
+      }
+
+      if (ok === 0) throw lastError;
 
       dispatch(
         showToast({
           message:
-            response?.message || "Return request cancelled successfully!",
-          type: "success",
+            ok === ids.length
+              ? "Return request cancelled successfully!"
+              : `${ok} of ${ids.length} return requests cancelled.`,
+          type: ok === ids.length ? "success" : "error",
         }),
       );
 
       await refetch();
-
-      setSelectedReturnId(null);
-
-      return response;
     } catch (error: any) {
       dispatch(
         showToast({
-          message:
-            error?.data?.message ||
-            error?.message ||
-            "Failed to cancel return request.",
+          message: errMsg(error, "Failed to cancel return request."),
           type: "error",
         }),
       );
@@ -5667,37 +5506,51 @@ export default function OrderHistory() {
     }
   };
 
+  /* ---------- WITHDRAW CANCEL (whole order) ---------- */
   const handleWithdrawCancelOrder = async () => {
-    if (!selectedOrder) {
-      return;
-    }
+    if (!selectedGroup) return;
 
     setIsUploading(true);
 
     try {
-      const response = await withdrawCancelOrder({
-        orderReference: selectedOrder.order_reference,
-        orderLineId: selectedOrder.line_id,
-      }).unwrap();
+      const lines = getWithdrawCancelLines(selectedGroup.lines);
+
+      if (lines.length === 0) {
+        throw new Error("No cancel request to withdraw.");
+      }
+
+      let ok = 0;
+      let lastError: any = null;
+
+      for (const line of lines) {
+        try {
+          await withdrawCancelOrder({
+            orderReference: line.order_reference,
+            orderLineId: line.line_id,
+          }).unwrap();
+          ok++;
+        } catch (e) {
+          lastError = e;
+        }
+      }
+
+      if (ok === 0) throw lastError;
 
       dispatch(
         showToast({
           message:
-            response?.message || "Cancel request withdrawn successfully!",
-          type: "success",
+            ok === lines.length
+              ? "Cancel request withdrawn successfully!"
+              : `${ok} of ${lines.length} cancel requests withdrawn.`,
+          type: ok === lines.length ? "success" : "error",
         }),
       );
 
       await refetch();
-
-      return response;
     } catch (error: any) {
       dispatch(
         showToast({
-          message:
-            error?.data?.message ||
-            error?.message ||
-            "Failed to withdraw cancel request.",
+          message: errMsg(error, "Failed to withdraw cancel request."),
           type: "error",
         }),
       );
@@ -5708,48 +5561,7 @@ export default function OrderHistory() {
     }
   };
 
-  const handleWithdrawCancelRequest = async () => {
-    if (!selectedOrder) {
-      return;
-    }
-
-    setIsUploading(true);
-
-    try {
-      const response = await withdrawCancelRequest({
-        orderReference: selectedOrder.order_reference,
-        orderLineId: selectedOrder.line_id,
-      }).unwrap();
-
-      dispatch(
-        showToast({
-          message:
-            response?.message || "Withdraw request submitted successfully!",
-          type: "success",
-        }),
-      );
-
-      await refetch();
-
-      return response;
-    } catch (error: any) {
-      dispatch(
-        showToast({
-          message:
-            error?.data?.message ||
-            error?.message ||
-            "Failed to withdraw request.",
-          type: "error",
-        }),
-      );
-
-      throw error;
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  // ✅ UPDATED: invoice is fetched per line → /invoice/order/{order_id}/{line_id}
+  // invoice is fetched per line → /invoice/order/{order_id}/{line_id}
   const handleInvoiceDownload = async (order: OrderLineItem) => {
     if (!canShowInvoice(order)) return;
 
@@ -5813,7 +5625,7 @@ export default function OrderHistory() {
     }
   };
 
-  // ✅ Kept for future use, but no longer called from product click
+  // Kept for future use
   const openImageGallery = (order: OrderLineItem) => {
     setSelectedOrder(order);
     setImageGalleryOpen(true);
@@ -5829,74 +5641,65 @@ export default function OrderHistory() {
     setViewReviewModalOpen(true);
   };
 
-  const openReturn = (order: OrderLineItem) => {
-    // ✅ NEW: hard gate first
-    if (!isCancelReturnAllowed(order)) {
+  /* ---------- ORDER-LEVEL openers ---------- */
+  const openReturnOrder = (group: OrderGroup) => {
+    if (getReturnableLines(group.lines).length === 0) {
       dispatch(
         showToast({
-          message:
-            "Return is not allowed for this item. Please contact support.",
+          message: "No items in this order are eligible for return.",
           type: "error",
         }),
       );
       return;
     }
 
-    const till = order.timeline?.return_applicable_till;
-
-    if (till) {
-      const deadline = parseDate(till);
-
-      if (deadline && deadline.getTime() <= Date.now()) {
-        dispatch(
-          showToast({
-            message: "Return window has expired for this item.",
-            type: "error",
-          }),
-        );
-        return;
-      }
-    }
-
-    if (isReturnCompleted(order)) {
-      dispatch(
-        showToast({
-          message: "This item has already been returned.",
-          type: "error",
-        }),
-      );
-      return;
-    }
-
-    if (!canInitiateReturn(order)) {
-      dispatch(
-        showToast({
-          message: "This item is not eligible for return.",
-          type: "error",
-        }),
-      );
-      return;
-    }
-
-    setSelectedOrder(order);
+    setSelectedGroup(group);
     setReturnModalOpen(true);
   };
 
-  const openCancel = (order: OrderLineItem) => {
-    // ✅ NEW: hard gate first
-    if (!isCancelReturnAllowed(order)) {
+  const openCancelOrder = (group: OrderGroup) => {
+    if (getCancellableLines(group.lines).length === 0) {
       dispatch(
         showToast({
-          message:
-            "Cancellation is not allowed for this item. Please contact support.",
+          message: "This order can no longer be cancelled.",
           type: "error",
         }),
       );
       return;
     }
 
-    setSelectedOrder(order);
+    setSelectedGroup(group);
     setCancelModalOpen(true);
+  };
+
+  const openWithdrawReturnOrder = (group: OrderGroup) => {
+    if (getActiveReturnIds(group.lines).length === 0) {
+      dispatch(
+        showToast({
+          message: "No active return request to withdraw.",
+          type: "error",
+        }),
+      );
+      return;
+    }
+
+    setSelectedGroup(group);
+    setCancelReturnModalOpen(true);
+  };
+
+  const openWithdrawCancelOrder = (group: OrderGroup) => {
+    if (getWithdrawCancelLines(group.lines).length === 0) {
+      dispatch(
+        showToast({
+          message: "No cancel request to withdraw.",
+          type: "error",
+        }),
+      );
+      return;
+    }
+
+    setSelectedGroup(group);
+    setWithdrawModalOpen(true);
   };
 
   const openTracking = (order: OrderLineItem) => {
@@ -5928,35 +5731,6 @@ export default function OrderHistory() {
     setBreakupModalOpen(true);
   };
 
-  const openCancelReturn = (order: OrderLineItem, returnId: number) => {
-    if (!isReturnWindowOpen(order.timeline?.return_applicable_till)) {
-      dispatch(
-        showToast({
-          message: "Return window has closed — cannot cancel return.",
-          type: "error",
-        }),
-      );
-
-      return;
-    }
-
-    setSelectedOrder(order);
-    setSelectedReturnId(returnId);
-    setCancelReturnModalOpen(true);
-  };
-
-  const openWithdrawCancel = (order: OrderLineItem) => {
-    setSelectedOrder(order);
-    setWithdrawType("cancel");
-    setWithdrawModalOpen(true);
-  };
-
-  const openWithdrawReturn = (order: OrderLineItem) => {
-    setSelectedOrder(order);
-    setWithdrawType("return");
-    setWithdrawModalOpen(true);
-  };
-
   const closeAllModals = () => {
     setImageGalleryOpen(false);
     setReviewModalOpen(false);
@@ -5968,9 +5742,8 @@ export default function OrderHistory() {
     setCancelReturnModalOpen(false);
     setWithdrawModalOpen(false);
 
-    setSelectedReturnId(null);
     setSelectedOrder(null);
-    setWithdrawType(null);
+    setSelectedGroup(null);
   };
 
   if (isLoading) {
@@ -6010,7 +5783,7 @@ export default function OrderHistory() {
   return (
     <>
       <div className="space-y-5 rounded-[24px] bg-[#F5F7FB] p-3 sm:p-5 lg:p-6">
-        {/* Premium My Referrals-style page heading */}
+        {/* Page heading */}
         <div className="relative overflow-hidden rounded-[22px] bg-gradient-to-br from-[#0D1938] via-[#152D5C] to-[#244C91] px-5 py-7 text-white shadow-[0_18px_42px_rgba(13,25,56,0.18)] sm:px-8 sm:py-8">
           <div className="pointer-events-none absolute -right-12 -top-20 h-64 w-64 rounded-full border border-white/10 bg-white/[0.04]" />
           <div className="pointer-events-none absolute -bottom-28 right-24 h-56 w-56 rounded-full border border-white/10" />
@@ -6034,7 +5807,7 @@ export default function OrderHistory() {
               <div>
                 <p className="text-[11px] text-blue-100">Orders loaded</p>
                 <p className="text-[25px] font-extrabold leading-tight">
-                  {parentOrderCount}
+                  {displayedGroups.length}
                 </p>
               </div>
             </div>
@@ -6117,15 +5890,17 @@ export default function OrderHistory() {
                 Order history
               </h2>
               <p className="mt-1 text-[11px] text-[#8090A7]">
-                Search and manage your order items
+                Use the ⋮ menu on an order to return or cancel it. Open an
+                order and use the ⋮ menu on a product for tracking, invoice and
+                review.
               </p>
             </div>
             <span className="rounded-full bg-[#EDF3FF] px-3 py-1.5 text-[11px] font-bold text-[#234E9A]">
-              {serverPaginated ? displayedOrders.length : totalRecords} items
+              {serverPaginated ? displayedGroups.length : totalRecords} orders
             </span>
           </div>
-          {/* FILTER BAR */}
 
+          {/* FILTER BAR */}
           <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             {/* SEARCH (debounced, server-side) */}
             <div className="relative w-full sm:max-w-md">
@@ -6141,7 +5916,7 @@ export default function OrderHistory() {
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
                   setPage(1);
-                  setExpandedRows(new Set());
+                  setOpenOrders({});
                 }}
                 className="h-[44px] w-full rounded-[11px] border border-[#E3EAF5] bg-[#F8FAFD] pl-10 pr-10 text-[13px] text-[#101828] outline-none placeholder:text-[#b0b6c3] focus:border-[#0E1B3D] focus:bg-white"
               />
@@ -6160,6 +5935,7 @@ export default function OrderHistory() {
                     setSearchQuery("");
                     setDebouncedSearch("");
                     setPage(1);
+                    setOpenOrders({});
                   }}
                   aria-label="Clear search"
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-[#98a2b3] hover:text-[#344054]"
@@ -6178,7 +5954,7 @@ export default function OrderHistory() {
 
                   setStatusFilter(value);
                   setPage(1);
-                  setExpandedRows(new Set());
+                  setOpenOrders({});
                 }}
                 className="h-[44px] w-full appearance-none rounded-[11px] border border-[#E3EAF5] bg-[#F8FAFD] pl-3 pr-9 text-[13px] text-[#101828] outline-none focus:border-[#0E1B3D] focus:bg-white"
               >
@@ -6198,295 +5974,39 @@ export default function OrderHistory() {
             </div>
           </div>
 
-          {/* ================= MOBILE ================= */}
-
-          <div className="md:hidden">
-            {displayedOrders.length === 0 ? (
+          {/* ================= ORDER GROUPS (mobile + desktop) ================= */}
+          <div className="space-y-4">
+            {displayedGroups.length === 0 ? (
               <div className="py-12 text-center text-[13px] text-[#98a2b3]">
                 {searchQuery || statusFilter
                   ? "No orders found matching your filters."
                   : "No orders found."}
               </div>
             ) : (
-              displayedOrders.map((order) => {
-                const rowKey = `${order.order_id}-${order.line_id}`;
-
-                const isExpanded = expandedRows.has(rowKey);
-
-                return (
-                  <MobileOrderCard
-                    key={rowKey}
-                    order={order}
-                    allOrders={orders}
-                    isExpanded={isExpanded}
-                    onToggle={() => toggleRow(rowKey)}
-                    // ✅ CHANGED: navigate to product page
-                    onProductClick={() => navigateToProduct(order)}
-                    onTrack={() => openTracking(order)}
-                    onViewBreakup={() => openBreakup(order)}
-                    onReview={() => openReview(order)}
-                    onViewReview={() => openViewReview(order)}
-                    onReturn={openReturn}
-                    onCancel={() => openCancel(order)}
-                    onCancelReturn={(returnId) =>
-                      openCancelReturn(order, returnId)
-                    }
-                    onWithdrawCancel={() => openWithdrawCancel(order)}
-                    onWithdrawReturn={() => openWithdrawReturn(order)}
-                    onInvoiceDownload={handleInvoiceDownload}
-                    isInvoiceLoading={!!invoiceLoadingLines[order.line_id]}
-                    now={now}
-                    retryBusy={retryingReference === order.order_reference}
-                    onRetry={handleRetryPayment}
-                  />
-                );
-              })
+              displayedGroups.map((group, index) => (
+                <OrderGroupCard
+                  key={group.orderId}
+                  group={group}
+                  // ✅ index 0 (first order) opens by default, rest closed
+                  isOpen={isGroupOpen(group.orderId, index)}
+                  onToggle={() => toggleGroup(group.orderId, index)}
+                  onProductClick={navigateToProduct}
+                  onTrack={openTracking}
+                  onViewBreakup={openBreakup}
+                  onReview={openReview}
+                  onViewReview={openViewReview}
+                  onReturnOrder={openReturnOrder}
+                  onCancelOrder={openCancelOrder}
+                  onWithdrawReturnOrder={openWithdrawReturnOrder}
+                  onWithdrawCancelOrder={openWithdrawCancelOrder}
+                  onInvoiceDownload={handleInvoiceDownload}
+                  invoiceLoadingLines={invoiceLoadingLines}
+                  now={now}
+                  retryingReference={retryingReference}
+                  onRetry={handleRetryPayment}
+                />
+              ))
             )}
-          </div>
-
-          {/* ================= DESKTOP ================= */}
-
-          <div className="hidden md:block">
-            <div className="w-full overflow-x-auto">
-              <div className="min-w-[1000px]">
-                {/* HEADER */}
-
-                <div className="grid grid-cols-[40px_minmax(140px,1.35fr)_minmax(160px,1.6fr)_minmax(85px,0.8fr)_minmax(80px,0.8fr)_50px_minmax(70px,0.85fr)_minmax(120px,1.15fr)_190px] items-center gap-2 rounded-t-xl border-b border-[#E7EDF6] bg-[#F6F8FC] px-3 py-4 text-[11px] font-bold uppercase tracking-[0.04em] text-[#657792]">
-                  <span />
-
-                  <span>Order Reference</span>
-
-                  <span>Product</span>
-
-                  <span>Total</span>
-
-                  <span>Method</span>
-
-                  <span>Qty</span>
-
-                  <span>Coins</span>
-
-                  <span>Status</span>
-
-                  <span className="text-right">Actions</span>
-                </div>
-
-                <div>
-                  {displayedOrders.length === 0 ? (
-                    <div className="py-12 text-center text-[13px] text-[#98a2b3]">
-                      {searchQuery || statusFilter
-                        ? "No orders found matching your filters."
-                        : "No orders found."}
-                    </div>
-                  ) : (
-                    displayedOrders.map((order) => {
-                      const rowKey = `${order.order_id}-${order.line_id}`;
-
-                      const isExpanded = expandedRows.has(rowKey);
-
-                      const returnWindow = getReturnWindowInfo(order);
-
-                      const refundDetails = getRefundDetails(order);
-
-                      const statusBadge = getOrderStatusBadge(order);
-
-                      return (
-                        <div
-                          key={rowKey}
-                          className="border-b border-dashed border-[#e7e9ee] last:border-b-0"
-                        >
-                          {/* ROW */}
-
-                          <div className="grid grid-cols-[40px_minmax(140px,1.35fr)_minmax(160px,1.6fr)_minmax(85px,0.8fr)_minmax(80px,0.8fr)_50px_minmax(70px,0.85fr)_minmax(120px,1.15fr)_190px] items-center gap-2 py-4 text-[13px] text-[#101828]">
-                            {/* EXPAND */}
-
-                            <button
-                              onClick={() => toggleRow(rowKey)}
-                              className="flex h-7 w-7 items-center justify-center rounded-[6px] border border-[#e5e9ef] bg-white text-[#667085] hover:bg-[#f7f8fa]"
-                              aria-label={isExpanded ? "Collapse" : "Expand"}
-                            >
-                              <ChevronDown
-                                size={15}
-                                className={`transition-transform duration-200 ${isExpanded ? "rotate-180" : ""
-                                  }`}
-                              />
-                            </button>
-
-                            {/* ORDER REFERENCE */}
-
-                            <div className="min-w-0">
-                              <p className="truncate font-semibold text-[#0E1B3D]">
-                                {order.order_reference}
-                              </p>
-
-                              <p className="mt-0.5 truncate text-[10.5px] text-[#98a2b3]">
-                                {order.item_reference_id ||
-                                  `Line #${order.line_id}`}
-                              </p>
-                            </div>
-
-                            {/* ✅ PRODUCT — now navigates to product page */}
-
-                            <button
-                              type="button"
-                              onClick={() => navigateToProduct(order)}
-                              className="group flex min-w-0 cursor-pointer items-center gap-2.5 text-left"
-                              title={`View ${order.product_name}`}
-                            >
-                              <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-[6px] border border-[#E4E4E2] bg-white transition-opacity group-hover:opacity-80">
-                                {order.primary_image ? (
-                                  <Image
-                                    src={order.primary_image}
-                                    alt={order.product_name || "Product"}
-                                    fill
-                                    sizes="40px"
-                                    className="object-cover"
-                                  />
-                                ) : (
-                                  <span className="flex h-full w-full items-center justify-center">
-                                    <Package className="h-4 w-4 text-[#999999]" />
-                                  </span>
-                                )}
-                              </span>
-
-                              <span
-                                className="truncate font-semibold text-[#101828] transition-colors group-hover:text-[#0E1B3D]"
-                                title={order.product_name}
-                              >
-                                {order.product_name}
-                              </span>
-                            </button>
-
-                            {/* TOTAL — ✅ Now shows refunded_amount below final_amount */}
-
-                            <div className="min-w-0">
-                              <span className="text-[#667085]">
-                                {formatCurrency(order.final_amount)}
-                              </span>
-
-                              {refundDetails?.amount !== null &&
-                                refundDetails?.amount !== undefined && (
-                                  <span className="mt-0.5 block truncate text-[9.5px] font-bold text-[#1F7A56]">
-                                    Refunded{" "}
-                                    {formatCurrency(refundDetails.amount)}
-                                  </span>
-                                )}
-                            </div>
-
-                            {/* METHOD */}
-
-                            <span>
-                              <span className="inline-block rounded-[6px] bg-[#f2f4f7] px-2 py-1 text-[11px] font-semibold text-[#475066]">
-                                {order.payment_gateway || "N/A"}
-                              </span>
-                            </span>
-
-                            {/* QTY */}
-
-                            <span className="text-[#667085]">
-                              {order.quantity}
-                            </span>
-
-                            {/* COINS */}
-
-                            <div className="flex items-center gap-1.5">
-                              <span className="inline-flex h-6 min-w-7 items-center justify-center gap-1 rounded-[5px] border border-[#CFE0D4] bg-[#F1F7F3] px-1.5 text-[10px] font-bold text-[#1F7A56]">
-                                <Coins size={11} />
-
-                                {order.coin_redeemed || 0}
-                              </span>
-                            </div>
-
-                            {/* STATUS — ✅ Cancelled wins, then refunded/returned, then delivered */}
-
-                            <div className="min-w-0">
-                              <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-                                <span
-                                  className="inline-block max-w-full truncate rounded-[6px] px-2.5 py-1 text-[11px] font-semibold capitalize"
-                                  style={{
-                                    color: statusBadge.color,
-                                    backgroundColor: statusBadge.bg,
-                                  }}
-                                  title={statusBadge.label}
-                                >
-                                  {statusBadge.label}
-                                </span>
-                              </div>
-                              {statusBadge.value === "payment_failed" && (
-                                <div className="mt-2">
-                                  <RetryPaymentButton
-                                    order={order}
-                                    now={now}
-                                    busy={
-                                      retryingReference ===
-                                      order.order_reference
-                                    }
-                                    onRetry={handleRetryPayment}
-                                  />
-                                </div>
-                              )}
-
-                              {refundDetails?.amount !== null &&
-                                refundDetails?.amount !== undefined && (
-                                  <p className="mt-1 truncate text-[8.5px] font-semibold text-[#1F7A56]">
-                                    <Check
-                                      size={10}
-                                      className="mr-0.5 inline"
-                                    />
-                                    Refunded processed
-                                  </p>
-                                )}
-                            </div>
-
-                            {/* ACTIONS */}
-
-                            <div className="flex items-center justify-end gap-2">
-                              <ActionDropdown
-                                order={order}
-                                onReview={() => openReview(order)}
-                                onViewReview={() => openViewReview(order)}
-                                onReturn={() => openReturn(order)}
-                                onCancel={() => openCancel(order)}
-                                onTrack={() => openTracking(order)}
-                                onCancelReturn={(returnId) =>
-                                  openCancelReturn(order, returnId)
-                                }
-                                onWithdrawCancel={() =>
-                                  openWithdrawCancel(order)
-                                }
-                                onWithdrawReturn={() =>
-                                  openWithdrawReturn(order)
-                                }
-                                onInvoiceDownload={() => handleInvoiceDownload(order)}
-                                isInvoiceLoading={!!invoiceLoadingLines[order.line_id]}
-                              />
-                            </div>
-                          </div>
-
-                          {/* DETAILS */}
-
-                          <AnimatePresence initial={false}>
-                            {isExpanded && (
-                              <OrderDetails
-                                order={order}
-                                allOrders={orders}
-                                onTrack={() => openTracking(order)}
-                                onViewBreakup={() => openBreakup(order)}
-                                onReturn={openReturn}
-                                onInvoiceDownload={handleInvoiceDownload}
-                                isInvoiceLoading={
-                                  !!invoiceLoadingLines[order.line_id]
-                                }
-                              />
-                            )}
-                          </AnimatePresence>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* PAGINATION */}
@@ -6501,16 +6021,16 @@ export default function OrderHistory() {
 
               <span className="font-medium">
                 {serverPaginated
-                  ? `Showing ${displayedOrders.length} items · Page ${currentPage} of ${totalPages}`
-                  : displayedOrders.length > 0
-                    ? `Showing ${(currentPage - 1) * perPage + 1}–${(currentPage - 1) * perPage + displayedOrders.length} of ${totalRecords} items`
-                    : "Showing 0 items"}
+                  ? `Showing ${displayedGroups.length} orders · Page ${currentPage} of ${totalPages}`
+                  : displayedGroups.length > 0
+                    ? `Showing ${(currentPage - 1) * perPage + 1}–${(currentPage - 1) * perPage + displayedGroups.length} of ${totalRecords} orders`
+                    : "Showing 0 orders"}
               </span>
             </div>
 
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setPage(Math.max(1, currentPage - 1))}
+                onClick={() => goToPage(Math.max(1, currentPage - 1))}
                 disabled={currentPage === 1}
                 className="flex h-7 w-7 items-center justify-center rounded-[6px] text-[#b0b8c8] hover:bg-[#f2f4f7] disabled:opacity-40"
               >
@@ -6523,7 +6043,7 @@ export default function OrderHistory() {
               ).map((p) => (
                 <button
                   key={p}
-                  onClick={() => setPage(p)}
+                  onClick={() => goToPage(p)}
                   className={`flex h-7 w-7 items-center justify-center rounded-[6px] text-[12px] font-semibold ${currentPage === p
                     ? "text-white"
                     : "text-[#667085] hover:bg-[#f2f4f7] hover:text-[#0E1B3D]"
@@ -6541,7 +6061,7 @@ export default function OrderHistory() {
               ))}
 
               <button
-                onClick={() => setPage(Math.min(totalPages, currentPage + 1))}
+                onClick={() => goToPage(Math.min(totalPages, currentPage + 1))}
                 disabled={currentPage === totalPages}
                 className="flex h-7 w-7 items-center justify-center rounded-[6px] text-[#b0b8c8] hover:bg-[#f2f4f7] disabled:opacity-40"
               >
@@ -6554,7 +6074,6 @@ export default function OrderHistory() {
 
       {/* ================= MODALS ================= */}
 
-      {/* ✅ Kept in DOM but no longer triggered by product click */}
       <OrderImageGallery
         isOpen={imageGalleryOpen}
         onClose={closeAllModals}
@@ -6596,7 +6115,8 @@ export default function OrderHistory() {
       <ReturnModal
         isOpen={returnModalOpen}
         onClose={closeAllModals}
-        order={selectedOrder}
+        lines={selectedGroup ? getReturnableLines(selectedGroup.lines) : []}
+        reference={selectedGroup?.reference ?? ""}
         onSubmit={handleReturnSubmit}
         isUploading={isReturning || isUploading}
       />
@@ -6604,7 +6124,8 @@ export default function OrderHistory() {
       <CancelModal
         isOpen={cancelModalOpen}
         onClose={closeAllModals}
-        order={selectedOrder}
+        lines={selectedGroup ? getCancellableLines(selectedGroup.lines) : []}
+        reference={selectedGroup?.reference ?? ""}
         onSubmit={handleCancelSubmit}
         isUploading={isCancelling || isUploading}
       />
@@ -6612,8 +6133,12 @@ export default function OrderHistory() {
       <CancelReturnModal
         isOpen={cancelReturnModalOpen}
         onClose={closeAllModals}
-        order={selectedOrder}
-        returnId={selectedReturnId}
+        lines={
+          selectedGroup
+            ? selectedGroup.lines.filter((l) => !!findCancellableReturn(l))
+            : []
+        }
+        reference={selectedGroup?.reference ?? ""}
         onSubmit={handleCancelReturnSubmit}
         isUploading={isCancellingReturn || isUploading}
       />
@@ -6621,25 +6146,12 @@ export default function OrderHistory() {
       <WithdrawModal
         isOpen={withdrawModalOpen}
         onClose={closeAllModals}
-        order={selectedOrder}
-        title={
-          withdrawType === "cancel"
-            ? "Withdraw Cancel Request"
-            : "Withdraw Return Request"
-        }
-        message={
-          withdrawType === "cancel"
-            ? "Your cancel request will be withdrawn and the order will continue processing normally."
-            : "Your return request will be withdrawn and the order will continue processing normally."
-        }
-        onSubmit={
-          withdrawType === "cancel"
-            ? handleWithdrawCancelOrder
-            : handleWithdrawCancelRequest
-        }
-        isUploading={
-          isWithdrawingCancelOrder || isWithdrawingCancelRequest || isUploading
-        }
+        lines={selectedGroup ? getWithdrawCancelLines(selectedGroup.lines) : []}
+        reference={selectedGroup?.reference ?? ""}
+        title="Withdraw Cancel Request"
+        message="Your cancel request will be withdrawn and the order will continue processing normally."
+        onSubmit={handleWithdrawCancelOrder}
+        isUploading={isWithdrawingCancelOrder || isUploading}
       />
     </>
   );

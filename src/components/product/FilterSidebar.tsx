@@ -21,7 +21,7 @@ export type FilterState = {
   subCategories: string[];
   priceRange: [number, number];
   availability: Availability;
-  colors?: string[];
+  colors: string[];
 };
 
 type ProductLike = {
@@ -334,85 +334,6 @@ export default function FilterSidebar({
   );
 
   /* ------------------------------------------------------------------------ */
-  /* BRAND <-> CATEGORY RELATIONSHIP                                          */
-  /* ------------------------------------------------------------------------ */
-
-  const brandCategoryRelations = useMemo(() => {
-    const brandToCategoryId = new Map<string, string>();
-    const brandToCategoryTitle = new Map<string, string>();
-    const categoryToBrandIds = new Map<string, string[]>();
-    const categoryTitleToId = new Map<string, string>();
-    const categoryIdToTitle = new Map<string, string>();
-
-    categories.forEach((category) => {
-      const id = keyOf(category.id);
-      const title = normalized(category.title);
-      if (!id || !title) return;
-      categoryTitleToId.set(title, id);
-      categoryIdToTitle.set(id, category.title);
-    });
-
-    const addRelation = (brandIdValue: unknown, categoryIdValue: unknown) => {
-      const brandId = keyOf(brandIdValue);
-      const categoryId = keyOf(categoryIdValue);
-      if (!brandId || !categoryId) return;
-
-      brandToCategoryId.set(brandId, categoryId);
-
-      const categoryTitle = categoryIdToTitle.get(categoryId);
-      if (categoryTitle) {
-        brandToCategoryTitle.set(brandId, categoryTitle);
-      }
-
-      const existing = categoryToBrandIds.get(categoryId) ?? [];
-      if (!existing.includes(brandId)) {
-        categoryToBrandIds.set(categoryId, [...existing, brandId]);
-      }
-    };
-
-    categories.forEach((category) => {
-      (category.brands ?? []).forEach((brand) => {
-        addRelation(brand.id, brand.category_id ?? category.id);
-      });
-    });
-
-    apiBrands.forEach((brand) => {
-      addRelation(brand.id, brand.category_id);
-    });
-
-    return {
-      brandToCategoryId,
-      brandToCategoryTitle,
-      categoryToBrandIds,
-      categoryTitleToId,
-      categoryIdToTitle,
-    };
-  }, [categories, apiBrands]);
-
-  const {
-    brandToCategoryId,
-    brandToCategoryTitle,
-    categoryToBrandIds,
-    categoryTitleToId,
-    categoryIdToTitle,
-  } = brandCategoryRelations;
-
-  /* ------------------------------------------------------------------------ */
-  /* SEARCH                                                                   */
-  /* ------------------------------------------------------------------------ */
-
-  const searchActive = Boolean(
-    (
-      searchParams.get("search") ||
-      searchParams.get("q") ||
-      searchParams.get("query") ||
-      searchParams.get("search_query") ||
-      searchParams.get("keyword") ||
-      ""
-    ).trim(),
-  );
-
-  /* ------------------------------------------------------------------------ */
   /* PRODUCT DATA                                                             */
   /* ------------------------------------------------------------------------ */
 
@@ -424,14 +345,18 @@ export default function FilterSidebar({
     [facetProducts, products],
   );
 
+  // Only products explicitly marked primary are shown as listing families.
+  // Their non-primary family members are still used to resolve variants/facets.
   const productFamilies = useMemo(() => {
-    if (searchActive) return sourceProducts;
-
     return sourceProducts.filter((p) => {
       const flag = p.is_primary ?? p.isPrimary;
-      return flag == null || flag === true || flag === 1 || flag === "1";
+      return (
+        flag === true ||
+        flag === 1 ||
+        (typeof flag === "string" && ["1", "true"].includes(flag.trim().toLowerCase()))
+      );
     });
-  }, [sourceProducts, searchActive]);
+  }, [sourceProducts]);
 
   const familyMembers = useMemo(() => {
     const byId = new Map(
@@ -678,14 +603,8 @@ export default function FilterSidebar({
   /* ------------------------------------------------------------------------ */
 
   const subcategoryRelations = useMemo(() => {
-    const selectedSubcategoryIds = new Set(filters.subCategories);
-    const selectedCategoryTitles = new Set(filters.categories.map(normalized));
-
     const categoryBySubcategory = new Map<string, string>();
-    const brandsBySubcategory = new Map<string, Set<string>>();
-    const categoriesByBrand = new Map<string, Set<string>>();
     const inferredCategoryTitles = new Set<string>();
-    const inferredBrandIds = new Set<string>();
 
     categories.forEach((category) => {
       const categoryTitle = normalized(category.title);
@@ -693,166 +612,28 @@ export default function FilterSidebar({
         const subcategoryId = keyOf(subcategory.id);
         if (!subcategoryId || !categoryTitle) return;
         categoryBySubcategory.set(subcategoryId, categoryTitle);
-        if (selectedSubcategoryIds.has(subcategoryId)) {
-          inferredCategoryTitles.add(categoryTitle);
-        }
       });
     });
 
     for (const family of familyMembers) {
-      const familySubcategories = new Set<string>();
-      const familyBrandIds = new Set<string>();
-
       for (const product of family) {
         const subcategoryId = productSubcategoryId(product);
-        const categoryTitle = productCategoryName(product, categories);
-
-        if (subcategoryId && categoryTitle) {
-          const normalizedTitle = normalized(categoryTitle);
-          if (!categoryBySubcategory.has(subcategoryId)) {
-            categoryBySubcategory.set(subcategoryId, normalizedTitle);
-          }
-          if (selectedSubcategoryIds.has(subcategoryId)) {
-            inferredCategoryTitles.add(normalizedTitle);
-          }
+        const categoryTitle = normalized(productCategoryName(product, categories));
+        if (subcategoryId && categoryTitle && !categoryBySubcategory.has(subcategoryId)) {
+          categoryBySubcategory.set(subcategoryId, categoryTitle);
         }
-
-        if (subcategoryId && selectedSubcategoryIds.has(subcategoryId)) {
-          familySubcategories.add(subcategoryId);
-        }
-
-        const brandName = productBrandName(product);
-        const brandId =
-          productBrandId(product) ||
-          keyOf(
-            apiBrands.find(
-              (brand) => normalized(brand.title) === normalized(brandName),
-            )?.id,
-          );
-
-        if (brandId) familyBrandIds.add(brandId);
       }
-
-      familySubcategories.forEach((subcategoryId) => {
-        const existing =
-          brandsBySubcategory.get(subcategoryId) ?? new Set<string>();
-        familyBrandIds.forEach((brandId) => existing.add(brandId));
-        brandsBySubcategory.set(subcategoryId, existing);
-      });
     }
 
-    selectedSubcategoryIds.forEach((subcategoryId) => {
+    filters.subCategories.forEach((subcategoryId) => {
       const parentTitle = categoryBySubcategory.get(subcategoryId);
       if (parentTitle) inferredCategoryTitles.add(parentTitle);
-      brandsBySubcategory.get(subcategoryId)?.forEach((brandId) => {
-        inferredBrandIds.add(brandId);
-      });
     });
 
-    const visibleSelectedCategoryTitles = new Set([
-      ...selectedCategoryTitles,
-      ...inferredCategoryTitles,
-    ]);
+    return { categoryBySubcategory, inferredCategoryTitles };
+  }, [filters.subCategories, categories, familyMembers]);
 
-    categories.forEach((category) => {
-      const categoryTitle = normalized(category.title);
-      if (!visibleSelectedCategoryTitles.has(categoryTitle)) return;
-
-      const categoryId = keyOf(category.id);
-
-      const hasSelectedBrand = filters.brands.some(
-        (brandId) => brandToCategoryId.get(brandId) === categoryId,
-      );
-
-      if (!hasSelectedBrand) {
-        (category.brands ?? []).forEach((brand) => {
-          const brandId = keyOf(brand.id);
-          if (brandId) inferredBrandIds.add(brandId);
-        });
-        apiBrands
-          .filter((brand) => keyOf(brand.category_id) === categoryId)
-          .forEach((brand) => inferredBrandIds.add(keyOf(brand.id)));
-      }
-
-      const linkedBrandIds = new Set<string>([
-        ...(category.brands ?? []).map((brand) => keyOf(brand.id)),
-        ...apiBrands
-          .filter((brand) => keyOf(brand.category_id) === categoryId)
-          .map((brand) => keyOf(brand.id)),
-      ]);
-
-      linkedBrandIds.forEach((brandId) => {
-        if (!brandId) return;
-        const titles = categoriesByBrand.get(brandId) ?? new Set<string>();
-        titles.add(categoryTitle);
-        categoriesByBrand.set(brandId, titles);
-      });
-    });
-
-    for (const family of familyMembers) {
-      for (const product of family) {
-        const categoryTitle = normalized(
-          productCategoryName(product, categories),
-        );
-        if (!categoryTitle || !visibleSelectedCategoryTitles.has(categoryTitle)) {
-          continue;
-        }
-
-        const categoryId = categoryTitleToId.get(categoryTitle);
-        const hasSelectedBrand = categoryId
-          ? filters.brands.some(
-              (brandId) => brandToCategoryId.get(brandId) === categoryId,
-            )
-          : false;
-
-        if (selectedCategoryTitles.has(categoryTitle) && hasSelectedBrand) {
-          continue;
-        }
-
-        const brandId =
-          productBrandId(product) ||
-          keyOf(
-            apiBrands.find(
-              (brand) =>
-                normalized(brand.title) ===
-                normalized(productBrandName(product)),
-            )?.id,
-          );
-
-        if (!brandId) continue;
-        inferredBrandIds.add(brandId);
-
-        const titles = categoriesByBrand.get(brandId) ?? new Set<string>();
-        titles.add(categoryTitle);
-        categoriesByBrand.set(brandId, titles);
-      }
-    }
-
-    return {
-      categoryBySubcategory,
-      brandsBySubcategory,
-      categoriesByBrand,
-      inferredCategoryTitles,
-      inferredBrandIds,
-    };
-  }, [
-    filters.subCategories,
-    filters.categories,
-    filters.brands,
-    categories,
-    familyMembers,
-    apiBrands,
-    brandToCategoryId,
-    categoryTitleToId,
-  ]);
-
-  const {
-    categoryBySubcategory,
-    brandsBySubcategory,
-    categoriesByBrand,
-    inferredCategoryTitles,
-    inferredBrandIds,
-  } = subcategoryRelations;
+  const { categoryBySubcategory, inferredCategoryTitles } = subcategoryRelations;
 
   /* ------------------------------------------------------------------------ */
   /* AUTO EXPAND SELECTED CATEGORY                                            */
@@ -960,103 +741,30 @@ export default function FilterSidebar({
     (next: FilterState, delayed = false) => {
       if (timer.current) {
         clearTimeout(timer.current);
+        timer.current = null;
       }
 
       setFilters(next);
 
-      // Update the parent ProductsPage state.
-      onFilterChange?.(next);
+      // ProductsPage is the sole owner of URL/API updates. This prevents
+      // competing router.replace calls from dropping earlier selections.
+      if (onFilterChange) {
+        onFilterChange(next);
+        return;
+      }
 
+      // Standalone fallback if this sidebar is rendered without a parent.
       if (delayed) {
-        timer.current = setTimeout(() => {
-          applyUrl(next);
-        }, 600);
+        timer.current = setTimeout(() => applyUrl(next), 350);
       } else {
         applyUrl(next);
-
-        if (mobile) {
-          onMobileClose?.();
-        }
       }
     },
-    [applyUrl, mobile, onFilterChange, onMobileClose],
+    [applyUrl, onFilterChange],
   );
 
   /* ------------------------------------------------------------------------ */
-  /* BRAND CATEGORY LOOKUP                                                    */
-  /* ------------------------------------------------------------------------ */
-
-  const getRelatedCategoryTitle = useCallback(
-    (brandId: string): string => {
-      const apiTitle = brandToCategoryTitle.get(brandId);
-      if (apiTitle) return apiTitle;
-
-      const product = members.find((item) => {
-        const id =
-          productBrandId(item) ||
-          keyOf(
-            apiBrands.find(
-              (brand) =>
-                normalized(brand.title) ===
-                normalized(productBrandName(item)),
-            )?.id,
-          );
-        return id === brandId;
-      });
-
-      if (product) {
-        return normalized(productCategoryName(product, categories));
-      }
-
-      const mapped = categoriesByBrand.get(brandId);
-      return mapped?.values().next().value ?? "";
-    },
-    [brandToCategoryTitle, members, apiBrands, categories, categoriesByBrand],
-  );
-
-  /* ------------------------------------------------------------------------ */
-  /* GET CATEGORY BRAND IDS                                                   */
-  /* ------------------------------------------------------------------------ */
-
-  const getRelatedBrandIds = useCallback(
-    (categoryTitle: string): string[] => {
-      const categoryId = categoryTitleToId.get(normalized(categoryTitle));
-      const result = new Set<string>();
-
-      if (categoryId) {
-        (categoryToBrandIds.get(categoryId) ?? []).forEach((id) =>
-          result.add(id),
-        );
-      }
-
-      const normalizedTitle = normalized(categoryTitle);
-
-      members.forEach((product) => {
-        const productCategory = normalized(
-          productCategoryName(product, categories),
-        );
-        if (productCategory !== normalizedTitle) return;
-
-        const brandId =
-          productBrandId(product) ||
-          keyOf(
-            apiBrands.find(
-              (brand) =>
-                normalized(brand.title) ===
-                normalized(productBrandName(product)),
-            )?.id,
-          );
-
-        if (brandId) result.add(brandId);
-      });
-
-      return [...result];
-    },
-    [categoryTitleToId, categoryToBrandIds, members, categories, apiBrands],
-  );
-
-  /* ------------------------------------------------------------------------ */
-  /* FILTER TOGGLE - BRAND + CATEGORY SYNC                                    */
+  /* FILTER TOGGLE - INDEPENDENT MULTI-SELECT                                 */
   /* ------------------------------------------------------------------------ */
 
   const toggleArray = (
@@ -1064,150 +772,39 @@ export default function FilterSidebar({
     value: string,
   ) => {
     const old = filters[key] ?? [];
-
-    /* ---------------------------------------------------------------------- */
-    /* CATEGORY SELECT / UNSELECT                                             */
-    /* ---------------------------------------------------------------------- */
+    const alreadySelected = old.includes(value);
 
     if (key === "categories") {
       const categoryKey = normalized(value);
-
       const isChecked =
         old.some((item) => normalized(item) === categoryKey) ||
         inferredCategoryTitles.has(categoryKey);
 
-      const relatedBrandIds = new Set(getRelatedBrandIds(value));
-      const currentCategoryId = categoryTitleToId.get(categoryKey);
+      const nextCategories = isChecked
+        ? old.filter((item) => normalized(item) !== categoryKey)
+        : unique([...old, value]);
 
-      if (isChecked) {
-        const subcategoriesToRemove = filters.subCategories.filter(
-          (subcategoryId) =>
-            categoryBySubcategory.get(subcategoryId) === categoryKey,
-        );
-
-        const removeSubcategoryIds = new Set(subcategoriesToRemove);
-
-        commit({
-          ...filters,
-          categories: filters.categories.filter(
-            (item) => normalized(item) !== categoryKey,
-          ),
-          brands: filters.brands.filter((brandId) => !relatedBrandIds.has(brandId)),
-          subCategories: filters.subCategories.filter(
-            (id) => !removeSubcategoryIds.has(id),
-          ),
-        });
-
-        return;
-      }
-
-      const nextBrands = unique([...filters.brands, ...relatedBrandIds]);
+      // Removing a category clears its subcategories, but leaves brands alone.
+      const nextSubCategories = isChecked
+        ? filters.subCategories.filter(
+            (subcategoryId) => categoryBySubcategory.get(subcategoryId) !== categoryKey,
+          )
+        : filters.subCategories;
 
       commit({
         ...filters,
-        categories: unique([...filters.categories, value]),
-        brands: nextBrands,
-      });
-
-      return;
-    }
-
-    /* ---------------------------------------------------------------------- */
-    /* BRAND SELECT / UNSELECT                                                */
-    /* ---------------------------------------------------------------------- */
-
-    if (key === "brands") {
-      const isChecked = old.includes(value) || inferredBrandIds.has(value);
-
-      if (isChecked) {
-        const nextBrands = filters.brands.filter((item) => item !== value);
-
-        const linkedCategoryTitles = new Set<string>();
-        const categoryTitle = getRelatedCategoryTitle(value);
-
-        if (categoryTitle) {
-          linkedCategoryTitles.add(normalized(categoryTitle));
-        }
-
-        categoriesByBrand.get(value)?.forEach((title) => {
-          linkedCategoryTitles.add(normalized(title));
-        });
-
-        const categoryTitlesToRemove = new Set<string>();
-
-        linkedCategoryTitles.forEach((title) => {
-          const categoryId = categoryTitleToId.get(title);
-
-          const hasOtherSelectedBrand = categoryId
-            ? nextBrands.some(
-                (brandId) =>
-                  brandId !== value &&
-                  brandToCategoryId.get(brandId) === categoryId,
-              )
-            : false;
-
-          if (!hasOtherSelectedBrand) {
-            categoryTitlesToRemove.add(title);
-          }
-        });
-
-        const removeSubcategoryIds = new Set<string>();
-
-        filters.subCategories.forEach((subcategoryId) => {
-          const parentTitle = categoryBySubcategory.get(subcategoryId);
-
-          const belongsToBrand = brandsBySubcategory
-            .get(subcategoryId)
-            ?.has(value);
-
-          const belongsToRemovedCategory =
-            parentTitle !== undefined && categoryTitlesToRemove.has(parentTitle);
-
-          if (belongsToBrand || belongsToRemovedCategory) {
-            removeSubcategoryIds.add(subcategoryId);
-          }
-        });
-
-        const nextCategories = filters.categories.filter(
-          (title) => !categoryTitlesToRemove.has(normalized(title)),
-        );
-
-        commit({
-          ...filters,
-          brands: nextBrands,
-          categories: nextCategories,
-          subCategories: filters.subCategories.filter(
-            (id) => !removeSubcategoryIds.has(id),
-          ),
-        });
-
-        return;
-      }
-
-      const parentCategoryTitle = getRelatedCategoryTitle(value);
-
-      const nextCategories = parentCategoryTitle
-        ? unique([...filters.categories, parentCategoryTitle])
-        : filters.categories;
-
-      commit({
-        ...filters,
-        brands: unique([...filters.brands, value]),
         categories: nextCategories,
+        subCategories: nextSubCategories,
       });
-
       return;
     }
 
-    /* ---------------------------------------------------------------------- */
-    /* SUBCATEGORY / COLOR                                                    */
-    /* ---------------------------------------------------------------------- */
-
+    // Brands, subcategories and colors are independent selectable arrays.
     commit({
       ...filters,
-      [key]: old.includes(value)
+      [key]: alreadySelected
         ? old.filter((item) => item !== value)
-        : [...old, value],
+        : unique([...old, value]),
     });
   };
 
@@ -1253,32 +850,10 @@ export default function FilterSidebar({
     setPriceInputs({ min: "0", max: String(ceiling) });
     setExpandedCategories([]);
 
-    onFilterChange?.(reset);
-
-    const params = new URLSearchParams(paramsString);
-
-    [
-      "brand_ids",
-      "category",
-      "subcategory_ids",
-      "color",
-      "min_price",
-      "max_price",
-      "stock_status[]",
-      "stock_status",
-      "in_stock",
-      "out_of_stock",
-      "low_stock",
-      "page",
-    ].forEach((key) => params.delete(key));
-
-    const query = params.toString();
-    const nextUrl = query ? `${PRODUCTS_ROUTE}?${query}` : PRODUCTS_ROUTE;
-
-    router.replace(nextUrl, { scroll: false });
-
-    if (mobile) {
-      onMobileClose?.();
+    if (onFilterChange) {
+      onFilterChange(reset);
+    } else {
+      applyUrl(reset);
     }
   };
 
@@ -1304,15 +879,11 @@ export default function FilterSidebar({
   /* SELECTED COUNTS                                                          */
   /* ------------------------------------------------------------------------ */
 
-  const selectedBrandCount = new Set([
-    ...filters.brands,
-    ...inferredBrandIds,
-  ]).size;
+  const selectedBrandCount = filters.brands.length;
 
-  const selectedCategoryCount = new Set([
-    ...filters.categories.map(normalized),
-    ...inferredCategoryTitles,
-  ]).size;
+  // Count explicitly selected categories only; a checked parent implied by
+  // a selected subcategory must not inflate the active-filter badge.
+  const selectedCategoryCount = new Set(filters.categories.map(normalized)).size;
 
   const selectedCount =
     selectedBrandCount +
@@ -1421,7 +992,7 @@ export default function FilterSidebar({
       aria-label="Product filters"
       className={`overflow-hidden border border-[#eae7e1] bg-white ${
         mobile
-          ? "max-h-[90dvh] rounded-t-2xl"
+          ? "flex h-[85dvh] max-h-[90dvh] flex-col rounded-t-2xl"
           : "rounded-xl md:sticky md:top-5"
       }`}
     >
@@ -1463,7 +1034,7 @@ export default function FilterSidebar({
 
       <div
         className={
-          mobile ? "max-h-[calc(90dvh-65px)] overflow-y-auto" : ""
+          mobile ? "min-h-0 flex-1 overflow-y-auto overscroll-contain" : ""
         }
       >
         {/* -------------------------------------------------------------- */}
@@ -1500,9 +1071,7 @@ export default function FilterSidebar({
                   <CheckRow
                     key={id}
                     label={b.title}
-                    checked={
-                      filters.brands.includes(id) || inferredBrandIds.has(id)
-                    }
+                    checked={filters.brands.includes(id)}
                     onChange={() => toggleArray("brands", id)}
                   />
                 );
@@ -1811,6 +1380,18 @@ export default function FilterSidebar({
           </>,
         )}
       </div>
+
+      {mobile && (
+        <div className="shrink-0 border-t border-[#e8e8e8] bg-white p-4">
+          <button
+            type="button"
+            onClick={onMobileClose}
+            className="w-full rounded-full bg-[#111111] px-4 py-3 text-[13px] font-semibold text-white transition hover:bg-black/85"
+          >
+            Show Products
+          </button>
+        </div>
+      )}
     </motion.aside>
   );
 }
