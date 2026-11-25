@@ -1084,7 +1084,7 @@ export default function FilterSidebar({
               <button
                 type="button"
                 onClick={() => setShowAllBrands((v) => !v)}
-                className="text-[12px] font-medium underline underline-offset-2"
+                className="text-[12px] font-medium underline text-black underline-offset-2"
               >
                 {showAllBrands ? "Show less" : `+ ${brandOptions.length - 7} more`}
               </button>
