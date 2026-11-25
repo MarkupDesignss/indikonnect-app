@@ -2,9 +2,8 @@
 
 "use client";
 
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-  PlusCircle,
   AlertTriangle,
   X,
   Loader2,
@@ -12,22 +11,11 @@ import {
   FileText,
   Shield,
   Users,
-  Award,
-  UserCheck,
-  Calendar,
   Mail,
   Phone,
-  CreditCard,
-  MapPin,
   Building2,
-  Landmark,
-  BadgeCheck,
   User,
-  Lock,
 } from "lucide-react";
-import { Button } from "@/components/common/Button";
-import Link from "next/link";
-import { FormActions } from "../FormActions";
 import { StepProps } from "../../types";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { showToast } from "@/lib/slices/toastSlice";
@@ -35,7 +23,6 @@ import {
   useStep7SubmitMutation,
   useLazyGetStepDataQuery,
 } from "../../../../../lib/redux/api/distributor/distributorauthApis";
-import { useRouter } from "next/navigation";
 import { InfoBox } from "../InfoBox";
 import { LegalModal } from "@/components/Distributor/distributor/LegalModal";
 
@@ -48,23 +35,30 @@ const theme = {
   navySoft: "#0B1B2E",
 };
 
-/** ✅ Final redirect target after successful submission */
+/** Final redirect target after successful submission. */
 const LOGIN_REDIRECT_URL =
   typeof window !== "undefined"
     ? `${window.location.origin}/indiekonnect-distributor/auth/distributor/login/`
     : "/indiekonnect-distributor/auth/distributor/login/";
 
-// ✅ Types for the terms acceptance modal
 type LegalType = "terms" | "agreement" | "code-of-conduct";
+type AcceptanceType = LegalType | "refund-policy";
 
-interface TermsAcceptanceModalState {
+interface AcceptanceModalState {
   isOpen: boolean;
-  type: LegalType | null;
+  type: AcceptanceType | null;
   expectedText: string;
   label: string;
+  policyText: string;
 }
 
 const TERMS_CONDITIONS_TEXT = "I accept these Terms and Conditions.";
+const REFUND_POLICY_TEXT =
+  "In the event of a refund, a 5% deduction will be applied to the total refundable amount towards administrative and processing charges. By proceeding with a purchase, the customer acknowledges and agrees to this refund policy as outlined in our Service Level Agreement (SLA).";
+const REFUND_POLICY_ACCEPTANCE_TEXT = "I accept the Refund Policy.";
+
+const isTruthy = (value: any): boolean =>
+  value === true || value === 1 || value === "1" || value === "true" || value === "on";
 
 export const ReviewStep: React.FC<StepProps> = ({
   data,
@@ -73,36 +67,33 @@ export const ReviewStep: React.FC<StepProps> = ({
   isLoading,
   errors,
   onChange,
-  onNext,
   onBackToMobile,
 }) => {
   const dispatch = useAppDispatch();
-  const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // ✅ FIX: Navigation locks
   const [isNavigating, setIsNavigating] = useState(false);
   const hasNavigatedRef = useRef(false);
 
-  // ✅ Legal modal state
   const [legalModalOpen, setLegalModalOpen] = useState(false);
   const [legalModalType, setLegalModalType] = useState<LegalType | null>(null);
 
-  // ✅ Terms acceptance modal state
-  const [termsModal, setTermsModal] = useState<TermsAcceptanceModalState>({
-    isOpen: false,
-    type: null,
-    expectedText: "",
-    label: "",
-  });
+  const [acceptanceModal, setAcceptanceModal] =
+    useState<AcceptanceModalState>({
+      isOpen: false,
+      type: null,
+      expectedText: "",
+      label: "",
+      policyText: "",
+    });
   const [typedText, setTypedText] = useState("");
-  const [termsError, setTermsError] = useState("");
+  const [acceptanceError, setAcceptanceError] = useState("");
 
-  // ✅ CRITICAL FIX: Local state backup for accept_terms_text
-  // Even if parent `data` doesn't hold this field, this will survive.
-  const [acceptTermsTextLocal, setAcceptTermsTextLocal] = useState<string>("");
+  // Local backups ensure acceptance text is available even if the parent
+  // registration state updates asynchronously.
+  const [acceptTermsTextLocal, setAcceptTermsTextLocal] = useState("");
+  const [acceptRefundPolicyTextLocal, setAcceptRefundPolicyTextLocal] =
+    useState("");
 
-  // ✅ Initialize phone synchronously from localStorage (bulletproof)
   const [phoneNumber, setPhoneNumber] = useState<string>(() => {
     if (typeof window === "undefined") return "";
 
@@ -133,19 +124,20 @@ export const ReviewStep: React.FC<StepProps> = ({
   const [getStepData, { isLoading: isLoadingStepData }] =
     useLazyGetStepDataQuery();
 
-  // ==========================================
-  // ✅ SYNC: Keep local acceptTermsText in sync with data
-  // ==========================================
+  // Keep local acceptance text in sync with the parent form data.
   useEffect(() => {
-    const fromData = (data as any)?.accept_terms_text;
-    if (typeof fromData === "string" && fromData.length > 0) {
-      setAcceptTermsTextLocal(fromData);
+    const termsText = (data as any)?.accept_terms_text;
+    if (typeof termsText === "string" && termsText.length > 0) {
+      setAcceptTermsTextLocal(termsText);
+    }
+
+    const refundText = (data as any)?.accept_refund_policy_text;
+    if (typeof refundText === "string" && refundText.length > 0) {
+      setAcceptRefundPolicyTextLocal(refundText);
     }
   }, [data]);
 
-  // ==========================================
-  // ✅ PHONE NUMBER FALLBACK (email)
-  // ==========================================
+  // Phone number fallback.
   useEffect(() => {
     if (phoneNumber) return;
 
@@ -154,20 +146,18 @@ export const ReviewStep: React.FC<StepProps> = ({
 
     if (emailFallback) {
       console.warn(
-        "⚠ No phone in localStorage. Falling back to email:",
+        "No phone in localStorage. Falling back to email:",
         emailFallback,
       );
       setPhoneNumber(emailFallback);
     } else {
       console.error(
-        "❌ No phone AND no email found. Submit button will stay disabled.",
+        "No phone and no email found. Submit button will stay disabled.",
       );
     }
   }, [data.email, phoneNumber]);
 
-  // ==========================================
-  // ✅ FETCH REVIEW DATA
-  // ==========================================
+  // Fetch the saved application data for the review screen.
   useEffect(() => {
     const fetchData = async () => {
       const email =
@@ -291,9 +281,7 @@ export const ReviewStep: React.FC<StepProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data.email]);
 
-  // ==========================================
-  // ✅ CLEAR STORAGE + REDIRECT TO LOGIN
-  // ==========================================
+  // Clear registration-only data and redirect after successful submission.
   const clearNavigationHistory = () => {
     const keysToRemove = [
       "distributor_verified_phone",
@@ -320,14 +308,10 @@ export const ReviewStep: React.FC<StepProps> = ({
       "customer_otp",
       "customer_phone",
       "distributor_application",
-      "distributor_application_data",
-      "distributor_application_status",
-      "distributor_verified_phone",
       "distributor_phone_verified",
       "distributor_verified_email",
       "distributor_email_verified",
       "distributor_temp_token",
-      "distributor_step_data",
       "distributor_step_completed",
       "distributor_fresh_registration",
       "distributor_user_data",
@@ -340,16 +324,16 @@ export const ReviewStep: React.FC<StepProps> = ({
       "otp_timer",
       "otp_attempts",
       "otp_resend_timer",
+      "distributor_accept_terms_text",
+      "distributor_accept_refund_policy_text",
     ];
 
-    keysToRemove.forEach((key) => {
-      localStorage.removeItem(key);
-    });
+    keysToRemove.forEach((key) => localStorage.removeItem(key));
 
     try {
       sessionStorage.clear();
-    } catch (e) {
-      console.warn("sessionStorage clear failed:", e);
+    } catch (error) {
+      console.warn("sessionStorage clear failed:", error);
     }
 
     if (typeof window !== "undefined") {
@@ -357,25 +341,289 @@ export const ReviewStep: React.FC<StepProps> = ({
     }
   };
 
-  // ==========================================
-  // ✅ SUBMIT HANDLER (WITH RACE CONDITION FIX)
-  // ==========================================
+  const apiStepChecks = useMemo(() => {
+    const cs = completedSteps || {};
+    return {
+      step1: cs.step_1_personal_info === true,
+      step2: cs.step_2_sponsor === true,
+      step3: cs.step_3_aadhaar === true,
+      step4: cs.step_4_pan === true,
+      step5: cs.step_5_bank === true,
+      step6: cs.step_6_location === true,
+    };
+  }, [completedSteps]);
+
+  const profileChecks = useMemo(() => {
+    const profile = profileData || {};
+    return {
+      aadhaar: isTruthy(profile.aadhaar_verified),
+      pan: isTruthy(profile.pan_verified),
+      bank: isTruthy(profile.bank_verified),
+      location: isTruthy(profile.location_consent),
+    };
+  }, [profileData]);
+
+  const dataChecks = useMemo(() => {
+    return {
+      aadhaar: isTruthy((data as any).aadhaar_verified),
+      pan: isTruthy((data as any).pan_verified),
+      bank: isTruthy((data as any).bank_verified),
+      location:
+        isTruthy((data as any).location_verified) ||
+        isTruthy((data as any).location_consent),
+    };
+  }, [data]);
+
+  const step1Verified =
+    apiStepChecks.step1 ||
+    (!!(userData?.full_name || data.full_name) &&
+      !!(userData?.email || data.email) &&
+      !!(userData?.phone || data.mobile));
+
+  const step2Verified =
+    apiStepChecks.step2 || !!(userData?.sponsor_id || data.sponsor_id);
+  const step3Verified =
+    apiStepChecks.step3 || profileChecks.aadhaar || dataChecks.aadhaar;
+  const step4Verified =
+    apiStepChecks.step4 || profileChecks.pan || dataChecks.pan;
+  const step5Verified =
+    apiStepChecks.step5 || profileChecks.bank || dataChecks.bank;
+  const step6Verified =
+    apiStepChecks.step6 || profileChecks.location || dataChecks.location;
+
+  const isAllStepsVerified =
+    step1Verified &&
+    step2Verified &&
+    step3Verified &&
+    step4Verified &&
+    step5Verified &&
+    step6Verified;
+
+  const isAllAccepted =
+    isTruthy((data as any).terms_accepted) &&
+    isTruthy((data as any).agreement_accepted) &&
+    isTruthy((data as any).code_of_conduct_accepted) &&
+    isTruthy((data as any).refund_policy_accepted);
+
+  const isSubmitDisabled =
+    isNavigating ||
+    submitSuccess ||
+    !isAllAccepted ||
+    isSubmitting ||
+    !phoneNumber ||
+    !isAllStepsVerified ||
+    isLoading;
+
+  const getStatusColor = (status: boolean) =>
+    status ? "text-green-600 bg-green-50" : "text-gray-400 bg-gray-100";
+
+  // Terms of Use keeps its typed confirmation popup. The Refund Policy is
+  // read-only: the user reads the complete policy and confirms with one click.
+  const openAcceptanceModal = (type: AcceptanceType, label: string) => {
+    const isRefundPolicy = type === "refund-policy";
+
+    setAcceptanceModal({
+      isOpen: true,
+      type,
+      expectedText: isRefundPolicy ? "" : TERMS_CONDITIONS_TEXT,
+      label,
+      policyText: isRefundPolicy ? REFUND_POLICY_TEXT : "",
+    });
+    setTypedText("");
+    setAcceptanceError("");
+  };
+
+  const closeAcceptanceModal = () => {
+    setAcceptanceModal({
+      isOpen: false,
+      type: null,
+      expectedText: "",
+      label: "",
+      policyText: "",
+    });
+    setTypedText("");
+    setAcceptanceError("");
+  };
+
+  const blockClipboardEvent = (
+    event:
+      | React.ClipboardEvent<HTMLElement>
+      | React.DragEvent<HTMLElement>
+      | React.MouseEvent<HTMLElement>,
+  ) => {
+    event.preventDefault();
+    event.stopPropagation();
+  };
+
+  const blockClipboardShortcuts = (event: React.KeyboardEvent<HTMLElement>) => {
+    const key = event.key.toLowerCase();
+    const isClipboardShortcut =
+      (event.ctrlKey || event.metaKey) && ["c", "x", "v"].includes(key);
+    const isShiftInsertPaste = event.shiftKey && event.key === "Insert";
+
+    if (isClipboardShortcut || isShiftInsertPaste) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  };
+
+  // The Refund Policy is accepted by clicking "I Agree" after reading it.
+  // No typing or copy/paste confirmation is required for this policy.
+  const handleRefundPolicyAccept = () => {
+    onChange({
+      target: { name: "refund_policy_accepted", value: true },
+    } as any);
+    onChange({
+      target: {
+        name: "accept_refund_policy_text",
+        value: REFUND_POLICY_ACCEPTANCE_TEXT,
+      },
+    } as any);
+
+    setAcceptRefundPolicyTextLocal(REFUND_POLICY_ACCEPTANCE_TEXT);
+    try {
+      localStorage.setItem(
+        "distributor_accept_refund_policy_text",
+        REFUND_POLICY_ACCEPTANCE_TEXT,
+      );
+    } catch {
+      // Local storage is optional; form state remains the source of truth.
+    }
+
+    dispatch(
+      showToast({
+        message: "Refund Policy accepted successfully",
+        type: "success",
+      }),
+    );
+    closeAcceptanceModal();
+  };
+
+  // Terms of Use still requires the user to type the displayed sentence.
+  const handleAcceptance = () => {
+    if (acceptanceModal.type !== "terms") return;
+
+    const trimmedTyped = typedText.trim();
+    const trimmedExpected = acceptanceModal.expectedText.trim();
+
+    if (!trimmedTyped) {
+      setAcceptanceError("Please type the acceptance text to continue.");
+      return;
+    }
+
+    if (trimmedTyped !== trimmedExpected) {
+      setAcceptanceError(
+        `Text does not match. Please type exactly: "${trimmedExpected}"`,
+      );
+      return;
+    }
+
+    onChange({
+      target: { name: "terms_accepted", value: true },
+    } as any);
+    onChange({
+      target: { name: "accept_terms_text", value: trimmedTyped },
+    } as any);
+
+    setAcceptTermsTextLocal(trimmedTyped);
+    try {
+      localStorage.setItem("distributor_accept_terms_text", trimmedTyped);
+    } catch {
+      // Local storage is optional; form state remains the source of truth.
+    }
+
+    dispatch(
+      showToast({
+        message: "Terms of Use accepted successfully",
+        type: "success",
+      }),
+    );
+
+    closeAcceptanceModal();
+  };
+
+  const checkboxes: {
+    name: string;
+    label: string;
+    type: AcceptanceType;
+  }[] = [
+    { name: "terms_accepted", label: "Terms of Use", type: "terms" },
+    {
+      name: "agreement_accepted",
+      label: "Distributor Agreement",
+      type: "agreement",
+    },
+    {
+      name: "code_of_conduct_accepted",
+      label: "Code of Conduct",
+      type: "code-of-conduct",
+    },
+    {
+      name: "refund_policy_accepted",
+      label: "Refund Policy",
+      type: "refund-policy",
+    },
+  ];
+
+  const handleCheckboxChange = (
+    checkbox: { name: string; label: string; type: AcceptanceType },
+    checked: boolean,
+  ) => {
+    // Terms and refund policy require the typed confirmation popup first.
+    if (checked && checkbox.type === "terms") {
+      openAcceptanceModal(checkbox.type, checkbox.label);
+      return;
+    }
+
+    if (checked && checkbox.type === "refund-policy") {
+      openAcceptanceModal(checkbox.type, checkbox.label);
+      return;
+    }
+
+    onChange({
+      target: { name: checkbox.name, value: checked },
+    } as any);
+
+    if (!checked && checkbox.name === "terms_accepted") {
+      setAcceptTermsTextLocal("");
+      onChange({
+        target: { name: "accept_terms_text", value: "" },
+      } as any);
+      try {
+        localStorage.removeItem("distributor_accept_terms_text");
+      } catch {
+        // Ignore storage cleanup failures.
+      }
+    }
+
+    if (!checked && checkbox.name === "refund_policy_accepted") {
+      setAcceptRefundPolicyTextLocal("");
+      onChange({
+        target: { name: "accept_refund_policy_text", value: "" },
+      } as any);
+      try {
+        localStorage.removeItem("distributor_accept_refund_policy_text");
+      } catch {
+        // Ignore storage cleanup failures.
+      }
+    }
+  };
+
   const handleSubmit = async () => {
-    // 🛑 Guard: Agar already navigating hai, toh kuch mat karo
     if (
       hasNavigatedRef.current ||
       isNavigating ||
       isSubmitting ||
       submitSuccess
     ) {
-      console.log("⏭️ Navigation already in progress, ignoring click");
+      console.log("Navigation already in progress, ignoring click");
       return;
     }
 
     if (!isAllAccepted) {
       dispatch(
         showToast({
-          message: "Please accept all terms and conditions",
+          message: "Please accept all required terms, agreements, and policies.",
           type: "error",
         }),
       );
@@ -402,37 +650,41 @@ export const ReviewStep: React.FC<StepProps> = ({
       return;
     }
 
-    // ✅ CRITICAL FIX: Resolve accept_terms_text from local state first,
-    // then fallback to data object.
     const resolvedTermsText =
       acceptTermsTextLocal.trim() ||
       ((data as any)?.accept_terms_text || "").trim();
+    const resolvedRefundPolicyText =
+      acceptRefundPolicyTextLocal.trim() ||
+      ((data as any)?.accept_refund_policy_text || "").trim();
 
-    // 🔍 Debug log (remove in production if not needed)
-    console.log("🚀 SUBMIT PAYLOAD:", {
-      phone: phoneNumber,
-      accept_terms: data.terms_accepted ? 1 : 0,
-      accept_agreement: data.agreement_accepted ? 1 : 0,
-      accept_code_of_conduct: data.code_of_conduct_accepted ? 1 : 0,
-      accept_terms_text: resolvedTermsText,
-      _local: acceptTermsTextLocal,
-      _data: (data as any)?.accept_terms_text,
-    });
-
-    // ✅ LOCK UI FIRST
+    // Lock the button before making the request to prevent duplicate submits.
     hasNavigatedRef.current = true;
     setIsNavigating(true);
     setIsSubmitting(true);
     setSubmissionError(null);
 
     try {
-      const response = await step7Submit({
-        phone: phoneNumber,
-        accept_terms: data.terms_accepted ? 1 : 0,
-        accept_agreement: data.agreement_accepted ? 1 : 0,
-        accept_code_of_conduct: data.code_of_conduct_accepted ? 1 : 0,
-        accept_terms_text: resolvedTermsText,
-      }).unwrap();
+      const response = await step7Submit(
+        {
+          phone: phoneNumber,
+          accept_terms: isTruthy((data as any).terms_accepted) ? 1 : 0,
+          accept_agreement: isTruthy((data as any).agreement_accepted) ? 1 : 0,
+          accept_code_of_conduct: isTruthy(
+            (data as any).code_of_conduct_accepted,
+          )
+            ? 1
+            : 0,
+          accept_terms_text: resolvedTermsText,
+          // New refund policy acceptance fields. The backend should store these
+          // against the distributor application for the acceptance record.
+          accept_refund_policy: isTruthy(
+            (data as any).refund_policy_accepted,
+          )
+            ? 1
+            : 0,
+          accept_refund_policy_text: resolvedRefundPolicyText,
+        } as any,
+      ).unwrap();
 
       if (response?.status || response?.success) {
         setSubmitSuccess(true);
@@ -447,13 +699,12 @@ export const ReviewStep: React.FC<StepProps> = ({
             submitted_at: new Date().toISOString(),
           }),
         );
-
         localStorage.setItem("distributor_application_status", "submitted");
 
         dispatch(
           showToast({
             message:
-              response.message || "✅ Application submitted successfully!",
+              response.message || "Application submitted successfully!",
             type: "success",
           }),
         );
@@ -483,23 +734,20 @@ export const ReviewStep: React.FC<StepProps> = ({
         if (onSubmit) {
           try {
             await onSubmit();
-          } catch (e) {
-            console.warn("onSubmit callback error:", e);
+          } catch (error) {
+            console.warn("onSubmit callback error:", error);
           }
         }
 
-        // ✅ setTimeout ke saath guard — sirf ek hi redirect
         setTimeout(() => {
           clearNavigationHistory();
         }, 2000);
       } else {
-        const errorMsg =
+        const errorMessage =
           response?.message ||
           "Application submission failed. Please try again.";
-        setSubmissionError(errorMsg);
-        dispatch(showToast({ message: errorMsg, type: "error" }));
-
-        // ✅ Unlock UI on failure (taaki user retry kar sake)
+        setSubmissionError(errorMessage);
+        dispatch(showToast({ message: errorMessage, type: "error" }));
         hasNavigatedRef.current = false;
         setIsNavigating(false);
       }
@@ -508,13 +756,12 @@ export const ReviewStep: React.FC<StepProps> = ({
 
       const httpStatus = error?.status;
       if (httpStatus === 200 || httpStatus === 201) {
-        console.log("⚠ RTK treated 200/201 as error — treating as success");
         setSubmitSuccess(true);
         setApplicationData(error?.data?.data || {});
         dispatch(
           showToast({
             message:
-              error?.data?.message || "✅ Application submitted successfully!",
+              error?.data?.message || "Application submitted successfully!",
             type: "success",
           }),
         );
@@ -524,259 +771,17 @@ export const ReviewStep: React.FC<StepProps> = ({
         return;
       }
 
-      const errorMsg =
+      const errorMessage =
         error?.data?.message ||
         error?.message ||
         "Application submission failed. Please try again.";
-      setSubmissionError(errorMsg);
-      dispatch(showToast({ message: errorMsg, type: "error" }));
-
-      // ✅ Unlock UI on failure
+      setSubmissionError(errorMessage);
+      dispatch(showToast({ message: errorMessage, type: "error" }));
       hasNavigatedRef.current = false;
       setIsNavigating(false);
     } finally {
       setIsSubmitting(false);
-      // Don't reset isNavigating on success — keep it locked until redirect
     }
-  };
-
-  // ✅ Use `type` (not href) — modal opens instead of new tab
-  const checkboxes: {
-    name: string;
-    label: string;
-    type: LegalType;
-  }[] = [
-    { name: "terms_accepted", label: "Terms of Use", type: "terms" },
-    {
-      name: "agreement_accepted",
-      label: "Distributor Agreement",
-      type: "agreement",
-    },
-    {
-      name: "code_of_conduct_accepted",
-      label: "Code of Conduct",
-      type: "code-of-conduct",
-    },
-  ];
-
-  const isTruthy = (val: any) =>
-    val === true || val === 1 || val === "1" || val === "true" || val === "on";
-
-  const isAllAccepted =
-    isTruthy(data.terms_accepted) &&
-    isTruthy(data.agreement_accepted) &&
-    isTruthy(data.code_of_conduct_accepted);
-
-  const apiStepChecks = useMemo(() => {
-    const cs = completedSteps || {};
-    return {
-      step1: cs.step_1_personal_info === true,
-      step2: cs.step_2_sponsor === true,
-      step3: cs.step_3_aadhaar === true,
-      step4: cs.step_4_pan === true,
-      step5: cs.step_5_bank === true,
-      step6: cs.step_6_location === true,
-    };
-  }, [completedSteps]);
-
-  const profileChecks = useMemo(() => {
-    const p = profileData || {};
-    return {
-      aadhaar: isTruthy(p.aadhaar_verified),
-      pan: isTruthy(p.pan_verified),
-      bank: isTruthy(p.bank_verified),
-      location: isTruthy(p.location_consent),
-    };
-  }, [profileData]);
-
-  const dataChecks = useMemo(() => {
-    return {
-      aadhaar: isTruthy(data.aadhaar_verified),
-      pan: isTruthy(data.pan_verified),
-      bank: isTruthy(data.bank_verified),
-      location:
-        isTruthy(data.location_verified) || isTruthy(data.location_consent),
-    };
-  }, [data]);
-
-  const step1Verified =
-    apiStepChecks.step1 ||
-    (!!(userData?.full_name || data.full_name) &&
-      !!(userData?.email || data.email) &&
-      !!(userData?.phone || data.mobile));
-
-  const step2Verified =
-    apiStepChecks.step2 || !!(userData?.sponsor_id || data.sponsor_id);
-
-  const step3Verified =
-    apiStepChecks.step3 || profileChecks.aadhaar || dataChecks.aadhaar;
-  const step4Verified =
-    apiStepChecks.step4 || profileChecks.pan || dataChecks.pan;
-  const step5Verified =
-    apiStepChecks.step5 || profileChecks.bank || dataChecks.bank;
-  const step6Verified =
-    apiStepChecks.step6 || profileChecks.location || dataChecks.location;
-
-  const isAllStepsVerified =
-    step1Verified &&
-    step2Verified &&
-    step3Verified &&
-    step4Verified &&
-    step5Verified &&
-    step6Verified;
-
-  const isSubmitDisabled =
-    isNavigating ||
-    submitSuccess ||
-    !isAllAccepted ||
-    isSubmitting ||
-    !phoneNumber ||
-    !isAllStepsVerified ||
-    isLoading;
-
-  const getStatusColor = (status: boolean) => {
-    return status ? "text-green-600 bg-green-50" : "text-gray-400 bg-gray-100";
-  };
-
-  // ==========================================
-  // ✅ TERMS ACCEPTANCE MODAL HANDLERS
-  // ==========================================
-  const openTermsModal = (type: LegalType, label: string) => {
-    setTermsModal({
-      isOpen: true,
-      type,
-      expectedText: TERMS_CONDITIONS_TEXT,
-      label,
-    });
-    setTypedText("");
-    setTermsError("");
-  };
-
-  const closeTermsModal = () => {
-    setTermsModal({
-      isOpen: false,
-      type: null,
-      expectedText: "",
-      label: "",
-    });
-    setTypedText("");
-    setTermsError("");
-  };
-
-  // Block browser clipboard actions for the displayed acceptance phrase and input.
-  const blockClipboardEvent = (
-    e: React.ClipboardEvent<HTMLElement> |
-      React.DragEvent<HTMLElement> |
-      React.MouseEvent<HTMLElement>,
-  ) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
-
-  const blockClipboardShortcuts = (e: React.KeyboardEvent<HTMLElement>) => {
-    const key = e.key.toLowerCase();
-    const isClipboardShortcut =
-      (e.ctrlKey || e.metaKey) && ["c", "x", "v"].includes(key);
-    const isShiftInsertPaste = e.shiftKey && e.key === "Insert";
-
-    if (isClipboardShortcut || isShiftInsertPaste) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-  };
-
-  const handleTermsAccept = () => {
-    const trimmedTyped = typedText.trim();
-    const trimmedExpected = termsModal.expectedText.trim();
-
-    if (!trimmedTyped) {
-      setTermsError("Please type the acceptance text to continue.");
-      return;
-    }
-
-    if (trimmedTyped !== trimmedExpected) {
-      setTermsError(
-        `Text does not match. Please type exactly: "${trimmedExpected}"`,
-      );
-      return;
-    }
-
-    // ✅ Match — save the accepted text & check the checkbox
-    const fieldName =
-      termsModal.type === "terms"
-        ? "terms_accepted"
-        : termsModal.type === "agreement"
-          ? "agreement_accepted"
-          : "code_of_conduct_accepted";
-
-    onChange({
-      target: { name: fieldName, value: true },
-    } as any);
-
-    // ✅ CRITICAL FIX: Save in local state FIRST (guaranteed)
-    setAcceptTermsTextLocal(trimmedTyped);
-
-    // ✅ Also push to parent data (may or may not persist, but harmless)
-    onChange({
-      target: { name: "accept_terms_text", value: trimmedTyped },
-    } as any);
-
-    // ✅ Persist in localStorage as extra safety (survives page reloads mid-step)
-    try {
-      localStorage.setItem("distributor_accept_terms_text", trimmedTyped);
-    } catch (e) {
-      // ignore
-    }
-
-    dispatch(
-      showToast({
-        message: `✅ ${termsModal.label} accepted successfully`,
-        type: "success",
-      }),
-    );
-
-    closeTermsModal();
-  };
-
-  // ==========================================
-  // ✅ HANDLE CHECKBOX CLICK — open modal for terms only
-  // ==========================================
-  const handleCheckboxClick = (
-    cb: { name: string; label: string; type: LegalType },
-    e: React.MouseEvent,
-  ) => {
-    // If checkbox is already checked, allow unchecking
-    const isCurrentlyChecked = isTruthy(data[cb.name as keyof typeof data]);
-    if (isCurrentlyChecked) {
-      onChange({
-        target: { name: cb.name, value: false },
-      } as any);
-
-      if (cb.name === "terms_accepted") {
-        // Clear local + data + storage
-        setAcceptTermsTextLocal("");
-        onChange({
-          target: { name: "accept_terms_text", value: "" },
-        } as any);
-        try {
-          localStorage.removeItem("distributor_accept_terms_text");
-        } catch (err) {
-          // ignore
-        }
-      }
-      return;
-    }
-
-    if (cb.type === "terms") {
-      e.preventDefault();
-      e.stopPropagation();
-      openTermsModal(cb.type, cb.label);
-      return;
-    }
-
-    onChange({
-      target: { name: cb.name, value: true },
-    } as any);
   };
 
   return (
@@ -808,7 +813,7 @@ export const ReviewStep: React.FC<StepProps> = ({
                     <FileText className="w-4 sm:w-5 h-4 sm:h-5 text-[var(--navy)]" />
                   </div>
                   <h2 className="text-lg sm:text-2xl font-bold tracking-tight text-[var(--navy)]">
-                    Review & Submit
+                    Review &amp; Submit
                   </h2>
                 </div>
                 <p className="text-xs sm:text-sm text-gray-500 font-medium">
@@ -833,7 +838,7 @@ export const ReviewStep: React.FC<StepProps> = ({
               everything is correct.
             </InfoBox>
 
-            {/* User Information Section */}
+            {/* Personal Information */}
             <div className="border border-gray-200 rounded-xl sm:rounded-2xl p-3 sm:p-5 bg-white/50">
               <div className="flex items-center gap-2 mb-2 sm:mb-3">
                 <User className="w-4 sm:w-5 h-4 sm:h-5 text-gray-600" />
@@ -843,17 +848,13 @@ export const ReviewStep: React.FC<StepProps> = ({
               </div>
               <div className="space-y-1.5 sm:space-y-2">
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 sm:py-1.5 border-b border-gray-100 gap-1 sm:gap-0">
-                  <span className="text-xs sm:text-sm text-gray-500">
-                    Full Name
-                  </span>
+                  <span className="text-xs sm:text-sm text-gray-500">Full Name</span>
                   <span className="text-xs sm:text-sm font-medium text-gray-800 break-all">
                     {userData?.full_name || data.full_name || "-"}
                   </span>
                 </div>
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 sm:py-1.5 border-b border-gray-100 gap-1 sm:gap-0">
-                  <span className="text-xs sm:text-sm text-gray-500">
-                    Date of Birth
-                  </span>
+                  <span className="text-xs sm:text-sm text-gray-500">Date of Birth</span>
                   <span className="text-xs sm:text-sm font-medium text-gray-800">
                     {userData?.date_of_birth?.split(" ")[0] ||
                       data.date_of_birth ||
@@ -861,22 +862,18 @@ export const ReviewStep: React.FC<StepProps> = ({
                   </span>
                 </div>
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 sm:py-1.5 border-b border-gray-100 gap-1 sm:gap-0">
-                  <span className="text-xs sm:text-sm text-gray-500">
-                    Email
-                  </span>
+                  <span className="text-xs sm:text-sm text-gray-500">Email</span>
                   <span className="text-xs sm:text-sm font-medium text-gray-800 flex items-center gap-1 break-all">
                     <Mail className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-gray-400 flex-shrink-0" />
                     {userData?.email || data.email || "-"}
                   </span>
                 </div>
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 sm:py-1.5 gap-1 sm:gap-0">
-                  <span className="text-xs sm:text-sm text-gray-500">
-                    Mobile
-                  </span>
+                  <span className="text-xs sm:text-sm text-gray-500">Mobile</span>
                   <span className="text-xs sm:text-sm font-medium text-gray-800 flex items-center gap-1">
                     <Phone className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-gray-400 flex-shrink-0" />
                     {userData?.phone || data.mobile
-                      ? `+91 ${data.mobile}`
+                      ? `+91 ${data.mobile || userData?.phone?.replace(/^\+91/, "") || ""}`
                       : "-"}
                     {userData?.phone_verified === 1 && (
                       <CheckCircle className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-green-600 flex-shrink-0" />
@@ -896,17 +893,13 @@ export const ReviewStep: React.FC<StepProps> = ({
               </div>
               <div className="space-y-1.5 sm:space-y-2">
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 sm:py-1.5 border-b border-gray-100 gap-1 sm:gap-0">
-                  <span className="text-xs sm:text-sm text-gray-500">
-                    Sponsor ID
-                  </span>
+                  <span className="text-xs sm:text-sm text-gray-500">Sponsor ID</span>
                   <span className="text-xs sm:text-sm font-medium text-gray-800 break-all">
                     {userData?.sponsor_id || data.sponsor_id || "None"}
                   </span>
                 </div>
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 sm:py-1.5 gap-1 sm:gap-0">
-                  <span className="text-xs sm:text-sm text-gray-500">
-                    Placement Leg
-                  </span>
+                  <span className="text-xs sm:text-sm text-gray-500">Placement Leg</span>
                   <span className="text-xs sm:text-sm font-medium text-gray-800">
                     {userData?.placement_leg || data.placement_leg || "Auto"}
                   </span>
@@ -923,44 +916,24 @@ export const ReviewStep: React.FC<StepProps> = ({
                 </h3>
               </div>
               <div className="space-y-1.5 sm:space-y-2">
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 sm:py-1.5 border-b border-gray-100 gap-1 sm:gap-0">
-                  <span className="text-xs sm:text-sm text-gray-500">
-                    Aadhaar
-                  </span>
-                  <span
-                    className={`text-[10px] sm:text-sm font-medium px-2 sm:px-2.5 py-0.5 rounded-full ${getStatusColor(step3Verified)}`}
+                {[
+                  { label: "Aadhaar", verified: step3Verified, pending: "Pending", done: "✓ Verified" },
+                  { label: "PAN", verified: step4Verified, pending: "Pending", done: "✓ Verified" },
+                  { label: "Bank Account", verified: step5Verified, pending: "Pending", done: "✓ Verified" },
+                  { label: "Location Consent", verified: step6Verified, pending: "Not Granted", done: "✓ Granted" },
+                ].map((item) => (
+                  <div
+                    key={item.label}
+                    className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 sm:py-1.5 border-b last:border-b-0 border-gray-100 gap-1 sm:gap-0"
                   >
-                    {step3Verified ? "✓ Verified" : "Pending"}
-                  </span>
-                </div>
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 sm:py-1.5 border-b border-gray-100 gap-1 sm:gap-0">
-                  <span className="text-xs sm:text-sm text-gray-500">PAN</span>
-                  <span
-                    className={`text-[10px] sm:text-sm font-medium px-2 sm:px-2.5 py-0.5 rounded-full ${getStatusColor(step4Verified)}`}
-                  >
-                    {step4Verified ? "✓ Verified" : "Pending"}
-                  </span>
-                </div>
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 sm:py-1.5 border-b border-gray-100 gap-1 sm:gap-0">
-                  <span className="text-xs sm:text-sm text-gray-500">
-                    Bank Account
-                  </span>
-                  <span
-                    className={`text-[10px] sm:text-sm font-medium px-2 sm:px-2.5 py-0.5 rounded-full ${getStatusColor(step5Verified)}`}
-                  >
-                    {step5Verified ? "✓ Verified" : "Pending"}
-                  </span>
-                </div>
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 sm:py-1.5 gap-1 sm:gap-0">
-                  <span className="text-xs sm:text-sm text-gray-500">
-                    Location Consent
-                  </span>
-                  <span
-                    className={`text-[10px] sm:text-sm font-medium px-2 sm:px-2.5 py-0.5 rounded-full ${getStatusColor(step6Verified)}`}
-                  >
-                    {step6Verified ? "✓ Granted" : "Not Granted"}
-                  </span>
-                </div>
+                    <span className="text-xs sm:text-sm text-gray-500">{item.label}</span>
+                    <span
+                      className={`text-[10px] sm:text-sm font-medium px-2 sm:px-2.5 py-0.5 rounded-full ${getStatusColor(item.verified)}`}
+                    >
+                      {item.verified ? item.done : item.pending}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -975,37 +948,29 @@ export const ReviewStep: React.FC<StepProps> = ({
                 </div>
                 <div className="space-y-1.5 sm:space-y-2">
                   <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 sm:py-1.5 border-b border-gray-100 gap-1 sm:gap-0">
-                    <span className="text-xs sm:text-sm text-gray-500">
-                      Bank Name
-                    </span>
+                    <span className="text-xs sm:text-sm text-gray-500">Bank Name</span>
                     <span className="text-xs sm:text-sm font-medium text-gray-800 break-all">
                       {profileData?.bank_name || data.bank_name || "-"}
                     </span>
                   </div>
                   <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 sm:py-1.5 border-b border-gray-100 gap-1 sm:gap-0">
-                    <span className="text-xs sm:text-sm text-gray-500">
-                      Account Holder
-                    </span>
+                    <span className="text-xs sm:text-sm text-gray-500">Account Holder</span>
                     <span className="text-xs sm:text-sm font-medium text-gray-800 break-all">
-                      {profileData?.bank_holder_name ||
-                        data.bank_holder_name ||
-                        "-"}
+                      {profileData?.bank_holder_name || data.bank_holder_name || "-"}
                     </span>
                   </div>
                   <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 sm:py-1.5 border-b border-gray-100 gap-1 sm:gap-0">
-                    <span className="text-xs sm:text-sm text-gray-500">
-                      Account Number
-                    </span>
+                    <span className="text-xs sm:text-sm text-gray-500">Account Number</span>
                     <span className="text-xs sm:text-sm font-medium text-gray-800">
                       {userData?.account_last4 || data.bank_account_number
-                        ? `****${(userData?.account_last4 || data.bank_account_number)?.slice(-4)}`
+                        ? `****${(
+                            userData?.account_last4 || data.bank_account_number
+                          )?.slice(-4)}`
                         : "-"}
                     </span>
                   </div>
                   <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-1 sm:py-1.5 gap-1 sm:gap-0">
-                    <span className="text-xs sm:text-sm text-gray-500">
-                      IFSC Code
-                    </span>
+                    <span className="text-xs sm:text-sm text-gray-500">IFSC Code</span>
                     <span className="text-xs sm:text-sm font-medium text-gray-800 uppercase">
                       {profileData?.bank_ifsc || data.bank_ifsc_code || "-"}
                     </span>
@@ -1014,71 +979,73 @@ export const ReviewStep: React.FC<StepProps> = ({
               </div>
             )}
 
-            {/* Terms and Conditions */}
+            {/* Terms, Agreement and Refund Policy */}
             <div className="space-y-2 sm:space-y-3 pt-1 sm:pt-2">
               <div className="flex items-center gap-2 mb-0.5 sm:mb-1">
                 <Shield className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-gray-500" />
                 <h4 className="text-xs sm:text-sm font-semibold text-gray-700">
-                  Terms & Conditions
+                  Terms &amp; Conditions
                 </h4>
               </div>
-              {checkboxes.map((cb) => (
-                <label
-                  key={cb.name}
-                  className={`flex items-start gap-2 sm:gap-3 ${
-                    isSubmitting || isNavigating
-                      ? "cursor-not-allowed opacity-70"
-                      : "cursor-pointer"
-                  } p-1.5 sm:p-2 rounded-lg hover:bg-gray-50 transition-colors`}
-                >
-                  <input
-                    type="checkbox"
-                    name={cb.name}
-                    checked={isTruthy(data[cb.name as keyof typeof data])}
-                    onChange={(e) => {
-                      if (e.target.checked && cb.type === "terms") {
-                        e.preventDefault();
-                        openTermsModal(cb.type, cb.label);
-                      } else {
-                        onChange(e);
+
+              {checkboxes.map((checkbox) => {
+                const checked = isTruthy((data as any)[checkbox.name]);
+                const isRefundPolicy = checkbox.type === "refund-policy";
+
+                return (
+                  <label
+                    key={checkbox.name}
+                    className={`flex items-start gap-2 sm:gap-3 ${
+                      isSubmitting || isNavigating || submitSuccess
+                        ? "cursor-not-allowed opacity-70"
+                        : "cursor-pointer"
+                    } p-1.5 sm:p-2 rounded-lg hover:bg-gray-50 transition-colors`}
+                  >
+                    <input
+                      type="checkbox"
+                      name={checkbox.name}
+                      checked={checked}
+                      onChange={(event) =>
+                        handleCheckboxChange(checkbox, event.target.checked)
                       }
-                    }}
-                    onClick={(e) => {
-                      const isCurrentlyChecked = isTruthy(
-                        data[cb.name as keyof typeof data],
-                      );
-                      if (!isCurrentlyChecked && cb.type === "terms") {
-                        e.preventDefault();
-                        openTermsModal(cb.type, cb.label);
-                      }
-                    }}
-                    disabled={isSubmitting || isNavigating || submitSuccess}
-                    className="mt-0.5 sm:mt-1 w-3.5 sm:w-4 h-3.5 sm:h-4 rounded border-gray-300 text-[var(--gold)] focus:ring-[var(--gold)] flex-shrink-0"
-                  />
-                  <span className="text-[11px] sm:text-sm text-gray-600 leading-relaxed">
-                    I accept the{" "}
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setLegalModalType(cb.type);
-                        setLegalModalOpen(true);
-                      }}
-                      className="text-[var(--gold-deep)] hover:underline font-medium cursor-pointer bg-transparent border-0 p-0"
-                    >
-                      {cb.label}
-                    </button>
-                  </span>
-                </label>
-              ))}
+                      disabled={isSubmitting || isNavigating || submitSuccess}
+                      className="mt-0.5 sm:mt-1 w-3.5 sm:w-4 h-3.5 sm:h-4 rounded border-gray-300 text-[var(--gold)] focus:ring-[var(--gold)] flex-shrink-0"
+                    />
+
+                    <span className="text-[11px] sm:text-sm text-gray-600 leading-relaxed">
+                      {isRefundPolicy ? "I have read and agree to the " : "I accept the "}
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+
+                          if (isRefundPolicy) {
+                            openAcceptanceModal("refund-policy", "Refund Policy");
+                          } else {
+                            setLegalModalType(checkbox.type as LegalType);
+                            setLegalModalOpen(true);
+                          }
+                        }}
+                        disabled={isSubmitting || isNavigating || submitSuccess}
+                        className="text-[var(--gold-deep)] hover:underline font-medium cursor-pointer bg-transparent border-0 p-0 disabled:cursor-not-allowed"
+                      >
+                        {checkbox.label}
+                      </button>
+                      {isRefundPolicy && "."}
+                    </span>
+                  </label>
+                );
+              })}
 
               {(errors.terms_accepted ||
                 errors.agreement_accepted ||
-                errors.code_of_conduct_accepted) && (
+                errors.code_of_conduct_accepted ||
+                (errors as any).refund_policy_accepted) && (
                 <p className="text-[10px] sm:text-xs text-red-500 flex items-center gap-1">
                   <AlertTriangle className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
-                  You must accept all terms to submit your application
+                  You must accept all terms, agreements, and the refund policy
+                  before submitting your application.
                 </p>
               )}
 
@@ -1096,6 +1063,7 @@ export const ReviewStep: React.FC<StepProps> = ({
                     Please complete all previous steps before submitting.
                   </span>
                   <button
+                    type="button"
                     onClick={onBackToMobile}
                     className="text-[var(--gold-deep)] hover:underline font-medium text-[10px] sm:text-xs"
                   >
@@ -1112,7 +1080,7 @@ export const ReviewStep: React.FC<StepProps> = ({
               )}
             </div>
 
-            {/* Submit Button */}
+            {/* Submit Actions */}
             <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 sm:gap-4 pt-3 sm:pt-4">
               <button
                 type="button"
@@ -1149,7 +1117,7 @@ export const ReviewStep: React.FC<StepProps> = ({
                     </div>
                   </div>
                   <h3 className="text-xl sm:text-2xl font-bold text-[#06101E] mb-1 sm:mb-2">
-                    🎉 Application Submitted!
+                    Application Submitted!
                   </h3>
                   <p className="text-xs sm:text-sm text-gray-500 mb-3 sm:mb-4">
                     Your distributor application has been submitted
@@ -1179,7 +1147,7 @@ export const ReviewStep: React.FC<StepProps> = ({
                     Redirecting to login...
                   </p>
                   <div className="mt-3 sm:mt-4 w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
-                    <div className="h-full bg-[var(--gold)] rounded-full animate-pulse w-3/4"></div>
+                    <div className="h-full bg-[var(--gold)] rounded-full animate-pulse w-3/4" />
                   </div>
                 </div>
               </div>
@@ -1188,7 +1156,7 @@ export const ReviewStep: React.FC<StepProps> = ({
         </div>
       </div>
 
-      {/* Legal Content Modal */}
+      {/* Existing legal content modal for Terms / Agreement / Code of Conduct */}
       <LegalModal
         isOpen={legalModalOpen}
         type={legalModalType}
@@ -1198,112 +1166,141 @@ export const ReviewStep: React.FC<StepProps> = ({
         }}
       />
 
-      {/* ✅ Terms Acceptance Modal (Small Popup) */}
-      {termsModal.isOpen && (
+      {/* Terms typing popup and read-only Refund Policy popup */}
+      {acceptanceModal.isOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[var(--navy)]/60 backdrop-blur-sm px-3 sm:px-4">
-          <div className="bg-white rounded-2xl sm:rounded-3xl max-w-sm w-full mx-2 sm:mx-4 p-4 sm:p-6 shadow-[0_30px_80px_-20px_rgba(6,16,30,0.5)] border border-gray-100 animate-in fade-in zoom-in duration-200">
+          <div className="bg-white rounded-2xl sm:rounded-3xl max-w-md w-full mx-2 sm:mx-4 p-4 sm:p-6 shadow-[0_30px_80px_-20px_rgba(6,16,30,0.5)] border border-gray-100 animate-in fade-in zoom-in duration-200 max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
             <div className="flex items-center justify-between mb-3 sm:mb-4">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-[var(--gold)]/15 flex items-center justify-center">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-8 h-8 rounded-full bg-[var(--gold)]/15 flex items-center justify-center flex-shrink-0">
                   <Shield className="w-4 h-4 text-[var(--gold-deep)]" />
                 </div>
                 <h3 className="text-sm sm:text-base font-bold text-[var(--navy)]">
-                  {termsModal.label}
+                  {acceptanceModal.label} Acceptance
                 </h3>
               </div>
               <button
                 type="button"
-                onClick={closeTermsModal}
-                className="w-7 h-7 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors"
+                onClick={closeAcceptanceModal}
+                className="w-7 h-7 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
+                aria-label="Close acceptance popup"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Instruction Text */}
-            <p className="text-[11px] sm:text-sm text-gray-500 mb-2 sm:mb-3 leading-relaxed">
-              To accept, please type the following text exactly as shown below:
-            </p>
+            {acceptanceModal.type === "refund-policy" ? (
+              <>
+                <p className="text-[11px] sm:text-sm font-semibold text-gray-700 mb-2">
+                  Refund Policy
+                </p>
+                <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-3 sm:p-4 mb-4">
+                  <p className="text-xs sm:text-sm leading-relaxed text-gray-700 whitespace-pre-line">
+                    {REFUND_POLICY_TEXT}
+                  </p>
+                </div>
 
-            {/* Expected Text (API line) */}
-            <div
-              className="bg-gray-50 border border-gray-200 rounded-lg p-2.5 sm:p-3 mb-2 sm:mb-3 select-none"
-              style={{
-                userSelect: "none",
-                WebkitUserSelect: "none",
-                WebkitTouchCallout: "none",
-              }}
-              onCopy={blockClipboardEvent}
-              onCut={blockClipboardEvent}
-              onContextMenu={blockClipboardEvent}
-              onDragStart={blockClipboardEvent}
-              onKeyDown={blockClipboardShortcuts}
-            >
-              <p className="text-[10px] sm:text-xs text-gray-400 mb-0.5 sm:mb-1 font-medium">
-                Type this text:
-              </p>
-              <p
-                className="text-xs sm:text-sm font-mono font-semibold text-[var(--navy)] break-words select-none"
-                style={{ userSelect: "none", WebkitUserSelect: "none" }}
-                onCopy={blockClipboardEvent}
-                onCut={blockClipboardEvent}
-                onContextMenu={blockClipboardEvent}
-                onDragStart={blockClipboardEvent}
-              >
-                {termsModal.expectedText}
-              </p>
-            </div>
+                <div className="flex gap-2 sm:gap-3">
+                  <button
+                    type="button"
+                    onClick={closeAcceptanceModal}
+                    className="flex-1 px-3 py-2 sm:py-2.5 rounded-xl border border-gray-200 text-gray-600 font-medium text-xs sm:text-sm hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRefundPolicyAccept}
+                    className="flex-1 px-3 py-2 sm:py-2.5 rounded-xl bg-[var(--gold)] hover:bg-[var(--gold-dark)] text-[var(--navy)] font-semibold text-xs sm:text-sm transition-colors flex items-center justify-center gap-1.5"
+                  >
+                    <CheckCircle className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
+                    I Agree
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-[11px] sm:text-sm text-gray-500 mb-2 sm:mb-3 leading-relaxed">
+                  To accept, please type the following text exactly as shown below:
+                </p>
 
-            {/* Input Field */}
-            <input
-              type="text"
-              value={typedText}
-              onChange={(e) => {
-                setTypedText(e.target.value);
-                setTermsError("");
-              }}
-              onPaste={blockClipboardEvent}
-              onCopy={blockClipboardEvent}
-              onCut={blockClipboardEvent}
-              onDrop={blockClipboardEvent}
-              onContextMenu={blockClipboardEvent}
-              onKeyDown={blockClipboardShortcuts}
-              placeholder="Type the text here..."
-              className="w-full px-3 py-2.5 sm:py-3 rounded-xl border border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 outline-none text-xs sm:text-sm font-mono text-[var(--navy)] bg-white transition-all duration-200 placeholder:font-sans placeholder:text-gray-300"
-              autoComplete="off"
-              autoCorrect="off"
-              spellCheck={false}
-              autoFocus
-            />
+                <div
+                  className="bg-gray-50 border border-gray-200 rounded-lg p-2.5 sm:p-3 mb-2 sm:mb-3 select-none"
+                  style={{
+                    userSelect: "none",
+                    WebkitUserSelect: "none",
+                    WebkitTouchCallout: "none",
+                  }}
+                  onCopy={blockClipboardEvent}
+                  onCut={blockClipboardEvent}
+                  onContextMenu={blockClipboardEvent}
+                  onDragStart={blockClipboardEvent}
+                  onKeyDown={blockClipboardShortcuts}
+                >
+                  <p className="text-[10px] sm:text-xs text-gray-400 mb-0.5 sm:mb-1 font-medium">
+                    Type this text:
+                  </p>
+                  <p
+                    className="text-xs sm:text-sm font-mono font-semibold text-[var(--navy)] break-words select-none"
+                    style={{ userSelect: "none", WebkitUserSelect: "none" }}
+                    onCopy={blockClipboardEvent}
+                    onCut={blockClipboardEvent}
+                    onContextMenu={blockClipboardEvent}
+                    onDragStart={blockClipboardEvent}
+                  >
+                    {acceptanceModal.expectedText}
+                  </p>
+                </div>
 
-            {/* Error */}
-            {termsError && (
-              <p className="text-[10px] sm:text-xs text-red-500 mt-1.5 sm:mt-2 flex items-start gap-1">
-                <AlertTriangle className="w-3 h-3 flex-shrink-0 mt-0.5" />
-                <span className="break-words">{termsError}</span>
-              </p>
+                <input
+                  type="text"
+                  value={typedText}
+                  onChange={(event) => {
+                    setTypedText(event.target.value);
+                    setAcceptanceError("");
+                  }}
+                  onPaste={blockClipboardEvent}
+                  onCopy={blockClipboardEvent}
+                  onCut={blockClipboardEvent}
+                  onDrop={blockClipboardEvent}
+                  onContextMenu={blockClipboardEvent}
+                  onKeyDown={blockClipboardShortcuts}
+                  placeholder="Type the text here..."
+                  className="w-full px-3 py-2.5 sm:py-3 rounded-xl border border-gray-200 focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/20 outline-none text-xs sm:text-sm font-mono text-[var(--navy)] bg-white transition-all duration-200 placeholder:font-sans placeholder:text-gray-300"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  autoFocus
+                />
+
+                {acceptanceError && (
+                  <p className="text-[10px] sm:text-xs text-red-500 mt-1.5 sm:mt-2 flex items-start gap-1">
+                    <AlertTriangle className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                    <span className="break-words">{acceptanceError}</span>
+                  </p>
+                )}
+
+                <div className="flex gap-2 sm:gap-3 mt-3 sm:mt-4">
+                  <button
+                    type="button"
+                    onClick={closeAcceptanceModal}
+                    className="flex-1 px-3 py-2 sm:py-2.5 rounded-xl border border-gray-200 text-gray-600 font-medium text-xs sm:text-sm hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleAcceptance}
+                    disabled={!typedText.trim()}
+                    className="flex-1 px-3 py-2 sm:py-2.5 rounded-xl bg-[var(--gold)] hover:bg-[var(--gold-dark)] text-[var(--navy)] font-semibold text-xs sm:text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+                  >
+                    <CheckCircle className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
+                    Accept
+                  </button>
+                </div>
+              </>
             )}
-
-            {/* Buttons */}
-            <div className="flex gap-2 sm:gap-3 mt-3 sm:mt-4">
-              <button
-                type="button"
-                onClick={closeTermsModal}
-                className="flex-1 px-3 py-2 sm:py-2.5 rounded-xl border border-gray-200 text-gray-600 font-medium text-xs sm:text-sm hover:bg-gray-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleTermsAccept}
-                disabled={!typedText.trim()}
-                className="flex-1 px-3 py-2 sm:py-2.5 rounded-xl bg-[var(--gold)] hover:bg-[var(--gold-dark)] text-[var(--navy)] font-semibold text-xs sm:text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
-              >
-                <CheckCircle className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
-                Accept
-              </button>
-            </div>
           </div>
         </div>
       )}

@@ -2882,7 +2882,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                       BA Price
                     </p>
 
-                    <p className="mt-2 break-words text-[clamp(1.55rem,3vw,2.1rem)] font-bold leading-tight tracking-[-0.035em] text-[#126B40]">
+                    <p className="mt-2 break-words text-[25px] font-bold leading-tight tracking-[-0.035em] text-[#126B40]">
                       ₹
                       {product.price.toLocaleString("en-IN", {
                         maximumFractionDigits: 2,
@@ -2894,7 +2894,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                       <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#818B92]">
                         MRP
                       </p>
-                      <p className="mt-2 break-words text-[clamp(1.15rem,2vw,1.4rem)] font-medium leading-tight tracking-tight text-[#89939B] line-through decoration-[#89939B] decoration-[1.5px]">
+                      <p className="mt-2 break-words text-[25px] font-medium leading-tight tracking-tight text-[#89939B] line-through decoration-[#89939B] decoration-[1.5px]">
                         ₹
                         {product.mrp.toLocaleString("en-IN", {
                           maximumFractionDigits: 2,
@@ -2940,7 +2940,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                       <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-800">
                         Distributor Commission Value
                       </p>
-                      <p className="mt-1 text-[24px] font-bold text-emerald-900">
+                      <p className="mt-1 text-[20px] font-bold text-emerald-900">
                         {product.commissionValue.toLocaleString("en-IN", {
                           maximumFractionDigits: 2,
                         })}{" "}
