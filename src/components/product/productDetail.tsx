@@ -24,6 +24,7 @@ import {
   Info,
   BadgeCheck,
   ShoppingCart,
+  Gift,
 } from "lucide-react";
 
 import Footer from "../Footer/Footer";
@@ -384,6 +385,15 @@ const generateSlugFromName = (name: string): string => {
 };
 
 /* =========================================================
+   COMBO HELPERS
+========================================================= */
+
+const formatINR = (value: number): string =>
+  Number(value || 0).toLocaleString("en-IN", {
+    maximumFractionDigits: 2,
+  });
+
+/* =========================================================
    COMPONENT
 ========================================================= */
 
@@ -683,6 +693,90 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
     : lastLoadedProductRef.current;
 
   /* =========================================================
+     COMBO PRODUCT DETECTION
+  ========================================================= */
+
+  const apiComboProducts: any[] = Array.isArray(apiProduct?.combo_products)
+    ? apiProduct.combo_products
+    : [];
+
+  const isCombo =
+    String(apiProduct?.product_type ?? "").toLowerCase() === "combo" &&
+    apiComboProducts.length > 0;
+
+  /* =========================================================
+     COMBO ITEMS (each product inside the combo)
+  ========================================================= */
+
+  const comboItems = useMemo(() => {
+    if (!isCombo) return [];
+
+    const isDistributorUser = userAccountType === "distributor";
+
+    return apiComboProducts.map((c: any) => {
+      const imgs: string[] = Array.isArray(c?.images)
+        ? [...c.images]
+            .sort(
+              (a: any, b: any) =>
+                Number(a?.sort_order ?? 0) - Number(b?.sort_order ?? 0),
+            )
+            .map((img: any) => img?.image_url || img?.image)
+            .filter(Boolean)
+        : [];
+
+      const primary =
+        c?.images?.find((img: any) => img?.is_primary)?.image_url ||
+        imgs[0] ||
+        PLACEHOLDER;
+
+      const galleryImages: string[] = Array.from(
+        new Set([primary, ...imgs].filter(Boolean)),
+      );
+
+      const price = isDistributorUser
+        ? distributorOfferPrice(
+            c,
+            Number(c?.distributor_price || c?.retail_price || 0),
+          )
+        : Number(c?.retail_price || 0);
+
+      const mrp = isDistributorUser
+        ? Number(c?.distributor_mrp || c?.retail_mrp || 0)
+        : Number(c?.retail_mrp || 0);
+
+      const commission =
+        c?.commission_value !== null &&
+        c?.commission_value !== undefined &&
+        Number.isFinite(Number(c.commission_value))
+          ? Math.max(0, Number(c.commission_value))
+          : null;
+
+      return {
+        id: c?.id,
+        name: String(c?.name ?? ""),
+        slug: c?.slug || generateSlugFromName(String(c?.name ?? "")),
+        productCode: c?.product_code || "",
+        primaryImage: primary as string,
+        images: galleryImages,
+        category: c?.category?.name || "",
+        subcategory: c?.subcategory?.name || "",
+        brand: c?.brand?.name || "",
+        brandLogo: c?.brand?.logo || "",
+        taxName: c?.tax_category?.name || "",
+        taxRate:
+          c?.tax_category?.rate !== undefined &&
+          c?.tax_category?.rate !== null &&
+          Number.isFinite(Number(c.tax_category.rate))
+            ? Number(c.tax_category.rate)
+            : null,
+        price,
+        mrp,
+        commission,
+      };
+    });
+  }, [isCombo, apiComboProducts, userAccountType]);
+
+  /* =========================================================
      MANUFACTURING INFO
   ========================================================= */
 
@@ -842,6 +936,8 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
 
   /* =========================================================
      PRODUCT GALLERY
+     Combo: combo's own images + every image of each product
+     inside the combo (all shown as thumbnails).
   ========================================================= */
 
   const productGallery = useMemo(() => {
@@ -853,8 +949,40 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
           .filter(Boolean)
       : [];
 
-    return Array.from(new Set([product.image, ...images]));
-  }, [product]);
+    const comboImages: string[] = isCombo
+      ? comboItems.flatMap((item) => item.images)
+      : [];
+
+    return Array.from(
+      new Set([product.image, ...images, ...comboImages].filter(Boolean)),
+    ) as string[];
+  }, [product, isCombo, comboItems]);
+
+  /* =========================================================
+     COMBO TOTALS (individual price sum vs combo price)
+  ========================================================= */
+
+  const comboTotals = useMemo(() => {
+    if (!isCombo) return null;
+
+    const sumPrice = comboItems.reduce((acc, i) => acc + i.price, 0);
+    const sumMrp = comboItems.reduce((acc, i) => acc + i.mrp, 0);
+    const sumCommission = comboItems.reduce(
+      (acc, i) => acc + (i.commission ?? 0),
+      0,
+    );
+
+    const comboPrice = product?.price ?? 0;
+    const savings = sumPrice > comboPrice ? sumPrice - comboPrice : 0;
+
+    return {
+      sumPrice,
+      sumMrp,
+      sumCommission,
+      comboPrice,
+      savings,
+    };
+  }, [isCombo, comboItems, product?.price]);
 
   /* =========================================================
      VARIANTS
@@ -1429,6 +1557,33 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
         block: "start",
       });
     });
+  };
+
+  /* =========================================================
+     VIEW COMBO DETAILS (opens "What's Inside" tab)
+  ========================================================= */
+
+  const handleViewComboDetails = () => {
+    setActiveTab("combo");
+
+    requestAnimationFrame(() => {
+      detailsSectionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+  };
+
+  /* =========================================================
+     SHOW COMBO IMAGE IN MAIN VIEWER
+  ========================================================= */
+
+  const handleSelectComboImage = (imageUrl: string) => {
+    const index = gallery.indexOf(imageUrl);
+
+    if (index >= 0) {
+      setActiveImage(index);
+    }
   };
 
   /* =========================================================
@@ -2405,6 +2560,18 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
         ];
 
   /* =========================================================
+     CONTENT TABS (combo gets an extra "What's Inside" tab)
+  ========================================================= */
+
+  const contentTabs: [string, string][] = [
+    ["details", "Details"],
+    ...(isCombo ? ([["combo", "What's Inside"]] as [string, string][]) : []),
+    ["reviews", "Reviews"],
+  ];
+
+  const showBAPricing = isDistributorApp && userAccountType === "distributor";
+
+  /* =========================================================
      RENDER
   ========================================================= */
 
@@ -2561,6 +2728,20 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                     </span>
                   )}
 
+                  {/* COMBO BADGE */}
+                  {isCombo && (
+                    <span
+                      className={`absolute left-3 ${
+                        product.discount && product.discount > 0
+                          ? "top-11"
+                          : "top-3"
+                      } inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wide text-[#111] shadow-sm`}
+                    >
+                      <Gift className="h-3 w-3" />
+                      Combo · {comboItems.length} items
+                    </span>
+                  )}
+
                   {/* WISHLIST */}
                   <button
                     type="button"
@@ -2646,8 +2827,17 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
 
           {/* PRODUCT DETAILS */}
           <div className="rounded-[8px] bg-white p-5 sm:p-6 lg:p-7">
-            <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#999]">
-              {product.category}
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#999]">
+                {product.category}
+              </div>
+
+              {isCombo && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-[#111] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white">
+                  <Gift className="h-3 w-3" />
+                  Combo
+                </span>
+              )}
             </div>
 
             <h1 className="mt-1 text-[21px] font-semibold leading-[1.3] tracking-[-0.01em] text-[#171717] sm:text-[23px]">
@@ -2814,6 +3004,87 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                     Read more
                   </button>
                 </div>
+              </div>
+            )}
+
+            {/* COMBO INCLUDES (visible in hero) */}
+            {isCombo && comboItems.length > 0 && (
+              <div className="mt-4 border-t border-[#E8E8E8] pt-4">
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Gift className="h-4 w-4 text-[#111]" />
+
+                    <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#222]">
+                      This combo includes
+                    </p>
+
+                    <span className="rounded-full bg-[#F1F1F1] px-2 py-0.5 text-[9px] font-semibold text-[#555]">
+                      {comboItems.length} products
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleViewComboDetails}
+                    className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#111] underline underline-offset-2 transition hover:text-[#666]"
+                  >
+                    View details
+                    <ArrowRight className="h-3 w-3" />
+                  </button>
+                </div>
+
+                <div className="grid gap-2.5 sm:grid-cols-2">
+                  {comboItems.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => handleSelectComboImage(item.primaryImage)}
+                      className="group/combo flex items-center gap-3 rounded-[10px] border border-[#E6E6E6] bg-[#FAFAFA] p-2.5 text-left transition hover:border-[#111] hover:bg-white"
+                    >
+                      <span className="relative h-[60px] w-[60px] flex-shrink-0 overflow-hidden rounded-[8px] border border-[#E6E6E6] bg-white">
+                        <Image
+                          src={item.primaryImage || PLACEHOLDER}
+                          alt={item.name}
+                          fill
+                          sizes="60px"
+                          className="object-cover transition duration-300 group-hover/combo:scale-105"
+                        />
+                      </span>
+
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[12px] font-semibold text-[#171717]">
+                          {item.name}
+                        </span>
+
+                        <span className="mt-0.5 block truncate text-[10px] text-[#777]">
+                          {[item.brand, item.subcategory || item.category]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </span>
+
+                        <span
+                          className={`mt-1 block text-[12px] font-bold ${
+                            showBAPricing ? "text-[#126B40]" : "text-[#111]"
+                          }`}
+                        >
+                          ₹{formatINR(item.price)}
+                          {item.mrp > item.price && (
+                            <span className="ml-1.5 text-[10px] font-medium text-[#A7A7A7] line-through">
+                              ₹{formatINR(item.mrp)}
+                            </span>
+                          )}
+                        </span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+
+                {comboTotals && comboTotals.savings > 0 && (
+                  <p className="mt-2.5 rounded-lg bg-[#E8F5EE] px-3 py-2 text-[11px] font-semibold text-[#188447]">
+                    🎉 You save ₹{formatINR(comboTotals.savings)} compared to
+                    buying these separately
+                  </p>
+                )}
               </div>
             )}
 
@@ -3150,21 +3421,24 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
           className="mt-7 scroll-mt-24 rounded-[8px] bg-white p-5 sm:p-6 lg:p-7"
         >
           <div className="flex items-center gap-7 overflow-x-auto border-b border-[#E7E7E7]">
-            {[
-              ["details", "Details"],
-              ["reviews", "Reviews"],
-            ].map(([key, label]) => (
+            {contentTabs.map(([key, label]) => (
               <button
                 key={key}
                 type="button"
                 onClick={() => setActiveTab(key)}
-                className={`relative pb-3 text-[12px] font-semibold transition ${
+                className={`relative whitespace-nowrap pb-3 text-[12px] font-semibold transition ${
                   activeTab === key
                     ? "text-[#111]"
                     : "text-[#999] hover:text-[#333]"
                 }`}
               >
                 {label}
+
+                {key === "combo" && comboItems.length > 0 && (
+                  <span className="ml-1 text-[9px]">
+                    ({comboItems.length})
+                  </span>
+                )}
 
                 {key === "reviews" && product.reviews > 0 && (
                   <span className="ml-1 text-[9px]">({product.reviews})</span>
@@ -3251,6 +3525,250 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                     <ArrowRight className="h-3 w-3" />
                   </button>
                 </aside>
+              </motion.div>
+            )}
+
+            {/* COMBO: WHAT'S INSIDE */}
+            {activeTab === "combo" && isCombo && (
+              <motion.div
+                key="combo"
+                initial={{
+                  opacity: 0,
+                  y: 6,
+                }}
+                animate={{
+                  opacity: 1,
+                  y: 0,
+                }}
+                exit={{
+                  opacity: 0,
+                  y: -6,
+                }}
+                className="pt-6"
+              >
+                {/* HEADER */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <Gift className="h-5 w-5 text-[#111]" />
+
+                  <h3 className="text-[16px] font-semibold text-[#111]">
+                    What's inside this combo
+                  </h3>
+
+                  <span className="rounded-full bg-[#F1F1F1] px-2.5 py-0.5 text-[10px] font-semibold text-[#555]">
+                    {comboItems.length} products
+                  </span>
+                </div>
+
+                <p className="mt-1 text-[11px] text-[#777]">
+                  Short details of every product included in {product.name}.
+                </p>
+
+                {/* SUMMARY BAR */}
+                {comboTotals && (
+                  <div className="mt-4 grid gap-2.5 rounded-[10px] border border-[#E6E6E6] bg-[#FAFAFA] p-4 sm:grid-cols-3">
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-[#999]">
+                        Combo Price
+                      </p>
+                      <p
+                        className={`mt-1 text-[18px] font-bold ${
+                          showBAPricing ? "text-[#126B40]" : "text-[#111]"
+                        }`}
+                      >
+                        ₹{formatINR(comboTotals.comboPrice)}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-[#999]">
+                        If Bought Separately
+                      </p>
+                      <p className="mt-1 text-[18px] font-medium text-[#89939B] line-through">
+                        ₹{formatINR(comboTotals.sumPrice)}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-[#999]">
+                        You Save
+                      </p>
+                      <p className="mt-1 text-[18px] font-bold text-[#188447]">
+                        {comboTotals.savings > 0
+                          ? `₹${formatINR(comboTotals.savings)}`
+                          : "—"}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* PRODUCT CARDS */}
+                <div className="mt-5 grid gap-4 md:grid-cols-2">
+                  {comboItems.map((item, itemIndex) => (
+                    <article
+                      key={item.id}
+                      className="overflow-hidden rounded-[12px] border border-[#E6E6E6] bg-white transition hover:shadow-[0_8px_24px_rgba(0,0,0,0.07)]"
+                    >
+                      {/* MAIN IMAGE */}
+                      <div className="relative aspect-[4/3] bg-[#F3F3F3]">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const idx = gallery.indexOf(item.primaryImage);
+                            openFullscreen(idx >= 0 ? idx : 0);
+                          }}
+                          className="block h-full w-full"
+                          aria-label={`View ${item.name} image`}
+                        >
+                          <Image
+                            src={item.primaryImage || PLACEHOLDER}
+                            alt={item.name}
+                            fill
+                            sizes="(max-width: 768px) 100vw, 45vw"
+                            className="object-cover"
+                          />
+                        </button>
+
+                        <span className="absolute left-3 top-3 rounded-full bg-white/95 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wide text-[#111] shadow-sm">
+                          Item {itemIndex + 1} of {comboItems.length}
+                        </span>
+                      </div>
+
+                      {/* THUMBNAILS OF THIS PRODUCT */}
+                      {item.images.length > 1 && (
+                        <div className="flex gap-2 overflow-x-auto border-b border-[#EFEFEF] px-4 py-3">
+                          {item.images.map((img, imgIndex) => (
+                            <button
+                              key={`${item.id}-${img}-${imgIndex}`}
+                              type="button"
+                              onClick={() => {
+                                const idx = gallery.indexOf(img);
+                                openFullscreen(idx >= 0 ? idx : 0);
+                              }}
+                              className="relative h-[54px] w-[54px] flex-shrink-0 overflow-hidden rounded-[7px] border-2 border-[#E4E4E4] bg-white transition hover:border-[#111]"
+                              aria-label={`${item.name} image ${imgIndex + 1}`}
+                            >
+                              <Image
+                                src={img || PLACEHOLDER}
+                                alt={`${item.name} ${imgIndex + 1}`}
+                                fill
+                                sizes="54px"
+                                className="object-cover"
+                              />
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* SHORT DETAILS */}
+                      <div className="p-4">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {item.brand && (
+                            <span className="rounded-full bg-[#F1F1F1] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-[#555]">
+                              {item.brand}
+                            </span>
+                          )}
+
+                          {item.taxName && (
+                            <span className="rounded-full bg-[#F1F1F1] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-[#555]">
+                              {item.taxName}
+                            </span>
+                          )}
+                        </div>
+
+                        <h4 className="mt-2 text-[15px] font-semibold leading-snug text-[#171717]">
+                          {item.name}
+                        </h4>
+
+                        <div className="mt-3 overflow-hidden rounded-[8px] border border-[#EFEFEF]">
+                          {[
+                            ["Category", item.category],
+                            ["Sub Category", item.subcategory],
+                            ["Brand", item.brand],
+                            ["Product Code", item.productCode],
+                          ]
+                            .filter(([, value]) => Boolean(value))
+                            .map(([label, value], rowIndex) => (
+                              <div
+                                key={label}
+                                className={`flex justify-between gap-4 px-3 py-2 text-[10px] ${
+                                  rowIndex % 2 === 0
+                                    ? "bg-white"
+                                    : "bg-[#FCFCFC]"
+                                }`}
+                              >
+                                <span className="text-[#888]">{label}</span>
+
+                                <span className="text-right font-semibold text-[#2A2A2A]">
+                                  {value}
+                                </span>
+                              </div>
+                            ))}
+                        </div>
+
+                        {/* PRICE */}
+                        {showBAPricing ? (
+                          <div className="mt-3 flex items-end justify-between gap-3 rounded-xl border border-[#E4E9E6] bg-gradient-to-br from-[#F6FBF8] to-white p-3">
+                            <div>
+                              <p className="text-[10px] font-semibold tracking-wide text-[#49745A]">
+                                BA Price
+                              </p>
+                              <p className="mt-1 text-[20px] font-bold leading-none text-[#146C43]">
+                                ₹{formatINR(item.price)}
+                              </p>
+                            </div>
+
+                            {item.mrp > 0 && (
+                              <div className="text-right">
+                                <p className="text-[10px] font-medium uppercase tracking-wide text-[#78828A]">
+                                  MRP
+                                </p>
+                                <p className="mt-1 text-[14px] font-medium leading-none text-[#89939B] line-through">
+                                  ₹{formatINR(item.mrp)}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="mt-3 flex items-baseline gap-2">
+                            <span className="text-[18px] font-bold text-[#111]">
+                              ₹{formatINR(item.price)}
+                            </span>
+
+                            {item.mrp > item.price && (
+                              <span className="text-[12px] text-[#A7A7A7] line-through">
+                                ₹{formatINR(item.mrp)}
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+                        {/* COMMISSION (distributor only) */}
+                        {showBAPricing && item.commission !== null && (
+                          <div className="mt-2.5 flex items-center justify-between gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
+                            <span className="text-[10px] font-semibold text-emerald-900">
+                              Commission Value
+                            </span>
+
+                            <span className="whitespace-nowrap text-[12px] font-bold text-emerald-800">
+                              {formatINR(item.commission)} pts
+                              <span className="ml-1 text-[9px] font-medium">
+                                /unit
+                              </span>
+                            </span>
+                          </div>
+                        )}
+
+                        <Link
+                          href={buildProductPath(item.slug)}
+                          className="mt-3 inline-flex items-center gap-1 text-[11px] font-semibold text-[#111] underline underline-offset-2 transition hover:text-[#666]"
+                        >
+                          View full product
+                          <ArrowRight className="h-3 w-3" />
+                        </Link>
+                      </div>
+                    </article>
+                  ))}
+                </div>
               </motion.div>
             )}
 

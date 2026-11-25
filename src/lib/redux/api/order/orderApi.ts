@@ -183,7 +183,7 @@ export const orderApi = baseApi.injectEndpoints({
       query: ({ orderReference, orderLineId, reason }) => ({
         url: `/orders/${encodeURIComponent(
           orderReference,
-        )}/cancel/${orderLineId}`,
+        )}/cancel`,
         method: "POST",
         body: {
           reason,
