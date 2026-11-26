@@ -8,8 +8,8 @@ import { useEffect, useRef } from "react";
  * Rect cache hota hai (scroll/resize par refresh), isliye har mousemove par
  * layout read nahi hota — warna 8+ buttons pe main thread block ho jaata hai.
  */
-export default function useMagnetic(strength = 0.28, radius = 90) {
-  const ref = useRef<any>(null);
+export default function useMagnetic<T extends HTMLElement = HTMLButtonElement>(strength = 0.28, radius = 90) {
+  const ref = useRef<T>(null);
 
   useEffect(() => {
     const el = ref.current;

@@ -162,10 +162,12 @@ export default function ProductsPage() {
   const sortByRef = useRef(sortBy);
   const searchQueryRef = useRef(searchQuery);
 
-  filtersRef.current = filters;
-  currentPageRef.current = currentPage;
-  sortByRef.current = sortBy;
-  searchQueryRef.current = searchQuery;
+  useEffect(() => {
+    filtersRef.current = filters;
+    currentPageRef.current = currentPage;
+    sortByRef.current = sortBy;
+    searchQueryRef.current = searchQuery;
+  }, [filters, currentPage, sortBy, searchQuery]);
 
   /* -------------------------- Responsive columns ------------------------- */
 

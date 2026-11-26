@@ -148,11 +148,20 @@ export interface ContentImage {
     created_at: string;
     updated_at: string;
     logo_url: string;
+    threads?: string | null;
+    pinterest?: string | null;
+    marketed_by?: string | null;
+  }
+
+  export interface FooterPayload extends Partial<FooterData> {
+    footer?: FooterData;
+    heritage_sites?: { data?: Array<{ id: number; title: string; subtitle: string | null; image_url: string }> };
   }
   
   export interface FooterResponse {
     success: boolean;
-    data: FooterData;
+    data: FooterPayload;
+    footer?: FooterData;
     message: string;
   }
 

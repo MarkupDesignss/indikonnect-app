@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, ChevronDown, Search } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { TrackingSearchOption } from "@/features/distributor/routes/dashboard/page.parts/support";
 
 
@@ -20,6 +20,7 @@ export function TrackingSearchSelect({
   searchPlaceholder: string;
   disabled?: boolean;
 }) {
+  const listboxId = useId();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
@@ -91,6 +92,7 @@ export function TrackingSearchSelect({
                 ref={inputRef}
                 type="search"
                 role="combobox"
+                aria-controls={listboxId}
                 aria-expanded={open}
                 aria-autocomplete="list"
                 aria-label={searchPlaceholder}
@@ -126,6 +128,7 @@ export function TrackingSearchSelect({
           </div>
           <div
             role="listbox"
+            id={listboxId}
             aria-label={placeholder}
             className="max-h-[260px] overflow-y-auto overscroll-contain py-1"
           >

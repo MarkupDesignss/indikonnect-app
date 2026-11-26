@@ -1,29 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import {
-    User,
-    Crown,
-    ChevronRight,
-    Loader2,
-    AlertCircle,
-    IndianRupee,
-    TrendingUp,
-    Wallet,
-    Calendar,
-    Phone,
-    Mail,
-    Award,
-    Coins,
-    ShoppingBag,
-    Percent,
-    Shield,
-    BarChart3,
-    Target,
-    Zap,
-    Clock,
-} from "lucide-react";
-import { useRouter } from "next/navigation";
+import { User, Crown, AlertCircle, IndianRupee, TrendingUp, Wallet, Calendar, Phone, Mail, Award, Coins, ShoppingBag, Percent, Shield, BarChart3, Target, Zap, Clock } from "lucide-react";
+import type { ReactNode, ElementType } from "react";
 
 import { useGetDistributorStatsQuery } from "@/lib/redux/api/distributor/distributorStatsApi";
 
@@ -59,7 +38,7 @@ const StatsCard = ({
     subtitle,
     valueColor = "text-[#2B2420]",
     bgColor = "bg-[#FDCB00]/10",
-}: any) => (
+}: { icon: ElementType; label: string; value?: ReactNode; delay?: number; subtitle?: ReactNode; valueColor?: string; bgColor?: string }) => (
     <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -82,7 +61,7 @@ const StatsCard = ({
 );
 
 // Info Card Component
-const InfoCard = ({ icon: Icon, label, value, delay }: any) => (
+const InfoCard = ({ icon: Icon, label, value, delay }: { icon: ElementType; label: string; value?: ReactNode; delay?: number }) => (
     <motion.div
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
@@ -104,7 +83,7 @@ const InfoCard = ({ icon: Icon, label, value, delay }: any) => (
 );
 
 // Achievement Badge Component
-const AchievementBadge = ({ icon: Icon, label, value, color = "text-[#C9A227]" }: any) => (
+const AchievementBadge = ({ icon: Icon, label, value, color = "text-[#C9A227]" }: { icon: ElementType; label: string; value?: ReactNode; color?: string }) => (
     <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-[#FBF6EC] to-transparent rounded-xl border border-[#E7DBC0]/30">
         <div className="w-8 h-8 rounded-full bg-[#FDCB00]/10 flex items-center justify-center flex-shrink-0">
             <Icon className={`w-4 h-4 ${color}`} />
@@ -121,7 +100,6 @@ const AchievementBadge = ({ icon: Icon, label, value, color = "text-[#C9A227]" }
 );
 
 export default function DistributorStatsPage() {
-    const router = useRouter();
 
     // Fetch data dynamically (endpoint takes no arguments)
     const { data: statsData, isLoading, error, refetch } = useGetDistributorStatsQuery();

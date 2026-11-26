@@ -1,5 +1,7 @@
 "use client";
 
+import { useHydrated } from "@/lib/hooks/useHydrated";
+
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
@@ -50,7 +52,7 @@ interface Reel {
     cover_image?: string | null;
     product?: ReelProduct | null;
     products?: ReelProduct[];
-    [key: string]: any;
+    [key: string]: unknown;
 }
 
 /* ================================================================
@@ -60,7 +62,6 @@ interface Reel {
 const STORAGE_BASE_URL =
     "https://www.markupdesigns.net/indikonnect/storage/";
 
-const FALLBACK_IMAGE = "/indiekonnect-web/images/placeholder.jpg";
 
 const MODAL_Z_INDEX = 2147483647;
 
@@ -70,21 +71,13 @@ const FOLLOWER_STORAGE_KEY = "indiekonnect_reel_followers";
    HELPERS
 ================================================================ */
 
-function normalizeReelsResponse(input: any): Reel[] {
-    if (!input) return [];
-
-    if (Array.isArray(input)) return input;
-
-    if (Array.isArray(input?.data)) return input.data;
-
-    if (Array.isArray(input?.data?.data)) return input.data.data;
-
-    if (Array.isArray(input?.reels)) return input.reels;
-
-    if (Array.isArray(input?.data?.reels)) return input.data.reels;
-
-    if (Array.isArray(input?.results)) return input.results;
-
+function normalizeReelsResponse(input: unknown): Reel[] {
+    if (Array.isArray(input)) return input as Reel[];
+    const root = typeof input === "object" && input !== null ? input as Record<string, unknown> : {};
+    const nested = typeof root.data === "object" && root.data !== null ? root.data as Record<string, unknown> : {};
+    for (const candidate of [root.data, nested.data, root.reels, nested.reels, root.results]) {
+        if (Array.isArray(candidate)) return candidate as Reel[];
+    }
     return [];
 }
 
@@ -153,24 +146,7 @@ function getReelProduct(reel: Reel | null): ReelProduct | null {
     return null;
 }
 
-function getProductImage(product: ReelProduct | null): string {
-    if (!product) return FALLBACK_IMAGE;
 
-    if (product?.product_image?.image) {
-        return (
-            normalizeAssetUrl(product.product_image.image) || FALLBACK_IMAGE
-        );
-    }
-
-    return (
-        normalizeAssetUrl(
-            product?.primary_image_url ||
-                product?.image_url ||
-                product?.thumbnail_url ||
-                product?.image,
-        ) || FALLBACK_IMAGE
-    );
-}
 
 function getProductSlug(product: ReelProduct | null): string {
     if (!product) return "";
@@ -292,7 +268,7 @@ function safelyPlayVideo(
 ================================================================ */
 
 interface MostFollowedReelProps {
-    reelsData?: any;
+    reelsData?: unknown;
     isLoading?: boolean;
     enabled?: boolean;
 }
@@ -382,17 +358,12 @@ export default function MostFollowedReel({
 
     const [isMuted, setIsMuted] = useState(true);
 
-    const [mounted, setMounted] = useState(false);
+    const mounted = useHydrated();
 
     const previewVideoRef = useRef<HTMLVideoElement | null>(null);
 
     const expandedVideoRef = useRef<HTMLVideoElement | null>(null);
 
-    useEffect(() => {
-        setMounted(true);
-
-        return () => setMounted(false);
-    }, []);
 
     /* ============================================================
        REEL DATA

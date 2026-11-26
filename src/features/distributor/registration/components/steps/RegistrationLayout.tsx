@@ -31,8 +31,8 @@ const LeftPanel = () => {
         const positions = [];
         for (let i = 0; i < 20; i++) {
             positions.push({
-                top: 5 + Math.floor(Math.random() * 90),
-                left: 5 + Math.floor(Math.random() * 90),
+                top: 5 + ((i * 37 + 11) % 90),
+                left: 5 + ((i * 53 + 29) % 90),
                 delay: (i % 5) * 0.6,
             });
         }

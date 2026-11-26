@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 
 import watchImage from "../../../public/indiekonnect-web/images/w1.png";
@@ -91,7 +91,7 @@ export default function WatchTestimonialSection() {
           >
             It feels healthier, smoother & more
             <br />
-            radiant than ever. I love knowing I'm
+            radiant than ever. I love knowing I&apos;m
             <br />
             using something natural and effective!
           </h2>

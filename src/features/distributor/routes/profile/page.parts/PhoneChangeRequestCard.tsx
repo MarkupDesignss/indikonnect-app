@@ -240,7 +240,7 @@ export function PhoneChangeRequestCard({
               />
               <p className="text-[10.5px] leading-4 text-[#4B4D56]">
                 A secure link has been sent to you. Please open it to change
-                your phone number. If you didn't receive it, contact admin.
+                your phone number. If you didn&apos;t receive it, contact admin.
               </p>
             </div>
           )}

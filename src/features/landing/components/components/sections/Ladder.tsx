@@ -7,15 +7,7 @@ import {
   useReducedMotion,
 } from "framer-motion";
 
-import {
-  Accent,
-  Display,
-  Eyebrow,
-  Lede,
-  Section,
-  Wrap,
-  cx,
-} from "@/features/landing/components/design-system/index";
+import { Accent, Display, Lede, Section, Wrap, cx } from "@/features/landing/components/design-system/index";
 
 import { ease } from "@/features/landing/components/design-system/index";
 import styles from "@/features/landing/components/components/sections/Ladder.module.css";

@@ -1,4 +1,6 @@
 "use client";
+import { useHydrated } from "@/lib/hooks/useHydrated";
+
 
 import { motion } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -7,7 +9,7 @@ import {
   MapPin, Mail, Phone, ChevronRight, ShieldCheck, ReceiptText,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import Header from "@/components/common/Header";
 import Footer from "@/components/Footer/Footer";
@@ -115,7 +117,7 @@ export default function OrderConfirmationPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [copied, setCopied] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
+  const isMounted = useHydrated();
 
   const orderGroupId = searchParams.get("order_reference");
 
@@ -125,7 +127,7 @@ export default function OrderConfirmationPage() {
   );
   const { data: profileResponse } = useGetUserProfileQuery();
 
-  useEffect(() => setIsMounted(true), []);
+  
 
   const confirmationData: any = (orderResponse as any)?.data;
   const orders: any[] = confirmationData?.orders?.length
@@ -178,7 +180,7 @@ export default function OrderConfirmationPage() {
         <Card className="max-w-sm p-8 text-center sm:p-10">
           <Package className="mx-auto mb-4 h-12 w-12 text-stone-300" />
           <h2 className="mb-2 text-lg font-semibold text-stone-900 sm:text-xl">Order reference missing</h2>
-          <p className="mb-6 text-sm text-stone-500">We couldn't find an order reference in the link.</p>
+          <p className="mb-6 text-sm text-stone-500">We couldn&apos;t find an order reference in the link.</p>
           <Link href="/" className="inline-flex items-center gap-2 rounded-full bg-stone-900 px-6 py-3 text-sm font-medium text-white hover:bg-stone-700">
             <Home className="h-4 w-4" /> Go to home
           </Link>
@@ -202,7 +204,7 @@ export default function OrderConfirmationPage() {
       <Shell>
         <Card className="max-w-sm p-8 text-center sm:p-10">
           <Package className="mx-auto mb-4 h-12 w-12 text-stone-300" />
-          <h2 className="mb-2 text-lg font-semibold text-stone-900 sm:text-xl">We can't find that order</h2>
+          <h2 className="mb-2 text-lg font-semibold text-stone-900 sm:text-xl">We can&apos;t find that order</h2>
           <p className="mb-6 text-sm text-stone-500">Check the order reference in the link and try again.</p>
           <div className="flex flex-col justify-center gap-3 sm:flex-row">
             <Link href="/" className="inline-flex items-center justify-center gap-2 rounded-full bg-stone-900 px-6 py-3 text-sm font-medium text-white hover:bg-stone-700">
@@ -253,7 +255,7 @@ export default function OrderConfirmationPage() {
             </h1>
 
             <p className="mt-3 max-w-md px-2 text-sm leading-relaxed text-stone-500 sm:text-[15px]">
-              We've received your payment and started getting your {totalItems} {totalItems === 1 ? "item" : "items"} ready.
+              We&apos;ve received your payment and started getting your {totalItems} {totalItems === 1 ? "item" : "items"} ready.
               {totalOrders > 1 && ` Your purchase was split into ${totalOrders} orders.`}
             </p>
 

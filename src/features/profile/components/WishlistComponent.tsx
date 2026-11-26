@@ -1,21 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-    Heart,
-    Trash2,
-    ShoppingCart,
-    Eye,
-    MoveRight,
-    Star,
-    Loader2,
-    ChevronRight,
-    Sparkles,
-} from "lucide-react";
+import { Heart, Trash2, ShoppingCart, Eye, MoveRight, Star, Loader2 } from "lucide-react";
 
 import {
     useGetWishlistQuery,
@@ -30,6 +20,8 @@ import {
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { showToast } from "@/lib/slices/toastSlice";
 import Loding from "@/components/common/Loding";
+import { readCaughtMessage } from "@/lib/utils/readCaughtMessage";
+
 
 interface WishlistProductImage {
     id: number;
@@ -199,7 +191,9 @@ export default function WishlistComponent({
         setIsInitialLoad,
     ] = useState(true);
 
-    useEffect(() => {
+    const [previousWishlistData, setPreviousWishlistData] = useState<typeof wishlistData>(undefined);
+    if (previousWishlistData !== wishlistData) {
+        setPreviousWishlistData(wishlistData);
         if (wishlistData?.data) {
             const transformedItems =
                 wishlistData.data.map(
@@ -209,7 +203,7 @@ export default function WishlistComponent({
             setWishlistItems(transformedItems);
             setIsInitialLoad(false);
         }
-    }, [wishlistData]);
+    }
 
     const handleRemove = async (
         productId: number
@@ -236,7 +230,7 @@ export default function WishlistComponent({
                     type: "success",
                 })
             );
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error(
                 "Failed to remove:",
                 error
@@ -245,7 +239,7 @@ export default function WishlistComponent({
             dispatch(
                 showToast({
                     message:
-                        error?.data?.message ||
+                        readCaughtMessage(error, "data", "message") ||
                         "Failed to remove item",
                     type: "error",
                 })
@@ -295,7 +289,7 @@ export default function WishlistComponent({
                     type: "success",
                 })
             );
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error(
                 "Failed to add to cart:",
                 error
@@ -304,7 +298,7 @@ export default function WishlistComponent({
             dispatch(
                 showToast({
                     message:
-                        error?.data?.message ||
+                        readCaughtMessage(error, "data", "message") ||
                         "Failed to add item to cart",
                     type: "error",
                 })

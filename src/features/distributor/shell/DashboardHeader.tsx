@@ -1,15 +1,11 @@
 "use client";
+import { useHydrated } from "@/lib/hooks/useHydrated";
+
 
 import { useGetUserProfileQuery } from "@/lib/redux/api/authApi";
 import { useGetHeaderQuery } from "@/lib/redux/api/headerApi";
 
-import {
-    CalendarDays,
-    ChevronDown,
-    Download,
-    UserRound,
-    Menu,
-} from "lucide-react";
+import { CalendarDays, ChevronDown, Download, Menu } from "lucide-react";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -482,7 +478,7 @@ export default function DashboardHeader({
         profileData?.user?.created_at,
     ]);
 
-    const [mounted, setMounted] = useState(false);
+    const mounted = useHydrated();
     const [selectedTs, setSelectedTs] = useState<number | null>(null);
 
     const [showCalendar, setShowCalendar] = useState(false);
@@ -490,9 +486,7 @@ export default function DashboardHeader({
 
     const pickerRef = useRef<HTMLDivElement>(null);
 
-    useEffect(() => {
-        setMounted(true);
-    }, []);
+    
 
     // Initialize selected date
     useEffect(() => {

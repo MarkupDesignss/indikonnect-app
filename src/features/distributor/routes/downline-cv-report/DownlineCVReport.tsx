@@ -2,23 +2,7 @@
 
 import { useMemo, useState } from "react";
 
-import {
-  AlertCircle,
-  ChevronDown,
-  ChevronsDownUp,
-  ChevronsUpDown,
-  GitBranch,
-  Loader2,
-  Network,
-  RefreshCw,
-  Search,
-  UserRound,
-  UsersRound,
-  Layers3,
-  ShieldCheck,
-  CircleHelp,
-  X,
-} from "lucide-react";
+import { AlertCircle, ChevronDown, ChevronsDownUp, ChevronsUpDown, GitBranch, Loader2, Network, RefreshCw, Search, UserRound, UsersRound, Layers3, CircleHelp, X } from "lucide-react";
 
 import { useGetDistributorDownlineQuery } from "@/lib/redux/api/distributor/distributorDownlineApi";
 
@@ -453,10 +437,11 @@ export default function DownlineTreePage() {
     refetchOnMountOrArgChange: true,
   });
 
+  const rawMembers = response?.data;
   const members = useMemo(
-    () => (Array.isArray(response?.data) ? response.data : []) as Member[],
+    () => (Array.isArray(rawMembers) ? rawMembers : []) as Member[],
 
-    [response?.data],
+    [rawMembers],
   );
 
   const [query, setQuery] = useState("");
@@ -839,7 +824,7 @@ export default function DownlineTreePage() {
           )}
 
           <p className="mt-5 border-t border-[#EDF0F4] pt-3 text-[10px] text-[#939DAA]">
-            Parent-child connections use the API's unilevel parent BA ID.
+            Parent-child connections use the API&apos;s unilevel parent BA ID.
             Missing names, dates and status are shown as unavailable rather than
             invented.
           </p>

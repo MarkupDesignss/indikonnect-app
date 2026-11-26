@@ -50,6 +50,9 @@ export interface CartData {
   created_at: string;
   updated_at: string;
   items: CartItem[];
+  total_items?: number;
+  total_formatted?: string;
+  price_type?: string;
 }
 
 export interface CartResponse {

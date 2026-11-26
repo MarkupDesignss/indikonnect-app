@@ -3,6 +3,8 @@
 import { X, AlertCircle, Loader2, Clock } from "lucide-react";
 import { useState, useEffect } from "react";
 import { CancelReturnModalProps, ModalShell, OrderLinesPreview, formatDate } from "@/features/distributor/routes/order-history/OrderHistory.parts/support";
+import { readCaughtMessage } from "@/lib/utils/readCaughtMessage";
+
 
 
 export const CancelReturnModal = ({
@@ -30,10 +32,10 @@ export const CancelReturnModal = ({
     try {
       await onSubmit();
       onClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(
-        err?.data?.message ||
-        err?.message ||
+        readCaughtMessage(err, "data", "message") ||
+        readCaughtMessage(err, "message") ||
         "Failed to cancel return request.",
       );
 

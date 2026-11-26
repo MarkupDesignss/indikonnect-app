@@ -46,7 +46,7 @@ export default function ProductComboTab({
                   <Gift className="h-5 w-5 text-[#111]" />
 
                   <h3 className="text-[16px] font-semibold text-[#111]">
-                    What's inside this combo
+                    What&apos;s inside this combo
                   </h3>
 
                   <span className="rounded-full bg-[#F1F1F1] px-2.5 py-0.5 text-[10px] font-semibold text-[#555]">

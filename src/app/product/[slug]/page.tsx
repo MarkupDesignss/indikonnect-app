@@ -18,19 +18,17 @@ export async function generateStaticParams() {
     throw new Error("Failed to fetch products");
   }
 
-  const result = await res.json();
-
-  const products = Array.isArray(result?.data)
-    ? result.data
-    : Array.isArray(result?.data?.products)
-      ? result.data.products
-      : [];
-
-  return products
-    .filter((product: any) => product?.slug)
-    .map((product: any) => ({
-      slug: String(product.slug),
-    }));
+  const result: unknown = await res.json();
+  const record = (value: unknown): Record<string, unknown> | undefined =>
+    value !== null && typeof value === "object" && !Array.isArray(value)
+      ? value as Record<string, unknown> : undefined;
+  const data = record(result)?.data;
+  const nested = record(data)?.products;
+  const products: unknown[] = Array.isArray(data) ? data : Array.isArray(nested) ? nested : [];
+  return products.flatMap((product) => {
+    const slug = record(product)?.slug;
+    return typeof slug === "string" && slug.trim() ? [{ slug }] : [];
+  });
 }
 
 export default async function Page({ params }: PageProps) {

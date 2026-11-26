@@ -88,7 +88,7 @@ export const getInitials = (name?: string) => {
 };
 
 
-export const formatCurrency = (value: any) => {
+export const formatCurrency = (value: unknown) => {
   return `₹${Number(value || 0).toLocaleString("en-IN")}`;
 };
 
@@ -103,7 +103,7 @@ export const renderRatingStars = (rating: number) => {
 };
 
 
-export const getActivityTime = (timestamp: any, createdAt?: string) => {
+export const getActivityTime = (timestamp: unknown, createdAt?: string) => {
   if (timestamp) {
     return new Date(Number(timestamp) * 1000).toLocaleTimeString([], {
       hour: "2-digit",
@@ -128,7 +128,7 @@ export const getActivityTime = (timestamp: any, createdAt?: string) => {
 };
 
 
-export const getActivityDate = (timestamp: any, createdAt?: string) => {
+export const getActivityDate = (timestamp: unknown, createdAt?: string) => {
   if (timestamp) {
     return new Date(Number(timestamp) * 1000).toLocaleDateString(
       "en-IN",

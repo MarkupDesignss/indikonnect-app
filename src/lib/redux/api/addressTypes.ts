@@ -77,13 +77,16 @@ export interface DeleteAddressResponse {
 
 // src/lib/redux/api/addressTypes.ts
 
-export const denormalizeAddress = (address: any): any => {
+type AddressFlags = "is_default" | "is_billing" | "is_delivery";
+type AddressInput = Omit<Partial<CreateAddressRequest>, AddressFlags> & Partial<Record<AddressFlags, boolean | number | null>>;
+
+export const denormalizeAddress = (address: AddressInput | null | undefined): AddressInput => {
   // ✅ Add this check at the beginning
   if (!address || typeof address !== 'object') {
     return {};
   }
 
-  const result: any = { ...address };
+  const result: AddressInput = { ...address };
 
   // ✅ Safe check for is_default
   if (address.is_default !== undefined && address.is_default !== null) {
@@ -104,7 +107,7 @@ export const denormalizeAddress = (address: any): any => {
   return result;
 };
 
-export const normalizeAddress = (address: any): NormalizedAddress => {
+export const normalizeAddress = (address: Address | NormalizedAddress | null | undefined): NormalizedAddress => {
   // ✅ Add this check at the beginning
   if (!address || typeof address !== 'object') {
     return {} as NormalizedAddress;

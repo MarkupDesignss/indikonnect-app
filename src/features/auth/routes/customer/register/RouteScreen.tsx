@@ -2,7 +2,7 @@
 
 'use client';
 
-import React, { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { CustomerRegistrationForm } from "@/features/auth/components/Registration/CustomerRegistrationForm";
 import { useSearchParams, useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/redux/api/baseApi';

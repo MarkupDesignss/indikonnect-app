@@ -133,9 +133,11 @@ function BrandCard({
 
   const logoUrl = brand.logo?.trim() || "";
 
-  useEffect(() => {
+  const [previousImageUrl, setPreviousImageUrl] = useState(logoUrl);
+  if (previousImageUrl !== logoUrl) {
+    setPreviousImageUrl(logoUrl);
     setImageError(false);
-  }, [logoUrl]);
+  }
 
   const isActive = hoveredIndex === index;
 

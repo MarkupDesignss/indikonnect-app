@@ -2,19 +2,7 @@
 
 import { useEffect, useMemo, useState, useRef } from "react";
 
-import {
-  AlertCircle,
-  CalendarDays,
-  Loader2,
-  RefreshCw,
-  Timer,
-  UserRound,
-  Trophy,
-  ArrowRight,
-  Target,
-  ListChecks,
-  CheckCircle2,
-} from "lucide-react";
+import { AlertCircle, CalendarDays, Loader2, RefreshCw, Timer, UserRound, Trophy, ArrowRight, ListChecks, CheckCircle2 } from "lucide-react";
 
 import { useGetDistributorStatsQuery } from "@/lib/redux/api/distributor/distributorStatsApi";
 import { useGetUserDashboardQuery } from "@/lib/redux/api/distributor/userDashboardApi";
@@ -1067,7 +1055,7 @@ export default function TrackingDashboard({ variant = "cv" }: Props) {
                 Your rank & growth
               </h1>
               <p className="mt-2 max-w-[600px] text-[13px] leading-6 text-[#DCE9FF] sm:text-[14px]">
-                See where you stand, what's left for your next rank, and exactly
+                See where you stand, what&apos;s left for your next rank, and exactly
                 which requirements need attention.
                 {variant === "commission"
                   ? " Your eligible rank may also affect commission qualification."

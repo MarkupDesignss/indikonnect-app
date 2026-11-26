@@ -7,27 +7,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useDispatch } from "react-redux";
 import { Input } from "@/components/common/Input";
 import { PhoneInput } from "@/components/common/PhoneInput";
-import { Button } from "@/components/common/Button";
+import "@/components/common/Button";
 import { Logo } from "@/components/common/Logo";
 import Link from "next/link";
 import { ROUTES } from "@/lib/constants/routes";
 import ConstellationBackground from "@/components/common/ConstellationBackground";
 import { useConfirmRegistrationMutation } from "@/lib/redux/api/authApi";
 import { showToast } from "@/lib/slices/toastSlice";
-import {
-  User,
-  Mail,
-  Phone,
-  Building2,
-  Globe,
-  Shield,
-  CheckCircle,
-  ArrowRight,
-  Users,
-  Star,
-  Sparkles,
-  ArrowLeft,
-} from "lucide-react";
+import { Shield, CheckCircle, ArrowRight, Users, Sparkles, ArrowLeft } from "lucide-react";
 
 /**
  * Same theme tokens as all registration steps and login components
@@ -482,9 +469,9 @@ export const CustomerRegistrationForm: React.FC<
                     key={i}
                     className="absolute w-1.5 h-1.5 bg-[#F9C744] rounded-full"
                     style={{
-                      top: `${Math.random() * 100}%`,
-                      left: `${Math.random() * 100}%`,
-                      animation: `pulse 3s ease-in-out ${Math.random() * 3}s infinite`,
+                      top: `${((i * 37 + 11) % 101) / 101 * 100}%`,
+                      left: `${((i * 53 + 24) % 101) / 101 * 100}%`,
+                      animation: `pulse 3s ease-in-out ${((i * 69 + 37) % 101) / 101 * 3}s infinite`,
                     }}
                   />
                 ))}

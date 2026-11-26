@@ -21,20 +21,26 @@ interface ConstellationBackgroundProps {
     className?: string;
     starColor?: string;
     connectionColor?: string;
+    // Legacy callers pass these options. Keep compatibility with the existing visual implementation.
+    starCount?: number;
+    connectionDistance?: number;
+    animationSpeed?: number;
+    showParticles?: boolean;
+    particleCount?: number;
+    showShootingStars?: boolean;
+    shootingStarCount?: number;
+    glowIntensity?: number;
+    interactive?: boolean;
+    onStarClick?: (starId: number) => void;
 }
 
-const ConstellationBackground: React.FC<ConstellationBackgroundProps> = ({
-    className = "",
-    starColor = "#F9C744",
-    connectionColor = "#4FC3F7",
-}) => {
-    const containerRef = useRef<HTMLDivElement>(null);
-    const [points, setPoints] = useState<ConstellationPoint[]>([]);
-    const animationFrameRef = useRef<number>();
-    const timeRef = useRef(0);
-
-    // Use useMemo to generate stable connections
-    const generateConstellation = useMemo(() => {
+function buildConstellation(): ConstellationPoint[] {
+    // Deterministic pseudo-random sequence keeps SSR and browser hydration aligned.
+    let seed = 19391;
+    const random = () => {
+        seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+        return seed / 4294967296;
+    };
         const newPoints: ConstellationPoint[] = [];
 
         // 1. DEFINE SAPTRISHI (CENTER) - Spreads from 30% to 70%
@@ -47,40 +53,40 @@ const ConstellationBackground: React.FC<ConstellationBackgroundProps> = ({
         saptrishiShape.forEach((pos, index) => {
             newPoints.push({
                 id: index,
-                x: pos.x + (Math.random() - 0.5) * 1.5,
-                y: pos.y + (Math.random() - 0.5) * 1.5,
-                size: 4.5 + Math.random() * 2.5,
-                pulseDelay: Math.random() * 2,
-                pulseDuration: 2 + Math.random(),
+                x: pos.x + (random() - 0.5) * 1.5,
+                y: pos.y + (random() - 0.5) * 1.5,
+                size: 4.5 + random() * 2.5,
+                pulseDelay: random() * 2,
+                pulseDuration: 2 + random(),
                 glowIntensity: 1,
                 connections: [],
                 isMainStar: true,
-                beamHeight: 30 + Math.random() * 40,
+                beamHeight: 30 + random() * 40,
             });
         });
 
         // 2. GENERATE SIDE & FULL SCREEN NODES
         const totalNodes = 120;
         for (let i = 7; i < totalNodes; i++) {
-            let x = Math.random() * 100;
-            let y = Math.random() * 100;
+            let x = random() * 100;
+            let y = random() * 100;
 
             if (i < 20) {
-                x = Math.random() * 10;
-                y = Math.random() * 100;
+                x = random() * 10;
+                y = random() * 100;
             } else if (i < 40) {
-                x = 90 + Math.random() * 10;
-                y = Math.random() * 100;
+                x = 90 + random() * 10;
+                y = random() * 100;
             }
 
             newPoints.push({
                 id: i,
                 x: Math.max(1, Math.min(99, x)),
                 y: Math.max(1, Math.min(99, y)),
-                size: 1.2 + Math.random() * 2,
-                pulseDelay: Math.random() * 3,
-                pulseDuration: 2.5 + Math.random() * 3,
-                glowIntensity: 0.3 + Math.random() * 0.5,
+                size: 1.2 + random() * 2,
+                pulseDelay: random() * 3,
+                pulseDuration: 2.5 + random() * 3,
+                glowIntensity: 0.3 + random() * 0.5,
                 connections: [],
                 isMainStar: false,
             });
@@ -101,7 +107,7 @@ const ConstellationBackground: React.FC<ConstellationBackgroundProps> = ({
                 const dy = newPoints[i].y - newPoints[j].y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
 
-                if (distance < 20 && Math.random() < 0.4) {
+                if (distance < 20 && random() < 0.4) {
                     // Avoid duplicate connections
                     if (!newPoints[i].connections.includes(j)) {
                         newPoints[i].connections.push(j);
@@ -111,25 +117,42 @@ const ConstellationBackground: React.FC<ConstellationBackgroundProps> = ({
         }
 
         return newPoints;
-    }, []); // Empty dependency array - only runs once
+}
 
-    useEffect(() => {
-        setPoints(generateConstellation);
-    }, [generateConstellation]);
+const ConstellationBackground: React.FC<ConstellationBackgroundProps> = ({
+    className = "",
+    starColor = "#F9C744",
+    connectionColor = "#4FC3F7",
+}) => {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [animation, setAnimation] = useState(() => ({ points: buildConstellation(), time: 0 }));
+    const { points, time } = animation;
 
-    // Gentle floating animation
+    // Animation state is published only from a browser animation callback.
     useEffect(() => {
-        const animate = () => {
-            timeRef.current += 0.01;
-            setPoints(prev => prev.map(point => ({
-                ...point,
-                x: point.x + Math.sin(timeRef.current * 0.2 + point.id) * 0.01,
-                y: point.y + Math.cos(timeRef.current * 0.15 + point.id) * 0.01,
-            })));
-            animationFrameRef.current = requestAnimationFrame(animate);
+        let frame = 0;
+        let previous = 0;
+        let time = 0;
+        const animate = (now: number) => {
+            if (now - previous >= 1000 / 30) {
+                previous = now;
+                time += 0.02;
+                const nextTime = time;
+                setAnimation(prev => ({
+                    time: nextTime,
+                    points: prev.points.map(point => ({
+                        ...point,
+                        x: point.x + Math.sin(nextTime * 0.2 + point.id) * 0.02,
+                        y: point.y + Math.cos(nextTime * 0.15 + point.id) * 0.02,
+                    })),
+                }));
+            }
+            frame = requestAnimationFrame(animate);
         };
-        animate();
-        return () => { if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current); };
+        if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+            frame = requestAnimationFrame(animate);
+        }
+        return () => cancelAnimationFrame(frame);
     }, []);
 
     // Calculate opacity for lines
@@ -139,7 +162,7 @@ const ConstellationBackground: React.FC<ConstellationBackgroundProps> = ({
         const distance = Math.sqrt(dx * dx + dy * dy);
         const maxDist = 25;
         const opacity = Math.max(0, 1 - (distance / maxDist));
-        const pulse = 0.6 + 0.4 * Math.sin(timeRef.current * 0.8 + p1.id + p2.id);
+        const pulse = 0.6 + 0.4 * Math.sin(time * 0.8 + p1.id + p2.id);
         return opacity * pulse * 0.6;
     };
 
@@ -153,9 +176,10 @@ const ConstellationBackground: React.FC<ConstellationBackgroundProps> = ({
         const connSet = new Set<string>();
         const conns: Array<{ source: ConstellationPoint; target: ConstellationPoint }> = [];
 
+        const pointById = new Map(points.map(point => [point.id, point]));
         points.forEach((point) => {
             point.connections.forEach((targetId) => {
-                const target = points.find(p => p.id === targetId);
+                const target = pointById.get(targetId);
                 if (target) {
                     const key = getConnectionKey(point.id, targetId);
                     if (!connSet.has(key)) {
@@ -210,7 +234,7 @@ const ConstellationBackground: React.FC<ConstellationBackgroundProps> = ({
                         width: '1.5px',
                         height: `${point.beamHeight}px`,
                         background: `linear-gradient(to top, transparent, ${connectionColor}40, ${starColor}80, transparent)`,
-                        animation: `beam-pulse ${2 + Math.random() * 2}s ease-in-out infinite`,
+                        animation: `beam-pulse ${2 + point.pulseDelay}s ease-in-out infinite`,
                     }}
                 />
             ))}

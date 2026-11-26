@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { User, X, Bell, Mail, AlertCircle, Building, CreditCard, FileText, Hash, Pencil, Check, XCircle, Trash2, Camera } from "lucide-react";
 import { useUpdateUserProfileMutation } from "@/lib/redux/api/Profile/userApi";
 import { modalVariants, overlayVariants, staggerContainer, staggerItem } from "@/features/profile/components/AccountSettings.parts/support";
+import { readCaughtMessage } from "@/lib/utils/readCaughtMessage";
+
 
 
 export const EditProfilePopup = ({
@@ -247,15 +249,15 @@ export const EditProfilePopup = ({
       if (success) {
         onClose();
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(
         "Update profile error:",
         error
       );
 
       const apiMessage =
-        error?.data?.message ||
-        error?.message ||
+        readCaughtMessage(error, "data", "message") ||
+        readCaughtMessage(error, "message") ||
         "Unable to update profile. Please try again.";
 
       setErrors((prev) => ({

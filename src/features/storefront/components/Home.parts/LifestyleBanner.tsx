@@ -1,19 +1,22 @@
 "use client";
 
+import type { ContentResponse } from "@/lib/redux/api/Home/contentTypes";
+import type { Ref } from "react";
+import type { useRouter } from "next/navigation";
 import m from "@/features/storefront/components/motion.module.css";
 import { ripple } from "@/features/storefront/components/interactions";
 import { getPromoPlaceholderImage } from "@/features/storefront/components/Home.parts/support";
 
 
-export function LifestyleBanner({ apiResponse, router, parallaxRef }: any) {
+export function LifestyleBanner({ apiResponse, router, parallaxRef }: { apiResponse?: ContentResponse | null; router: ReturnType<typeof useRouter>; parallaxRef: Ref<HTMLDivElement> }) {
   // Get banner data from API
   const content = apiResponse?.data?.find(
-    (item: any) => item.slug === "home-page-second-banner",
+    (item) => item.slug === "home-page-second-banner",
   );
 
   const block = content?.blocks?.[0];
 
-  const primaryImage = block?.images?.find((item: any) => item?.is_primary);
+  const primaryImage = block?.images?.find((item) => item?.is_primary);
 
   const image =
     primaryImage?.url || block?.images?.[0]?.url || getPromoPlaceholderImage();

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useHydrated } from "@/lib/hooks/useHydrated";
 import ProductDetail from "@/features/products/components/productDetail";
 import Loader from "@/components/ui/Spinner/Loader";
 
@@ -23,36 +23,17 @@ import Loader from "@/components/ui/Spinner/Loader";
  * Result: Naya product aane pe rebuild nahi chahiye.
  */
 export default function ProductFallbackPage() {
-    const [slug, setSlug] = useState<string | null>(null);
-    const [error, setError] = useState<string | null>(null);
-
-    useEffect(() => {
-        if (typeof window === "undefined") return;
-
-        try {
-            const path = window.location.pathname;
-            const parts = path.split("/").filter(Boolean);
-
-            // Find "product" segment
-            const productIdx = parts.indexOf("product");
-
-            if (productIdx !== -1 && parts[productIdx + 1]) {
-                const extracted = parts[productIdx + 1];
-
-                // Skip if it's "fallback" itself
-                if (extracted === "fallback") {
-                    setError("No product slug in URL");
-                    return;
-                }
-
-                setSlug(extracted);
-            } else {
-                setError("Invalid product URL");
-            }
-        } catch (err) {
-            setError("Failed to parse URL");
-        }
-    }, []);
+    const hydrated = useHydrated();
+    let slug: string | null = null;
+    let error: string | null = null;
+    if (hydrated) {
+        const parts = window.location.pathname.split("/").filter(Boolean);
+        const productIdx = parts.indexOf("product");
+        const extracted = productIdx >= 0 ? parts[productIdx + 1] : undefined;
+        if (!extracted) error = "Invalid product URL";
+        else if (extracted === "fallback") error = "No product slug in URL";
+        else slug = extracted;
+    }
 
     // Loading state
     if (!slug && !error) {

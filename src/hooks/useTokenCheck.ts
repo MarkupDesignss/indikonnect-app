@@ -1,120 +1,53 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { getAppType, type AppType } from "@/lib/appConfig";
+import { useSyncExternalStore } from "react";
+import { getAppType, DISTRIBUTOR_BASE_PATH, type AppType } from "@/lib/appConfig";
+
+const authKeys = new Set([
+  "auth_token", "refresh_token", "distributor_token", "distributor_refresh_token",
+  "customer_user_data", "distributor_user_data", "customer_user_type",
+  "distributor_user_type", "customer_is_logged_in", "distributor_is_logged_in",
+]);
+
+function subscribe(notify: () => void) {
+  const onStorage = (event: StorageEvent) => {
+    if (event.key === null || authKeys.has(event.key)) notify();
+  };
+  window.addEventListener("storage", onStorage);
+  window.addEventListener("auth-change", notify);
+  return () => {
+    window.removeEventListener("storage", onStorage);
+    window.removeEventListener("auth-change", notify);
+  };
+}
+
+function getServerSnapshot(): string {
+  const appType = process.env.NEXT_PUBLIC_APP_BASE_PATH === DISTRIBUTOR_BASE_PATH ? "distributor" : "customer";
+  return `${appType}:pending`;
+}
+
+function getSnapshot(): string {
+  const appType = getAppType();
+  try {
+    const token = localStorage.getItem(appType === "distributor" ? "distributor_token" : "auth_token");
+    return `${appType}:${Boolean(token && token.length > 10)}`;
+  } catch {
+    return `${appType}:false`;
+  }
+}
 
 export const useTokenCheck = () => {
-  const [hasToken, setHasToken] = useState<boolean | null>(null);
-
-  // Current authenticated app user type
-  const [userType, setUserType] = useState<string | null>(null);
-
-  // Current authenticated distributor
-  const [isDistributor, setIsDistributor] = useState<boolean>(false);
-
-  // Current application
-  const [appType, setAppType] = useState<AppType>(() =>
-    typeof window !== "undefined" ? getAppType() : "customer",
-  );
-
-  const checkToken = () => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    const currentAppType = getAppType();
-
-    setAppType(currentAppType);
-
-    // ==========================================
-    // DISTRIBUTOR APP
-    // /indiekonnect-distributor/
-    // ==========================================
-
-    if (currentAppType === "distributor") {
-      const distributorToken = localStorage.getItem("distributor_token");
-
-      const validDistributorToken =
-        !!distributorToken && distributorToken.length > 10;
-
-      setHasToken(validDistributorToken);
-
-      if (validDistributorToken) {
-        setUserType("distributor");
-        setIsDistributor(true);
-      } else {
-        setUserType(null);
-        setIsDistributor(false);
-      }
-
-      return;
-    }
-
-    // ==========================================
-    // CUSTOMER APP
-    // /indiekonnect-web/
-    // ==========================================
-
-    const customerToken = localStorage.getItem("auth_token");
-
-    const validCustomerToken = !!customerToken && customerToken.length > 10;
-
-    setHasToken(validCustomerToken);
-
-    if (validCustomerToken) {
-      setUserType("customer");
-      setIsDistributor(false);
-    } else {
-      setUserType(null);
-      setIsDistributor(false);
-    }
-  };
-
-  useEffect(() => {
-    checkToken();
-
-    const handleStorageChange = (event: StorageEvent) => {
-      // Same-origin apps share localStorage.
-      // Re-check when either app's authentication data changes.
-      if (
-        event.key === "auth_token" ||
-        event.key === "refresh_token" ||
-        event.key === "distributor_token" ||
-        event.key === "distributor_refresh_token" ||
-        event.key === "customer_user_data" ||
-        event.key === "distributor_user_data" ||
-        event.key === "customer_user_type" ||
-        event.key === "distributor_user_type" ||
-        event.key === "customer_is_logged_in" ||
-        event.key === "distributor_is_logged_in"
-      ) {
-        checkToken();
-      }
-    };
-
-    window.addEventListener("storage", handleStorageChange);
-
-    return () => {
-      window.removeEventListener("storage", handleStorageChange);
-    };
-  }, []);
-
+  const snapshot = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const [type, status] = snapshot.split(":");
+  const appType: AppType = type === "distributor" ? "distributor" : "customer";
+  const hasToken = status === "pending" ? null : status === "true";
   return {
     hasToken,
-
-    userType,
-
-    isDistributor,
-
-    // Current app:
+    userType: hasToken ? appType : null,
+    isDistributor: hasToken === true && appType === "distributor",
     appType,
-
-    // Convenient flags:
     isCustomerApp: appType === "customer",
-
     isDistributorApp: appType === "distributor",
-
-    // Guest user:
     isGuest: hasToken === false,
   };
 };

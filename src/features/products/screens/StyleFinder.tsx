@@ -666,7 +666,7 @@ export default function StyleFinder() {
                       md:text-[19px]
                     "
                   >
-                    What's The Occasion?
+                    What&apos;s The Occasion?
                   </h3>
 
                   <button
@@ -756,7 +756,7 @@ export default function StyleFinder() {
                       md:text-[19px]
                     "
                   >
-                    What's Your Price Range?
+                    What&apos;s Your Price Range?
                   </h3>
 
                   <div className="flex flex-col gap-[12px] sm:gap-[15px]">

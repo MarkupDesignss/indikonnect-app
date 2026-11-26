@@ -71,6 +71,8 @@ import { ReturnModal } from "@/features/distributor/routes/order-history/OrderHi
 import { CancelModal } from "@/features/distributor/routes/order-history/OrderHistory.parts/CancelModal";
 import { CancelReturnModal } from "@/features/distributor/routes/order-history/OrderHistory.parts/CancelReturnModal";
 import { WithdrawModal } from "@/features/distributor/routes/order-history/OrderHistory.parts/WithdrawModal";
+import { readCaughtMessage } from "@/lib/utils/readCaughtMessage";
+
 
 /* ========================================================================== */
 /* MAIN COMPONENT                                                             */
@@ -328,12 +330,12 @@ export default function OrderHistory() {
       });
       checkout.open();
       await refetch();
-    } catch (err: any) {
+    } catch (err: unknown) {
       dispatch(
         showToast({
           type: "error",
           message:
-            err?.data?.message || err?.message || "Unable to retry payment.",
+            readCaughtMessage(err, "data", "message") || readCaughtMessage(err, "message") || "Unable to retry payment.",
         }),
       );
     } finally {
@@ -499,12 +501,12 @@ export default function OrderHistory() {
       await refetch();
 
       return response;
-    } catch (error: any) {
+    } catch (error: unknown) {
       dispatch(
         showToast({
           message:
-            error?.data?.message ||
-            error?.message ||
+            readCaughtMessage(error, "data", "message") ||
+            readCaughtMessage(error, "message") ||
             "Failed to submit review.",
           type: "error",
         }),
@@ -798,14 +800,14 @@ export default function OrderHistory() {
           }),
         );
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Invoice error:", error);
 
       dispatch(
         showToast({
           message:
-            error?.data?.message ||
-            error?.message ||
+            readCaughtMessage(error, "data", "message") ||
+            readCaughtMessage(error, "message") ||
             "Failed to fetch invoice. Please try again.",
           type: "error",
         }),

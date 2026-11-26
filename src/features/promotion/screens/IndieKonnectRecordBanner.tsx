@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import "react";
 import { ArrowRight } from "lucide-react";
 
 export default function IndieKonnectRecordBanner() {

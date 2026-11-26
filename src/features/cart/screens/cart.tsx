@@ -49,6 +49,8 @@ import { RecommendedSection } from "@/features/cart/screens/cart.parts/Recommend
 import { OrderSummary } from "@/features/cart/screens/cart.parts/OrderSummary";
 import { DeleteConfirmModal } from "@/features/cart/screens/cart.parts/DeleteConfirmModal";
 import { RemoveFromCartModal } from "@/features/cart/screens/cart.parts/RemoveFromCartModal";
+import { readCaughtMessage } from "@/lib/utils/readCaughtMessage";
+
 
 
 const poppins = Poppins({
@@ -442,11 +444,12 @@ export default function CartPage() {
 
   // ── Summary query ─────────────────────────────────────────────────────────
 
+  const selectedDeliveryAddressId = selectedDeliveryAddress?.id;
   const summaryParams = useMemo(() => {
-    const params: Record<string, any> = {};
+    const params: { address_id?: number; coupon_code?: string } = {};
 
-    if (selectedDeliveryAddress?.id) {
-      params.address_id = selectedDeliveryAddress.id;
+    if (selectedDeliveryAddressId) {
+      params.address_id = selectedDeliveryAddressId;
     }
 
     if (appliedCoupon) {
@@ -454,7 +457,7 @@ export default function CartPage() {
     }
 
     return params;
-  }, [selectedDeliveryAddress?.id, appliedCoupon]);
+  }, [selectedDeliveryAddressId, appliedCoupon]);
 
   const {
     data: checkoutSummaryResponse,
@@ -1182,8 +1185,8 @@ export default function CartPage() {
         next.delete(item.productId);
         return next;
       });
-    } catch (error: any) {
-      toast.error(error?.data?.message || "Unable to update quantity");
+    } catch (error: unknown) {
+      toast.error(readCaughtMessage(error, "data", "message") || "Unable to update quantity");
     } finally {
       setIsUpdating(null);
     }
@@ -1316,8 +1319,8 @@ export default function CartPage() {
       toast.success("Cart cleared successfully", {
         position: "bottom-center",
       });
-    } catch (error: any) {
-      toast.error(error?.data?.message || "Unable to clear cart");
+    } catch (error: unknown) {
+      toast.error(readCaughtMessage(error, "data", "message") || "Unable to clear cart");
     }
   };
 
@@ -1368,8 +1371,8 @@ export default function CartPage() {
       toast.success("Added to cart", {
         position: "bottom-center",
       });
-    } catch (error: any) {
-      toast.error(error?.data?.message || "Unable to add product", {
+    } catch (error: unknown) {
+      toast.error(readCaughtMessage(error, "data", "message") || "Unable to add product", {
         position: "bottom-center",
       });
     } finally {

@@ -1,4 +1,4 @@
-import React from 'react'
+import 'react';
 import IndieKonnectDiverSections from "@/features/promotion/screens/IndieKonnectDiverSections"
 import IndieKonnectRecordBanner from "@/features/promotion/screens/IndieKonnectRecordBanner"
 import ExploreCollection from "@/features/promotion/screens/ExploreCollection"

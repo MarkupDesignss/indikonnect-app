@@ -1,4 +1,6 @@
 "use client";
+import { useHydrated } from "@/lib/hooks/useHydrated";
+
 
 import { Coins, Loader2, Wallet } from "lucide-react";
 
@@ -31,6 +33,8 @@ import { AccountTable } from "@/features/distributor/routes/dashboard/page.parts
 import { EarnedCoinsAndNetwork } from "@/features/distributor/routes/dashboard/page.parts/EarnedCoinsAndNetwork";
 import { LedgerHistory } from "@/features/distributor/routes/dashboard/page.parts/LedgerHistory";
 import { BankedTcModal } from "@/features/distributor/routes/dashboard/page.parts/BankedTcModal";
+import { readCaughtMessage } from "@/lib/utils/readCaughtMessage";
+
 
 
 // --------------------------------------------------
@@ -45,7 +49,7 @@ export default function DistributorDashboardPage() {
     "checking" | "authorized" | "redirecting"
   >("checking");
 
-  const [mounted, setMounted] = useState(false);
+  const mounted = useHydrated();
 
   const [selectedCvYear, setSelectedCvYear] = useState<number>(
     new Date().getFullYear(),
@@ -64,9 +68,7 @@ export default function DistributorDashboardPage() {
   const [placeBankedTc, { isLoading: isPlacingBankedTc }] =
     usePlaceBankedTcMutation();
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  
 
   useEffect(() => {
     if (!mounted) return;
@@ -201,10 +203,10 @@ export default function DistributorDashboardPage() {
       setIsBankedTcModalOpen(false);
 
       await refetch();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(
-        error?.data?.message ||
-          error?.message ||
+        readCaughtMessage(error, "data", "message") ||
+          readCaughtMessage(error, "message") ||
           "Failed to place Banked TC. Please try again.",
       );
     } finally {

@@ -1,4 +1,6 @@
 "use client";
+import { useHydrated } from "@/lib/hooks/useHydrated";
+
 
 import Link from "next/link";
 import Image from "next/image";
@@ -16,7 +18,7 @@ const CUSTOMER_APP_PATH = "/indiekonnect-web";
 const DISTRIBUTOR_APP_PATH = "/indiekonnect-distributor";
 
 export default function Header() {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useHydrated();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -24,9 +26,7 @@ export default function Header() {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   /* MOUNT (portal ke liye) */
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  
 
   /* SCROLL */
   useEffect(() => {
@@ -111,12 +111,12 @@ export default function Header() {
 
   const goToCustomerLogin = () => {
     const targetUrl = buildExternalUrl(CUSTOMER_APP_PATH, ROUTES.auth.customer.login);
-    if (targetUrl) window.location.href = targetUrl;
+    if (targetUrl) window.location.assign(targetUrl);
   };
 
   const goToDistributorLogin = () => {
     const targetUrl = buildExternalUrl(DISTRIBUTOR_APP_PATH, ROUTES.auth.distributor.login);
-    if (targetUrl) window.location.href = targetUrl;
+    if (targetUrl) window.location.assign(targetUrl);
   };
 
   const handleJoinOption = (type: "customer" | "distributor") => {

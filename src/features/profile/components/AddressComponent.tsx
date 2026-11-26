@@ -1,5 +1,6 @@
 "use client";
 
+import { readCaughtMessage } from "@/lib/utils/readCaughtMessage";
 import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MapPin, Plus, Edit2, Trash2, CheckCircle, Home, Building2, Phone, User, Globe, X, Loader2, CreditCard, Truck, AlertCircle, Stamp } from "lucide-react";
@@ -25,7 +26,7 @@ export interface Address {
   recipient_name: string;
   contact_number: string;
   address_line_1: string;
-  address_line_2: string | null;
+  address_line_2?: string | null;
   city: string;
   state: string;
   postcode: string;
@@ -38,7 +39,7 @@ export interface Address {
   type?: string;
   created_at: string;
   updated_at: string;
-  deleted_at: string | null;
+  deleted_at?: string | null;
   billing_recipient_name?: string;
   billing_contact_number?: string;
   billing_address_line_1?: string;
@@ -81,6 +82,81 @@ interface AddressFormModalProps {
   initialData?: Address | null;
   isLoading: boolean;
 }
+
+const Label = ({
+  children,
+  optional,
+}: {
+  children: React.ReactNode;
+  optional?: boolean;
+}) => (
+  <label className="mb-1.5 block text-[10px] font-medium uppercase tracking-[0.06em] text-[#666666]">
+    {children}
+    {optional && (
+      <span className="ml-1 font-normal normal-case tracking-normal text-[#999999]">
+        (Optional)
+      </span>
+    )}
+  </label>
+);
+
+const PincodeHint = ({
+  fetching,
+  error,
+  hasData,
+}: {
+  fetching: boolean;
+  error: boolean;
+  hasData: boolean;
+}) => {
+  if (fetching)
+    return (
+      <p className="mt-1 flex items-center gap-1 text-[10px] text-[#888888]">
+        <Loader2 className="h-3 w-3 animate-spin" /> Fetching area, city &
+        state…
+      </p>
+    );
+  if (error)
+    return (
+      <p className="mt-1 text-[10px] font-medium text-[#C94D4D]">
+        Could not fetch pincode details. Enter details manually.
+      </p>
+    );
+  if (hasData)
+    return (
+      <p className="mt-1 text-[10px] text-[#111111]">
+        ✓ Pincode verified — pick your delivery area below
+      </p>
+    );
+  return null;
+};
+
+const AddressTypeSelector = ({ value, onChange }: { value?: string; onChange: (value: string) => void }) => (
+  <div className="md:col-span-2">
+    <Label>Address Type</Label>
+    <div className="grid grid-cols-3 gap-2">
+      {ADDRESS_TYPES.map((type) => {
+        const Icon = type.icon;
+        const isSelected = value === type.value;
+        return (
+          <button
+            key={type.value}
+            type="button"
+            onClick={() => onChange(type.value)}
+            className={`flex h-[42px] items-center justify-center gap-2 rounded-[6px] border text-[11px] font-medium transition-all duration-150 ${
+              isSelected
+                ? "border-[#111111] bg-[#111111] text-white"
+                : "border-[#D7D7D5] bg-white text-[#555555] hover:border-[#BDBDBA] hover:bg-[#FAFAF9]"
+            }`}
+          >
+            <Icon className="h-[14px] w-[14px]" />
+            {type.label}
+          </button>
+        );
+      })}
+    </div>
+  </div>
+);
 
 function AddressFormModal({
   isOpen,
@@ -145,39 +221,46 @@ function AddressFormModal({
   /* ============================================================
      PINCODE LOOKUP — debounced
   ============================================================ */
+  const [previousModal, setPreviousModal] = useState<{ isOpen: boolean; initialData?: Address | null }>({ isOpen: false });
+  const modalChanged = previousModal.isOpen !== isOpen || previousModal.initialData !== initialData;
+  if (modalChanged) setPreviousModal({ isOpen, initialData });
+  const resetting = isOpen && modalChanged;
+
   const [postcodeForLookup, setPostcodeForLookup] = useState("");
   const [billingPostcodeForLookup, setBillingPostcodeForLookup] = useState("");
 
   useEffect(() => {
+    if (!isOpen) return;
     const pin = formData.postcode.trim();
     const t = setTimeout(() => {
       setPostcodeForLookup(/^\d{6}$/.test(pin) ? pin : "");
     }, 500);
     return () => clearTimeout(t);
-  }, [formData.postcode]);
+  }, [formData.postcode, isOpen]);
 
   useEffect(() => {
+    if (!isOpen) return;
     const pin = billingAddress.postcode.trim();
     const t = setTimeout(() => {
       setBillingPostcodeForLookup(/^\d{6}$/.test(pin) ? pin : "");
     }, 500);
     return () => clearTimeout(t);
-  }, [billingAddress.postcode]);
+  }, [billingAddress.postcode, isOpen]);
 
   const {
-    data: pincodeData,
+    currentData: pincodeData,
     isFetching: isPincodeFetching,
     isError: isPincodeError,
   } = useGetIndiaPostPincodeQuery(postcodeForLookup, {
-    skip: !postcodeForLookup,
+    skip: !isOpen || !postcodeForLookup,
   });
 
   const {
-    data: billingPincodeData,
+    currentData: billingPincodeData,
     isFetching: isBillingPincodeFetching,
     isError: isBillingPincodeError,
   } = useGetIndiaPostPincodeQuery(billingPostcodeForLookup, {
-    skip: !billingPostcodeForLookup,
+    skip: !isOpen || !billingPostcodeForLookup,
   });
 
   const { states: mainStates, cities: mainCities, areas: mainAreas } = useMemo(
@@ -194,136 +277,46 @@ function AddressFormModal({
     [billingPincodeData]
   );
 
-  /* Auto-fill single state / city */
-  useEffect(() => {
-    if (mainStates.length === 1 && !formData.state && !stateOther) {
-      setFormData((p) => ({ ...p, state: mainStates[0] }));
-    }
-  }, [mainStates, formData.state, stateOther]);
-
-  useEffect(() => {
-    if (mainCities.length === 1 && !formData.city && !cityOther) {
-      setFormData((p) => ({ ...p, city: mainCities[0] }));
-    }
-  }, [mainCities, formData.city, cityOther]);
-
-  useEffect(() => {
-    if (
-      billingStates.length === 1 &&
-      !billingAddress.state &&
-      !billingStateOther
-    ) {
-      setBillingAddress((p) => ({ ...p, state: billingStates[0] }));
-    }
-  }, [billingStates, billingAddress.state, billingStateOther]);
-
-  useEffect(() => {
-    if (
-      billingCities.length === 1 &&
-      !billingAddress.city &&
-      !billingCityOther
-    ) {
-      setBillingAddress((p) => ({ ...p, city: billingCities[0] }));
-    }
-  }, [billingCities, billingAddress.city, billingCityOther]);
-
-  /* ============================================================
-     AUTO-SELECT AREA FROM EXISTING post_office (EDIT MODE)
-     Jab pincode API se data aata hai, toh agar user ke paas pehle se
-     post_office saved hai, toh usko dropdown mein match karke select kar lo.
-  ============================================================ */
-  useEffect(() => {
-    if (
-      postcodeForLookup !== formData.postcode ||
-      mainAreas.length === 0 ||
-      selectedArea
-    ) {
-      return;
-    }
-
+  // Only apply a lookup to the exact postcode that produced it. The guards
+  // make these adjustments converge before children render, without effects.
+  const mainLookupMatches = isOpen && !resetting && postcodeForLookup === formData.postcode;
+  const billingLookupMatches = isOpen && !resetting && billingPostcodeForLookup === billingAddress.postcode;
+  if (mainLookupMatches && mainStates.length === 1 && mainStates[0] && !formData.state && !stateOther) {
+    setFormData((p) => ({ ...p, state: mainStates[0] }));
+  }
+  if (mainLookupMatches && mainCities.length === 1 && mainCities[0] && !formData.city && !cityOther) {
+    setFormData((p) => ({ ...p, city: mainCities[0] }));
+  }
+  if (billingLookupMatches && billingStates.length === 1 && billingStates[0] && !billingAddress.state && !billingStateOther) {
+    setBillingAddress((p) => ({ ...p, state: billingStates[0] }));
+  }
+  if (billingLookupMatches && billingCities.length === 1 && billingCities[0] && !billingAddress.city && !billingCityOther) {
+    setBillingAddress((p) => ({ ...p, city: billingCities[0] }));
+  }
+  if (mainLookupMatches && mainAreas.length > 0 && !selectedArea) {
     if (formData.post_office) {
-      const matchedArea = mainAreas.find(
-        (a) => a.office.toLowerCase() === formData.post_office.toLowerCase()
-      );
-      
-      if (matchedArea) {
-        setSelectedArea(matchedArea.value);
-        return;
-      } else {
-        setSelectedArea(formData.post_office);
-        return;
-      }
-    }
-
-    if (mainAreas.length === 1) {
+      const matched = mainAreas.find((a) => a.office.toLowerCase() === formData.post_office.toLowerCase());
+      setSelectedArea(matched?.value || formData.post_office);
+    } else if (mainAreas.length === 1 && mainAreas[0].value) {
       const a = mainAreas[0];
       setSelectedArea(a.value);
-      setFormData((p) => ({
-        ...p,
-        state: p.state || a.state,
-        city: p.city || a.city,
-        post_office: a.office,
-        billing_post_office: p.is_billing ? a.office : p.billing_post_office,
-      }));
+      setFormData((p) => ({ ...p, state: p.state || a.state, city: p.city || a.city, post_office: a.office, billing_post_office: p.is_billing ? a.office : p.billing_post_office }));
     }
-  }, [postcodeForLookup, formData.postcode, mainAreas, selectedArea, formData.post_office]);
-
-  useEffect(() => {
-    if (
-      billingPostcodeForLookup !== billingAddress.postcode ||
-      billingAreas.length === 0 ||
-      billingSelectedArea
-    ) {
-      return;
-    }
-
-    if (billingAddress.post_office || billingAddress.billing_post_office) {
-      const targetVal = billingAddress.post_office || billingAddress.billing_post_office;
-      const matchedArea = billingAreas.find(
-        (a) => a.office.toLowerCase() === targetVal.toLowerCase()
-      );
-
-      if (matchedArea) {
-        setBillingSelectedArea(matchedArea.value);
-        return;
-      } else {
-        setBillingSelectedArea(targetVal);
-        return;
-      }
-    }
-
-    if (billingAreas.length === 1) {
+  }
+  if (billingLookupMatches && billingAreas.length > 0 && !billingSelectedArea) {
+    const target = billingAddress.post_office || billingAddress.billing_post_office;
+    if (target) {
+      const matched = billingAreas.find((a) => a.office.toLowerCase() === target.toLowerCase());
+      setBillingSelectedArea(matched?.value || target);
+    } else if (billingAreas.length === 1 && billingAreas[0].value) {
       const a = billingAreas[0];
       setBillingSelectedArea(a.value);
-      setBillingAddress((p) => ({
-        ...p,
-        state: p.state || a.state,
-        city: p.city || a.city,
-        post_office: a.office,
-        billing_post_office: a.office,
-      }));
+      setBillingAddress((p) => ({ ...p, state: p.state || a.state, city: p.city || a.city, post_office: a.office, billing_post_office: a.office }));
     }
-  }, [
-    billingPostcodeForLookup,
-    billingAddress.postcode,
-    billingAreas,
-    billingSelectedArea,
-    billingAddress.post_office,
-    billingAddress.billing_post_office
-  ]);
-
-  /* ============================================================
-     Keep billing_post_office in sync while is_billing is ON
-  ============================================================ */
-  useEffect(() => {
-    if (!formData.is_billing) return;
-    if (formData.billing_post_office === formData.post_office) return;
-    setFormData((prev) =>
-      prev.is_billing
-        ? { ...prev, billing_post_office: prev.post_office }
-        : prev
-    );
-  }, [formData.is_billing, formData.post_office, formData.billing_post_office]);
+  }
+  if (isOpen && !resetting && formData.is_billing && formData.billing_post_office !== formData.post_office) {
+    setFormData((p) => ({ ...p, billing_post_office: p.post_office }));
+  }
 
   /* Validation helpers */
   const validatePhoneNumber = (value: string) => {
@@ -345,9 +338,9 @@ function AddressFormModal({
     value.replace(/\D/g, "").slice(0, 6);
 
   /* Populate / reset */
-  useEffect(() => {
-    if (!isOpen) return;
-
+  if (resetting) {
+    setPostcodeForLookup("");
+    setBillingPostcodeForLookup("");
     if (initialData) {
       setFormData({
         recipient_name: initialData.recipient_name || "",
@@ -443,7 +436,7 @@ function AddressFormModal({
     setBillingSelectedArea("");
     setManualArea("");
     setBillingManualArea("");
-  }, [initialData, isOpen]);
+  }
 
   const validateMainAddress = () => {
     const newErrors: Partial<Record<keyof AddressFormData, string>> = {};
@@ -502,7 +495,7 @@ function AddressFormModal({
     if (!validateMainAddress()) return;
     if (!formData.is_billing && !validateBillingAddress()) return;
 
-    const cleanFormData: any = {
+    const cleanFormData: AddressFormData = {
       ...formData,
       contact_number: formData.contact_number.replace(/\D/g, ""),
       postcode: formData.postcode.replace(/\D/g, ""),
@@ -552,22 +545,7 @@ function AddressFormModal({
         : "border-[#D7D7D5] hover:border-[#BDBDBA] focus:border-[#999999] focus:ring-1 focus:ring-black/5"
     }`;
 
-  const Label = ({
-    children,
-    optional,
-  }: {
-    children: React.ReactNode;
-    optional?: boolean;
-  }) => (
-    <label className="mb-1.5 block text-[10px] font-medium uppercase tracking-[0.06em] text-[#666666]">
-      {children}
-      {optional && (
-        <span className="ml-1 font-normal normal-case tracking-normal text-[#999999]">
-          (Optional)
-        </span>
-      )}
-    </label>
-  );
+
 
   const updateBillingField = (
     field: keyof typeof billingAddress,
@@ -695,71 +673,12 @@ function AddressFormModal({
   /* ============================================================
      PINCODE HINT
   ============================================================ */
-  const PincodeHint = ({
-    fetching,
-    error,
-    hasData,
-  }: {
-    fetching: boolean;
-    error: boolean;
-    hasData: boolean;
-  }) => {
-    if (fetching)
-      return (
-        <p className="mt-1 flex items-center gap-1 text-[10px] text-[#888888]">
-          <Loader2 className="h-3 w-3 animate-spin" /> Fetching area, city &
-          state…
-        </p>
-      );
-    if (error)
-      return (
-        <p className="mt-1 text-[10px] font-medium text-[#C94D4D]">
-          Could not fetch pincode details. Enter details manually.
-        </p>
-      );
-    if (hasData)
-      return (
-        <p className="mt-1 text-[10px] text-[#111111]">
-          ✓ Pincode verified — pick your delivery area below
-        </p>
-      );
-    return null;
-  };
+
 
   /* ============================================================
      ADDRESS TYPE SELECTOR
   ============================================================ */
-  const AddressTypeSelector = () => (
-    <div className="md:col-span-2">
-      <Label>Address Type</Label>
-      <div className="grid grid-cols-3 gap-2">
-        {ADDRESS_TYPES.map((type) => {
-          const Icon = type.icon;
-          const isSelected = formData.type === type.value;
-          return (
-            <button
-              key={type.value}
-              type="button"
-              onClick={() =>
-                setFormData((previous) => ({
-                  ...previous,
-                  type: type.value,
-                }))
-              }
-              className={`flex h-[42px] items-center justify-center gap-2 rounded-[6px] border text-[11px] font-medium transition-all duration-150 ${
-                isSelected
-                  ? "border-[#111111] bg-[#111111] text-white"
-                  : "border-[#D7D7D5] bg-white text-[#555555] hover:border-[#BDBDBA] hover:bg-[#FAFAF9]"
-              }`}
-            >
-              <Icon className="h-[14px] w-[14px]" />
-              {type.label}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
+
 
   if (!isOpen) return null;
 
@@ -827,7 +746,7 @@ function AddressFormModal({
                     </div>
 
                     <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                      <AddressTypeSelector />
+                      <AddressTypeSelector value={formData.type} onChange={(type) => setFormData((previous) => ({ ...previous, type }))} />
 
                       {/* FULL NAME */}
                       <div className="md:col-span-2">
@@ -1714,7 +1633,7 @@ export default function AddressComponent({
   const [setDefaultAddress, { isLoading: isSettingDefault }] =
     useSetDefaultAddressMutation();
 
-  const [addresses, setAddresses] = useState<Address[]>([]);
+  const addresses: Address[] = addressesData?.data ?? [];
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
@@ -1722,21 +1641,14 @@ export default function AddressComponent({
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [addressToDelete, setAddressToDelete] = useState<Address | null>(null);
 
-  useEffect(() => {
-    if (addressesData?.data) {
-      setAddresses(addressesData.data);
-    }
-  }, [addressesData]);
 
-  const getErrorMessage = (error: any): string => {
-    if (error?.data?.errors) {
-      const errorsObj = error.data.errors;
-      const errorMessages = Object.values(errorsObj).flat();
-      return errorMessages.join(", ");
+  const getErrorMessage = (error: unknown): string => {
+    const data = typeof error === "object" && error !== null && "data" in error ? error.data : undefined;
+    if (typeof data === "object" && data !== null && "errors" in data && typeof data.errors === "object" && data.errors !== null) {
+      const messages = Object.values(data.errors).flat().filter((message): message is string => typeof message === "string");
+      if (messages.length) return messages.join(", ");
     }
-    if (error?.data?.message) return error.data.message;
-    if (error?.message) return error.message;
-    return "Something went wrong. Please try again.";
+    return readCaughtMessage(error, "data", "message") || readCaughtMessage(error, "message") || "Something went wrong. Please try again.";
   };
 
   const handleCreateAddress = async (data: AddressFormData) => {
@@ -1760,7 +1672,7 @@ export default function AddressComponent({
       );
       setIsModalOpen(false);
       refetchAddresses();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to create address:", error);
       dispatch(
         showToast({
@@ -1799,7 +1711,7 @@ export default function AddressComponent({
       setIsModalOpen(false);
       setEditingAddress(null);
       refetchAddresses();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to update address:", error);
       dispatch(
         showToast({
@@ -1830,7 +1742,7 @@ export default function AddressComponent({
       refetchAddresses();
       setDeleteModalOpen(false);
       setAddressToDelete(null);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to delete address:", error);
       dispatch(
         showToast({
@@ -1854,7 +1766,7 @@ export default function AddressComponent({
         })
       );
       refetchAddresses();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to set default:", error);
       dispatch(
         showToast({
@@ -1894,7 +1806,7 @@ export default function AddressComponent({
     exit: { opacity: 0, scale: 0.96, transition: { duration: 0.2 } },
   };
 
-  const AddAddressButton = () => (
+  const addAddressButton = (
     <button
       onClick={() => {
         setEditingAddress(null);
@@ -1949,7 +1861,7 @@ export default function AddressComponent({
           <h2 className="text-[20px] font-semibold text-[#171717]">
             Saved Addresses
           </h2>
-          {buttonPosition === "top" && <AddAddressButton />}
+          {buttonPosition === "top" && addAddressButton}
         </motion.div>
 
         {/* ADDRESS LIST */}
@@ -2142,7 +2054,7 @@ export default function AddressComponent({
 
             {buttonPosition === "bottom" && (
               <div className="mt-4 flex justify-end">
-                <AddAddressButton />
+                {addAddressButton}
               </div>
             )}
           </>

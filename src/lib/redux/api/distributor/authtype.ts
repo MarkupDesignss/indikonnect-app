@@ -100,8 +100,18 @@ export interface DistributorLoginProfile {
   registration_completed: number;
 }
 
+interface DistributorLoginEnvelope {
+  token?: string;
+  access_token?: string;
+  message?: string;
+  user?: DistributorLoginUser;
+  data?: DistributorLoginEnvelope;
+}
+
 export interface DistributorLoginResponse {
   status: boolean;
+  success?: boolean;
+  data?: DistributorLoginEnvelope;
   message: string;
   token?: string;
   access_token?: string;

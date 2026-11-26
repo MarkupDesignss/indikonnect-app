@@ -23,6 +23,8 @@ import {
   Smartphone,
   Zap,
 } from "lucide-react";
+import { readCaughtMessage } from "@/lib/utils/readCaughtMessage";
+
 
 const theme = {
   font: "'Inter', 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, sans-serif",
@@ -255,9 +257,9 @@ export const CustomerOTPVerification: React.FC<
         setIsVerifying(false);
         setIsSuccess(false);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("❌ OTP Verification Error:", err);
-      setError(err.data?.message || "Invalid OTP. Please try again.");
+      setError(readCaughtMessage(err, "data", "message") || "Invalid OTP. Please try again.");
       verificationInProgress.current = false;
       setIsVerifying(false);
       setIsSuccess(false);
@@ -305,9 +307,9 @@ export const CustomerOTPVerification: React.FC<
       } else {
         setError(result.message || "Failed to resend OTP. Please try again.");
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Resend OTP error:", err);
-      setError(err.data?.message || "Failed to resend OTP. Please try again.");
+      setError(readCaughtMessage(err, "data", "message") || "Failed to resend OTP. Please try again.");
     }
   };
 
@@ -398,9 +400,9 @@ export const CustomerOTPVerification: React.FC<
                     key={i}
                     className="absolute w-1.5 h-1.5 bg-[#F9C744] rounded-full"
                     style={{
-                      top: `${Math.random() * 100}%`,
-                      left: `${Math.random() * 100}%`,
-                      animation: `pulse 3s ease-in-out ${Math.random() * 3}s infinite`,
+                      top: `${((i * 37 + 11) % 101) / 101 * 100}%`,
+                      left: `${((i * 53 + 24) % 101) / 101 * 100}%`,
+                      animation: `pulse 3s ease-in-out ${((i * 69 + 37) % 101) / 101 * 3}s infinite`,
                     }}
                   />
                 ))}
@@ -428,7 +430,7 @@ export const CustomerOTPVerification: React.FC<
                   </h2>
 
                   <p className="text-[#8291A6] text-sm leading-relaxed">
-                    We've sent a 6-digit verification code to your phone. Enter
+                    We&apos;ve sent a 6-digit verification code to your phone. Enter
                     it below to complete your verification.
                   </p>
 

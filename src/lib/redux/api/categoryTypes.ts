@@ -2,6 +2,7 @@
 export interface Category {
   id: number;
   title: string;
+  name?: string;
   slug: string;
   description: string;
   image: string;
@@ -22,4 +23,5 @@ export interface CategoryResponse {
   message: string;
   data: Category[];
   meta: CategoryMeta;
+  subcategories?: Array<{ id: number; title?: string; name?: string; slug?: string; category_id?: number; category?: { id?: number } }>;
 }

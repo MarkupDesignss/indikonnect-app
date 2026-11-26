@@ -4,16 +4,17 @@ import { parseJsonObject, isPurchaseAllowedWithoutStock, getVariantImageUrl, get
 import type { ProductModel } from "./useProductModel";
 
 export function useProductVariants(apiProduct: any, product: ProductModel['product'], productGallery: string[], selectedVariantId: number | string | null) {
+const rawVariants = apiProduct?.variants;
 const variantEntries = useMemo(() => {
-    if (!Array.isArray(apiProduct?.variants)) return [];
+    if (!Array.isArray(rawVariants)) return [];
 
-    return apiProduct.variants
+    return rawVariants
       .filter((variant: any) => variant?.is_active !== false)
       .map((variant: any) => ({
         ...variant,
         parsedAttributes: parseJsonObject(variant?.attributes),
       }));
-  }, [apiProduct?.variants]);
+  }, [rawVariants]);
 
 const hasVariants = variantEntries.length > 0;
 

@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
 
 interface PermissionLoadingStateProps {
-  logoUrl: string | null;
+  logoUrl?: string | null;
 }
 
 const DEFAULT_LOGO_URL =
@@ -14,11 +14,9 @@ const DEFAULT_LOGO_URL =
 const DOT_COLORS = ["#111111", "#6B7280", "#111111"];
 
 const Loding: React.FC<PermissionLoadingStateProps> = ({ logoUrl }) => {
-  const [displayLogo, setDisplayLogo] = useState(logoUrl || DEFAULT_LOGO_URL);
-
-  useEffect(() => {
-    setDisplayLogo(logoUrl || DEFAULT_LOGO_URL);
-  }, [logoUrl]);
+  const requestedLogo = logoUrl || DEFAULT_LOGO_URL;
+  const [failedLogo, setFailedLogo] = useState<string | null>(null);
+  const displayLogo = failedLogo === requestedLogo ? DEFAULT_LOGO_URL : requestedLogo;
 
   return (
     <div className="flex min-h-[45vh] w-full flex-col items-center justify-center overflow-hidden rounded-xl bg-white p-4 font-poppins">
@@ -57,7 +55,7 @@ const Loding: React.FC<PermissionLoadingStateProps> = ({ logoUrl }) => {
           }}
           onError={() => {
             if (displayLogo !== DEFAULT_LOGO_URL) {
-              setDisplayLogo(DEFAULT_LOGO_URL);
+              setFailedLogo(requestedLogo);
             }
           }}
         />

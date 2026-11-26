@@ -1,5 +1,7 @@
 "use client";
 
+import type { MouseEvent } from "react";
+import type { HomeCardProduct, HomeProductImage } from "./support";
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { ShoppingBag, Check, Loader2 } from "lucide-react";
@@ -9,6 +11,8 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { useAddToCartMutation } from "@/lib/redux/api/cartApi";
 import { useCheckProductStockMutation } from "@/lib/redux/api/productApi";
 import { getPlaceholderImage, getProductImage, getProductMrp, getProductPrice, isPurchaseAllowedWithoutStock } from "@/features/storefront/components/Home.parts/support";
+import { readCaughtMessage } from "@/lib/utils/readCaughtMessage";
+
 
 
 /* =========================================================
@@ -27,7 +31,19 @@ export function ProductCard({
   onDotClick,
   label,
   showCartButtons = true,
-}: any) {
+}: {
+  product: HomeCardProduct;
+  index?: number;
+  router?: ReturnType<typeof useRouter>;
+  userType?: string;
+  wish?: Record<string | number, boolean>;
+  handleToggleWishlist: (id: string | number, name: string, event?: MouseEvent) => void | Promise<void>;
+  imageIndex?: number;
+  images?: HomeProductImage[];
+  onDotClick?: (id: string | number, index: number, event: MouseEvent) => void;
+  label?: string;
+  showCartButtons?: boolean;
+}) {
   const routerFromHook = useRouter();
   const router = routerProp || routerFromHook;
   const dispatch = useAppDispatch();
@@ -84,9 +100,11 @@ export function ProductCard({
     stockQty > 0 &&
     stockQty <= 5;
 
-  useEffect(() => {
+  const [previousProductId, setPreviousProductId] = useState(product?.id);
+  if (previousProductId !== product?.id) {
+    setPreviousProductId(product?.id);
     setStockUnavailable(false);
-  }, [product?.id]);
+  }
 
   const verifyLiveStock = async () => {
     const id = Number(product?.id);
@@ -149,11 +167,11 @@ export function ProductCard({
           type: "success",
         }),
       );
-    } catch (err: any) {
+    } catch (err: unknown) {
       dispatch(
         showToast({
           message:
-            err?.data?.message || err?.message || "Failed to add item to cart",
+            readCaughtMessage(err, "data", "message") || readCaughtMessage(err, "message") || "Failed to add item to cart",
           type: "error",
         }),
       );
@@ -179,11 +197,11 @@ export function ProductCard({
         quantity: "1",
       });
       router.push(`/checkout?${params.toString()}`);
-    } catch (err: any) {
+    } catch (err: unknown) {
       dispatch(
         showToast({
           message:
-            err?.data?.message || err?.message || "Unable to verify stock",
+            readCaughtMessage(err, "data", "message") || readCaughtMessage(err, "message") || "Unable to verify stock",
           type: "error",
         }),
       );
@@ -288,7 +306,7 @@ export function ProductCard({
         {/* IMAGE DOTS (bottom-right) – mobile par tap se image badlo */}
         {images.length > 1 && (
           <div className="absolute bottom-2 right-2 z-10 flex items-center rounded-full bg-black/25 px-1 backdrop-blur-sm">
-            {images.slice(0, 5).map((_: any, i: number) => (
+            {images.slice(0, 5).map((_, i: number) => (
               <button
                 key={i}
                 type="button"

@@ -21,7 +21,7 @@ export interface CoolingOffEligibilityResponse {
 export interface CoolingOffWithdrawResponse {
   success: boolean;
   message?: string;
-  data?: any;
+  data?: unknown;
 }
 
 export const coolingOffApi = baseApi.injectEndpoints({

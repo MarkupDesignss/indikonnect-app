@@ -1,0 +1,1230 @@
+ next.config.ts(5,19): error TS7006: Parameter 'phase' implicitly has an 'any' type.
+src/app/checkout/page.tsx(10,12): error TS2741: Property 'logoUrl' is missing in type '{}' but required in type 'PermissionLoadingStateProps'.
+src/components/common/ConstellationBackground.tsx(33,31): error TS2554: Expected 1 arguments, but got 0.
+src/components/common/Header.parts/HeaderInner.tsx(353,37): error TS2339: Property 'total_items' does not exist on type 'CartData'.
+src/components/common/Header.parts/HeaderInner.tsx(354,49): error TS2339: Property 'total_formatted' does not exist on type 'CartData'.
+src/components/common/Header.parts/HeaderInner.tsx(1063,67): error TS2339: Property 'name' does not exist on type 'Category'.
+src/components/common/Header.parts/HeaderInner.tsx(1240,50): error TS2339: Property 'subcategories' does not exist on type 'CategoryResponse'.
+src/components/common/Header.parts/HeaderInner.tsx(1250,76): error TS2339: Property 'name' does not exist on type 'Category'.
+src/components/common/OTPInput.tsx(76,25): error TS2322: Type '(el: HTMLInputElement | null) => HTMLInputElement | null' is not assignable to type 'Ref<HTMLInputElement> | undefined'.
+  Type '(el: HTMLInputElement | null) => HTMLInputElement | null' is not assignable to type '(instance: HTMLInputElement | null) => void | (() => VoidOrUndefinedOnly)'.
+    Type 'HTMLInputElement | null' is not assignable to type 'void | (() => VoidOrUndefinedOnly)'.
+      Type 'null' is not assignable to type 'void | (() => VoidOrUndefinedOnly)'.
+src/components/Footer/Footer.tsx(198,30): error TS2339: Property 'footer' does not exist on type 'FooterData'.
+src/components/Footer/Footer.tsx(206,21): error TS2339: Property 'heritage_sites' does not exist on type 'FooterData'.
+src/features/auth/components/GetStartedDrawer.tsx(180,17): error TS2339: Property 'data' does not exist on type 'DistributorLoginResponse'.
+src/features/auth/components/GetStartedDrawer.tsx(181,17): error TS2339: Property 'data' does not exist on type 'DistributorLoginResponse'.
+src/features/auth/components/GetStartedDrawer.tsx(182,17): error TS2339: Property 'data' does not exist on type 'DistributorLoginResponse'.
+src/features/auth/components/GetStartedDrawer.tsx(187,17): error TS2339: Property 'success' does not exist on type 'DistributorLoginResponse'.
+src/features/auth/components/GetStartedDrawer.tsx(193,19): error TS2339: Property 'data' does not exist on type 'DistributorLoginResponse'.
+src/features/auth/components/GetStartedDrawer.tsx(217,17): error TS2339: Property 'data' does not exist on type 'DistributorLoginResponse'.
+src/features/auth/components/GetStartedDrawer.tsx(218,17): error TS2339: Property 'data' does not exist on type 'DistributorLoginResponse'.
+src/features/auth/components/Login/CustomerLoginForm.tsx(156,31): error TS2339: Property 'account_type' does not exist on type 'SendOTPResponse'.
+src/features/auth/components/Login/CustomerLoginForm.tsx(157,32): error TS2339: Property 'is_registered' does not exist on type 'SendOTPResponse'.
+src/features/auth/components/Login/CustomerLoginForm.tsx(282,9): error TS2322: Type '{ starColor: string; starCount: number; connectionDistance: number; animationSpeed: number; showParticles: boolean; particleCount: number; showShootingStars: boolean; shootingStarCount: number; glowIntensity: number; interactive: boolean; onStarClick: () => void; }' is not assignable to type 'IntrinsicAttributes & ConstellationBackgroundProps'.
+  Property 'starCount' does not exist on type 'IntrinsicAttributes & ConstellationBackgroundProps'.
+src/features/auth/components/Login/CustomerOTPVerification.tsx(360,9): error TS2322: Type '{ starColor: string; starCount: number; connectionDistance: number; animationSpeed: number; showParticles: boolean; particleCount: number; showShootingStars: boolean; shootingStarCount: number; glowIntensity: number; interactive: boolean; }' is not assignable to type 'IntrinsicAttributes & ConstellationBackgroundProps'.
+  Property 'starCount' does not exist on type 'IntrinsicAttributes & ConstellationBackgroundProps'.
+src/features/auth/components/Registration/CustomerRegistrationForm.tsx(287,48): error TS2345: Argument of type '{ email: string; account_type: string; temp_token: string; full_name: string; phone: string; country: string; terms_condition: string; }' is not assignable to parameter of type 'ConfirmRegistrationRequest'.
+  Property 'company_name' is missing in type '{ email: string; account_type: string; temp_token: string; full_name: string; phone: string; country: string; terms_condition: string; }' but required in type 'ConfirmRegistrationRequest'.
+src/features/auth/components/Registration/CustomerRegistrationForm.tsx(317,30): error TS2339: Property 'dashboard' does not exist on type '{ readonly auth: { readonly customer: { readonly login: string; readonly verifyOTP: string; readonly register: string; }; readonly distributor: { readonly login: string; readonly verifyOTP: string; readonly register: string; }; }; readonly customer: { ...; }; readonly distributor: { ...; }; readonly common: { ...; }...'.
+src/features/auth/components/Registration/CustomerRegistrationForm.tsx(425,9): error TS2322: Type '{ starColor: string; starCount: number; connectionDistance: number; animationSpeed: number; showParticles: boolean; particleCount: number; showShootingStars: boolean; shootingStarCount: number; glowIntensity: number; interactive: boolean; onStarClick: (starId: any) => void; }' is not assignable to type 'IntrinsicAttributes & ConstellationBackgroundProps'.
+  Property 'starCount' does not exist on type 'IntrinsicAttributes & ConstellationBackgroundProps'.
+src/features/auth/components/Registration/CustomerRegistrationForm.tsx(434,23): error TS7006: Parameter 'starId' implicitly has an 'any' type.
+src/features/cart/screens/cart.tsx(329,5): error TS2345: Argument of type '{}' is not assignable to parameter of type 'void | unique symbol'.
+src/features/cart/screens/cart.tsx(507,11): error TS2322: Type 'CartItem[]' is not assignable to type 'CartItemApi[]'.
+  Type 'CartItem' is missing the following properties from type 'CartItemApi': current_unit_price, subtotal
+src/features/cart/screens/cart.tsx(542,54): error TS2339: Property 'price_type' does not exist on type 'CartData'.
+src/features/cart/screens/cart.tsx(704,42): error TS2345: Argument of type '{ type: string; is_delivery: number; is_billing: number; recipient_name: string; contact_number: string; address_line_1: string; address_line_2: string; city: string; state: string; postcode: string; country: string; is_default: boolean; }' is not assignable to parameter of type 'CreateAddressRequest'.
+  Type '{ type: string; is_delivery: number; is_billing: number; recipient_name: string; contact_number: string; address_line_1: string; address_line_2: string; city: string; state: string; postcode: string; country: string; is_default: boolean; }' is missing the following properties from type 'CreateAddressRequest': post_office, billing_post_office
+src/features/cart/screens/cart.tsx(743,11): error TS2353: Object literal may only specify known properties, and 'type' does not exist in type 'UpdateAddressRequest'.
+src/features/cart/screens/cart.tsx(1310,23): error TS2345: Argument of type '{}' is not assignable to parameter of type 'void'.
+src/features/cart/screens/cart.tsx(1444,11): error TS2322: Type '{ cartItems: never[]; cartCount: number; cartSubtotal: number; wishlistCount: number; onRemoveFromCart: () => void; onClearCart: () => void; }' is not assignable to type 'IntrinsicAttributes & { hideAnnouncement?: boolean | undefined; hideMenu?: boolean | undefined; showSidebarMenu?: boolean | undefined; onSidebarMenuClick?: (() => void) | undefined; }'.
+  Property 'cartItems' does not exist on type 'IntrinsicAttributes & { hideAnnouncement?: boolean | undefined; hideMenu?: boolean | undefined; showSidebarMenu?: boolean | undefined; onSidebarMenuClick?: (() => void) | undefined; }'.
+src/features/cart/screens/cart.tsx(1454,14): error TS2741: Property 'logoUrl' is missing in type '{}' but required in type 'PermissionLoadingStateProps'.
+src/features/cart/screens/cart.tsx(1471,9): error TS2322: Type '{ cartItems: CartItemView[]; cartCount: number; cartSubtotal: number; wishlistCount: number; onRemoveFromCart: (cartItemId: number) => void; onClearCart: () => Promise<void>; }' is not assignable to type 'IntrinsicAttributes & { hideAnnouncement?: boolean | undefined; hideMenu?: boolean | undefined; showSidebarMenu?: boolean | undefined; onSidebarMenuClick?: (() => void) | undefined; }'.
+  Property 'cartItems' does not exist on type 'IntrinsicAttributes & { hideAnnouncement?: boolean | undefined; hideMenu?: boolean | undefined; showSidebarMenu?: boolean | undefined; onSidebarMenuClick?: (() => void) | undefined; }'.
+src/features/cart/screens/cart.tsx(1733,9): error TS2322: Type 'Address | null' is not assignable to type 'Address | null | undefined'.
+  Type 'Address' is missing the following properties from type 'Address': post_office, billing_post_office
+src/features/checkout/screens/CheckoutPage.tsx(83,5): error TS2687: All declarations of 'Razorpay' must have identical modifiers.
+src/features/contact/screens/page.tsx(548,23): error TS2345: Argument of type '{}' is not assignable to parameter of type 'void | unique symbol'.
+src/features/contact/screens/page.tsx(550,54): error TS2345: Argument of type '{}' is not assignable to parameter of type 'void | unique symbol'.
+src/features/contact/screens/page.tsx(643,29): error TS2339: Property 'footer' does not exist on type 'FooterData'.
+src/features/contact/screens/page.tsx(643,55): error TS2339: Property 'footer' does not exist on type 'FooterResponse'.
+src/features/contact/screens/page.tsx(714,9): error TS2322: Type '{ cartItems: never[]; cartCount: number; cartSubtotal: number; wishlistCount: number; }' is not assignable to type 'IntrinsicAttributes & { hideAnnouncement?: boolean | undefined; hideMenu?: boolean | undefined; showSidebarMenu?: boolean | undefined; onSidebarMenuClick?: (() => void) | undefined; }'.
+  Property 'cartItems' does not exist on type 'IntrinsicAttributes & { hideAnnouncement?: boolean | undefined; hideMenu?: boolean | undefined; showSidebarMenu?: boolean | undefined; onSidebarMenuClick?: (() => void) | undefined; }'.
+src/features/distributor/auth/DistributorLogin.tsx(378,9): error TS2322: Type '{ starColor: string; starCount: number; connectionDistance: number; animationSpeed: number; showParticles: boolean; particleCount: number; showShootingStars: boolean; shootingStarCount: number; glowIntensity: number; interactive: boolean; }' is not assignable to type 'IntrinsicAttributes & ConstellationBackgroundProps'.
+  Property 'starCount' does not exist on type 'IntrinsicAttributes & ConstellationBackgroundProps'.
+src/features/distributor/registration/components/steps/AadhaarStep.tsx(162,42): error TS2339: Property 'aadhaar_name_as_per_pan' does not exist on type 'DistributorFormData'.
+src/features/distributor/registration/components/steps/AadhaarStep.tsx(173,46): error TS2339: Property 'aadhaar_date_of_birth' does not exist on type 'DistributorFormData'.
+src/features/distributor/registration/components/steps/AadhaarStep.tsx(191,11): error TS2367: This comparison appears to be unintentional because the types 'boolean | undefined' and 'number' have no overlap.
+src/features/distributor/registration/components/steps/AadhaarStep.tsx(319,15): error TS2339: Property 'aadhaar_name_as_per_pan' does not exist on type 'DistributorFormData'.
+src/features/distributor/registration/components/steps/AadhaarStep.tsx(330,14): error TS2339: Property 'aadhaar_date_of_birth' does not exist on type 'DistributorFormData'.
+src/features/distributor/registration/components/steps/AadhaarStep.tsx(366,35): error TS2339: Property 'aadhaar_name_as_per_pan' does not exist on type 'DistributorFormData'.
+src/features/distributor/registration/components/steps/AadhaarStep.tsx(367,33): error TS2339: Property 'aadhaar_date_of_birth' does not exist on type 'DistributorFormData'.
+src/features/distributor/registration/components/steps/AadhaarStep.tsx(390,45): error TS2339: Property 'aadhaar_name_as_per_pan' does not exist on type 'DistributorFormData'.
+src/features/distributor/registration/components/steps/AadhaarStep.tsx(391,44): error TS2339: Property 'aadhaar_date_of_birth' does not exist on type 'DistributorFormData'.
+src/features/distributor/registration/components/steps/AadhaarStep.tsx(447,14): error TS2339: Property 'aadhaar_name_as_per_pan' does not exist on type 'DistributorFormData'.
+src/features/distributor/registration/components/steps/AadhaarStep.tsx(451,14): error TS2339: Property 'aadhaar_date_of_birth' does not exist on type 'DistributorFormData'.
+src/features/distributor/registration/components/steps/AadhaarStep.tsx(665,14): error TS2339: Property 'aadhaar_name_as_per_pan' does not exist on type 'DistributorFormData'.
+src/features/distributor/registration/components/steps/AadhaarStep.tsx(666,12): error TS2339: Property 'aadhaar_date_of_birth' does not exist on type 'DistributorFormData'.
+src/features/distributor/registration/components/steps/AadhaarStep.tsx(838,40): error TS2339: Property 'aadhaar_name_as_per_pan' does not exist on type 'DistributorFormData'.
+src/features/distributor/registration/components/steps/AadhaarStep.tsx(847,23): error TS2339: Property 'aadhaar_name_as_per_pan' does not exist on type 'DistributorFormData'.
+src/features/distributor/registration/components/steps/AadhaarStep.tsx(863,40): error TS2339: Property 'aadhaar_date_of_birth' does not exist on type 'DistributorFormData'.
+src/features/distributor/registration/components/steps/AadhaarStep.tsx(872,23): error TS2339: Property 'aadhaar_date_of_birth' does not exist on type 'DistributorFormData'.
+src/features/distributor/registration/components/steps/BankStep.tsx(283,15): error TS2339: Property 'bank_title' does not exist on type 'DistributorFormData'.
+src/features/distributor/registration/components/steps/BankStep.tsx(297,15): error TS2339: Property 'bank_entity_type' does not exist on type 'DistributorFormData'.
+src/features/distributor/registration/components/steps/BankStep.tsx(304,34): error TS2339: Property 'bank_gst_in' does not exist on type 'DistributorFormData'.
+src/features/distributor/registration/components/steps/BankStep.tsx(315,38): error TS2339: Property 'bank_company_name' does not exist on type 'DistributorFormData'.
+src/features/distributor/registration/components/steps/BankStep.tsx(407,21): error TS2339: Property 'bank_title' does not exist on type 'DistributorFormData'.
+src/features/distributor/registration/components/steps/BankStep.tsx(408,30): error TS2339: Property 'bank_entity_type' does not exist on type 'DistributorFormData'.
+src/features/distributor/registration/components/steps/BankStep.tsx(482,15): error TS2551: Property 'bank_verified' does not exist on type 'DistributorFormData'. Did you mean 'pan_verified'?
+src/features/distributor/registration/components/steps/BankStep.tsx(503,11): error TS2322: Type '"warning"' is not assignable to type '"error" | "success" | "info" | undefined'.
+src/features/distributor/registration/components/steps/BankStep.tsx(542,11): error TS2322: Type '"warning"' is not assignable to type '"error" | "success" | "info" | undefined'.
+src/features/distributor/registration/components/steps/BankStep.tsx(565,11): error TS2322: Type '"warning"' is not assignable to type '"error" | "success" | "info" | undefined'.
+src/features/distributor/registration/components/steps/BankStep.tsx(588,11): error TS2322: Type '"warning"' is not assignable to type '"error" | "success" | "info" | undefined'.
+src/features/distributor/registration/components/steps/BankStep.tsx(607,11): error TS2322: Type '"warning"' is not assignable to type '"error" | "success" | "info" | undefined'.
+src/features/distributor/registration/components/steps/BankStep.tsx(635,31): error TS2339: Property 'bank_title' does not exist on type 'DistributorFormData'.
+src/features/distributor/registration/components/steps/BankStep.tsx(637,36): error TS2339: Property 'bank_entity_type' does not exist on type 'DistributorFormData'.
+src/features/distributor/registration/components/steps/BankStep.tsx(662,14): error TS2551: Property 'bank_verified' does not exist on type 'DistributorFormData'. Did you mean 'pan_verified'?
+src/features/distributor/registration/components/steps/BankStep.tsx(754,31): error TS2339: Property 'bank_title' does not exist on type 'DistributorFormData'.
+src/features/distributor/registration/components/steps/BankStep.tsx(785,31): error TS2339: Property 'bank_entity_type' does not exist on type 'DistributorFormData'.
+src/features/distributor/registration/components/steps/BankStep.tsx(797,31): error TS2339: Property 'bank_gst_in' does not exist on type 'DistributorFormData'.
+src/features/distributor/registration/components/steps/BankStep.tsx(818,31): error TS2339: Property 'bank_company_name' does not exist on type 'DistributorFormData'.
+src/features/distributor/registration/components/steps/BankStep.tsx(879,19): error TS2322: Type '{ label: string; name: string; value: string; onChange: (e: ChangeEvent<HTMLInputElement, Element>) => void; error: string; placeholder: string; ... 4 more ...; disabled: boolean; }' is not assignable to type 'IntrinsicAttributes & PasswordInputProps'.
+  Property 'maxLength' does not exist on type 'IntrinsicAttributes & PasswordInputProps'.
+src/features/distributor/registration/components/steps/BankStep.tsx(901,19): error TS2322: Type '{ label: string; name: string; value: string; onChange: (e: ChangeEvent<HTMLInputElement, Element>) => void; error: string; placeholder: string; ... 4 more ...; disabled: boolean; }' is not assignable to type 'IntrinsicAttributes & PasswordInputProps'.
+  Property 'maxLength' does not exist on type 'IntrinsicAttributes & PasswordInputProps'.
+src/features/distributor/registration/components/steps/BankStep.tsx(948,29): error TS2551: Property 'bank_verified' does not exist on type 'DistributorFormData'. Did you mean 'pan_verified'?
+src/features/distributor/registration/components/steps/BankStep.tsx(957,23): error TS2551: Property 'bank_verified' does not exist on type 'DistributorFormData'. Did you mean 'pan_verified'?
+src/features/distributor/registration/components/steps/IdentityStep.tsx(229,43): error TS18048: 'userData' is possibly 'undefined'.
+src/features/distributor/registration/components/steps/IdentityStep.tsx(231,11): error TS18048: 'userData' is possibly 'undefined'.
+src/features/distributor/registration/components/steps/IdentityStep.tsx(231,46): error TS18048: 'userData' is possibly 'undefined'.
+src/features/distributor/registration/components/steps/IdentityStep.tsx(234,24): error TS18048: 'userData' is possibly 'undefined'.
+src/features/distributor/registration/components/steps/IdentityStep.tsx(235,28): error TS18048: 'userData' is possibly 'undefined'.
+src/features/distributor/registration/components/steps/IdentityStep.tsx(236,20): error TS18048: 'userData' is possibly 'undefined'.
+src/features/distributor/registration/components/steps/IdentityStep.tsx(237,21): error TS18048: 'userData' is possibly 'undefined'.
+src/features/distributor/registration/components/steps/IdentityStep.tsx(238,23): error TS18048: 'userData' is possibly 'undefined'.
+src/features/distributor/registration/components/steps/IdentityStep.tsx(242,13): error TS18048: 'userData' is possibly 'undefined'.
+src/features/distributor/registration/components/steps/IdentityStep.tsx(243,25): error TS18048: 'userData' is possibly 'undefined'.
+src/features/distributor/registration/components/steps/IdentityStep.tsx(244,54): error TS18048: 'userData' is possibly 'undefined'.
+src/features/distributor/registration/components/steps/IdentityStep.tsx(249,64): error TS18048: 'userData' is possibly 'undefined'.
+src/features/distributor/registration/components/steps/IdentityStep.tsx(259,13): error TS18048: 'userData' is possibly 'undefined'.
+src/features/distributor/registration/components/steps/IdentityStep.tsx(260,31): error TS18048: 'userData' is possibly 'undefined'.
+src/features/distributor/registration/components/steps/IdentityStep.tsx(277,13): error TS18048: 'userData' is possibly 'undefined'.
+src/features/distributor/registration/components/steps/IdentityStep.tsx(279,49): error TS18048: 'userData' is possibly 'undefined'.
+src/features/distributor/registration/components/steps/IdentityStep.tsx(283,13): error TS18048: 'userData' is possibly 'undefined'.
+src/features/distributor/registration/components/steps/IdentityStep.tsx(284,23): error TS18048: 'userData' is possibly 'undefined'.
+src/features/distributor/registration/components/steps/IdentityStep.tsx(296,13): error TS18048: 'userData' is possibly 'undefined'.
+src/features/distributor/registration/components/steps/IdentityStep.tsx(297,37): error TS18048: 'userData' is possibly 'undefined'.
+src/features/distributor/registration/components/steps/IdentityStep.tsx(655,7): error TS2722: Cannot invoke an object which is possibly 'undefined'.
+src/features/distributor/registration/components/steps/IdentityStep.tsx(733,22): error TS2339: Property 'user' does not exist on type 'Step1PersonalResponse'.
+src/features/distributor/registration/components/steps/IdentityStep.tsx(736,37): error TS2339: Property 'user' does not exist on type 'Step1PersonalResponse'.
+src/features/distributor/registration/components/steps/IdentityStep.tsx(738,24): error TS2339: Property 'user' does not exist on type 'Step1PersonalResponse'.
+src/features/distributor/registration/components/steps/IdentityStep.tsx(739,64): error TS2339: Property 'user' does not exist on type 'Step1PersonalResponse'.
+src/features/distributor/registration/components/steps/IdentityStep.tsx(740,24): error TS2339: Property 'user' does not exist on type 'Step1PersonalResponse'.
+src/features/distributor/registration/components/steps/IdentityStep.tsx(741,64): error TS2339: Property 'user' does not exist on type 'Step1PersonalResponse'.
+src/features/distributor/registration/components/steps/IdentityStep.tsx(759,11): error TS2722: Cannot invoke an object which is possibly 'undefined'.
+src/features/distributor/registration/components/steps/IdentityStep.tsx(1246,23): error TS2322: Type '{ label: string; value: string; onChange: (e: ChangeEvent<HTMLInputElement, Element>) => void; error: string; helperText: string; required: true; disabled: boolean; }' is not assignable to type 'IntrinsicAttributes & DatePickerProps'.
+  Property 'disabled' does not exist on type 'IntrinsicAttributes & DatePickerProps'.
+src/features/distributor/registration/components/steps/IdentityStep.tsx(1283,23): error TS2322: Type '{ label: string; name: string; value: string; onChange: (e: ChangeEvent<HTMLInputElement, Element>) => void; error: string; placeholder: string; helperText: string; className: string; required: boolean; disabled: boolean; }' is not assignable to type 'IntrinsicAttributes & PasswordInputProps'.
+  Property 'disabled' does not exist on type 'IntrinsicAttributes & PasswordInputProps'.
+src/features/distributor/registration/components/steps/IdentityStep.tsx(1313,23): error TS2322: Type '{ label: string; name: string; value: string; onChange: (e: ChangeEvent<HTMLInputElement, Element>) => void; error: string; placeholder: string; required: boolean; className: string; disabled: boolean; }' is not assignable to type 'IntrinsicAttributes & PasswordInputProps'.
+  Property 'disabled' does not exist on type 'IntrinsicAttributes & PasswordInputProps'.
+src/features/distributor/registration/components/steps/LocationStep.tsx(279,9): error TS2367: This comparison appears to be unintentional because the types 'number | undefined' and 'boolean' have no overlap.
+src/features/distributor/registration/components/steps/LocationStep.tsx(280,9): error TS2367: This comparison appears to be unintentional because the types 'boolean | undefined' and 'number' have no overlap.
+src/features/distributor/registration/components/steps/LocationStep.tsx(401,11): error TS2322: Type '"warning"' is not assignable to type '"error" | "success" | "info" | undefined'.
+src/features/distributor/registration/components/steps/LocationStep.tsx(450,17): error TS2322: Type '"warning"' is not assignable to type '"error" | "success" | "info" | undefined'.
+src/features/distributor/registration/components/steps/LocationStep.tsx(485,13): error TS2322: Type '"warning"' is not assignable to type '"error" | "success" | "info" | undefined'.
+src/features/distributor/registration/components/steps/LocationStep.tsx(687,14): error TS2339: Property 'location_verified' does not exist on type 'DistributorFormData'.
+src/features/distributor/registration/components/steps/MobileCheckScreen.tsx(167,13): error TS2322: Type '"Auth"' is not assignable to type 'TagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | ... 28 more ... | "PaymentGatewaySettings"> | null | undefined'.
+src/features/distributor/registration/components/steps/MobileCheckScreen.tsx(168,13): error TS2322: Type '"Registration"' is not assignable to type 'TagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | ... 28 more ... | "PaymentGatewaySettings"> | null | undefined'.
+src/features/distributor/registration/components/steps/MobileCheckScreen.tsx(253,20): error TS2339: Property 'message' does not exist on type '{ is_registered?: boolean | undefined; exists?: boolean | undefined; user_data?: { [key: string]: unknown; user?: Record<string, unknown> | undefined; } | undefined; }'.
+src/features/distributor/registration/components/steps/PANStep.tsx(218,14): error TS2339: Property 'pan_name_as_per_pan' does not exist on type 'DistributorFormData'.
+src/features/distributor/registration/components/steps/PANStep.tsx(219,26): error TS2339: Property 'pan_name_as_per_pan' does not exist on type 'DistributorFormData'.
+src/features/distributor/registration/components/steps/PANStep.tsx(220,36): error TS2339: Property 'pan_name_as_per_pan' does not exist on type 'DistributorFormData'.
+src/features/distributor/registration/components/steps/PANStep.tsx(236,14): error TS2551: Property 'pan_date_of_birth' does not exist on type 'DistributorFormData'. Did you mean 'date_of_birth'?
+src/features/distributor/registration/components/steps/PANStep.tsx(237,44): error TS2551: Property 'pan_date_of_birth' does not exist on type 'DistributorFormData'. Did you mean 'date_of_birth'?
+src/features/distributor/registration/components/steps/PANStep.tsx(254,33): error TS2339: Property 'pan_name_as_per_pan' does not exist on type 'DistributorFormData'.
+src/features/distributor/registration/components/steps/PANStep.tsx(254,59): error TS2551: Property 'pan_date_of_birth' does not exist on type 'DistributorFormData'. Did you mean 'date_of_birth'?
+src/features/distributor/registration/components/steps/PANStep.tsx(498,36): error TS2339: Property 'pan_name_as_per_pan' does not exist on type 'DistributorFormData'.
+src/features/distributor/registration/components/steps/PANStep.tsx(511,35): error TS2551: Property 'pan_date_of_birth' does not exist on type 'DistributorFormData'. Did you mean 'date_of_birth'?
+src/features/distributor/registration/components/steps/PANStep.tsx(797,21): error TS2339: Property 'pan_name_as_per_pan' does not exist on type 'DistributorFormData'.
+src/features/distributor/registration/components/steps/PANStep.tsx(798,21): error TS2551: Property 'pan_date_of_birth' does not exist on type 'DistributorFormData'. Did you mean 'date_of_birth'?
+src/features/distributor/registration/components/steps/PANStep.tsx(958,35): error TS2339: Property 'pan_name_as_per_pan' does not exist on type 'DistributorFormData'.
+src/features/distributor/registration/components/steps/PANStep.tsx(974,27): error TS2339: Property 'pan_name_as_per_pan' does not exist on type 'DistributorFormData'.
+src/features/distributor/registration/components/steps/PANStep.tsx(1023,35): error TS2551: Property 'pan_date_of_birth' does not exist on type 'DistributorFormData'. Did you mean 'date_of_birth'?
+src/features/distributor/registration/components/steps/PANStep.tsx(1041,27): error TS2551: Property 'pan_date_of_birth' does not exist on type 'DistributorFormData'. Did you mean 'date_of_birth'?
+src/features/distributor/registration/components/steps/PANStep.tsx(1042,39): error TS2551: Property 'pan_date_of_birth' does not exist on type 'DistributorFormData'. Did you mean 'date_of_birth'?
+src/features/distributor/registration/components/steps/RegistrationLayout.tsx(47,17): error TS2322: Type '{ starColor: string; starCount: number; connectionDistance: number; animationSpeed: number; showParticles: boolean; particleCount: number; showShootingStars: boolean; shootingStarCount: number; glowIntensity: number; interactive: boolean; onStarClick: (starId: any) => void; }' is not assignable to type 'IntrinsicAttributes & ConstellationBackgroundProps'.
+  Property 'starCount' does not exist on type 'IntrinsicAttributes & ConstellationBackgroundProps'.
+src/features/distributor/registration/components/steps/RegistrationLayout.tsx(56,31): error TS7006: Parameter 'starId' implicitly has an 'any' type.
+src/features/distributor/registration/components/steps/ReviewStep.tsx(959,62): error TS2339: Property 'bank_holder_name' does not exist on type 'DistributorFormData'.
+src/features/distributor/registration/components/steps/SponsorStep.tsx(129,13): error TS18048: 'userData' is possibly 'undefined'.
+src/features/distributor/registration/components/steps/SponsorStep.tsx(131,50): error TS18048: 'userData' is possibly 'undefined'.
+src/features/distributor/registration/components/steps/SponsorStep.tsx(135,26): error TS18048: 'userData' is possibly 'undefined'.
+src/features/distributor/registration/components/steps/SponsorStep.tsx(135,51): error TS18048: 'userData' is possibly 'undefined'.
+src/features/distributor/registration/components/steps/SponsorStep.tsx(269,19): error TS2339: Property 'success' does not exist on type 'CheckDistributorResponse'.
+src/features/distributor/registration/components/steps/SponsorStep.tsx(270,9): error TS2367: This comparison appears to be unintentional because the types 'boolean' and 'string' have no overlap.
+src/features/distributor/registration/components/steps/SponsorStep.tsx(276,21): error TS2339: Property 'sponsor_name' does not exist on type 'CheckDistributorResponse'.
+src/features/distributor/registration/components/steps/SponsorStep.tsx(377,43): error TS2345: Argument of type '{ phone: string; sponsor_id: string; }' is not assignable to parameter of type 'Step2SponsorRequest'.
+  Property 'placement_leg' is missing in type '{ phone: string; sponsor_id: string; }' but required in type 'Step2SponsorRequest'.
+src/features/distributor/registration/components/steps/SponsorStep.tsx(381,19): error TS2339: Property 'success' does not exist on type 'Step2SponsorResponse'.
+src/features/distributor/registration/components/steps/SponsorStep.tsx(382,9): error TS2367: This comparison appears to be unintentional because the types 'boolean' and 'string' have no overlap.
+src/features/distributor/registration/components/steps/SponsorStep.tsx(391,21): error TS2339: Property 'name' does not exist on type 'Step2SponsorResponse'.
+src/features/distributor/registration/components/steps/SponsorStep.tsx(477,7): error TS2722: Cannot invoke an object which is possibly 'undefined'.
+src/features/distributor/registration/components/steps/SponsorStep.tsx(491,9): error TS2722: Cannot invoke an object which is possibly 'undefined'.
+src/features/distributor/registration/DistributorRegistrationForm.tsx(82,5): error TS2353: Object literal may only specify known properties, and 'bank_verified' does not exist in type 'DistributorFormData | (() => DistributorFormData)'.
+src/features/distributor/registration/DistributorRegistrationForm.tsx(106,11): error TS2322: Type '"Auth"' is not assignable to type 'TagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | ... 28 more ... | "PaymentGatewaySettings"> | null | undefined'.
+src/features/distributor/registration/DistributorRegistrationForm.tsx(107,11): error TS2322: Type '"Registration"' is not assignable to type 'TagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | ... 28 more ... | "PaymentGatewaySettings"> | null | undefined'.
+src/features/distributor/registration/DistributorRegistrationForm.tsx(148,7): error TS2353: Object literal may only specify known properties, and 'bank_verified' does not exist in type 'SetStateAction<DistributorFormData>'.
+src/features/distributor/registration/DistributorRegistrationForm.tsx(263,35): error TS2339: Property 'success' does not exist on type 'DistributorCheckStatusResponse'.
+src/features/distributor/registration/DistributorRegistrationForm.tsx(269,51): error TS2339: Property 'temp_token' does not exist on type 'DistributorCheckStatusResponse'.
+src/features/distributor/registration/DistributorRegistrationForm.tsx(281,18): error TS2339: Property 'is_registered' does not exist on type 'DistributorCheckStatusResponse'.
+src/features/distributor/registration/DistributorRegistrationForm.tsx(281,51): error TS2339: Property 'exists' does not exist on type 'DistributorCheckStatusResponse'.
+src/features/distributor/registration/DistributorRegistrationForm.tsx(304,36): error TS2339: Property 'current_step' does not exist on type 'DistributorCheckStatusResponse'.
+src/features/distributor/registration/DistributorRegistrationForm.tsx(317,20): error TS2339: Property 'user_data' does not exist on type 'DistributorCheckStatusResponse'.
+src/features/distributor/registration/DistributorRegistrationForm.tsx(318,22): error TS2339: Property 'user_data' does not exist on type 'DistributorCheckStatusResponse'.
+src/features/distributor/registration/DistributorRegistrationForm.tsx(321,33): error TS2339: Property 'user_data' does not exist on type 'DistributorCheckStatusResponse'.
+src/features/distributor/registration/DistributorRegistrationForm.tsx(322,30): error TS2339: Property 'user_data' does not exist on type 'DistributorCheckStatusResponse'.
+src/features/distributor/registration/DistributorRegistrationForm.tsx(407,21): error TS2551: Property 'bank_verified' does not exist on type 'DistributorFormData'. Did you mean 'pan_verified'?
+src/features/distributor/registration/DistributorRegistrationForm.tsx(428,21): error TS2339: Property 'location_verified' does not exist on type 'DistributorFormData'.
+src/features/distributor/registration/DistributorRegistrationForm.tsx(461,27): error TS2551: Property 'bank_verified' does not exist on type 'DistributorFormData'. Did you mean 'pan_verified'?
+src/features/distributor/registration/DistributorRegistrationForm.tsx(463,27): error TS2339: Property 'location_verified' does not exist on type 'DistributorFormData'.
+src/features/distributor/routes/binary-tree/BinaryTreeV2.tsx(39,19): error TS7006: Parameter 'name' implicitly has an 'any' type.
+src/features/distributor/routes/binary-tree/BinaryTreeV2.tsx(42,15): error TS7006: Parameter 'n' implicitly has an 'any' type.
+src/features/distributor/routes/binary-tree/BinaryTreeV2.tsx(47,20): error TS7031: Binding element 'label' implicitly has an 'any' type.
+src/features/distributor/routes/binary-tree/BinaryTreeV2.tsx(47,27): error TS7031: Binding element 'left' implicitly has an 'any' type.
+src/features/distributor/routes/binary-tree/BinaryTreeV2.tsx(47,33): error TS7031: Binding element 'right' implicitly has an 'any' type.
+src/features/distributor/routes/binary-tree/BinaryTreeV2.tsx(57,21): error TS7031: Binding element 'node' implicitly has an 'any' type.
+src/features/distributor/routes/binary-tree/BinaryTreeV2.tsx(102,32): error TS7031: Binding element 'Icon' implicitly has an 'any' type.
+src/features/distributor/routes/binary-tree/BinaryTreeV2.tsx(102,38): error TS7031: Binding element 'label' implicitly has an 'any' type.
+src/features/distributor/routes/binary-tree/BinaryTreeV2.tsx(102,45): error TS7031: Binding element 'onClick' implicitly has an 'any' type.
+src/features/distributor/routes/binary-tree/BinaryTreeV2.tsx(131,22): error TS2741: Property 'onClick' is missing in type '{ icon: ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>; label: string; }' but required in type '{ icon: any; label: any; onClick: any; }'.
+src/features/distributor/routes/buy-back/BuyBack.tsx(46,56): error TS2345: Argument of type '{}' is not assignable to parameter of type 'void | unique symbol'.
+src/features/distributor/routes/buy-back/BuyBack.tsx(92,7): error TS2353: Object literal may only specify known properties, and 'page' does not exist in type '{ search?: string | undefined; }'.
+src/features/distributor/routes/buy-back/BuyBack.tsx(109,19): error TS2339: Property 'data' does not exist on type 'never'.
+src/features/distributor/routes/buy-back/BuyBack.tsx(109,51): error TS2339: Property 'data' does not exist on type 'never'.
+src/features/distributor/routes/buy-back/BuyBack.tsx(110,24): error TS2339: Property 'data' does not exist on type 'never'.
+src/features/distributor/routes/colling-off/CollingOff.tsx(220,11): error TS2353: Object literal may only specify known properties, and 'page' does not exist in type '{ search?: string | undefined; }'.
+src/features/distributor/routes/colling-off/CollingOff.tsx(230,23): error TS2339: Property 'data' does not exist on type 'never'.
+src/features/distributor/routes/colling-off/CollingOff.tsx(230,55): error TS2339: Property 'data' does not exist on type 'never'.
+src/features/distributor/routes/colling-off/CollingOff.tsx(230,79): error TS2339: Property 'data' does not exist on type 'never'.
+src/features/distributor/routes/dashboard/page.parts/AccountTable.tsx(17,46): error TS2339: Property 'tc_bank_available' does not exist on type 'IgniteDashboard'.
+src/features/distributor/routes/dashboard/page.parts/support.tsx(138,10): error TS2741: Property 'logoUrl' is missing in type '{}' but required in type 'PermissionLoadingStateProps'.
+src/features/distributor/routes/dashboard/RouteScreen.tsx(179,25): error TS2339: Property 'tc_bank_available' does not exist on type 'IgniteDashboard'.
+src/features/distributor/routes/dashboard/RouteScreen.tsx(188,44): error TS2345: Argument of type '{ ba_id: string; side: BankedTcSide; }' is not assignable to parameter of type 'PlaceBankedTcPayload'.
+  Property 'placement_ba_id' is missing in type '{ ba_id: string; side: BankedTcSide; }' but required in type 'PlaceBankedTcPayload'.
+src/features/distributor/routes/dashboard/RouteScreen.tsx(388,42): error TS2339: Property 'tc_bank_available' does not exist on type 'IgniteDashboard'.
+src/features/distributor/routes/downline-cv-report/DownlineCVReport.tsx(436,38): error TS2345: Argument of type 'undefined' is not assignable to parameter of type 'number | unique symbol'.
+src/features/distributor/routes/kyc/KycForm.tsx(24,27): error TS7006: Parameter 'key' implicitly has an 'any' type.
+src/features/distributor/routes/kyc/KycForm.tsx(24,36): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/features/distributor/routes/kyc/KycForm.tsx(27,26): error TS7006: Parameter 'fileList' implicitly has an 'any' type.
+src/features/distributor/routes/kyc/KycForm.tsx(32,25): error TS7006: Parameter 'bytes' implicitly has an 'any' type.
+src/features/distributor/routes/kyc/KycForm.tsx(123,56): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{}'.
+  No index signature with a parameter of type 'string' was found on type '{}'.
+src/features/distributor/routes/kyc/KycForm.tsx(175,63): error TS2339: Property 'name' does not exist on type 'never'.
+src/features/distributor/routes/kyc/KycForm.tsx(178,74): error TS2339: Property 'size' does not exist on type 'never'.
+src/features/distributor/routes/kyc/KycForm.tsx(197,82): error TS2339: Property 'click' does not exist on type 'never'.
+src/features/distributor/routes/kyc/status/KycStatus.tsx(504,10): error TS2551: Property 'distributor_profile' does not exist on type 'UserProfile'. Did you mean 'distributor_id'?
+src/features/distributor/routes/kyc/status/KycStatus.tsx(505,10): error TS2339: Property 'business_profile' does not exist on type 'UserProfile'.
+src/features/distributor/routes/my-referral/Referral.tsx(109,36): error TS2339: Property 'pagination' does not exist on type 'DistributorReferralsResponse'.
+src/features/distributor/routes/my-referral/Referral.tsx(121,19): error TS2339: Property 'full_name' does not exist on type 'GenealogyReferral'.
+src/features/distributor/routes/my-referral/Referral.tsx(131,27): error TS2339: Property 'full_name' does not exist on type 'GenealogyReferral'.
+src/features/distributor/routes/my-referral/Referral.tsx(132,22): error TS2339: Property 'full_name' does not exist on type 'GenealogyReferral'.
+src/features/distributor/routes/my-referral/Referral.tsx(150,46): error TS2339: Property 'cv' does not exist on type 'GenealogyReferral'.
+src/features/distributor/routes/my-referral/Referral.tsx(474,33): error TS2339: Property 'full_name' does not exist on type 'GenealogyReferral'.
+src/features/distributor/routes/my-referral/Referral.tsx(489,46): error TS2339: Property 'cv' does not exist on type 'GenealogyReferral'.
+src/features/distributor/routes/my-referral/Referral.tsx(503,33): error TS2339: Property 'rank_name' does not exist on type 'GenealogyReferral'.
+src/features/distributor/routes/my-referral/Referral.tsx(509,33): error TS2339: Property 'status' does not exist on type 'GenealogyReferral'.
+src/features/distributor/routes/my-referral/Referral.tsx(554,37): error TS2339: Property 'full_name' does not exist on type 'GenealogyReferral'.
+src/features/distributor/routes/my-referral/Referral.tsx(568,33): error TS2339: Property 'rank_name' does not exist on type 'GenealogyReferral'.
+src/features/distributor/routes/my-referral/Referral.tsx(572,46): error TS2339: Property 'cv' does not exist on type 'GenealogyReferral'.
+src/features/distributor/routes/my-referral/Referral.tsx(576,33): error TS2339: Property 'status' does not exist on type 'GenealogyReferral'.
+src/features/distributor/routes/order-history/OrderHistory.parts/support.tsx(1112,5): error TS2367: This comparison appears to be unintentional because the types '"delivered"' and '"return_pending"' have no overlap.
+src/features/distributor/routes/order-history/OrderHistory.parts/support.tsx(1113,5): error TS2367: This comparison appears to be unintentional because the types '"delivered"' and '"return_rejected"' have no overlap.
+src/features/distributor/routes/order-history/OrderHistory.parts/support.tsx(1114,5): error TS2367: This comparison appears to be unintentional because the types '"delivered"' and '"refunded"' have no overlap.
+src/features/distributor/routes/order-history/OrderHistory.parts/support.tsx(1115,5): error TS2367: This comparison appears to be unintentional because the types '"delivered"' and '"returned"' have no overlap.
+src/features/distributor/routes/order-history/OrderHistory.parts/support.tsx(1116,5): error TS2367: This comparison appears to be unintentional because the types '"delivered"' and '"buyback_refunded"' have no overlap.
+src/features/distributor/routes/order-history/OrderHistory.parts/support.tsx(1117,5): error TS2367: This comparison appears to be unintentional because the types '"delivered"' and '"cancelled"' have no overlap.
+src/features/distributor/routes/order-history/OrderHistory.parts/support.tsx(1118,5): error TS2367: This comparison appears to be unintentional because the types '"delivered"' and '"cancel_pending"' have no overlap.
+src/features/distributor/routes/order-history/OrderHistory.tsx(236,35): error TS2339: Property 'data' does not exist on type 'never'.
+src/features/distributor/routes/order-history/OrderHistory.tsx(236,59): error TS2339: Property 'data' does not exist on type 'never'.
+src/features/distributor/routes/order-history/OrderHistory.tsx(1315,9): error TS2322: Type '(reviewData: any) => Promise<AddRatingReviewResponse>' is not assignable to type '(reviewData: any) => Promise<void>'.
+  Type 'Promise<AddRatingReviewResponse>' is not assignable to type 'Promise<void>'.
+    Type 'AddRatingReviewResponse' is not assignable to type 'void'.
+src/features/distributor/routes/order-history/OrderHistory.tsx(1332,9): error TS2322: Type '(returnData: { reason: string; images: File[]; return_method: ReturnMethod; courier?: string; tracking_id?: string; }) => Promise<InitiateReturnResponse | undefined>' is not assignable to type '(data: { reason: string; images: File[]; return_method: ReturnMethod; courier?: string | undefined; tracking_id?: string | undefined; }) => Promise<void>'.
+  Type 'Promise<InitiateReturnResponse | undefined>' is not assignable to type 'Promise<void>'.
+    Type 'InitiateReturnResponse | undefined' is not assignable to type 'void'.
+      Type 'InitiateReturnResponse' is not assignable to type 'void'.
+src/features/distributor/routes/pending-placements/PendingPlacements.parts/support.tsx(96,8): error TS2741: Property 'logoUrl' is missing in type '{}' but required in type 'PermissionLoadingStateProps'.
+src/features/distributor/routes/profile/ba-board/RouteScreen.tsx(272,7): error TS2322: Type '"other_count"' is not assignable to type '"cash_count" | "yellow_count" | "green_count" | "blue_count"'.
+src/features/distributor/routes/profile/binary-tree/BinaryTree.parts/BinaryTree.tsx(1169,19): error TS2322: Type 'GenealogyTreeNode | null' is not assignable to type 'GenealogyTreeNode'.
+  Type 'null' is not assignable to type 'GenealogyTreeNode'.
+src/features/distributor/routes/profile/binary-tree/BinaryTree.parts/support.tsx(191,10): error TS2741: Property 'logoUrl' is missing in type '{}' but required in type 'PermissionLoadingStateProps'.
+src/features/distributor/routes/profile/DistributorPVCSection.tsx(14,5): error TS2687: All declarations of 'Razorpay' must have identical modifiers.
+src/features/distributor/routes/profile/DistributorPVCSection.tsx(14,5): error TS2717: Subsequent property declarations must have the same type.  Property 'Razorpay' must be of type 'any', but here has type '(new (options: Record<string, unknown>) => { open(): void; }) | undefined'.
+src/features/distributor/routes/profile/page.parts/SecuritySection.tsx(103,21): error TS2339: Property 'status' does not exist on type 'ChangePasswordResponse'.
+src/features/distributor/routes/profile/pending-cv-breakdown/Penidngcv.parts/support.tsx(206,8): error TS2741: Property 'logoUrl' is missing in type '{}' but required in type 'PermissionLoadingStateProps'.
+src/features/distributor/routes/profile/rank-information/RankInformation.tsx(557,5): error TS2352: Conversion of type 'RankConditions' to type 'Record<string, RankCondition | undefined>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Index signature for type 'string' is missing in type 'RankConditions'.
+src/features/distributor/routes/profile/rank-information/RankInformation.tsx(835,10): error TS2741: Property 'logoUrl' is missing in type '{}' but required in type 'PermissionLoadingStateProps'.
+src/features/distributor/routes/profile/RouteScreen.tsx(246,12): error TS2741: Property 'logoUrl' is missing in type '{}' but required in type 'PermissionLoadingStateProps'.
+src/features/distributor/routes/profile/TrackingDashboard.tsx(866,24): error TS2352: Conversion of type 'RankConditions' to type 'Record<string, RankCondition | undefined>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Index signature for type 'string' is missing in type 'RankConditions'.
+src/features/distributor/routes/profile/TrackingDashboard.tsx(1004,10): error TS2741: Property 'logoUrl' is missing in type '{}' but required in type 'PermissionLoadingStateProps'.
+src/features/distributor/routes/TC-Bank/TCBankPage.tsx(199,39): error TS2677: A type predicate's type must be assignable to its parameter's type.
+  Type 'TCBankAccount' is not assignable to type '{ tcs: TCBankAccount[]; id: string | number; account_id: string; rank: string; status: string; type?: string; member_id?: number; qualified_cv?: number | string | null; created_at?: string | null; qualified?: boolean; tc_count?: number; tc_label?: string; }'.
+    Types of property 'tcs' are incompatible.
+      Type 'TCBankAccount[] | undefined' is not assignable to type 'TCBankAccount[]'.
+        Type 'undefined' is not assignable to type 'TCBankAccount[]'.
+src/features/distributor/routes/TC-Bank/TCBankPage.tsx(203,15): error TS18047: 'a' is possibly 'null'.
+src/features/distributor/routes/TC-Bank/TCBankPage.tsx(203,42): error TS18047: 'b' is possibly 'null'.
+src/features/distributor/routes/TC-Bank/TCBankPage.tsx(204,15): error TS18047: 'b' is possibly 'null'.
+src/features/distributor/routes/TC-Bank/TCBankPage.tsx(204,42): error TS18047: 'a' is possibly 'null'.
+src/features/distributor/routes/TC-Bank/TCBankPage.tsx(283,27): error TS18047: 'account' is possibly 'null'.
+src/features/distributor/routes/TC-Bank/TCBankPage.tsx(286,49): error TS18047: 'account' is possibly 'null'.
+src/features/distributor/routes/TC-Bank/TCBankPage.tsx(289,38): error TS18047: 'account' is possibly 'null'.
+src/features/distributor/routes/TC-Bank/TCBankPage.tsx(299,43): error TS18047: 'account' is possibly 'null'.
+src/features/distributor/routes/TC-Bank/TCBankPage.tsx(300,60): error TS18047: 'account' is possibly 'null'.
+src/features/distributor/routes/TC-Bank/TCBankPage.tsx(301,43): error TS18047: 'account' is possibly 'null'.
+src/features/distributor/routes/TC-Bank/TCBankPage.tsx(313,54): error TS18047: 'account' is possibly 'null'.
+src/features/distributor/routes/TC-Bank/TCBankPage.tsx(316,28): error TS18047: 'account' is possibly 'null'.
+src/features/distributor/routes/TC-Bank/TCBankPage.tsx(323,121): error TS18047: 'account' is possibly 'null'.
+src/features/distributor/routes/TC-Bank/TCBankPage.tsx(325,26): error TS18047: 'account' is possibly 'null'.
+src/features/distributor/routes/TC-Bank/TCBankPage.tsx(330,24): error TS18047: 'account' is possibly 'null'.
+src/features/distributor/routes/TC-Bank/TCBankPage.tsx(332,27): error TS18047: 'account' is possibly 'null'.
+src/features/distributor/routes/TC-Bank/TCBankPage.tsx(1601,9): error TS18046: 'tx' is of type 'unknown'.
+src/features/distributor/routes/TC-Bank/TCBankPage.tsx(1603,18): error TS18046: 'tx' is of type 'unknown'.
+src/features/distributor/routes/TC-Bank/TCBankPage.tsx(1603,29): error TS18046: 'tx' is of type 'unknown'.
+src/features/distributor/routes/TC-Bank/TCBankPage.tsx(1603,52): error TS18046: 'tx' is of type 'unknown'.
+src/features/distributor/routes/TC-Bank/TCBankPage.tsx(1605,22): error TS18046: 'tx' is of type 'unknown'.
+src/features/distributor/routes/TC-Bank/TCBankPage.tsx(1605,37): error TS18046: 'tx' is of type 'unknown'.
+src/features/distributor/routes/TC-Bank/TCBankPage.tsx(1607,25): error TS18046: 'tx' is of type 'unknown'.
+src/features/distributor/routes/TC-Bank/TCBankPage.tsx(1609,13): error TS18046: 'tx' is of type 'unknown'.
+src/features/distributor/routes/TC-Bank/TCBankPage.tsx(1611,15): error TS18046: 'tx' is of type 'unknown'.
+src/features/distributor/routes/TC-Bank/TCBankPage.tsx(1613,21): error TS18046: 'tx' is of type 'unknown'.
+src/features/distributor/routes/TC-Bank/TCBankPage.tsx(1615,16): error TS18046: 'tx' is of type 'unknown'.
+src/features/distributor/routes/TC-Bank/TCBankPage.tsx(1942,15): error TS2322: Type 'string | number' is not assignable to type 'string'.
+  Type 'number' is not assignable to type 'string'.
+src/features/distributor/routes/transactions/Transactions.parts/support.tsx(234,8): error TS2741: Property 'logoUrl' is missing in type '{}' but required in type 'PermissionLoadingStateProps'.
+src/features/landing/components/components/sections/Collections.tsx(459,22): error TS2741: Property 'href' is missing in type '{ children: (string | Element)[]; variant: "gold"; }' but required in type '{ href: string; }'.
+src/features/landing/components/components/sections/Finale.tsx(323,19): error TS2322: Type '{ children: Element; as: string; className: string; }' is not assignable to type 'IntrinsicAttributes & { className?: string | undefined; style?: CSSProperties | undefined; children: ReactNode; }'.
+  Property 'as' does not exist on type 'IntrinsicAttributes & { className?: string | undefined; style?: CSSProperties | undefined; children: ReactNode; }'.
+src/features/landing/components/components/sections/Finale.tsx(333,16): error TS2741: Property 'href' is missing in type '{ children: (string | Element)[]; variant: "gold"; }' but required in type '{ href: string; }'.
+src/features/landing/components/components/sections/Hero.tsx(264,16): error TS2741: Property 'href' is missing in type '{ children: (string | Element)[]; className: string; variant: "gold"; }' but required in type '{ href: string; }'.
+src/features/landing/components/components/sections/Values.tsx(156,44): error TS2339: Property 'heading' does not exist on type '{}'.
+src/features/landing/components/components/sections/Values.tsx(160,44): error TS2339: Property 'short_description' does not exist on type '{}'.
+src/features/landing/components/components/sections/Values.tsx(165,29): error TS2339: Property 'description' does not exist on type '{}'.
+src/features/landing/components/components/sections/Values.tsx(241,19): error TS2322: Type '{ children: Element; as: string; style: { marginTop: number; }; }' is not assignable to type 'IntrinsicAttributes & { className?: string | undefined; style?: CSSProperties | undefined; children: ReactNode; }'.
+  Property 'as' does not exist on type 'IntrinsicAttributes & { className?: string | undefined; style?: CSSProperties | undefined; children: ReactNode; }'.
+src/features/landing/components/components/sections/Voices.tsx(158,44): error TS2339: Property 'heading' does not exist on type '{}'.
+src/features/landing/components/components/sections/Voices.tsx(161,44): error TS2339: Property 'short_description' does not exist on type '{}'.
+src/features/orders/screens/order.tsx(918,12): error TS2741: Property 'logoUrl' is missing in type '{}' but required in type 'PermissionLoadingStateProps'.
+src/features/orders/screens/order.tsx(944,11): error TS2322: Type '(reviewData: any) => Promise<AddRatingReviewResponse>' is not assignable to type '(reviewData: any) => Promise<void>'.
+  Type 'Promise<AddRatingReviewResponse>' is not assignable to type 'Promise<void>'.
+    Type 'AddRatingReviewResponse' is not assignable to type 'void'.
+src/features/orders/screens/order.tsx(1003,15): error TS2322: Type '{ hidden: { opacity: number; y: number; }; visible: { opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues$1 | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'type' are incompatible.
+                    Type 'string' is not assignable to type 'AnimationGeneratorType | undefined'.
+src/features/orders/screens/order.tsx(1101,17): error TS2322: Type '{ hidden: { opacity: number; y: number; }; visible: { opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues$1 | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'type' are incompatible.
+                    Type 'string' is not assignable to type 'AnimationGeneratorType | undefined'.
+src/features/orders/screens/order.tsx(1181,23): error TS2322: Type '{ hidden: { opacity: number; y: number; }; visible: { opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues$1 | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'type' are incompatible.
+                    Type 'string' is not assignable to type 'AnimationGeneratorType | undefined'.
+src/features/orders/screens/OrderCancelModal.tsx(497,15): error TS2322: Type '{ hidden: { opacity: number; scale: number; y: number; }; visible: { opacity: number; scale: number; y: number; transition: { type: string; damping: number; stiffness: number; }; }; exit: { opacity: number; scale: number; y: number; transition: { ...; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; scale: number; y: number; transition: { type: string; damping: number; stiffness: number; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; scale: number; y: number; transition: { type: string; damping: number; stiffness: number; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; scale: number; y: number; transition: { type: string; damping: number; stiffness: number; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues$1 | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ type: string; damping: number; stiffness: number; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ type: string; damping: number; stiffness: number; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ type: string; damping: number; stiffness: number; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'type' are incompatible.
+                    Type 'string' is not assignable to type 'AnimationGeneratorType | undefined'.
+src/features/orders/screens/OrderCancelModal.tsx(850,35): error TS2322: Type '{ hidden: { opacity: number; scale: number; }; visible: { opacity: number; scale: number; transition: { type: string; damping: number; stiffness: number; }; }; exit: { opacity: number; scale: number; transition: { ...; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; scale: number; transition: { type: string; damping: number; stiffness: number; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; scale: number; transition: { type: string; damping: number; stiffness: number; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; scale: number; transition: { type: string; damping: number; stiffness: number; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues$1 | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ type: string; damping: number; stiffness: number; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ type: string; damping: number; stiffness: number; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ type: string; damping: number; stiffness: number; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'type' are incompatible.
+                    Type 'string' is not assignable to type 'AnimationGeneratorType | undefined'.
+src/features/policies/routes/[slug]/FooterPolicyClient.parts/FooterPolicyClient.tsx(39,7): error TS2345: Argument of type '{}' is not assignable to parameter of type 'void | unique symbol'.
+src/features/policies/routes/[slug]/FooterPolicyClient.parts/FooterPolicyClient.tsx(95,11): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(predicate: (value: Content, index: number, obj: Content[]) => value is Content, thisArg?: any): Content | undefined', gave the following error.
+    Argument of type '(item: ContentData) => boolean' is not assignable to parameter of type '(value: Content, index: number, obj: Content[]) => value is Content'.
+      Types of parameters 'item' and 'value' are incompatible.
+        Type 'Content' is not assignable to type 'ContentData'.
+          Types of property 'blocks' are incompatible.
+            Type 'import("/Users/user/Desktop/Desktop - user\u2019s Mac mini/indikonnect-app/src/lib/redux/api/Home/contentTypes").ContentBlock[]' is not assignable to type 'import("/Users/user/Desktop/Desktop - user\u2019s Mac mini/indikonnect-app/src/features/policies/routes/[slug]/FooterPolicyClient.parts/support").ContentBlock[]'.
+              Type 'import("/Users/user/Desktop/Desktop - user\u2019s Mac mini/indikonnect-app/src/lib/redux/api/Home/contentTypes").ContentBlock' is not assignable to type 'import("/Users/user/Desktop/Desktop - user\u2019s Mac mini/indikonnect-app/src/features/policies/routes/[slug]/FooterPolicyClient.parts/support").ContentBlock'.
+                Types of property 'heading' are incompatible.
+                  Type 'string | null' is not assignable to type 'string'.
+                    Type 'null' is not assignable to type 'string'.
+  Overload 2 of 2, '(predicate: (value: Content, index: number, obj: Content[]) => unknown, thisArg?: any): Content | undefined', gave the following error.
+    Argument of type '(item: ContentData) => boolean' is not assignable to parameter of type '(value: Content, index: number, obj: Content[]) => unknown'.
+      Types of parameters 'item' and 'value' are incompatible.
+        Type 'Content' is not assignable to type 'ContentData'.
+          Types of property 'blocks' are incompatible.
+            Type 'import("/Users/user/Desktop/Desktop - user\u2019s Mac mini/indikonnect-app/src/lib/redux/api/Home/contentTypes").ContentBlock[]' is not assignable to type 'import("/Users/user/Desktop/Desktop - user\u2019s Mac mini/indikonnect-app/src/features/policies/routes/[slug]/FooterPolicyClient.parts/support").ContentBlock[]'.
+              Type 'import("/Users/user/Desktop/Desktop - user\u2019s Mac mini/indikonnect-app/src/lib/redux/api/Home/contentTypes").ContentBlock' is not assignable to type 'import("/Users/user/Desktop/Desktop - user\u2019s Mac mini/indikonnect-app/src/features/policies/routes/[slug]/FooterPolicyClient.parts/support").ContentBlock'.
+                Types of property 'heading' are incompatible.
+                  Type 'string | null' is not assignable to type 'string'.
+                    Type 'null' is not assignable to type 'string'.
+src/features/policies/routes/[slug]/FooterPolicyClient.parts/FooterPolicyClient.tsx(100,9): error TS2345: Argument of type 'Content | null' is not assignable to parameter of type 'SetStateAction<ContentData | null>'.
+  Type 'Content' is not assignable to type 'SetStateAction<ContentData | null>'.
+    Type 'Content' is not assignable to type 'ContentData'.
+      Types of property 'blocks' are incompatible.
+        Type 'import("/Users/user/Desktop/Desktop - user\u2019s Mac mini/indikonnect-app/src/lib/redux/api/Home/contentTypes").ContentBlock[]' is not assignable to type 'import("/Users/user/Desktop/Desktop - user\u2019s Mac mini/indikonnect-app/src/features/policies/routes/[slug]/FooterPolicyClient.parts/support").ContentBlock[]'.
+          Type 'import("/Users/user/Desktop/Desktop - user\u2019s Mac mini/indikonnect-app/src/lib/redux/api/Home/contentTypes").ContentBlock' is not assignable to type 'import("/Users/user/Desktop/Desktop - user\u2019s Mac mini/indikonnect-app/src/features/policies/routes/[slug]/FooterPolicyClient.parts/support").ContentBlock'.
+            Types of property 'heading' are incompatible.
+              Type 'string | null' is not assignable to type 'string'.
+                Type 'null' is not assignable to type 'string'.
+src/features/policies/screens/Footerprivacy.tsx(43,27): error TS2345: Argument of type '{}' is not assignable to parameter of type 'void | unique symbol'.
+src/features/policies/screens/Footerprivacy.tsx(55,7): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(predicate: (value: Content, index: number, obj: Content[]) => value is Content, thisArg?: any): Content | undefined', gave the following error.
+    Argument of type '(item: ContentData) => boolean' is not assignable to parameter of type '(value: Content, index: number, obj: Content[]) => value is Content'.
+      Types of parameters 'item' and 'value' are incompatible.
+        Type 'Content' is not assignable to type 'ContentData'.
+          Types of property 'blocks' are incompatible.
+            Type 'import("/Users/user/Desktop/Desktop - user\u2019s Mac mini/indikonnect-app/src/lib/redux/api/Home/contentTypes").ContentBlock[]' is not assignable to type 'ContentBlock[]'.
+              Type 'import("/Users/user/Desktop/Desktop - user\u2019s Mac mini/indikonnect-app/src/lib/redux/api/Home/contentTypes").ContentBlock' is not assignable to type 'ContentBlock'.
+                Types of property 'heading' are incompatible.
+                  Type 'string | null' is not assignable to type 'string'.
+                    Type 'null' is not assignable to type 'string'.
+  Overload 2 of 2, '(predicate: (value: Content, index: number, obj: Content[]) => unknown, thisArg?: any): Content | undefined', gave the following error.
+    Argument of type '(item: ContentData) => boolean' is not assignable to parameter of type '(value: Content, index: number, obj: Content[]) => unknown'.
+      Types of parameters 'item' and 'value' are incompatible.
+        Type 'Content' is not assignable to type 'ContentData'.
+          Types of property 'blocks' are incompatible.
+            Type 'import("/Users/user/Desktop/Desktop - user\u2019s Mac mini/indikonnect-app/src/lib/redux/api/Home/contentTypes").ContentBlock[]' is not assignable to type 'ContentBlock[]'.
+              Type 'import("/Users/user/Desktop/Desktop - user\u2019s Mac mini/indikonnect-app/src/lib/redux/api/Home/contentTypes").ContentBlock' is not assignable to type 'ContentBlock'.
+                Types of property 'heading' are incompatible.
+                  Type 'string | null' is not assignable to type 'string'.
+                    Type 'null' is not assignable to type 'string'.
+src/features/policies/screens/Footerprivacy.tsx(59,16): error TS2345: Argument of type 'Content | null' is not assignable to parameter of type 'SetStateAction<ContentData | null>'.
+  Type 'Content' is not assignable to type 'SetStateAction<ContentData | null>'.
+    Type 'Content' is not assignable to type 'ContentData'.
+      Types of property 'blocks' are incompatible.
+        Type 'import("/Users/user/Desktop/Desktop - user\u2019s Mac mini/indikonnect-app/src/lib/redux/api/Home/contentTypes").ContentBlock[]' is not assignable to type 'ContentBlock[]'.
+          Type 'import("/Users/user/Desktop/Desktop - user\u2019s Mac mini/indikonnect-app/src/lib/redux/api/Home/contentTypes").ContentBlock' is not assignable to type 'ContentBlock'.
+            Types of property 'heading' are incompatible.
+              Type 'string | null' is not assignable to type 'string'.
+                Type 'null' is not assignable to type 'string'.
+src/features/products/components/FilterSidebar.tsx(105,69): error TS2345: Argument of type '{}' is not assignable to parameter of type 'void | unique symbol'.
+src/features/products/components/FilterSidebar.tsx(120,27): error TS2339: Property 'brands' does not exist on type 'CategoryResponse'.
+src/features/products/components/FilterSidebar.tsx(121,22): error TS2339: Property 'brands' does not exist on type 'CategoryResponse'.
+src/features/products/components/FilterSidebar.tsx(261,35): error TS2339: Property 'most_expensive_price' does not exist on type 'CategoryResponse'.
+src/features/products/components/Newsletter.tsx(249,13): error TS2322: Type '{ hidden: { opacity: number; y: number; }; visible: { opacity: number; y: number; transition: { duration: number; ease: string; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; y: number; transition: { duration: number; ease: string; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; y: number; transition: { duration: number; ease: string; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; y: number; transition: { duration: number; ease: string; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues$1 | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ duration: number; ease: string; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ duration: number; ease: string; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ duration: number; ease: string; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'ease' are incompatible.
+                    Type 'string' is not assignable to type 'Easing | Easing[] | undefined'.
+src/features/products/components/Newsletter.tsx(259,17): error TS2322: Type '{ animate: { scale: number[]; rotate: number[]; transition: { duration: number; repeat: number; ease: string; }; }; }' is not assignable to type 'Variants'.
+  Property 'animate' is incompatible with index signature.
+    Type '{ scale: number[]; rotate: number[]; transition: { duration: number; repeat: number; ease: string; }; }' is not assignable to type 'Variant'.
+      Type '{ scale: number[]; rotate: number[]; transition: { duration: number; repeat: number; ease: string; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ scale: number[]; rotate: number[]; transition: { duration: number; repeat: number; ease: string; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues$1 | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ duration: number; repeat: number; ease: string; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ duration: number; repeat: number; ease: string; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ duration: number; repeat: number; ease: string; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'ease' are incompatible.
+                    Type 'string' is not assignable to type 'Easing | Easing[] | undefined'.
+src/features/products/components/Newsletter.tsx(264,17): error TS2322: Type '{ animate: { scale: number[]; rotate: number[]; transition: { duration: number; repeat: number; ease: string; delay: number; }; }; }' is not assignable to type 'Variants'.
+  Property 'animate' is incompatible with index signature.
+    Type '{ scale: number[]; rotate: number[]; transition: { duration: number; repeat: number; ease: string; delay: number; }; }' is not assignable to type 'Variant'.
+      Type '{ scale: number[]; rotate: number[]; transition: { duration: number; repeat: number; ease: string; delay: number; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ scale: number[]; rotate: number[]; transition: { duration: number; repeat: number; ease: string; delay: number; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues$1 | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ duration: number; repeat: number; ease: string; delay: number; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ duration: number; repeat: number; ease: string; delay: number; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ duration: number; repeat: number; ease: string; delay: number; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'ease' are incompatible.
+                    Type 'string' is not assignable to type 'Easing | Easing[] | undefined'.
+src/features/products/components/Newsletter.tsx(305,21): error TS2322: Type '{ hidden: { opacity: number; scale: number; y: number; }; visible: { opacity: number; scale: number; y: number; transition: { duration: number; delay: number; ease: string; }; }; hover: { scale: number; boxShadow: string; transition: { ...; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; scale: number; y: number; transition: { duration: number; delay: number; ease: string; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; scale: number; y: number; transition: { duration: number; delay: number; ease: string; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; scale: number; y: number; transition: { duration: number; delay: number; ease: string; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues$1 | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ duration: number; delay: number; ease: string; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ duration: number; delay: number; ease: string; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ duration: number; delay: number; ease: string; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'ease' are incompatible.
+                    Type 'string' is not assignable to type 'Easing | Easing[] | undefined'.
+src/features/products/components/Newsletter.tsx(336,25): error TS2322: Type '{ hidden: { opacity: number; y: number; }; visible: { opacity: number; y: number; transition: { duration: number; delay: number; ease: string; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; y: number; transition: { duration: number; delay: number; ease: string; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; y: number; transition: { duration: number; delay: number; ease: string; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; y: number; transition: { duration: number; delay: number; ease: string; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues$1 | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ duration: number; delay: number; ease: string; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ duration: number; delay: number; ease: string; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ duration: number; delay: number; ease: string; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'ease' are incompatible.
+                    Type 'string' is not assignable to type 'Easing | Easing[] | undefined'.
+src/features/products/components/Newsletter.tsx(362,25): error TS2322: Type '{ hidden: { opacity: number; y: number; }; visible: { opacity: number; y: number; transition: { duration: number; delay: number; ease: string; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; y: number; transition: { duration: number; delay: number; ease: string; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; y: number; transition: { duration: number; delay: number; ease: string; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; y: number; transition: { duration: number; delay: number; ease: string; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues$1 | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ duration: number; delay: number; ease: string; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ duration: number; delay: number; ease: string; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ duration: number; delay: number; ease: string; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'ease' are incompatible.
+                    Type 'string' is not assignable to type 'Easing | Easing[] | undefined'.
+src/features/products/components/Newsletter.tsx(375,25): error TS2322: Type '{ hidden: { opacity: number; y: number; }; visible: { opacity: number; y: number; transition: { duration: number; delay: number; ease: string; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; y: number; transition: { duration: number; delay: number; ease: string; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; y: number; transition: { duration: number; delay: number; ease: string; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; y: number; transition: { duration: number; delay: number; ease: string; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues$1 | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ duration: number; delay: number; ease: string; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ duration: number; delay: number; ease: string; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ duration: number; delay: number; ease: string; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'ease' are incompatible.
+                    Type 'string' is not assignable to type 'Easing | Easing[] | undefined'.
+src/features/products/components/Newsletter.tsx(423,33): error TS2322: Type '{ initial: { scale: number; }; hover: { scale: number; boxShadow: string; transition: { duration: number; ease: string; }; }; tap: { scale: number; transition: { duration: number; }; }; }' is not assignable to type 'Variants'.
+  Property 'hover' is incompatible with index signature.
+    Type '{ scale: number; boxShadow: string; transition: { duration: number; ease: string; }; }' is not assignable to type 'Variant'.
+      Type '{ scale: number; boxShadow: string; transition: { duration: number; ease: string; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ scale: number; boxShadow: string; transition: { duration: number; ease: string; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues$1 | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ duration: number; ease: string; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ duration: number; ease: string; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ duration: number; ease: string; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'ease' are incompatible.
+                    Type 'string' is not assignable to type 'Easing | Easing[] | undefined'.
+src/features/products/components/Newsletter.tsx(478,37): error TS2322: Type '{ hidden: { opacity: number; scale: number; y: number; }; visible: { opacity: number; scale: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }; exit: { opacity: number; scale: number; y: number; transition: { ...; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; scale: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; scale: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; scale: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues$1 | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'type' are incompatible.
+                    Type 'string' is not assignable to type 'AnimationGeneratorType | undefined'.
+src/features/products/components/Newsletter.tsx(499,37): error TS2322: Type '{ hidden: { opacity: number; scale: number; y: number; }; visible: { opacity: number; scale: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }; exit: { opacity: number; scale: number; y: number; transition: { ...; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; scale: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; scale: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; scale: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues$1 | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'type' are incompatible.
+                    Type 'string' is not assignable to type 'AnimationGeneratorType | undefined'.
+src/features/products/components/ProductCard.tsx(1904,11): error TS2322: Type 'string | number' is not assignable to type 'number'.
+  Type 'string' is not assignable to type 'number'.
+src/features/products/components/ProductCard.tsx(1910,11): error TS2322: Type 'string | number' is not assignable to type 'number'.
+  Type 'string' is not assignable to type 'number'.
+src/features/products/components/productDetail.parts/ProductReviewsTab.tsx(291,63): error TS7006: Parameter 'img' implicitly has an 'any' type.
+src/features/products/components/productDetail.parts/ProductReviewsTab.tsx(291,68): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/features/products/components/productDetail.tsx(122,17): error TS2322: Type '{ width: number; height: number; }' is not assignable to type 'IntrinsicAttributes & PermissionLoadingStateProps'.
+  Property 'width' does not exist on type 'IntrinsicAttributes & PermissionLoadingStateProps'.
+src/features/products/components/ProductGrid.tsx(262,28): error TS2322: Type '{ id: string | number; name: string; slug: string | null; price: number; originalPrice: {} | null; discount: number; image: string; rating: number; reviews: number; inStock: boolean; retail_price?: number | string | null; ... 17 more ...; created_at?: string | null; }' is not assignable to type 'Product'.
+  Types of property 'brandName' are incompatible.
+    Type 'string | null | undefined' is not assignable to type 'string | undefined'.
+      Type 'null' is not assignable to type 'string | undefined'.
+src/features/products/screens/CustomerFavourites.tsx(75,9): error TS2322: Type 'ProductSectionProduct[]' is not assignable to type 'ApiProduct[]'.
+  Property 'stock_status' is missing in type 'ProductSectionProduct' but required in type 'ApiProduct'.
+src/features/products/screens/product.tsx(47,5): error TS2345: Argument of type '{}' is not assignable to parameter of type 'void | unique symbol'.
+src/features/products/screens/product.tsx(218,27): error TS2345: Argument of type '{}' is not assignable to parameter of type 'void | unique symbol'.
+src/features/products/screens/product.tsx(241,21): error TS2339: Property 'brands' does not exist on type 'CategoryResponse'.
+src/features/products/screens/product.tsx(261,41): error TS2339: Property 'brands' does not exist on type 'CategoryResponse'.
+src/features/products/screens/product.tsx(263,26): error TS2339: Property 'brands' does not exist on type 'CategoryResponse'.
+src/features/profile/components/AccountSettings.parts/AccountSettings.tsx(345,19): error TS2322: Type '{ hidden: { opacity: number; y: number; }; visible: { opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues$1 | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'type' are incompatible.
+                    Type 'string' is not assignable to type 'AnimationGeneratorType | undefined'.
+src/features/profile/components/AccountSettings.parts/AccountSettings.tsx(462,27): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ full_name: string; email: string; phone: string; country: string; account_type: string; profile_picture: string | File | null; company_name: string; gst_number: string; billing_address: string; ... 4 more ...; bank_holder_name: string; }'.
+  No index signature with a parameter of type 'string' was found on type '{ full_name: string; email: string; phone: string; country: string; account_type: string; profile_picture: string | File | null; company_name: string; gst_number: string; billing_address: string; ... 4 more ...; bank_holder_name: string; }'.
+src/features/profile/components/AccountSettings.parts/EditProfilePopup.tsx(411,13): error TS2322: Type '{ hidden: { scale: number; opacity: number; y: number; }; visible: { scale: number; opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }; exit: { scale: number; opacity: number; y: number; transition: { ...; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ scale: number; opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type 'Variant'.
+      Type '{ scale: number; opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ scale: number; opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues$1 | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'type' are incompatible.
+                    Type 'string' is not assignable to type 'AnimationGeneratorType | undefined'.
+src/features/profile/components/AccountSettings.parts/EditProfilePopup.tsx(547,29): error TS2339: Property 'readOnly' does not exist on type '{ name: string; label: string; type: string; icon: ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>; placeholder: string; required: boolean; } | { ...; }'.
+  Property 'readOnly' does not exist on type '{ name: string; label: string; type: string; icon: ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>; placeholder: string; required: boolean; }'.
+src/features/profile/components/AccountSettings.parts/EditProfilePopup.tsx(550,29): error TS2339: Property 'required' does not exist on type '{ name: string; label: string; type: string; icon: ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>; placeholder: string; required: boolean; } | { ...; }'.
+  Property 'required' does not exist on type '{ name: string; label: string; type: string; icon: ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>; placeholder: string; readOnly: boolean; }'.
+src/features/profile/components/AccountSettings.parts/EditProfilePopup.tsx(555,25): error TS2322: Type '{ hidden: { opacity: number; y: number; }; visible: { opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues$1 | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'type' are incompatible.
+                    Type 'string' is not assignable to type 'AnimationGeneratorType | undefined'.
+src/features/profile/components/AccountSettings.parts/Notifications.tsx(190,13): error TS2322: Type '{ hidden: { scale: number; opacity: number; y: number; }; visible: { scale: number; opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }; exit: { scale: number; opacity: number; y: number; transition: { ...; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ scale: number; opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type 'Variant'.
+      Type '{ scale: number; opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ scale: number; opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues$1 | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'type' are incompatible.
+                    Type 'string' is not assignable to type 'AnimationGeneratorType | undefined'.
+src/features/profile/components/AccountSettings.parts/Notifications.tsx(250,27): error TS2322: Type '{ hidden: { opacity: number; y: number; }; visible: { opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues$1 | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'type' are incompatible.
+                    Type 'string' is not assignable to type 'AnimationGeneratorType | undefined'.
+src/features/profile/components/AccountSettings.parts/PasswordChange.tsx(167,13): error TS2322: Type '{ hidden: { scale: number; opacity: number; y: number; }; visible: { scale: number; opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }; exit: { scale: number; opacity: number; y: number; transition: { ...; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ scale: number; opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type 'Variant'.
+      Type '{ scale: number; opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ scale: number; opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues$1 | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'type' are incompatible.
+                    Type 'string' is not assignable to type 'AnimationGeneratorType | undefined'.
+src/features/profile/components/AccountSettings.parts/PasswordChange.tsx(216,21): error TS2322: Type '{ hidden: { opacity: number; y: number; }; visible: { opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues$1 | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'type' are incompatible.
+                    Type 'string' is not assignable to type 'AnimationGeneratorType | undefined'.
+src/features/profile/components/AccountSettings.parts/PasswordChange.tsx(310,17): error TS2322: Type '{ hidden: { opacity: number; y: number; }; visible: { opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues$1 | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'type' are incompatible.
+                    Type 'string' is not assignable to type 'AnimationGeneratorType | undefined'.
+src/features/profile/components/AddressComponent.tsx(1727,20): error TS2345: Argument of type 'NormalizedAddress[]' is not assignable to parameter of type 'SetStateAction<Address[]>'.
+  Type 'NormalizedAddress[]' is not assignable to type 'Address[]'.
+    Type 'NormalizedAddress' is not assignable to type 'Address'.
+      Types of property 'address_line_2' are incompatible.
+        Type 'string | undefined' is not assignable to type 'string | null'.
+          Type 'undefined' is not assignable to type 'string | null'.
+src/features/profile/components/AddressComponent.tsx(1823,27): error TS2345: Argument of type '{ id: number; }' is not assignable to parameter of type '{ id: number; data: DeleteAddressRequest; }'.
+  Property 'data' is missing in type '{ id: number; }' but required in type '{ id: number; data: DeleteAddressRequest; }'.
+src/features/profile/components/AddressComponent.tsx(1913,10): error TS2741: Property 'logoUrl' is missing in type '{}' but required in type 'PermissionLoadingStateProps'.
+src/features/profile/components/AddressComponent.tsx(1994,21): error TS2322: Type '{ hidden: { opacity: number; y: number; }; visible: { opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }; exit: { opacity: number; scale: number; transition: { duration: number; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues$1 | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'type' are incompatible.
+                    Type 'string' is not assignable to type 'AnimationGeneratorType | undefined'.
+src/features/profile/components/DistributorStatsPage.tsx(250,25): error TS2322: Type '{ hidden: { opacity: number; y: number; }; visible: { opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues$1 | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'type' are incompatible.
+                    Type 'string' is not assignable to type 'AnimationGeneratorType | undefined'.
+src/features/profile/components/DistributorStatsPage.tsx(285,25): error TS2322: Type '{ hidden: { opacity: number; y: number; }; visible: { opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues$1 | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'type' are incompatible.
+                    Type 'string' is not assignable to type 'AnimationGeneratorType | undefined'.
+src/features/profile/components/DistributorStatsPage.tsx(342,33): error TS2322: Type '{ hidden: { opacity: number; y: number; }; visible: { opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues$1 | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'type' are incompatible.
+                    Type 'string' is not assignable to type 'AnimationGeneratorType | undefined'.
+src/features/profile/components/DistributorStatsPage.tsx(452,25): error TS2322: Type '{ hidden: { opacity: number; y: number; }; visible: { opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues$1 | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'type' are incompatible.
+                    Type 'string' is not assignable to type 'AnimationGeneratorType | undefined'.
+src/features/profile/components/ProfileSidebar.tsx(230,29): error TS2339: Property 'items' does not exist on type 'WishlistItem[]'.
+src/features/profile/components/WishlistComponent.tsx(273,17): error TS2353: Object literal may only specify known properties, and 'from_wishlist' does not exist in type 'AddToCartRequest'.
+src/features/profile/components/WishlistComponent.tsx(410,21): error TS2741: Property 'logoUrl' is missing in type '{}' but required in type 'PermissionLoadingStateProps'.
+src/features/profile/components/WishlistComponent.tsx(532,37): error TS2322: Type '{ hidden: { opacity: number; y: number; }; visible: { opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }; exit: { opacity: number; y: number; scale: number; transition: { ...; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues$1 | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'type' are incompatible.
+                    Type 'string' is not assignable to type 'AnimationGeneratorType | undefined'.
+src/features/profile/screens/profile.tsx(150,22): error TS2339: Property 'data' does not exist on type 'UserProfileResponse'.
+src/features/profile/screens/profile.tsx(151,22): error TS2339: Property 'data' does not exist on type 'UserProfileResponse'.
+src/features/profile/screens/profile.tsx(161,28): error TS2339: Property 'profile_image' does not exist on type 'UserProfile'.
+src/features/profile/screens/profile.tsx(162,22): error TS2339: Property 'data' does not exist on type 'UserProfileResponse'.
+src/features/profile/screens/profile.tsx(163,22): error TS2339: Property 'data' does not exist on type 'UserProfileResponse'.
+src/features/profile/screens/profile.tsx(164,22): error TS2339: Property 'data' does not exist on type 'UserProfileResponse'.
+src/features/profile/screens/profile.tsx(165,22): error TS2339: Property 'data' does not exist on type 'UserProfileResponse'.
+src/features/profile/screens/profile.tsx(166,20): error TS2339: Property 'profile_picture' does not exist on type '{}'.
+src/features/profile/screens/profile.tsx(167,20): error TS2339: Property 'profile_image' does not exist on type '{}'.
+src/features/profile/screens/profile.tsx(173,20): error TS2339: Property 'full_name' does not exist on type '{}'.
+src/features/profile/screens/profile.tsx(174,20): error TS2339: Property 'name' does not exist on type '{}'.
+src/features/profile/screens/profile.tsx(179,20): error TS2339: Property 'email' does not exist on type '{}'.
+src/features/profile/screens/profile.tsx(184,20): error TS2339: Property 'account_type' does not exist on type '{}'.
+src/features/profile/screens/profile.tsx(194,24): error TS2339: Property 'member_since' does not exist on type '{}'.
+src/features/profile/screens/profile.tsx(215,14): error TS2339: Property 'commission' does not exist on type '{ user: { name: string; email: string; account_type: string; member_since: string; }; stats: { total_orders: number; wishlist: number; points_earned: string; reviews: number; average_rating: number; cart_items: number; }; latest_order: { ...; }; recent_activity: { ...; }[]; }'.
+src/features/profile/screens/profile.tsx(224,25): error TS2339: Property 'data' does not exist on type 'Product[]'.
+src/features/profile/screens/profile.tsx(377,32): error TS2339: Property 'data' does not exist on type 'FetchBaseQueryError | SerializedError'.
+  Property 'data' does not exist on type 'SerializedError'.
+src/features/profile/screens/profile.tsx(486,27): error TS2339: Property 'total_orders' does not exist on type '{}'.
+src/features/profile/screens/profile.tsx(490,22): error TS2339: Property 'total_orders' does not exist on type '{}'.
+src/features/profile/screens/profile.tsx(497,27): error TS2339: Property 'wishlist' does not exist on type '{}'.
+src/features/profile/screens/profile.tsx(501,22): error TS2339: Property 'wishlist' does not exist on type '{}'.
+src/features/profile/screens/profile.tsx(508,27): error TS2339: Property 'cart_items' does not exist on type '{}'.
+src/features/profile/screens/profile.tsx(512,22): error TS2339: Property 'cart_items' does not exist on type '{}'.
+src/features/profile/screens/profile.tsx(522,24): error TS2339: Property 'points_earned' does not exist on type '{}'.
+src/features/profile/screens/profile.tsx(525,26): error TS2339: Property 'average_rating' does not exist on type '{}'.
+src/features/profile/screens/profile.tsx(539,29): error TS2339: Property 'total_reviews' does not exist on type '{}'.
+src/features/profile/screens/profile.tsx(546,11): error TS2322: Type '{ order_reference: string; order_date: string; status: string; total_payable: string; courier_company: string | null; courier_tracking_number: string | null; courier_status: string | null; courier_delivery_date: string | null; expected_delivery: string | null; items: { ...; }[]; } | null' is not assignable to type 'AnyObject'.
+  Type 'null' is not assignable to type 'AnyObject'.
+src/features/profile/screens/profile.tsx(554,22): error TS2339: Property 'cart_items' does not exist on type '{}'.
+src/features/profile/screens/profile.tsx(572,40): error TS2339: Property 'cart_items' does not exist on type '{}'.
+src/features/profile/screens/profile.tsx(573,30): error TS2339: Property 'cart_items' does not exist on type '{}'.
+src/features/promotion/screens/DiveInFirst.tsx(225,13): error TS2322: Type '{ hidden: { opacity: number; x: number; scale: number; }; visible: { opacity: number; x: number; scale: number; transition: { duration: number; ease: number[]; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; x: number; scale: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; x: number; scale: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; x: number; scale: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues$1 | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ duration: number; ease: number[]; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ duration: number; ease: number[]; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ duration: number; ease: number[]; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'ease' are incompatible.
+                    Type 'number[]' is not assignable to type 'Easing | Easing[] | undefined'.
+                      Type 'number[]' is not assignable to type 'EasingFunction | Easing[]'.
+                        Type 'number[]' is not assignable to type 'Easing[]'.
+                          Type 'number' is not assignable to type 'Easing'.
+src/features/promotion/screens/DiveInFirst.tsx(430,13): error TS2322: Type '{ hidden: { opacity: number; x: number; scale: number; }; visible: { opacity: number; x: number; scale: number; transition: { duration: number; ease: number[]; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; x: number; scale: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; x: number; scale: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; x: number; scale: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues$1 | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ duration: number; ease: number[]; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ duration: number; ease: number[]; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ duration: number; ease: number[]; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'ease' are incompatible.
+                    Type 'number[]' is not assignable to type 'Easing | Easing[] | undefined'.
+                      Type 'number[]' is not assignable to type 'EasingFunction | Easing[]'.
+                        Type 'number[]' is not assignable to type 'Easing[]'.
+                          Type 'number' is not assignable to type 'Easing'.
+src/features/promotion/screens/DiveInFirst.tsx(444,15): error TS2322: Type '{ hidden: { opacity: number; y: number; }; visible: { opacity: number; y: number; transition: { duration: number; ease: number[]; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues$1 | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ duration: number; ease: number[]; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ duration: number; ease: number[]; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ duration: number; ease: number[]; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'ease' are incompatible.
+                    Type 'number[]' is not assignable to type 'Easing | Easing[] | undefined'.
+                      Type 'number[]' is not assignable to type 'EasingFunction | Easing[]'.
+                        Type 'number[]' is not assignable to type 'Easing[]'.
+                          Type 'number' is not assignable to type 'Easing'.
+src/features/promotion/screens/DiveInFirst.tsx(477,17): error TS2322: Type '{ hidden: { opacity: number; y: number; }; visible: { opacity: number; y: number; transition: { duration: number; ease: number[]; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues$1 | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ duration: number; ease: number[]; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ duration: number; ease: number[]; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ duration: number; ease: number[]; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'ease' are incompatible.
+                    Type 'number[]' is not assignable to type 'Easing | Easing[] | undefined'.
+                      Type 'number[]' is not assignable to type 'EasingFunction | Easing[]'.
+                        Type 'number[]' is not assignable to type 'Easing[]'.
+                          Type 'number' is not assignable to type 'Easing'.
+src/features/promotion/screens/DiveInFirst.tsx(512,17): error TS2322: Type '{ hidden: { opacity: number; y: number; }; visible: { opacity: number; y: number; transition: { duration: number; ease: number[]; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues$1 | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ duration: number; ease: number[]; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ duration: number; ease: number[]; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ duration: number; ease: number[]; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'ease' are incompatible.
+                    Type 'number[]' is not assignable to type 'Easing | Easing[] | undefined'.
+                      Type 'number[]' is not assignable to type 'EasingFunction | Easing[]'.
+                        Type 'number[]' is not assignable to type 'Easing[]'.
+                          Type 'number' is not assignable to type 'Easing'.
+src/features/promotion/screens/DiveInFirst.tsx(547,17): error TS2322: Type '{ hidden: { opacity: number; y: number; }; visible: { opacity: number; y: number; transition: { duration: number; ease: number[]; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues$1 | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ duration: number; ease: number[]; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ duration: number; ease: number[]; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ duration: number; ease: number[]; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'ease' are incompatible.
+                    Type 'number[]' is not assignable to type 'Easing | Easing[] | undefined'.
+                      Type 'number[]' is not assignable to type 'EasingFunction | Easing[]'.
+                        Type 'number[]' is not assignable to type 'Easing[]'.
+                          Type 'number' is not assignable to type 'Easing'.
+src/features/promotion/screens/DiveInFirst.tsx(582,17): error TS2322: Type '{ hidden: { opacity: number; y: number; }; visible: { opacity: number; y: number; transition: { duration: number; ease: number[]; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues$1 | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ duration: number; ease: number[]; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ duration: number; ease: number[]; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ duration: number; ease: number[]; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'ease' are incompatible.
+                    Type 'number[]' is not assignable to type 'Easing | Easing[] | undefined'.
+                      Type 'number[]' is not assignable to type 'EasingFunction | Easing[]'.
+                        Type 'number[]' is not assignable to type 'Easing[]'.
+                          Type 'number' is not assignable to type 'Easing'.
+src/features/promotion/screens/ExploreCollection.tsx(273,15): error TS2322: Type '{ hidden: { opacity: number; y: number; scale: number; }; visible: { opacity: number; y: number; scale: number; transition: { duration: number; ease: number[]; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; y: number; scale: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; y: number; scale: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; y: number; scale: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues$1 | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ duration: number; ease: number[]; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ duration: number; ease: number[]; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ duration: number; ease: number[]; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'ease' are incompatible.
+                    Type 'number[]' is not assignable to type 'Easing | Easing[] | undefined'.
+                      Type 'number[]' is not assignable to type 'EasingFunction | Easing[]'.
+                        Type 'number[]' is not assignable to type 'Easing[]'.
+                          Type 'number' is not assignable to type 'Easing'.
+src/features/promotion/screens/FAQSection.tsx(263,13): error TS2322: Type '{ hidden: { opacity: number; y: number; }; visible: { opacity: number; y: number; transition: { duration: number; ease: number[]; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues$1 | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ duration: number; ease: number[]; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ duration: number; ease: number[]; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ duration: number; ease: number[]; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'ease' are incompatible.
+                    Type 'number[]' is not assignable to type 'Easing | Easing[] | undefined'.
+                      Type 'number[]' is not assignable to type 'EasingFunction | Easing[]'.
+                        Type 'number[]' is not assignable to type 'Easing[]'.
+                          Type 'number' is not assignable to type 'Easing'.
+src/features/promotion/screens/FAQSection.tsx(286,13): error TS2322: Type '{ hidden: { opacity: number; y: number; }; visible: { opacity: number; y: number; transition: { duration: number; ease: number[]; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues$1 | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ duration: number; ease: number[]; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ duration: number; ease: number[]; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ duration: number; ease: number[]; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'ease' are incompatible.
+                    Type 'number[]' is not assignable to type 'Easing | Easing[] | undefined'.
+                      Type 'number[]' is not assignable to type 'EasingFunction | Easing[]'.
+                        Type 'number[]' is not assignable to type 'Easing[]'.
+                          Type 'number' is not assignable to type 'Easing'.
+src/features/promotion/screens/FAQSection.tsx(462,11): error TS2322: Type '{ hidden: { opacity: number; x: number; scale: number; }; visible: { opacity: number; x: number; scale: number; transition: { duration: number; ease: number[]; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; x: number; scale: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; x: number; scale: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; x: number; scale: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues$1 | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ duration: number; ease: number[]; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ duration: number; ease: number[]; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ duration: number; ease: number[]; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'ease' are incompatible.
+                    Type 'number[]' is not assignable to type 'Easing | Easing[] | undefined'.
+                      Type 'number[]' is not assignable to type 'EasingFunction | Easing[]'.
+                        Type 'number[]' is not assignable to type 'Easing[]'.
+                          Type 'number' is not assignable to type 'Easing'.
+src/features/promotion/screens/IndieKonnectDiverSections.tsx(853,15): error TS2322: Type '{ hiddenLeft: { opacity: number; x: number; filter: string; }; hiddenRight: { opacity: number; x: number; filter: string; }; visible: { opacity: number; x: number; filter: string; transition: { duration: number; ease: number[]; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; x: number; filter: string; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; x: number; filter: string; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; x: number; filter: string; transition: { duration: number; ease: number[]; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues$1 | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ duration: number; ease: number[]; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ duration: number; ease: number[]; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ duration: number; ease: number[]; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'ease' are incompatible.
+                    Type 'number[]' is not assignable to type 'Easing | Easing[] | undefined'.
+                      Type 'number[]' is not assignable to type 'EasingFunction | Easing[]'.
+                        Type 'number[]' is not assignable to type 'Easing[]'.
+                          Type 'number' is not assignable to type 'Easing'.
+src/features/promotion/screens/IndieKonnectDiverSections.tsx(877,15): error TS2322: Type '{ hiddenLeft: { opacity: number; x: number; filter: string; }; hiddenRight: { opacity: number; x: number; filter: string; }; visible: { opacity: number; x: number; filter: string; transition: { duration: number; ease: number[]; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; x: number; filter: string; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; x: number; filter: string; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; x: number; filter: string; transition: { duration: number; ease: number[]; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues$1 | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ duration: number; ease: number[]; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ duration: number; ease: number[]; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ duration: number; ease: number[]; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'ease' are incompatible.
+                    Type 'number[]' is not assignable to type 'Easing | Easing[] | undefined'.
+                      Type 'number[]' is not assignable to type 'EasingFunction | Easing[]'.
+                        Type 'number[]' is not assignable to type 'Easing[]'.
+                          Type 'number' is not assignable to type 'Easing'.
+src/features/promotion/screens/IndieKonnectDiverSections.tsx(901,15): error TS2322: Type '{ hiddenLeft: { opacity: number; x: number; filter: string; }; hiddenRight: { opacity: number; x: number; filter: string; }; visible: { opacity: number; x: number; filter: string; transition: { duration: number; ease: number[]; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; x: number; filter: string; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; x: number; filter: string; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; x: number; filter: string; transition: { duration: number; ease: number[]; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues$1 | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ duration: number; ease: number[]; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ duration: number; ease: number[]; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ duration: number; ease: number[]; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'ease' are incompatible.
+                    Type 'number[]' is not assignable to type 'Easing | Easing[] | undefined'.
+                      Type 'number[]' is not assignable to type 'EasingFunction | Easing[]'.
+                        Type 'number[]' is not assignable to type 'Easing[]'.
+                          Type 'number' is not assignable to type 'Easing'.
+src/features/promotion/screens/IndieKonnectDiverSections.tsx(925,15): error TS2322: Type '{ hiddenLeft: { opacity: number; x: number; filter: string; }; hiddenRight: { opacity: number; x: number; filter: string; }; visible: { opacity: number; x: number; filter: string; transition: { duration: number; ease: number[]; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; x: number; filter: string; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; x: number; filter: string; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; x: number; filter: string; transition: { duration: number; ease: number[]; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues$1 | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ duration: number; ease: number[]; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ duration: number; ease: number[]; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ duration: number; ease: number[]; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'ease' are incompatible.
+                    Type 'number[]' is not assignable to type 'Easing | Easing[] | undefined'.
+                      Type 'number[]' is not assignable to type 'EasingFunction | Easing[]'.
+                        Type 'number[]' is not assignable to type 'Easing[]'.
+                          Type 'number' is not assignable to type 'Easing'.
+src/features/promotion/screens/IndieKonnectDiverSections.tsx(949,15): error TS2322: Type '{ hiddenLeft: { opacity: number; x: number; filter: string; }; hiddenRight: { opacity: number; x: number; filter: string; }; visible: { opacity: number; x: number; filter: string; transition: { duration: number; ease: number[]; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; x: number; filter: string; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; x: number; filter: string; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; x: number; filter: string; transition: { duration: number; ease: number[]; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues$1 | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ duration: number; ease: number[]; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ duration: number; ease: number[]; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ duration: number; ease: number[]; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'ease' are incompatible.
+                    Type 'number[]' is not assignable to type 'Easing | Easing[] | undefined'.
+                      Type 'number[]' is not assignable to type 'EasingFunction | Easing[]'.
+                        Type 'number[]' is not assignable to type 'Easing[]'.
+                          Type 'number' is not assignable to type 'Easing'.
+src/features/promotion/screens/IndieKonnectDiverSections.tsx(973,15): error TS2322: Type '{ hiddenLeft: { opacity: number; x: number; filter: string; }; hiddenRight: { opacity: number; x: number; filter: string; }; visible: { opacity: number; x: number; filter: string; transition: { duration: number; ease: number[]; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; x: number; filter: string; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; x: number; filter: string; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; x: number; filter: string; transition: { duration: number; ease: number[]; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues$1 | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ duration: number; ease: number[]; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ duration: number; ease: number[]; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ duration: number; ease: number[]; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'ease' are incompatible.
+                    Type 'number[]' is not assignable to type 'Easing | Easing[] | undefined'.
+                      Type 'number[]' is not assignable to type 'EasingFunction | Easing[]'.
+                        Type 'number[]' is not assignable to type 'Easing[]'.
+                          Type 'number' is not assignable to type 'Easing'.
+src/features/storefront/components/Home.tsx(207,56): error TS2345: Argument of type '{}' is not assignable to parameter of type 'void | unique symbol'.
+src/features/storefront/components/Home.tsx(225,71): error TS2345: Argument of type '{}' is not assignable to parameter of type 'void | unique symbol'.
+src/features/storefront/components/Home.tsx(231,29): error TS2345: Argument of type '{}' is not assignable to parameter of type 'void | unique symbol'.
+src/features/storefront/components/Home.tsx(239,24): error TS2345: Argument of type '{}' is not assignable to parameter of type 'void | unique symbol'.
+src/features/storefront/components/Home.tsx(259,5): error TS2345: Argument of type '{}' is not assignable to parameter of type 'void | unique symbol'.
+src/features/storefront/components/Home.tsx(276,5): error TS2345: Argument of type '{}' is not assignable to parameter of type 'void | unique symbol'.
+src/features/storefront/components/Home.tsx(690,9): error TS2322: Type 'string | number' is not assignable to type 'number'.
+  Type 'string' is not assignable to type 'number'.
+src/features/storefront/components/Home.tsx(699,18): error TS2345: Argument of type 'MouseEvent<Element, MouseEvent>' is not assignable to parameter of type 'MouseEvent<HTMLElement, MouseEvent>'.
+  Type 'Element' is missing the following properties from type 'HTMLElement': accessKey, accessKeyLabel, autocapitalize, autocorrect, and 131 more.
+src/features/storefront/components/Home.tsx(700,21): error TS2345: Argument of type 'MouseEvent<Element, MouseEvent>' is not assignable to parameter of type 'MouseEvent<HTMLElement, MouseEvent>'.
+  Type 'Element' is missing the following properties from type 'HTMLElement': accessKey, accessKeyLabel, autocapitalize, autocorrect, and 131 more.
+src/features/storefront/components/Home.tsx(703,27): error TS2551: Property 'item' does not exist on type 'CartData'. Did you mean 'items'?
+src/features/storefront/components/Home.tsx(759,16): error TS2345: Argument of type 'MouseEvent<Element, MouseEvent>' is not assignable to parameter of type 'MouseEvent<HTMLElement, MouseEvent>'.
+  Type 'Element' is missing the following properties from type 'HTMLElement': accessKey, accessKeyLabel, autocapitalize, autocorrect, and 131 more.
+src/features/storefront/components/Home.tsx(767,11): error TS2322: Type 'string | number' is not assignable to type 'number'.
+  Type 'string' is not assignable to type 'number'.
+src/features/storefront/components/Home.tsx(770,44): error TS2339: Property 'data' does not exist on type 'RemoveFromWishlistResponse'.
+src/features/storefront/components/Home.tsx(770,62): error TS2339: Property 'success' does not exist on type 'RemoveFromWishlistResponse'.
+src/features/storefront/components/Home.tsx(789,9): error TS2322: Type 'string | number' is not assignable to type 'number'.
+  Type 'string' is not assignable to type 'number'.
+src/features/storefront/components/Home.tsx(795,19): error TS2339: Property 'already_exists' does not exist on type 'AddToWishlistResponse'.
+src/features/storefront/components/Home.tsx(810,60): error TS2339: Property 'success' does not exist on type 'AddToWishlistResponse'.
+src/features/storefront/components/Home.tsx(870,11): error TS2353: Object literal may only specify known properties, and 'product_id' does not exist in type 'UpdateCartItemRequest'.
+src/features/storefront/components/Home.tsx(945,33): error TS2339: Property 'navigation_url' does not exist on type 'ContentBlock'.
+src/features/storefront/components/Home.tsx(945,58): error TS2339: Property 'cta_url' does not exist on type 'ContentBlock'.
+src/features/storefront/components/Home.tsx(999,10): error TS2741: Property 'logoUrl' is missing in type '{}' but required in type 'PermissionLoadingStateProps'.
+src/features/storefront/components/Home.tsx(1260,11): error TS2322: Type 'import("/Users/user/Desktop/Desktop - user\u2019s Mac mini/indikonnect-app/src/lib/redux/api/categoryTypes").Category[]' is not assignable to type 'import("/Users/user/Desktop/Desktop - user\u2019s Mac mini/indikonnect-app/src/features/storefront/components/ShopByCategory").Category[]'.
+  Type 'import("/Users/user/Desktop/Desktop - user\u2019s Mac mini/indikonnect-app/src/lib/redux/api/categoryTypes").Category' is not assignable to type 'import("/Users/user/Desktop/Desktop - user\u2019s Mac mini/indikonnect-app/src/features/storefront/components/ShopByCategory").Category'.
+    Types of property 'status' are incompatible.
+      Type 'string' is not assignable to type 'number | boolean | undefined'.
+src/features/storefront/components/Home.tsx(1263,29): error TS7006: Parameter 'category' implicitly has an 'any' type.
+src/features/storefront/components/Home.tsx(1298,15): error TS2322: Type '{ hidden: { opacity: number; y: number; filter: string; }; visible: { opacity: number; y: number; filter: string; transition: { duration: number; ease: number[]; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; y: number; filter: string; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; y: number; filter: string; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; y: number; filter: string; transition: { duration: number; ease: number[]; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues$1 | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ duration: number; ease: number[]; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ duration: number; ease: number[]; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ duration: number; ease: number[]; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'ease' are incompatible.
+                    Type 'number[]' is not assignable to type 'Easing | Easing[] | undefined'.
+                      Type 'number[]' is not assignable to type 'EasingFunction | Easing[]'.
+                        Type 'number[]' is not assignable to type 'Easing[]'.
+                          Type 'number' is not assignable to type 'Easing'.
+src/features/storefront/components/Home.tsx(1361,11): error TS2322: Type 'Product[]' is not assignable to type 'TrendingProduct[]'.
+  Type 'Product' is not assignable to type 'TrendingProduct'.
+    Index signature for type 'string' is missing in type 'Product'.
+src/features/storefront/components/Home.tsx(1386,13): error TS2322: Type '{ reels: Reel[]; isLoading: boolean; error: FetchBaseQueryError | SerializedError | undefined; openReel: () => void; onModalOpen: () => void; onModalClose: () => void; }' is not assignable to type 'IntrinsicAttributes & ShopReelsProps'.
+  Property 'reels' does not exist on type 'IntrinsicAttributes & ShopReelsProps'.
+src/features/storefront/components/Home.tsx(1514,15): error TS2322: Type '{ hidden: { opacity: number; y: number; filter: string; }; visible: { opacity: number; y: number; filter: string; transition: { duration: number; ease: number[]; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; y: number; filter: string; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; y: number; filter: string; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; y: number; filter: string; transition: { duration: number; ease: number[]; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues$1 | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ duration: number; ease: number[]; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ duration: number; ease: number[]; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ duration: number; ease: number[]; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'ease' are incompatible.
+                    Type 'number[]' is not assignable to type 'Easing | Easing[] | undefined'.
+                      Type 'number[]' is not assignable to type 'EasingFunction | Easing[]'.
+                        Type 'number[]' is not assignable to type 'Easing[]'.
+                          Type 'number' is not assignable to type 'Easing'.
+src/features/storefront/components/MostFollowedReel.tsx(646,21): error TS2322: Type '{ key: string; ref: RefObject<HTMLVideoElement | null>; src: string; muted: true; defaultMuted: true; autoPlay: true; loop: true; playsInline: true; preload: string; disablePictureInPicture: true; className: string; }' is not assignable to type 'DetailedHTMLProps<VideoHTMLAttributes<HTMLVideoElement>, HTMLVideoElement>'.
+  Property 'defaultMuted' does not exist on type 'DetailedHTMLProps<VideoHTMLAttributes<HTMLVideoElement>, HTMLVideoElement>'.
+src/features/storefront/components/WatchesBanner.tsx(258,62): error TS2345: Argument of type '{}' is not assignable to parameter of type 'void | unique symbol'.
+src/features/wishlist/screens/wishlist.tsx(285,9): error TS2353: Object literal may only specify known properties, and 'from_wishlist' does not exist in type 'AddToCartRequest'.
+src/lib/hooks/useLogout.ts(12,8): error TS5097: An import path can only end with a '.ts' extension when 'allowImportingTsExtensions' is enabled.
+src/lib/redux/api/addressApi.ts(131,7): error TS2322: Type '(response: AddressSingleResponse) => AddressSingleResponse | { data: NormalizedAddress; status: boolean; message: string; }' is not assignable to type '(baseQueryReturnValue: unknown, meta: {} | undefined, arg: number) => { status: boolean; message: string; data?: NormalizedAddress | undefined; } | Promise<{ status: boolean; message: string; data?: NormalizedAddress | undefined; }>'.
+  Type 'AddressSingleResponse | { data: NormalizedAddress; status: boolean; message: string; }' is not assignable to type '{ status: boolean; message: string; data?: NormalizedAddress | undefined; } | Promise<{ status: boolean; message: string; data?: NormalizedAddress | undefined; }>'.
+    Type 'AddressSingleResponse' is not assignable to type '{ status: boolean; message: string; data?: NormalizedAddress | undefined; } | Promise<{ status: boolean; message: string; data?: NormalizedAddress | undefined; }>'.
+      Type 'AddressSingleResponse' is not assignable to type '{ status: boolean; message: string; data?: NormalizedAddress | undefined; }'.
+        The types of 'data.is_default' are incompatible between these types.
+          Type 'number' is not assignable to type 'boolean'.
+src/lib/redux/api/authtype.ts(8,3): error TS2687: All declarations of 'phone' must have identical modifiers.
+src/lib/redux/api/authtype.ts(9,3): error TS2687: All declarations of 'otp' must have identical modifiers.
+src/lib/redux/api/authtype.ts(20,3): error TS2687: All declarations of 'temp_token' must have identical modifiers.
+src/lib/redux/api/authtype.ts(21,3): error TS2687: All declarations of 'phone' must have identical modifiers.
+src/lib/redux/api/authtype.ts(33,3): error TS2687: All declarations of 'otp' must have identical modifiers.
+src/lib/redux/api/authtype.ts(33,3): error TS2717: Subsequent property declarations must have the same type.  Property 'otp' must be of type 'number', but here has type 'string | number | undefined'.
+src/lib/redux/api/authtype.ts(45,3): error TS2687: All declarations of 'phone' must have identical modifiers.
+src/lib/redux/api/authtype.ts(45,3): error TS2717: Subsequent property declarations must have the same type.  Property 'phone' must be of type 'string', but here has type 'string | undefined'.
+src/lib/redux/api/authtype.ts(46,3): error TS2687: All declarations of 'temp_token' must have identical modifiers.
+src/lib/redux/api/authtype.ts(46,3): error TS2717: Subsequent property declarations must have the same type.  Property 'temp_token' must be of type 'string', but here has type 'string | undefined'.
+src/lib/redux/api/authtype.ts(62,3): error TS2687: All declarations of 'email' must have identical modifiers.
+src/lib/redux/api/authtype.ts(67,3): error TS2687: All declarations of 'country' must have identical modifiers.
+src/lib/redux/api/authtype.ts(68,3): error TS2687: All declarations of 'terms_condition' must have identical modifiers.
+src/lib/redux/api/authtype.ts(80,3): error TS2687: All declarations of 'otp' must have identical modifiers.
+src/lib/redux/api/authtype.ts(80,3): error TS2717: Subsequent property declarations must have the same type.  Property 'otp' must be of type 'number', but here has type 'number | undefined'.
+src/lib/redux/api/authtype.ts(81,3): error TS2687: All declarations of 'phone' must have identical modifiers.
+src/lib/redux/api/authtype.ts(81,3): error TS2717: Subsequent property declarations must have the same type.  Property 'phone' must be of type 'string', but here has type 'string | undefined'.
+src/lib/redux/api/authtype.ts(86,3): error TS2717: Subsequent property declarations must have the same type.  Property 'otp' must be of type 'string', but here has type 'number'.
+src/lib/redux/api/authtype.ts(95,3): error TS2717: Subsequent property declarations must have the same type.  Property 'user' must be of type '{ [key: string]: any; id: number; full_name: string; email: string; phone: string; country?: string | undefined; account_type?: string | undefined; } | undefined', but here has type 'any'.
+src/lib/redux/api/authtype.ts(98,3): error TS2687: All declarations of 'temp_token' must have identical modifiers.
+src/lib/redux/api/authtype.ts(98,3): error TS2717: Subsequent property declarations must have the same type.  Property 'temp_token' must be of type 'string', but here has type 'string | undefined'.
+src/lib/redux/api/authtype.ts(99,3): error TS2687: All declarations of 'phone' must have identical modifiers.
+src/lib/redux/api/authtype.ts(99,3): error TS2717: Subsequent property declarations must have the same type.  Property 'phone' must be of type 'string', but here has type 'string | undefined'.
+src/lib/redux/api/authtype.ts(106,3): error TS2687: All declarations of 'email' must have identical modifiers.
+src/lib/redux/api/authtype.ts(106,3): error TS2717: Subsequent property declarations must have the same type.  Property 'email' must be of type 'string', but here has type 'string | undefined'.
+src/lib/redux/api/authtype.ts(107,3): error TS2687: All declarations of 'country' must have identical modifiers.
+src/lib/redux/api/authtype.ts(107,3): error TS2717: Subsequent property declarations must have the same type.  Property 'country' must be of type 'string', but here has type 'string | undefined'.
+src/lib/redux/api/authtype.ts(108,3): error TS2687: All declarations of 'terms_condition' must have identical modifiers.
+src/lib/redux/api/authtype.ts(108,3): error TS2717: Subsequent property declarations must have the same type.  Property 'terms_condition' must be of type 'string | boolean', but here has type 'boolean | undefined'.
+src/lib/redux/api/authtype.ts(114,3): error TS2687: All declarations of 'token' must have identical modifiers.
+src/lib/redux/api/authtype.ts(141,3): error TS2687: All declarations of 'token' must have identical modifiers.
+src/lib/redux/api/authtype.ts(141,3): error TS2717: Subsequent property declarations must have the same type.  Property 'token' must be of type 'string | undefined', but here has type 'string'.
+src/lib/redux/api/authtype.ts(144,3): error TS2717: Subsequent property declarations must have the same type.  Property 'data' must be of type '{ user: any; } | undefined', but here has type '{ user: { [key: string]: any; id: number; distributor_id: number | null; full_name: string; email: string; phone: string; phone_verified_at: string | null; country: string; account_type: string; ... 15 more ...; updated_at: string; }; role: any; business_profile: any; } | undefined'.
+src/lib/redux/api/distributor/distributorauthApis.ts(309,9): error TS2322: Type '{ type: string; id: string; }' is not assignable to type 'TagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | ... 28 more ... | "PaymentGatewaySettings"> | null | undefined'.
+  Type '{ type: string; id: string; }' is not assignable to type 'FullTagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | "Subscriber" | ... 27 more ... | "PaymentGatewaySettings">'.
+    Types of property 'type' are incompatible.
+      Type 'string' is not assignable to type '"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | "Subscriber" | ... 27 more ... | "PaymentGatewaySettings"'.
+src/lib/redux/api/distributor/distributorauthApis.ts(310,9): error TS2322: Type '"DistributorCheckStatus" | "DistributorPersonal" | { type: string; id: string; }' is not assignable to type 'TagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | ... 28 more ... | "PaymentGatewaySettings"> | null | undefined'.
+  Type '{ type: string; id: string; }' is not assignable to type 'TagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | ... 28 more ... | "PaymentGatewaySettings"> | null | undefined'.
+    Type '{ type: string; id: string; }' is not assignable to type 'FullTagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | "Subscriber" | ... 27 more ... | "PaymentGatewaySettings">'.
+      Types of property 'type' are incompatible.
+        Type 'string' is not assignable to type '"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | "Subscriber" | ... 27 more ... | "PaymentGatewaySettings"'.
+src/lib/redux/api/distributor/distributorauthApis.ts(311,9): error TS2322: Type '"DistributorCheckStatus" | "DistributorPersonal" | { type: string; id: string; }' is not assignable to type 'TagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | ... 28 more ... | "PaymentGatewaySettings"> | null | undefined'.
+  Type '{ type: string; id: string; }' is not assignable to type 'TagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | ... 28 more ... | "PaymentGatewaySettings"> | null | undefined'.
+    Type '{ type: string; id: string; }' is not assignable to type 'FullTagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | "Subscriber" | ... 27 more ... | "PaymentGatewaySettings">'.
+      Types of property 'type' are incompatible.
+        Type 'string' is not assignable to type '"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | "Subscriber" | ... 27 more ... | "PaymentGatewaySettings"'.
+src/lib/redux/api/distributor/distributorauthApis.ts(325,25): error TS2322: Type '{ type: string; id: string; }' is not assignable to type 'TagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | ... 28 more ... | "PaymentGatewaySettings"> | null | undefined'.
+  Type '{ type: string; id: string; }' is not assignable to type 'FullTagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | "Subscriber" | ... 27 more ... | "PaymentGatewaySettings">'.
+    Types of property 'type' are incompatible.
+      Type 'string' is not assignable to type '"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | "Subscriber" | ... 27 more ... | "PaymentGatewaySettings"'.
+src/lib/redux/api/distributor/distributorauthApis.ts(325,46): error TS2322: Type '"DistributorSponsor" | { type: string; id: string; }' is not assignable to type 'TagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | ... 28 more ... | "PaymentGatewaySettings"> | null | undefined'.
+  Type '{ type: string; id: string; }' is not assignable to type 'TagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | ... 28 more ... | "PaymentGatewaySettings"> | null | undefined'.
+    Type '{ type: string; id: string; }' is not assignable to type 'FullTagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | "Subscriber" | ... 27 more ... | "PaymentGatewaySettings">'.
+      Types of property 'type' are incompatible.
+        Type 'string' is not assignable to type '"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | "Subscriber" | ... 27 more ... | "PaymentGatewaySettings"'.
+src/lib/redux/api/distributor/distributorauthApis.ts(350,9): error TS2322: Type '{ type: string; id: string; }' is not assignable to type 'TagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | ... 28 more ... | "PaymentGatewaySettings"> | null | undefined'.
+  Type '{ type: string; id: string; }' is not assignable to type 'FullTagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | "Subscriber" | ... 27 more ... | "PaymentGatewaySettings">'.
+    Types of property 'type' are incompatible.
+      Type 'string' is not assignable to type '"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | "Subscriber" | ... 27 more ... | "PaymentGatewaySettings"'.
+src/lib/redux/api/distributor/distributorauthApis.ts(351,9): error TS2322: Type '"DistributorCheckStatus" | "DistributorAadhaar" | { type: string; id: string; }' is not assignable to type 'TagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | ... 28 more ... | "PaymentGatewaySettings"> | null | undefined'.
+  Type '{ type: string; id: string; }' is not assignable to type 'TagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | ... 28 more ... | "PaymentGatewaySettings"> | null | undefined'.
+    Type '{ type: string; id: string; }' is not assignable to type 'FullTagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | "Subscriber" | ... 27 more ... | "PaymentGatewaySettings">'.
+      Types of property 'type' are incompatible.
+        Type 'string' is not assignable to type '"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | "Subscriber" | ... 27 more ... | "PaymentGatewaySettings"'.
+src/lib/redux/api/distributor/distributorauthApis.ts(352,9): error TS2322: Type '"DistributorCheckStatus" | "DistributorAadhaar" | { type: string; id: string; }' is not assignable to type 'TagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | ... 28 more ... | "PaymentGatewaySettings"> | null | undefined'.
+  Type '{ type: string; id: string; }' is not assignable to type 'TagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | ... 28 more ... | "PaymentGatewaySettings"> | null | undefined'.
+    Type '{ type: string; id: string; }' is not assignable to type 'FullTagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | "Subscriber" | ... 27 more ... | "PaymentGatewaySettings">'.
+      Types of property 'type' are incompatible.
+        Type 'string' is not assignable to type '"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | "Subscriber" | ... 27 more ... | "PaymentGatewaySettings"'.
+src/lib/redux/api/distributor/distributorauthApis.ts(383,9): error TS2322: Type '{ type: string; id: string; }' is not assignable to type 'TagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | ... 28 more ... | "PaymentGatewaySettings"> | null | undefined'.
+  Type '{ type: string; id: string; }' is not assignable to type 'FullTagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | "Subscriber" | ... 27 more ... | "PaymentGatewaySettings">'.
+    Types of property 'type' are incompatible.
+      Type 'string' is not assignable to type '"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | "Subscriber" | ... 27 more ... | "PaymentGatewaySettings"'.
+src/lib/redux/api/distributor/distributorauthApis.ts(384,9): error TS2322: Type '"DistributorCheckStatus" | "DistributorPAN" | "DistributorBank" | "DistributorSubmit" | { type: string; id: string; }' is not assignable to type 'TagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | ... 28 more ... | "PaymentGatewaySettings"> | null | undefined'.
+  Type '{ type: string; id: string; }' is not assignable to type 'TagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | ... 28 more ... | "PaymentGatewaySettings"> | null | undefined'.
+    Type '{ type: string; id: string; }' is not assignable to type 'FullTagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | "Subscriber" | ... 27 more ... | "PaymentGatewaySettings">'.
+      Types of property 'type' are incompatible.
+        Type 'string' is not assignable to type '"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | "Subscriber" | ... 27 more ... | "PaymentGatewaySettings"'.
+src/lib/redux/api/distributor/distributorauthApis.ts(385,9): error TS2322: Type '"DistributorCheckStatus" | "DistributorPAN" | "DistributorBank" | "DistributorSubmit" | { type: string; id: string; }' is not assignable to type 'TagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | ... 28 more ... | "PaymentGatewaySettings"> | null | undefined'.
+  Type '{ type: string; id: string; }' is not assignable to type 'TagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | ... 28 more ... | "PaymentGatewaySettings"> | null | undefined'.
+    Type '{ type: string; id: string; }' is not assignable to type 'FullTagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | "Subscriber" | ... 27 more ... | "PaymentGatewaySettings">'.
+      Types of property 'type' are incompatible.
+        Type 'string' is not assignable to type '"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | "Subscriber" | ... 27 more ... | "PaymentGatewaySettings"'.
+src/lib/redux/api/distributor/distributorauthApis.ts(386,9): error TS2322: Type '"DistributorCheckStatus" | "DistributorPAN" | "DistributorBank" | "DistributorSubmit" | { type: string; id: string; }' is not assignable to type 'TagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | ... 28 more ... | "PaymentGatewaySettings"> | null | undefined'.
+  Type '{ type: string; id: string; }' is not assignable to type 'TagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | ... 28 more ... | "PaymentGatewaySettings"> | null | undefined'.
+    Type '{ type: string; id: string; }' is not assignable to type 'FullTagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | "Subscriber" | ... 27 more ... | "PaymentGatewaySettings">'.
+      Types of property 'type' are incompatible.
+        Type 'string' is not assignable to type '"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | "Subscriber" | ... 27 more ... | "PaymentGatewaySettings"'.
+src/lib/redux/api/distributor/distributorauthApis.ts(387,9): error TS2322: Type '"DistributorCheckStatus" | "DistributorPAN" | "DistributorBank" | "DistributorSubmit" | { type: string; id: string; }' is not assignable to type 'TagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | ... 28 more ... | "PaymentGatewaySettings"> | null | undefined'.
+  Type '{ type: string; id: string; }' is not assignable to type 'TagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | ... 28 more ... | "PaymentGatewaySettings"> | null | undefined'.
+    Type '{ type: string; id: string; }' is not assignable to type 'FullTagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | "Subscriber" | ... 27 more ... | "PaymentGatewaySettings">'.
+      Types of property 'type' are incompatible.
+        Type 'string' is not assignable to type '"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | "Subscriber" | ... 27 more ... | "PaymentGatewaySettings"'.
+src/lib/redux/api/distributor/distributorauthApis.ts(415,9): error TS2322: Type '{ type: string; id: string; }' is not assignable to type 'TagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | ... 28 more ... | "PaymentGatewaySettings"> | null | undefined'.
+  Type '{ type: string; id: string; }' is not assignable to type 'FullTagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | "Subscriber" | ... 27 more ... | "PaymentGatewaySettings">'.
+    Types of property 'type' are incompatible.
+      Type 'string' is not assignable to type '"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | "Subscriber" | ... 27 more ... | "PaymentGatewaySettings"'.
+src/lib/redux/api/distributor/distributorauthApis.ts(416,9): error TS2322: Type '"DistributorCheckStatus" | "DistributorBank" | { type: string; id: string; }' is not assignable to type 'TagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | ... 28 more ... | "PaymentGatewaySettings"> | null | undefined'.
+  Type '{ type: string; id: string; }' is not assignable to type 'TagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | ... 28 more ... | "PaymentGatewaySettings"> | null | undefined'.
+    Type '{ type: string; id: string; }' is not assignable to type 'FullTagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | "Subscriber" | ... 27 more ... | "PaymentGatewaySettings">'.
+      Types of property 'type' are incompatible.
+        Type 'string' is not assignable to type '"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | "Subscriber" | ... 27 more ... | "PaymentGatewaySettings"'.
+src/lib/redux/api/distributor/distributorauthApis.ts(417,9): error TS2322: Type '"DistributorCheckStatus" | "DistributorBank" | { type: string; id: string; }' is not assignable to type 'TagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | ... 28 more ... | "PaymentGatewaySettings"> | null | undefined'.
+  Type '{ type: string; id: string; }' is not assignable to type 'TagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | ... 28 more ... | "PaymentGatewaySettings"> | null | undefined'.
+    Type '{ type: string; id: string; }' is not assignable to type 'FullTagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | "Subscriber" | ... 27 more ... | "PaymentGatewaySettings">'.
+      Types of property 'type' are incompatible.
+        Type 'string' is not assignable to type '"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | "Subscriber" | ... 27 more ... | "PaymentGatewaySettings"'.
+src/lib/redux/api/distributor/distributorauthApis.ts(439,25): error TS2322: Type '{ type: string; id: string; }' is not assignable to type 'TagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | ... 28 more ... | "PaymentGatewaySettings"> | null | undefined'.
+  Type '{ type: string; id: string; }' is not assignable to type 'FullTagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | "Subscriber" | ... 27 more ... | "PaymentGatewaySettings">'.
+    Types of property 'type' are incompatible.
+      Type 'string' is not assignable to type '"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | "Subscriber" | ... 27 more ... | "PaymentGatewaySettings"'.
+src/lib/redux/api/distributor/distributorauthApis.ts(439,46): error TS2322: Type '"DistributorLocation" | { type: string; id: string; }' is not assignable to type 'TagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | ... 28 more ... | "PaymentGatewaySettings"> | null | undefined'.
+  Type '{ type: string; id: string; }' is not assignable to type 'TagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | ... 28 more ... | "PaymentGatewaySettings"> | null | undefined'.
+    Type '{ type: string; id: string; }' is not assignable to type 'FullTagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | "Subscriber" | ... 27 more ... | "PaymentGatewaySettings">'.
+      Types of property 'type' are incompatible.
+        Type 'string' is not assignable to type '"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | "Subscriber" | ... 27 more ... | "PaymentGatewaySettings"'.
+src/lib/redux/api/distributor/distributorauthApis.ts(494,9): error TS2322: Type '{ type: string; id: string; }' is not assignable to type 'TagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | ... 28 more ... | "PaymentGatewaySettings"> | null | undefined'.
+  Type '{ type: string; id: string; }' is not assignable to type 'FullTagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | "Subscriber" | ... 27 more ... | "PaymentGatewaySettings">'.
+    Types of property 'type' are incompatible.
+      Type 'string' is not assignable to type '"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | "Subscriber" | ... 27 more ... | "PaymentGatewaySettings"'.
+src/lib/redux/api/distributor/distributorauthApis.ts(495,9): error TS2322: Type '"DistributorPAN" | "DistributorBank" | "DistributorSubmit" | { type: string; id: string; }' is not assignable to type 'TagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | ... 28 more ... | "PaymentGatewaySettings"> | null | undefined'.
+  Type '{ type: string; id: string; }' is not assignable to type 'TagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | ... 28 more ... | "PaymentGatewaySettings"> | null | undefined'.
+    Type '{ type: string; id: string; }' is not assignable to type 'FullTagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | "Subscriber" | ... 27 more ... | "PaymentGatewaySettings">'.
+      Types of property 'type' are incompatible.
+        Type 'string' is not assignable to type '"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | "Subscriber" | ... 27 more ... | "PaymentGatewaySettings"'.
+src/lib/redux/api/distributor/distributorauthApis.ts(496,9): error TS2322: Type '"DistributorPAN" | "DistributorBank" | "DistributorSubmit" | { type: string; id: string; }' is not assignable to type 'TagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | ... 28 more ... | "PaymentGatewaySettings"> | null | undefined'.
+  Type '{ type: string; id: string; }' is not assignable to type 'TagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | ... 28 more ... | "PaymentGatewaySettings"> | null | undefined'.
+    Type '{ type: string; id: string; }' is not assignable to type 'FullTagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | "Subscriber" | ... 27 more ... | "PaymentGatewaySettings">'.
+      Types of property 'type' are incompatible.
+        Type 'string' is not assignable to type '"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | "Subscriber" | ... 27 more ... | "PaymentGatewaySettings"'.
+src/lib/redux/api/distributor/distributorauthApis.ts(497,9): error TS2322: Type '"DistributorPAN" | "DistributorBank" | "DistributorSubmit" | { type: string; id: string; }' is not assignable to type 'TagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | ... 28 more ... | "PaymentGatewaySettings"> | null | undefined'.
+  Type '{ type: string; id: string; }' is not assignable to type 'TagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | ... 28 more ... | "PaymentGatewaySettings"> | null | undefined'.
+    Type '{ type: string; id: string; }' is not assignable to type 'FullTagDescription<"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | "Subscriber" | ... 27 more ... | "PaymentGatewaySettings">'.
+      Types of property 'type' are incompatible.
+        Type 'string' is not assignable to type '"Contact" | "FAQ" | "Distributor" | "Customer" | "User" | "UserProfile" | "Order" | "Orders" | "OrderStatus" | "Wishlist" | "Product" | "Products" | "Addresses" | "Cart" | "Subscriber" | ... 27 more ... | "PaymentGatewaySettings"'.

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/common/Input";
-import { Button } from "@/components/common/Button";
+import "@/components/common/Button";
 import { DatePicker } from "@/features/distributor/registration/components/DatePicker";
 import { PasswordInput } from "@/features/distributor/registration/components/PasswordInput";
 import { StepProps } from "@/features/distributor/registration/types/index";
@@ -30,6 +30,8 @@ import {
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { showToast } from "@/lib/slices/toastSlice";
 import { InfoBox } from "@/features/distributor/registration/components/InfoBox";
+import { readCaughtMessage } from "@/lib/utils/readCaughtMessage";
+
 
 const theme = {
   font: "'Inter', 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, sans-serif",
@@ -220,7 +222,7 @@ export const IdentityStep: React.FC<StepProps> = ({
     try {
       const response = await getStepData({ step: "1", phone: email }).unwrap();
 
-      if (response.status && response.step_data) {
+      if (response.status && response.step_data?.user) {
         const userData = response.step_data.user;
 
         // ✅ Strict checks
@@ -451,7 +453,7 @@ export const IdentityStep: React.FC<StepProps> = ({
       return;
     }
 
-    let formattedMobile = mobileInput.startsWith("+")
+    const formattedMobile = mobileInput.startsWith("+")
       ? mobileInput
       : "+91" + mobileInput.replace(/^0+/, "");
 
@@ -477,8 +479,8 @@ export const IdentityStep: React.FC<StepProps> = ({
       } else {
         setMobileError(response.message || "Failed to send OTP");
       }
-    } catch (error: any) {
-      setMobileError(error?.data?.message || "Failed to send OTP");
+    } catch (error: unknown) {
+      setMobileError(readCaughtMessage(error, "data", "message") || "Failed to send OTP");
     } finally {
       setIsMobileOtpSending(false);
     }
@@ -490,7 +492,7 @@ export const IdentityStep: React.FC<StepProps> = ({
       return;
     }
 
-    let formattedMobile = mobileInput.startsWith("+")
+    const formattedMobile = mobileInput.startsWith("+")
       ? mobileInput
       : "+91" + mobileInput.replace(/^0+/, "");
 
@@ -528,8 +530,8 @@ export const IdentityStep: React.FC<StepProps> = ({
       } else {
         setMobileError(response.message || "Invalid OTP");
       }
-    } catch (error: any) {
-      setMobileError(error?.data?.message || "Failed to verify OTP");
+    } catch (error: unknown) {
+      setMobileError(readCaughtMessage(error, "data", "message") || "Failed to verify OTP");
     } finally {
       setIsMobileVerifying(false);
     }
@@ -566,8 +568,8 @@ export const IdentityStep: React.FC<StepProps> = ({
       } else {
         setEmailError(response.message || "Failed to send OTP");
       }
-    } catch (error: any) {
-      setEmailError(error?.data?.message || "Failed to send OTP");
+    } catch (error: unknown) {
+      setEmailError(readCaughtMessage(error, "data", "message") || "Failed to send OTP");
     } finally {
       setIsEmailOtpSending(false);
     }
@@ -613,8 +615,8 @@ export const IdentityStep: React.FC<StepProps> = ({
       } else {
         setEmailError(response.message || "Invalid OTP");
       }
-    } catch (error: any) {
-      setEmailError(error?.data?.message || "Failed to verify OTP");
+    } catch (error: unknown) {
+      setEmailError(readCaughtMessage(error, "data", "message") || "Failed to verify OTP");
     } finally {
       setIsEmailVerifying(false);
     }
@@ -1371,7 +1373,7 @@ export const IdentityStep: React.FC<StepProps> = ({
               Change Email Address
             </h3>
             <p className="text-xs sm:text-sm text-gray-500 text-center mb-4 sm:mb-6 font-medium">
-              Enter your new email address. You'll need to verify it again with
+              Enter your new email address. You&apos;ll need to verify it again with
               OTP.
             </p>
             <div className="space-y-3 sm:space-y-4">
@@ -1386,7 +1388,7 @@ export const IdentityStep: React.FC<StepProps> = ({
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-2.5 sm:p-3">
                 <p className="text-[10px] sm:text-xs text-amber-700 font-medium">
                   ⚠️ Changing email will reset your verification status and API
-                  state. You'll need to verify the new email.
+                  state. You&apos;ll need to verify the new email.
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2">

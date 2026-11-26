@@ -10,16 +10,7 @@ import {
   useTransform,
 } from "framer-motion";
 
-import {
-  Accent,
-  Display,
-  Eyebrow,
-  Lede,
-  Reveal,
-  Section,
-  Wrap,
-  cx,
-} from "@/features/landing/components/design-system/index";
+import { Display, Eyebrow, Lede, Reveal, Section, Wrap, cx } from "@/features/landing/components/design-system/index";
 
 import { ease, scrub } from "@/features/landing/components/design-system/motion";
 import styles from "@/features/landing/components/components/sections/TheName.module.css";

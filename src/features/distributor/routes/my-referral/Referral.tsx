@@ -2,24 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useGetDistributorMyReferralsQuery } from "@/lib/redux/api/distributor/distributorGenealogyApi";
-import {
-  Users,
-  UserPlus,
-  Network,
-  Wallet,
-  Search,
-  Inbox,
-  RefreshCw,
-  Loader2,
-  AlertCircle,
-  Copy,
-  Check,
-  X,
-  ChevronDown,
-  SlidersHorizontal,
-  UserRound,
-  Info,
-} from "lucide-react";
+import { Users, UserPlus, Network, Wallet, Search, Inbox, RefreshCw, Loader2, AlertCircle, Copy, Check, X, ChevronDown, SlidersHorizontal, UserRound } from "lucide-react";
 
 const NAVY = "#0E1B3D";
 const BRASS = "#B8935A";

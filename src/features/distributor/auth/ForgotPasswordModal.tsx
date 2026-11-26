@@ -10,6 +10,8 @@ import {
     useVerifyResetOTPMutation,
     useResetPasswordMutation
 } from "@/lib/redux/api/distributor/distributorauthApis";
+import { readCaughtMessage } from "@/lib/utils/readCaughtMessage";
+
 
 interface ForgotPasswordModalProps {
     isOpen: boolean;
@@ -108,8 +110,8 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
             } else {
                 setError(response.message || "Failed to send OTP. Please try again.");
             }
-        } catch (err: any) {
-            setError(err.data?.message || err.message || "Network error. Please try again.");
+        } catch (err: unknown) {
+            setError(readCaughtMessage(err, "data", "message") || readCaughtMessage(err, "message") || "Network error. Please try again.");
         }
     };
 
@@ -136,8 +138,8 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
             } else {
                 setError(response.message || "Invalid OTP. Please try again.");
             }
-        } catch (err: any) {
-            setError(err.data?.message || err.message || "Network error. Please try again.");
+        } catch (err: unknown) {
+            setError(readCaughtMessage(err, "data", "message") || readCaughtMessage(err, "message") || "Network error. Please try again.");
         }
     };
 
@@ -175,8 +177,8 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
             } else {
                 setError(response.message || "Failed to reset password. Please try again.");
             }
-        } catch (err: any) {
-            setError(err.data?.message || err.message || "Network error. Please try again.");
+        } catch (err: unknown) {
+            setError(readCaughtMessage(err, "data", "message") || readCaughtMessage(err, "message") || "Network error. Please try again.");
         }
     };
 
@@ -199,8 +201,8 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
                 setError(response.message || "Failed to resend OTP");
                 setCanResend(true);
             }
-        } catch (err: any) {
-            setError(err.data?.message || err.message || "Network error");
+        } catch (err: unknown) {
+            setError(readCaughtMessage(err, "data", "message") || readCaughtMessage(err, "message") || "Network error");
             setCanResend(true);
         }
     };

@@ -1,5 +1,8 @@
 "use client";
 
+import type { Ref } from "react";
+import type { useRouter } from "next/navigation";
+import type { HomeCardProduct } from "./support";
 import m from "@/features/storefront/components/motion.module.css";
 import { ripple, bannerMove, bannerLeave } from "@/features/storefront/components/interactions";
 import { motion } from "framer-motion";
@@ -11,7 +14,7 @@ import { getDiscountPercentage, getProductImage, getPromoPlaceholderImage } from
    DEAL BANNER
 ========================================================= */
 
-export function DealBanner({ rawProduct, index, router, parallaxRef, userType }: any) {
+export function DealBanner({ rawProduct, index, router, parallaxRef, userType }: { rawProduct: (Partial<HomeCardProduct> & { product?: HomeCardProduct | null }) | null | undefined; index: number; router: ReturnType<typeof useRouter>; parallaxRef: Ref<HTMLDivElement>; userType?: string }) {
   const product = rawProduct?.product || rawProduct;
 
   const productImage = getProductImage(product);
@@ -152,7 +155,7 @@ export function DealBanner({ rawProduct, index, router, parallaxRef, userType }:
             md:text-[11px]
           "
         >
-          Today's Best Deal
+          Today&apos;s Best Deal
         </motion.p>
 
         <motion.h2

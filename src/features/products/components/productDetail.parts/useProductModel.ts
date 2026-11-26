@@ -4,9 +4,10 @@ import { PLACEHOLDER, distributorOfferPrice, generateSlugFromName, getAverageRat
 import { distributorRetailReference } from "./pricing";
 
 export function useProductModel(apiProduct: any, userAccountType: "retail" | "distributor") {
-const apiComboProducts: any[] = useMemo(() => Array.isArray(apiProduct?.combo_products)
-    ? apiProduct.combo_products
-    : [], [apiProduct?.combo_products]);
+const rawComboProducts = apiProduct?.combo_products;
+const apiComboProducts: any[] = useMemo(() => Array.isArray(rawComboProducts)
+    ? rawComboProducts
+    : [], [rawComboProducts]);
 
 const isCombo =
     String(apiProduct?.product_type ?? "").toLowerCase() === "combo" &&
@@ -105,11 +106,12 @@ const manufacturingInfo = useMemo(() => {
 const reviewsSummary =
     apiProduct?.reviews_summary ?? apiProduct?.reviews?.summary ?? null;
 
-const reviewsList: any[] = useMemo(() => Array.isArray(apiProduct?.reviews?.data)
-    ? apiProduct.reviews.data
-    : Array.isArray(apiProduct?.reviews)
-      ? apiProduct.reviews
-      : [], [apiProduct?.reviews]);
+const rawReviews = apiProduct?.reviews;
+const reviewsList: any[] = useMemo(() => Array.isArray(rawReviews?.data)
+    ? rawReviews.data
+    : Array.isArray(rawReviews)
+      ? rawReviews
+      : [], [rawReviews]);
 
 const product = useMemo(() => apiProduct
     ? {

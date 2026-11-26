@@ -1,8 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useDispatch } from "react-redux";
 
 import {
@@ -89,7 +88,7 @@ const LogoutModal = ({
                     </h3>
 
                     <p className="text-sm leading-relaxed text-[#8a7f6e]">
-                        Are you sure you want to logout? You'll need to login again to
+                        Are you sure you want to logout? You&apos;ll need to login again to
                         access your account.
                     </p>
 
@@ -97,7 +96,7 @@ const LogoutModal = ({
                         <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600" />
 
                         <p className="text-xs text-amber-800">
-                            Your session will be ended and you'll be redirected to the login
+                            Your session will be ended and you&apos;ll be redirected to the login
                             page.
                         </p>
                     </div>
@@ -153,7 +152,6 @@ export default function ProfileSidebar({
     accountType = "Standard",
     earningsData,
 }: ProfileSidebarProps) {
-    const router = useRouter();
     const dispatch = useDispatch();
     const { logout } = useLogout();
 
@@ -175,7 +173,6 @@ export default function ProfileSidebar({
 
     const {
         data: profileData,
-        isLoading: profileLoading,
     } = useGetUserProfileQuery(undefined, {
         skip: hasToken !== true,
     });
@@ -322,16 +319,7 @@ export default function ProfileSidebar({
        UPDATED NAV ITEMS
     ========================================================= */
 
-    const [updatedNavItems, setUpdatedNavItems] =
-        useState(finalNavItems);
-
-    useEffect(() => {
-        const itemsToUpdate = isDistributor
-            ? distributorNavItems
-            : navItems;
-
-        setUpdatedNavItems(
-            itemsToUpdate.map((item) => {
+    const updatedNavItems = finalNavItems.map((item) => {
                 if (item.tab === "orders") {
                     return {
                         ...item,
@@ -357,16 +345,7 @@ export default function ProfileSidebar({
                 }
 
                 return item;
-            }),
-        );
-    }, [
-        orderCount,
-        wishlistCount,
-        ordersLoading,
-        wishlistLoading,
-        isDistributor,
-        hasToken,
-    ]);
+            });
 
     /* =========================================================
        TAB NAVIGATION

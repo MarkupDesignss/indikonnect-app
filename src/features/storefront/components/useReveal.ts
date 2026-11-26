@@ -11,7 +11,7 @@ import { useEffect } from "react";
  * @param inClass  revealed state ka CSS-module class (m.in)
  * @param deps     re-scan trigger (e.g. [activeTab, products.length])
  */
-export default function useReveal(inClass: string, deps: any[] = []) {
+export default function useReveal(inClass: string, deps: readonly unknown[] = []) {
   useEffect(() => {
     const sel = '[class*="reveal"]:not(.' + inClass + ')';
     let pending = Array.from(document.querySelectorAll<HTMLElement>(sel));

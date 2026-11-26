@@ -275,7 +275,7 @@ const TokenManager = {
     }
   },
 
-  setUserData: (userData: any) => {
+  setUserData: (userData: unknown) => {
     if (typeof window === "undefined") return;
 
     const appType = getAppType();
@@ -411,6 +411,8 @@ export const baseApi = createApi({
 
   tagTypes: [
     // GLOBAL / LEGACY
+    "Auth",
+    "Registration",
     "Distributor",
     "Customer",
     "User",

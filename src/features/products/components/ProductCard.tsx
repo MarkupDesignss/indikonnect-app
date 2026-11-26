@@ -33,6 +33,8 @@ import {
 
 import Fallback from "../../../../public/indiekonnect-web/images/test.jpg";
 import { getAppType } from "@/lib/appConfig";
+import { readCaughtMessage } from "@/lib/utils/readCaughtMessage";
+
 
 /* -------------------------------------------------------------------------- */
 /* DISTRIBUTOR OFFER PRICE                                                    */
@@ -1774,9 +1776,9 @@ function ProductCardInner({
         product_id: id,
         quantity,
       }).unwrap();
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw new Error(
-        error?.data?.message ||
+        readCaughtMessage(error, "data", "message") ||
           "Unable to verify live stock. Please retry.",
       );
     }
@@ -1912,11 +1914,11 @@ function ProductCardInner({
       }
 
       await refetchWishlist();
-    } catch (error: any) {
+    } catch (error: unknown) {
       dispatch(
         showToast({
           message:
-            error?.data?.message ||
+            readCaughtMessage(error, "data", "message") ||
             "Failed to update wishlist",
           type: "error",
         }),

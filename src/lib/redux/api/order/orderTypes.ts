@@ -152,7 +152,7 @@ export interface InitiateReturnRequest {
 export interface InitiateReturnResponse {
   success: boolean;
   message?: string;
-  data?: any;
+  data?: unknown;
 }
 
 // ---------------- INVOICE ----------------
@@ -213,7 +213,7 @@ export interface InvoiceResponse {
       courier_delivery_date: string | null;
       delivery_notes: string | null;
       tax_breakdown: string;
-      summary_data: any;
+      summary_data: unknown;
       created_at: string;
       updated_at: string;
     };
@@ -229,7 +229,7 @@ export interface InvoiceResponse {
       gst_amount: string;
       line_total: string;
       commissionable_volume: string;
-      tax_data: any;
+      tax_data: unknown;
       product_image: string;
       product_images: string[];
     }[];
@@ -239,7 +239,7 @@ export interface InvoiceResponse {
 export interface CancelReturnResponse {
   success: boolean;
   message: string;
-  data?: any;
+  data?: unknown;
 }
 
 export interface CancelReturnRequest {
@@ -258,5 +258,5 @@ export interface AddRatingReviewRequest {
 export interface AddRatingReviewResponse {
   success: boolean;
   message: string;
-  data?: any;
+  data?: unknown;
 }

@@ -24,6 +24,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { showToast } from "@/lib/slices/toastSlice";
 import { useAppDispatch } from "@/lib/redux/hooks";
+import { readCaughtMessage } from "@/lib/utils/readCaughtMessage";
+
 
 interface OrderLineItem {
     order_id: number;
@@ -192,7 +194,7 @@ const CoolingOffConfirmModal = ({
                             ) : (
                                 <>
                                     <CheckCircle2 className="h-3.5 w-3.5" />
-                                    Yes, I'm Sure
+                                    Yes, I&apos;m Sure
                                 </>
                             )}
                         </button>
@@ -302,10 +304,10 @@ export default function CollingOff() {
             await refetch();
             setConfirmModalOpen(false);
             setSelectedOrder(null);
-        } catch (error: any) {
+        } catch (error: unknown) {
             const msg =
-                error?.data?.message ||
-                error?.message ||
+                readCaughtMessage(error, "data", "message") ||
+                readCaughtMessage(error, "message") ||
                 "Failed to process cooling-off request.";
             dispatch(showToast({ message: msg, type: "error" }));
         } finally {

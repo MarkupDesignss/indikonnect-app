@@ -25,7 +25,7 @@ export const FONT_WEIGHT = {
 
 export type FontFamily = keyof typeof FONT_FAMILIES;
 
-export const getFont = (family: FontFamily | string, weight: number = 400): string => {
+export const getFont: (family: FontFamily | string, weight?: number) => string = (family) => {
   const fontFamily = FONT_FAMILIES[family as FontFamily] || FONT_FAMILIES.lato;
 
   // Return font with weight

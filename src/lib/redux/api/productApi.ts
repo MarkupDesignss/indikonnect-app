@@ -128,7 +128,7 @@ export const productApi = baseApi.injectEndpoints({
     }),
 
     // NOTIFY PRODUCT
-    notifyProduct: builder.mutation<any, { product_id: number }>({
+    notifyProduct: builder.mutation<{ message?: string; success?: boolean; data?: unknown }, { product_id: number }>({
       query: (body) => ({ url: "/notify-me", method: "POST", body }),
       invalidatesTags: ["Products"],
     }),

@@ -180,7 +180,7 @@ export const orderApi = baseApi.injectEndpoints({
         reason: string;
       }
     >({
-      query: ({ orderReference, orderLineId, reason }) => ({
+      query: ({ orderReference, reason }) => ({
         url: `/orders/${encodeURIComponent(
           orderReference,
         )}/cancel`,
@@ -197,7 +197,7 @@ export const orderApi = baseApi.injectEndpoints({
     // =====================================================
 
     withdrawCancelRequest: builder.mutation<
-      any,
+      unknown,
       {
         orderReference: string;
       }

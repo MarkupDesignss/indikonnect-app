@@ -9,11 +9,6 @@ import Logo from "../../../../../public/indiekonnect-web/images/logo.png";
 import { Address, FONT_FAMILY, MM_H, MM_W, OrderResponse, PHOTO, PX_H, PX_W, Quote, User, api, drawCard, emptyAddress, getProfilePhotoUrl, img, loadPhotoForCanvas, loadPoppins, loadRazorpay } from "@/features/distributor/routes/profile/DistributorPVCSection.parts/support";
 
 
-declare global {
-  interface Window {
-    Razorpay?: new (options: Record<string, unknown>) => { open(): void };
-  }
-}
 
 export default function DistributorPVCSection({ user }: { user: User }) {
   const profilePhotoUrl = getProfilePhotoUrl(user);

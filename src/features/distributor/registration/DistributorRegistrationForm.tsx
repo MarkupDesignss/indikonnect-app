@@ -19,15 +19,10 @@ import { PANStep } from "@/features/distributor/registration/components/steps/PA
 import { BankStep } from "@/features/distributor/registration/components/steps/BankStep";
 import { LocationStep } from "@/features/distributor/registration/components/steps/LocationStep";
 import { ReviewStep } from "@/features/distributor/registration/components/steps/ReviewStep";
-import {
-  PlusCircle,
-  AlertTriangle,
-  X,
-  RefreshCw,
-  Trash2,
-  Loader2,
-} from "lucide-react";
+import { AlertTriangle, X, RefreshCw, Trash2, Loader2 } from "lucide-react";
 import { Button } from "@/components/common/Button";
+import { readCaughtMessage } from "@/lib/utils/readCaughtMessage";
+
 
 const steps: Step[] = [
   { title: "Identity", component: IdentityStep },
@@ -332,10 +327,10 @@ export const DistributorRegistrationFlow: React.FC = () => {
         setStatusMessage(`❌ ${result.message || "Failed to check status"}`);
         setStatusType("error");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("❌ Error checking status:", error);
       setStatusMessage(
-        `❌ ${error?.data?.message || "Failed to check status. Please try again."}`,
+        `❌ ${readCaughtMessage(error, "data", "message") || "Failed to check status. Please try again."}`,
       );
       setStatusType("error");
     } finally {
@@ -575,8 +570,8 @@ export const DistributorRegistrationFlow: React.FC = () => {
       setTimeout(() => {
         router.push("/");
       }, 3000);
-    } catch (err: any) {
-      setFormError(err.message || "Submission failed. Please try again.");
+    } catch (err: unknown) {
+      setFormError(readCaughtMessage(err, "message") || "Submission failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -676,7 +671,7 @@ export const DistributorRegistrationFlow: React.FC = () => {
             </h3>
 
             <p className="text-gray-500 text-center text-sm mb-6 leading-relaxed">
-              This will clear all your current progress and data. You'll start
+              This will clear all your current progress and data. You&apos;ll start
               fresh from the beginning.
             </p>
 

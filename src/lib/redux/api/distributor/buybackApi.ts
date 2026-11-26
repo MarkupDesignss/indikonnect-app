@@ -30,7 +30,7 @@ export interface BuybackInitiateResponse {
     status?: string;
     initiated_at?: string;
     total_items?: number;
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }
 

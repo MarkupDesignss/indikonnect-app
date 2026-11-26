@@ -15,6 +15,8 @@ import { useProductModel } from "./useProductModel";
 import { useProductVariants } from "./useProductVariants";
 import { useRelatedProducts } from "./useRelatedProducts";
 import { useProductMedia } from "./useProductMedia";
+import { readCaughtMessage } from "@/lib/utils/readCaughtMessage";
+
 
 export function useProductDetail({ productSlug }: ProductDetailProps) {
 const router = useRouter();
@@ -249,17 +251,15 @@ const {
     gallery,
   } = useProductVariants(apiProduct, product, productGallery, selectedVariantId);
 
-useEffect(() => {
-    setActiveImage(0);
-  }, [selectedVariantId]);
-
-useEffect(() => {
-    if (!product) return;
-
-    setSelectedVariantId(null);
-    setSelectedVariantAttributes({});
-    setActiveImage(0);
-  }, [product?.id]);
+const [previousProductId, setPreviousProductId] = useState(product?.id);
+if (previousProductId !== product?.id) {
+    setPreviousProductId(product?.id);
+    if (product) {
+      setSelectedVariantId(null);
+      setSelectedVariantAttributes({});
+      setActiveImage(0);
+    }
+  }
 
 const handleSelectMainProduct = () => {
     if (product?.slug && product.slug !== activeProductSlug) {
@@ -406,10 +406,10 @@ const handleWishlistToggle = async (e?: React.MouseEvent<HTMLElement>) => {
       }
 
       await refetchWishlist();
-    } catch (error: any) {
+    } catch (error: unknown) {
       dispatch(
         showToast({
-          message: error?.data?.message || "Failed to update wishlist",
+          message: readCaughtMessage(error, "data", "message") || "Failed to update wishlist",
           type: "error",
         }),
       );
@@ -462,10 +462,10 @@ const toggleWishlist = async (productId: number) => {
       }
 
       await refetchWishlist();
-    } catch (error: any) {
+    } catch (error: unknown) {
       dispatch(
         showToast({
-          message: error?.data?.message || "Failed to update wishlist",
+          message: readCaughtMessage(error, "data", "message") || "Failed to update wishlist",
           type: "error",
         }),
       );
@@ -502,9 +502,9 @@ const checkFreshStock = async (
         product_id: id,
         quantity: quantityToCheck,
       }).unwrap();
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw new Error(
-        error?.data?.message || "Unable to verify live stock. Please retry.",
+        readCaughtMessage(error, "data", "message") || "Unable to verify live stock. Please retry.",
       );
     }
 
@@ -576,12 +576,12 @@ const handleAddToCart = async (e?: React.MouseEvent<HTMLElement>) => {
           setIsAddedToCart(false);
         }, 3000);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       dispatch(
         showToast({
           message:
-            error?.data?.message ||
-            error?.message ||
+            readCaughtMessage(error, "data", "message") ||
+            readCaughtMessage(error, "message") ||
             "Failed to add item to cart",
           type: "error",
         }),
@@ -676,12 +676,12 @@ const handleBuyNow = async () => {
       }
 
       router.push(`/checkout?${params.toString()}`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       dispatch(
         showToast({
           message:
-            error?.data?.message ||
-            error?.message ||
+            readCaughtMessage(error, "data", "message") ||
+            readCaughtMessage(error, "message") ||
             "Failed to process your order",
           type: "error",
         }),
@@ -712,12 +712,12 @@ const handleNotifySubmit = async () => {
           type: "success",
         }),
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       dispatch(
         showToast({
           message:
-            error?.data?.message ||
-            error?.message ||
+            readCaughtMessage(error, "data", "message") ||
+            readCaughtMessage(error, "message") ||
             "Failed to request notification.",
           type: "error",
         }),
@@ -862,10 +862,10 @@ const handleReviewSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
 
       await refetchProduct();
       await refetchOrders();
-    } catch (error: any) {
+    } catch (error: unknown) {
       dispatch(
         showToast({
-          message: error?.data?.message || "Failed to submit review.",
+          message: readCaughtMessage(error, "data", "message") || "Failed to submit review.",
           type: "error",
         }),
       );
@@ -934,12 +934,12 @@ const addRelatedToCart = async (
           }),
         );
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       dispatch(
         showToast({
           message:
-            error?.data?.message ||
-            error?.message ||
+            readCaughtMessage(error, "data", "message") ||
+            readCaughtMessage(error, "message") ||
             "Could not add this product",
           type: "error",
         }),

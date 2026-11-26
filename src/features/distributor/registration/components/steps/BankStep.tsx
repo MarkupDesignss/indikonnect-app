@@ -27,6 +27,8 @@ import {
 } from "@/lib/redux/api/distributor/distributorauthApis";
 
 import authApi from "@/lib/redux/api/authApi";
+import { readCaughtMessage } from "@/lib/utils/readCaughtMessage";
+
 
 const theme = {
   font: "'Inter', 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, sans-serif",
@@ -439,10 +441,10 @@ export const BankStep: React.FC<StepProps> = ({
         setBankError(errorMsg);
         dispatch(showToast({ message: errorMsg, type: "error" }));
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       const errorMsg =
-        error?.data?.message ||
-        error?.message ||
+        readCaughtMessage(error, "data", "message") ||
+        readCaughtMessage(error, "message") ||
         "Bank verification failed. Please try again.";
       setBankError(errorMsg);
       dispatch(showToast({ message: errorMsg, type: "error" }));

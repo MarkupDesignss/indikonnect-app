@@ -1,7 +1,9 @@
 "use client";
+import { useHydrated } from "@/lib/hooks/useHydrated";
+
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { hideToast } from "@/lib/slices/toastSlice";
@@ -10,11 +12,9 @@ export function Toast() {
     const dispatch = useAppDispatch();
     const { show, message, type } = useAppSelector((state) => state.toast);
 
-    const [mounted, setMounted] = useState(false);
+    const mounted = useHydrated();
 
-    useEffect(() => {
-        setMounted(true);
-    }, []);
+    
 
     useEffect(() => {
         if (!show) return;

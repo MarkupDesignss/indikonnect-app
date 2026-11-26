@@ -14,7 +14,7 @@ export function StatsCard({
   icon: Icon,
   subtitle,
 }: {
-  value: any;
+  value: React.ReactNode;
   label: string;
   icon: React.ElementType;
   color?: string;

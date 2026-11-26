@@ -4,6 +4,8 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { readCaughtMessage } from "@/lib/utils/readCaughtMessage";
+
 
 interface AuthState {
     user: any | null;
@@ -55,8 +57,8 @@ export const useAuth = () => {
             await new Promise(resolve => setTimeout(resolve, 1000));
             setLoading(false);
             return { success: true };
-        } catch (error: any) {
-            setError(error.message || 'Failed to send OTP');
+        } catch (error: unknown) {
+            setError(readCaughtMessage(error, "message") || 'Failed to send OTP');
             setLoading(false);
             throw error;
         }
@@ -86,8 +88,8 @@ export const useAuth = () => {
 
             setLoading(false);
             return null;
-        } catch (error: any) {
-            setError(error.message || 'Invalid OTP');
+        } catch (error: unknown) {
+            setError(readCaughtMessage(error, "message") || 'Invalid OTP');
             setLoading(false);
             throw error;
         }
@@ -120,8 +122,8 @@ export const useAuth = () => {
             }));
 
             return user;
-        } catch (error: any) {
-            setError(error.message || 'Registration failed');
+        } catch (error: unknown) {
+            setError(readCaughtMessage(error, "message") || 'Registration failed');
             setLoading(false);
             throw error;
         }
@@ -155,8 +157,8 @@ export const useAuth = () => {
             }));
 
             return user;
-        } catch (error: any) {
-            setError(error.message || 'Registration failed');
+        } catch (error: unknown) {
+            setError(readCaughtMessage(error, "message") || 'Registration failed');
             setLoading(false);
             throw error;
         }
@@ -190,8 +192,8 @@ export const useAuth = () => {
             }
 
             throw new Error('User not found');
-        } catch (error: any) {
-            setError(error.message || 'KYC submission failed');
+        } catch (error: unknown) {
+            setError(readCaughtMessage(error, "message") || 'KYC submission failed');
             setLoading(false);
             throw error;
         }

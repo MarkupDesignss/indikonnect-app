@@ -21,7 +21,6 @@ import {
   useGetDealOfTheDayProductsQuery,
   useGetProductSectionsQuery,
   useGetReelsQuery,
-  useGetGrowthStepsQuery,
 } from "@/lib/redux/api/Home/contentApi";
 
 
@@ -63,6 +62,8 @@ import { fadeInUp, getPromoPlaceholderImage, isPurchaseAllowedWithoutStock, rail
 import { ProductCard } from "@/features/storefront/components/Home.parts/ProductCard";
 import { DealBanner } from "@/features/storefront/components/Home.parts/DealBanner";
 import { LifestyleBanner } from "@/features/storefront/components/Home.parts/LifestyleBanner";
+import { readCaughtMessage } from "@/lib/utils/readCaughtMessage";
+
 
 
 export const productCardWidthClass =
@@ -257,7 +258,6 @@ export default function IndieKonnectHome() {
     {},
   );
 
-  const { data: growthStepsData } = useGetGrowthStepsQuery();
 
   const [addToCartMutation] = useAddToCartMutation();
   const [checkParentProductStock] = useCheckProductStockMutation();
@@ -324,9 +324,13 @@ export default function IndieKonnectHome() {
     }
   };
 
-  useEffect(() => {
+  const [previousDealCount, setPreviousDealCount] = useState(dealProducts?.length);
+  if (previousDealCount !== dealProducts?.length) {
+    setPreviousDealCount(dealProducts?.length);
     setActiveIndex(0);
+  }
 
+  useEffect(() => {
     scrollRef.current?.scrollTo({
       left: 0,
     });
@@ -347,7 +351,7 @@ export default function IndieKonnectHome() {
       return [];
     }
 
-    return rawData.filter((category: any) => category?.status === "active");
+    return rawData.filter((category) => category?.status === "active");
   }, [categoriesData]);
 
   /* =======================================================
@@ -392,15 +396,16 @@ export default function IndieKonnectHome() {
         el.style.transform = `translateY(${offset}px)`;
       };
 
-      requestAnimationFrame(handleWindowScroll);
+      const frame = requestAnimationFrame(handleWindowScroll);
 
       window.addEventListener("scroll", handleWindowScroll, {
         passive: true,
       });
 
-      cleanups.push(() =>
-        window.removeEventListener("scroll", handleWindowScroll),
-      );
+      cleanups.push(() => {
+        cancelAnimationFrame(frame);
+        window.removeEventListener("scroll", handleWindowScroll);
+      });
     });
 
     return () => cleanups.forEach((cleanup) => cleanup());
@@ -427,34 +432,38 @@ export default function IndieKonnectHome() {
       el.style.transform = `translateY(${offset}px)`;
     };
 
-    requestAnimationFrame(handleWindowScroll);
+    const frame = requestAnimationFrame(handleWindowScroll);
 
     window.addEventListener("scroll", handleWindowScroll, {
       passive: true,
     });
 
-    return () => window.removeEventListener("scroll", handleWindowScroll);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", handleWindowScroll);
+    };
   }, [apiResponse]);
 
   /* =======================================================
      WISHLIST SYNC
   ======================================================= */
 
-  useEffect(() => {
-    if (!wishlistData?.data) {
-      return;
-    }
+  const [previousWishlistData, setPreviousWishlistData] = useState<typeof wishlistData>(undefined);
+  if (previousWishlistData !== wishlistData) {
+    setPreviousWishlistData(wishlistData);
+    if (wishlistData?.data) {
 
     const state: Record<string | number, boolean> = {};
 
-    wishlistData.data.forEach((item: any) => {
+    wishlistData.data.forEach((item) => {
       if (item?.product_id) {
         state[item.product_id] = true;
       }
     });
 
     setWish(state);
-  }, [wishlistData]);
+    }
+  }
 
   /* =======================================================
      TOAST
@@ -728,10 +737,10 @@ export default function IndieKonnectHome() {
 
         setTimeout(() => bumpBadge(), 780);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       showCustomToast(
         "error",
-        error?.data?.message || error?.message || "Failed to add item to cart",
+        readCaughtMessage(error, "data", "message") || readCaughtMessage(error, "message") || "Failed to add item to cart",
         productName,
       );
     } finally {
@@ -810,8 +819,8 @@ export default function IndieKonnectHome() {
 
         refetchWishlist();
       }
-    } catch (error: any) {
-      const errorMessage = error?.data?.message || error?.message || "";
+    } catch (error: unknown) {
+      const errorMessage = readCaughtMessage(error, "data", "message") || readCaughtMessage(error, "message") || "";
 
       showCustomToast(
         "error",
@@ -880,10 +889,10 @@ export default function IndieKonnectHome() {
       );
 
       setCartTotal((prev) => Math.max(0, prev + currentItem.price * change));
-    } catch (error: any) {
+    } catch (error: unknown) {
       showCustomToast(
         "error",
-        error?.data?.message || error?.message || "Failed to update cart",
+        readCaughtMessage(error, "data", "message") || readCaughtMessage(error, "message") || "Failed to update cart",
       );
     }
   };
@@ -893,7 +902,7 @@ export default function IndieKonnectHome() {
   ======================================================= */
 
   const homeContent = apiResponse?.data?.find(
-    (item: any) => item?.slug === "home" || item?.title === "Home",
+    (item) => item?.slug === "home" || item?.title === "Home",
   );
 
   const stripHtml = (html: string) =>
@@ -917,7 +926,7 @@ export default function IndieKonnectHome() {
         // ✅ Aapke API mein `videos` array hai — usse video URL nikaalo
         const videoObj =
           Array.isArray(block?.videos) && block.videos.length > 0
-            ? block.videos.find((v: any) => v?.url) || block.videos[0]
+            ? block.videos.find((v) => v?.url) || block.videos[0]
             : null;
 
         const videoUrl = videoObj?.url || null;
@@ -938,7 +947,7 @@ export default function IndieKonnectHome() {
           navigationUrl: block?.navigation_url || block?.cta_url || "/products",
         };
       })
-      .filter(Boolean);
+      .filter((slide): slide is NonNullable<typeof slide> => slide !== null);
 
     if (slides.length) return slides;
 
@@ -957,11 +966,9 @@ export default function IndieKonnectHome() {
 
   const [heroIndex, setHeroIndex] = useState(0);
 
-  useEffect(() => {
-    if (heroIndex >= heroSlides.length) {
-      setHeroIndex(0);
-    }
-  }, [heroIndex, heroSlides.length]);
+  if (heroIndex >= heroSlides.length && heroIndex !== 0) {
+    setHeroIndex(0);
+  }
 
   useEffect(() => {
     if (heroSlides.length <= 1) {
@@ -1039,7 +1046,7 @@ export default function IndieKonnectHome() {
   "
         >
           <AnimatePresence initial={false}>
-            {heroSlides.map((slide: any, index: number) => {
+            {heroSlides.map((slide, index: number) => {
               const total = heroSlides.length;
 
               let diff = index - heroIndex;
@@ -1224,7 +1231,7 @@ export default function IndieKonnectHome() {
         {/* SLIDER DOTS */}
         {heroSlides.length > 1 && (
           <div className="flex w-full items-center justify-center gap-1.5 py-2 sm:py-3">
-            {heroSlides.map((slide: any, index: number) => (
+            {heroSlides.map((slide, index: number) => (
               <button
                 key={slide.id}
                 type="button"
@@ -1448,7 +1455,7 @@ export default function IndieKonnectHome() {
 
             {dealProducts?.length > 1 && (
               <div className="mt-3 flex items-center justify-center gap-2 md:hidden">
-                {dealProducts.map((_: any, index: number) => (
+                {dealProducts.map((_, index: number) => (
                   <button
                     key={index}
                     type="button"
@@ -1696,7 +1703,7 @@ export default function IndieKonnectHome() {
                   </p>
 
                   <p className="mb-6 text-xs text-gray-400 sm:text-sm">
-                    Looks like you haven't added anything yet
+                    Looks like you haven&apos;t added anything yet
                   </p>
 
                   <button

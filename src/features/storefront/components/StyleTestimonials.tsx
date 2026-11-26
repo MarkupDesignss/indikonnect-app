@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useRef } from "react";
+import { useMemo, useRef } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useGetContentsQuery } from "@/lib/redux/api/Home/contentApi";
@@ -11,6 +11,10 @@ interface StyleCard {
   title: string;
   slug: string;
 }
+
+type StyleBlock = { id: number | string; heading?: string | null; slug?: string | null; images?: { url?: string }[] };
+type StyleContent = { id?: number | string; _id?: number | string; slug?: string; title?: string; name?: string; heading?: string; image?: string; image_url?: string; thumbnail?: string; blocks?: StyleBlock[] };
+type StyleEnvelope = { data?: unknown; items?: unknown; contents?: unknown };
 
 export default function StyleTestimonials() {
   const sliderRef = useRef<HTMLDivElement>(null);
@@ -27,23 +31,24 @@ export default function StyleTestimonials() {
       return [];
     }
 
-    const responseData = (data as any)?.data ?? data;
+    const responseData: unknown = data?.data ?? data;
+    const envelope: StyleEnvelope = typeof responseData === "object" && responseData !== null ? responseData as StyleEnvelope : {};
 
-    let items: any[] = [];
+    let items: StyleContent[] = [];
 
     if (Array.isArray(responseData)) {
-      items = responseData;
-    } else if (Array.isArray(responseData?.items)) {
-      items = responseData.items;
-    } else if (Array.isArray(responseData?.contents)) {
-      items = responseData.contents;
+      items = responseData as StyleContent[];
+    } else if (Array.isArray(envelope.items)) {
+      items = envelope.items as StyleContent[];
+    } else if (Array.isArray(envelope.contents)) {
+      items = envelope.contents as StyleContent[];
     } else {
-      const possibleArray = Object.values(responseData || {}).find(
+      const possibleArray = Object.values(envelope).find(
         (value) => Array.isArray(value) && value.length > 0
       );
 
       if (Array.isArray(possibleArray)) {
-        items = possibleArray;
+        items = possibleArray as StyleContent[];
       }
     }
 
@@ -67,7 +72,7 @@ export default function StyleTestimonials() {
       Array.isArray(discoverStyleItem.blocks)
     ) {
       return discoverStyleItem.blocks
-        .map((block: any) => ({
+        .map((block: StyleBlock) => ({
           id: block.id,
           image: block.images?.[0]?.url ?? "",
           title: block.heading ?? "",
@@ -93,7 +98,7 @@ export default function StyleTestimonials() {
         item.blocks.length > 0
       ) {
         const mappedBlocks = item.blocks
-          .map((block: any) => ({
+          .map((block: StyleBlock) => ({
             id: block.id,
             image: block.images?.[0]?.url ?? "",
             title: block.heading ?? "",

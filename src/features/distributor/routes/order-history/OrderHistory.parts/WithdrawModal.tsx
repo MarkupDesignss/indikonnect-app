@@ -3,6 +3,8 @@
 import { X, AlertCircle, Loader2, Undo2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { ModalShell, OrderLinesPreview, WithdrawModalProps } from "@/features/distributor/routes/order-history/OrderHistory.parts/support";
+import { readCaughtMessage } from "@/lib/utils/readCaughtMessage";
+
 
 
 export const WithdrawModal = ({
@@ -32,9 +34,9 @@ export const WithdrawModal = ({
     try {
       await onSubmit();
       onClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(
-        err?.data?.message || err?.message || "Failed to withdraw request.",
+        readCaughtMessage(err, "data", "message") || readCaughtMessage(err, "message") || "Failed to withdraw request.",
       );
 
       setIsSubmitting(false);

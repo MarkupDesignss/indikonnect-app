@@ -3,7 +3,7 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { X, FileText } from "lucide-react";
+import { X } from "lucide-react";
 import { LEGAL_DOCS, LegalType } from "@/features/distributor/shell/legalContent"
 
 interface LegalModalProps {

@@ -1,5 +1,7 @@
 // src/lib/redux/api/addressApi.ts
 
+import { readCaughtMessage } from "@/lib/utils/readCaughtMessage";
+import type { FetchBaseQueryError } from "@reduxjs/toolkit/query";
 import { baseApi } from "@/lib/redux/api/baseApi";
 import {
   AddressResponse,
@@ -135,10 +137,11 @@ export const addressApi = baseApi.injectEndpoints({
         }
         return response;
       },
-      transformErrorResponse: (response: any) => {
+      transformErrorResponse: (response: FetchBaseQueryError) => {
+        const message = readCaughtMessage(response, "data", "message");
         if (
           response.status === 404 ||
-          response.data?.message === "Address not found"
+          message === "Address not found"
         ) {
           return {
             status: false,
@@ -147,7 +150,7 @@ export const addressApi = baseApi.injectEndpoints({
         }
         return {
           status: false,
-          message: response.data?.message || "Failed to set default address",
+          message: message || "Failed to set default address",
         };
       },
     }),

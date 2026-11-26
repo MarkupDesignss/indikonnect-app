@@ -1,21 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import {
-  PlusCircle,
-  AlertTriangle,
-  X,
-  Loader2,
-  CheckCircle,
-  IdCard,
-  Lock,
-  Pencil,
-  PhoneCall,
-  Mail,
-  Send,
-  User,
-  CalendarDays,
-} from "lucide-react";
+import { PlusCircle, AlertTriangle, X, Loader2, CheckCircle, IdCard, Lock, Pencil, PhoneCall, Mail, Send } from "lucide-react";
 
 import { InfoBox } from "@/features/distributor/registration/components/InfoBox";
 import { FormActions } from "@/features/distributor/registration/components/FormActions";
@@ -29,6 +15,8 @@ import {
   distributorAuthApi,
 } from "@/lib/redux/api/distributor/distributorauthApis";
 import authApi from "@/lib/redux/api/authApi";
+import { readCaughtMessage } from "@/lib/utils/readCaughtMessage";
+
 
 type CorrectionReason =
   | "wrong_name_at_signup"
@@ -708,10 +696,10 @@ export const PANStep: React.FC<StepProps> = ({
           }),
         );
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       dispatch(
         showToast({
-          message: error?.data?.message || "Something went wrong",
+          message: readCaughtMessage(error, "data", "message") || "Something went wrong",
           type: "error",
         }),
       );
@@ -1160,7 +1148,7 @@ export const PANStep: React.FC<StepProps> = ({
             </h3>
 
             <p className="text-xs sm:text-sm text-gray-500 text-center mb-4 sm:mb-6 font-medium">
-              If your name or DOB doesn't match your PAN card, submit a
+              If your name or DOB doesn&apos;t match your PAN card, submit a
               correction request. Admin will review it.
             </p>
 

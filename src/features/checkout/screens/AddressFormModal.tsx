@@ -10,6 +10,109 @@ import { ADDRESS_TYPES, AddressFormModalProps, BillingAddressData, OTHER_OPTION,
 import { CustomDropdown } from "@/features/checkout/screens/AddressFormModal.parts/CustomDropdown";
 
 
+const FieldError = ({ children }: { children?: string }) =>
+  children ? (
+    <p className="mt-1 text-[10px] font-medium text-[#C94D4D]">
+      {children}
+    </p>
+  ) : null;
+
+const Label = ({
+  children,
+  optional,
+}: {
+  children: React.ReactNode;
+  optional?: boolean;
+}) => (
+  <label className="mb-1.5 block text-[10px] font-medium uppercase tracking-[0.06em] text-[#667168]">
+    {children}
+    {optional && (
+      <span className="ml-1 font-normal normal-case tracking-normal text-[#999999]">
+        (Optional)
+      </span>
+    )}
+  </label>
+);
+
+const SectionHeader = ({
+  icon,
+  title,
+  subtitle,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  subtitle: string;
+}) => (
+  <div className="mb-4 flex items-center gap-3">
+    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] bg-[#173E2B] text-white">
+      {icon}
+    </div>
+    <div className="min-w-0">
+      <h3 className="text-[14px] font-medium text-[#171717]">{title}</h3>
+      <p className="mt-0.5 text-[10px] text-[#888888]">{subtitle}</p>
+    </div>
+  </div>
+);
+
+const AddressTypeSelector = ({ value, onChange }: { value: AddressFormData["type"]; onChange: (value: AddressFormData["type"]) => void }) => (
+  <div className="md:col-span-2">
+    <Label>Address Type</Label>
+    <div className="grid grid-cols-3 gap-2">
+      {ADDRESS_TYPES.map((type) => {
+        const Icon = type.icon;
+        const isSelected = value === type.value;
+        return (
+          <button
+            key={type.value}
+            type="button"
+            onClick={() => onChange(type.value)}
+            className={`flex h-[44px] items-center justify-center gap-2 rounded-[6px] border text-[11px] font-medium transition-all duration-150 ${
+              isSelected
+                ? "border-[#16845B] bg-[#EAF6EF] text-[#16845B]"
+                : "border-[#DDE7DF] bg-white text-[#667168] hover:border-[#B9CFC1] hover:bg-[#F8FBF8]"
+            }`}
+          >
+            <Icon className="h-[14px] w-[14px]" />
+            {type.label}
+          </button>
+        );
+      })}
+    </div>
+  </div>
+);
+
+const PincodeHint = ({
+  fetching,
+  error,
+  hasData,
+}: {
+  fetching: boolean;
+  error: boolean;
+  hasData: boolean;
+}) => {
+  if (fetching)
+    return (
+      <p className="mt-1 flex items-center gap-1 text-[10px] text-[#888888]">
+        <Loader2 className="h-3 w-3 animate-spin" /> Fetching area, city &
+        state…
+      </p>
+    );
+  if (error)
+    return (
+      <p className="mt-1 text-[10px] font-medium text-[#C94D4D]">
+        Could not fetch pincode details. Enter details manually.
+      </p>
+    );
+  if (hasData)
+    return (
+      <p className="mt-1 text-[10px] text-[#16845B]">
+        ✓ Pincode verified — pick your delivery area below
+      </p>
+    );
+  return null;
+};
+
+
 export default function AddressFormModal({
   isOpen,
   onClose,
@@ -723,113 +826,6 @@ export default function AddressFormModal({
         : "border-[#DDE7DF] hover:border-[#B9CFC1] focus:border-[#16845B] focus:ring-2 focus:ring-[#16845B]/10"
     }`;
 
-  const FieldError = ({ children }: { children?: string }) =>
-    children ? (
-      <p className="mt-1 text-[10px] font-medium text-[#C94D4D]">
-        {children}
-      </p>
-    ) : null;
-
-  const Label = ({
-    children,
-    optional,
-  }: {
-    children: React.ReactNode;
-    optional?: boolean;
-  }) => (
-    <label className="mb-1.5 block text-[10px] font-medium uppercase tracking-[0.06em] text-[#667168]">
-      {children}
-      {optional && (
-        <span className="ml-1 font-normal normal-case tracking-normal text-[#999999]">
-          (Optional)
-        </span>
-      )}
-    </label>
-  );
-
-  const SectionHeader = ({
-    icon,
-    title,
-    subtitle,
-  }: {
-    icon: React.ReactNode;
-    title: string;
-    subtitle: string;
-  }) => (
-    <div className="mb-4 flex items-center gap-3">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] bg-[#173E2B] text-white">
-        {icon}
-      </div>
-      <div className="min-w-0">
-        <h3 className="text-[14px] font-medium text-[#171717]">{title}</h3>
-        <p className="mt-0.5 text-[10px] text-[#888888]">{subtitle}</p>
-      </div>
-    </div>
-  );
-
-  const AddressTypeSelector = () => (
-    <div className="md:col-span-2">
-      <Label>Address Type</Label>
-      <div className="grid grid-cols-3 gap-2">
-        {ADDRESS_TYPES.map((type) => {
-          const Icon = type.icon;
-          const isSelected = formData.type === type.value;
-          return (
-            <button
-              key={type.value}
-              type="button"
-              onClick={() =>
-                setFormData((previous) => ({
-                  ...previous,
-                  type: type.value,
-                }))
-              }
-              className={`flex h-[44px] items-center justify-center gap-2 rounded-[6px] border text-[11px] font-medium transition-all duration-150 ${
-                isSelected
-                  ? "border-[#16845B] bg-[#EAF6EF] text-[#16845B]"
-                  : "border-[#DDE7DF] bg-white text-[#667168] hover:border-[#B9CFC1] hover:bg-[#F8FBF8]"
-              }`}
-            >
-              <Icon className="h-[14px] w-[14px]" />
-              {type.label}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-
-  const PincodeHint = ({
-    fetching,
-    error,
-    hasData,
-  }: {
-    fetching: boolean;
-    error: boolean;
-    hasData: boolean;
-  }) => {
-    if (fetching)
-      return (
-        <p className="mt-1 flex items-center gap-1 text-[10px] text-[#888888]">
-          <Loader2 className="h-3 w-3 animate-spin" /> Fetching area, city &
-          state…
-        </p>
-      );
-    if (error)
-      return (
-        <p className="mt-1 text-[10px] font-medium text-[#C94D4D]">
-          Could not fetch pincode details. Enter details manually.
-        </p>
-      );
-    if (hasData)
-      return (
-        <p className="mt-1 text-[10px] text-[#16845B]">
-          ✓ Pincode verified — pick your delivery area below
-        </p>
-      );
-    return null;
-  };
-
   /* ============================================================
      FORM CONTENT
   ============================================================ */
@@ -852,7 +848,7 @@ export default function AddressFormModal({
               />
 
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                <AddressTypeSelector />
+                <AddressTypeSelector value={formData.type} onChange={(type) => setFormData(previous => ({ ...previous, type }))} />
 
                 {/* FULL NAME */}
                 <div className="md:col-span-2">

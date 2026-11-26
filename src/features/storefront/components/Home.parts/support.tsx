@@ -113,11 +113,46 @@ export const sectionContainerClass = `
    HELPERS
 ========================================================= */
 
+export type HomeProductImage = { image_url?: string | null; is_primary?: boolean | number | string | null };
+export type HomePricingFields = {
+  distributor_offer_price?: unknown;
+  offer_price_distributor?: unknown;
+  distributor_final_price?: unknown;
+  distributor_offer_percentage?: unknown;
+  offer_discount_percentage?: unknown;
+  offer_percentage?: unknown;
+  offer?: { discount_percentage?: unknown; percentage?: unknown } | null;
+  distributor_price?: unknown;
+  current_price?: unknown;
+  retail_price?: unknown;
+  distributor_mrp?: unknown;
+  original_price?: unknown;
+  retail_mrp?: unknown;
+  allowed_purchsed?: unknown;
+  images?: HomeProductImage[] | null;
+  primary_image_url?: string | null;
+  image?: string | null;
+};
+export type HomeCardProduct = HomePricingFields & {
+  id: number | string;
+  name: string;
+  slug?: string | null;
+  brand_name?: string | null;
+  brand?: { name?: string | null } | null;
+  category?: { name?: string | null } | null;
+  reviews?: { average_rating?: unknown } | null;
+  reviews_summary?: { average_rating?: unknown } | null;
+  rating?: unknown;
+  in_stock?: boolean | null;
+  stock_status?: unknown;
+  stock_quantity?: unknown;
+};
+
 /** Distributor-only BA offer price. Explicit final price wins; otherwise
  * apply the API's offer percentage once to the distributor base price.
  * Never alter the customer price calculation.
  */
-export const getDistributorOfferPrice = (product: any, base: number): number => {
+export const getDistributorOfferPrice = (product: HomePricingFields | null | undefined, base: number): number => {
   if (!Number.isFinite(base) || base <= 0) return base;
 
   const explicitFinalPrice = [
@@ -154,7 +189,7 @@ export const getDistributorOfferPrice = (product: any, base: number): number => 
 };
 
 
-export const getProductPrice = (product: any, userType?: string) => {
+export const getProductPrice = (product: HomePricingFields | null | undefined, userType?: string) => {
   if (!product) return 0;
 
   if (userType === "distributor") {
@@ -171,7 +206,7 @@ export const getProductPrice = (product: any, userType?: string) => {
 };
 
 
-export const getProductMrp = (product: any, userType?: string) => {
+export const getProductMrp = (product: HomePricingFields | null | undefined, userType?: string) => {
   if (!product) return 0;
 
   if (userType === "distributor") {
@@ -187,7 +222,7 @@ export const getProductMrp = (product: any, userType?: string) => {
 };
 
 
-export const getDiscountPercentage = (product: any, userType?: string) => {
+export const getDiscountPercentage = (product: HomePricingFields | null | undefined, userType?: string) => {
   if (!product) return 0;
 
   const mrp = getProductMrp(product, userType);
@@ -203,19 +238,19 @@ export const getDiscountPercentage = (product: any, userType?: string) => {
 
 
 /** The API intentionally spells this field `allowed_purchsed`. */
-export const isPurchaseAllowedWithoutStock = (product: any): boolean =>
+export const isPurchaseAllowedWithoutStock = (product: HomePricingFields | null | undefined): boolean =>
   product?.allowed_purchsed === true ||
   product?.allowed_purchsed === 1 ||
   product?.allowed_purchsed === "1";
 
 
-export const getProductImage = (product: any) => {
+export const getProductImage = (product: HomePricingFields | null | undefined) => {
   if (!product) {
     return getPlaceholderImage();
   }
 
   if (Array.isArray(product?.images) && product.images.length > 0) {
-    const primary = product.images.find((img: any) => img?.is_primary);
+    const primary = product.images.find((img: HomeProductImage) => img?.is_primary);
 
     return (
       primary?.image_url ||

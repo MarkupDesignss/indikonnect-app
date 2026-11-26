@@ -33,17 +33,16 @@ export type BrandColor = keyof typeof COLORS.brand;
 
 export const getColor = (path: string): string => {
   const parts = path.split('.');
-  let current: any = COLORS;
+  let current: unknown = COLORS;
 
   for (const part of parts) {
-    if (current && current[part] !== undefined) {
-      current = current[part];
-    } else {
+    if (typeof current !== 'object' || current === null || !Object.prototype.hasOwnProperty.call(current, part)) {
       return '#000000';
     }
+    current = (current as Record<string, unknown>)[part];
   }
 
-  return current;
+  return typeof current === 'string' ? current : '#000000';
 };
 
 // Helper to get brand colors

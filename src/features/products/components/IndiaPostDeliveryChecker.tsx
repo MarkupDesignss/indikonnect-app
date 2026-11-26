@@ -260,7 +260,7 @@ export default function IndiaPostDeliveryChecker({ product, variant }: Props) {
                         <div role="status" className="rounded-md border border-[#FECACA] bg-[#FEF2F2] px-3 py-2.5">
                             <p className="flex items-center gap-2 text-[11px] font-semibold text-[#B91C1C]">
                                 <AlertCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
-                                Sorry, we don't deliver to Telangana yet.
+                                Sorry, we don&apos;t deliver to Telangana yet.
                             </p>
                             <p className="mt-1.5 text-[10px] leading-5 text-[#7F1D1D]">
                                 {buildLocationLabel(location)}

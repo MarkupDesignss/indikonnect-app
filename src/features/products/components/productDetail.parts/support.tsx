@@ -1,14 +1,43 @@
 "use client";
 
-
-
+type OfferFields = {
+  distributor_offer_price?: unknown;
+  offer_price_distributor?: unknown;
+  distributor_final_price?: unknown;
+  distributor_offer_percentage?: unknown;
+  offer_discount_percentage?: unknown;
+  offer_percentage?: unknown;
+  offer?: { discount_percentage?: unknown; percentage?: unknown } | null;
+};
+type StockPolicy = { allowed_purchsed?: unknown };
+type ProfileIdentity = { id?: unknown; account_type?: unknown };
+type ProfileEnvelope = ProfileIdentity & {
+  user?: ProfileIdentity | null;
+  data?: (ProfileIdentity & { user?: ProfileIdentity | null }) | null;
+};
+type RatingSummary = { average_rating?: unknown; total_reviews?: unknown };
+type ImageFields = {
+  image_url?: string | null;
+  image?: string | null;
+  is_primary?: boolean | number;
+};
+type VariantImageFields = {
+  primary_image_url?: string | null;
+  image_url?: string | null;
+  image?: string | null;
+  primary_image?: string | null;
+  images?: ImageFields[] | null;
+};
 
 /* Distributor-only offer pricing. Customer pricing is untouched.
  * An explicit offer percentage is applied to the distributor base price.
  * If the API already supplies an offer/final price, prefer that value.
  * Do not infer an extra discount from the MRP/price difference.
  */
-export const distributorOfferPrice = (item: any, base: number): number => {
+export const distributorOfferPrice = (
+  item: OfferFields | null | undefined,
+  base: number,
+): number => {
   if (!Number.isFinite(base) || base <= 0) return base;
   const finalPrice = [
     item?.distributor_offer_price,
@@ -31,14 +60,14 @@ export const distributorOfferPrice = (item: any, base: number): number => {
   return Math.round(base * (1 - percent / 100) * 100) / 100;
 };
 
-
 /** API spelling is intentionally `allowed_purchsed` (not allowed_purchased). */
-export const isPurchaseAllowedWithoutStock = (item: any): boolean =>
+export const isPurchaseAllowedWithoutStock = (
+  item: StockPolicy | null | undefined,
+): boolean =>
   item?.allowed_purchsed === true ||
   item?.allowed_purchsed === 1 ||
   String(item?.allowed_purchsed ?? "").toLowerCase() === "true" ||
   String(item?.allowed_purchsed ?? "") === "1";
-
 
 /* =========================================================
    TYPES
@@ -47,7 +76,6 @@ export const isPurchaseAllowedWithoutStock = (item: any): boolean =>
 export interface ProductDetailProps {
   productSlug: string;
 }
-
 
 export interface CartItem {
   id: number;
@@ -58,16 +86,13 @@ export interface CartItem {
   quantity: number;
 }
 
-
 /* =========================================================
    CONSTANTS
 ========================================================= */
 
 export const PLACEHOLDER = "/indiekonnect-web/images/placeholder.jpg";
 
-
 export const RATING_GREEN = "#188447";
-
 
 /* =========================================================
    REDUCED MOTION
@@ -76,7 +101,6 @@ export const RATING_GREEN = "#188447";
 export const prefersReduced = () =>
   typeof window !== "undefined" &&
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
 
 /* =========================================================
    RIPPLE
@@ -99,7 +123,6 @@ export function fireRipple(e: React.MouseEvent<HTMLElement>) {
     span.remove();
   }, 700);
 }
-
 
 /* =========================================================
    FLY IMAGE TO CART
@@ -168,7 +191,6 @@ export function flyImageToCart(sourceEl: HTMLElement | null, imgSrc: string) {
   };
 }
 
-
 /* =========================================================
    HEART POP
 ========================================================= */
@@ -181,12 +203,13 @@ export function popHeart(e: React.MouseEvent<HTMLElement>) {
   el.classList.add("ik-heart-pop");
 }
 
-
 /* =========================================================
    ACCOUNT TYPE
 ========================================================= */
 
-export const getUserAccountType = (profileData: any): "retail" | "distributor" => {
+export const getUserAccountType = (
+  profileData: ProfileEnvelope | null | undefined,
+): "retail" | "distributor" => {
   if (!profileData) return "retail";
 
   const accountType =
@@ -206,12 +229,13 @@ export const getUserAccountType = (profileData: any): "retail" | "distributor" =
   return "retail";
 };
 
-
 /* =========================================================
    USER ID
 ========================================================= */
 
-export const getUserId = (profileData: any): string | null => {
+export const getUserId = (
+  profileData: ProfileEnvelope | null | undefined,
+): string | null => {
   if (!profileData) return null;
 
   const id =
@@ -224,24 +248,23 @@ export const getUserId = (profileData: any): string | null => {
   return id == null ? null : String(id);
 };
 
-
 /* =========================================================
    JSON PARSER
 ========================================================= */
 
-export const parseJsonObject = (value: any): Record<string, any> => {
+export const parseJsonObject = (value: unknown): Record<string, unknown> => {
   if (!value) return {};
 
   if (typeof value === "object" && !Array.isArray(value)) {
-    return value;
+    return value as Record<string, unknown>;
   }
 
   if (typeof value === "string") {
     try {
-      const parsed = JSON.parse(value);
+      const parsed: unknown = JSON.parse(value);
 
       return parsed && typeof parsed === "object" && !Array.isArray(parsed)
-        ? parsed
+        ? (parsed as Record<string, unknown>)
         : {};
     } catch {
       return {};
@@ -251,12 +274,13 @@ export const parseJsonObject = (value: any): Record<string, any> => {
   return {};
 };
 
-
 /* =========================================================
    RATING HELPERS
 ========================================================= */
 
-export const getAverageRating = (summary: any): number => {
+export const getAverageRating = (
+  summary: RatingSummary | null | undefined,
+): number => {
   const rating = Number(summary?.average_rating ?? 0);
 
   if (!Number.isFinite(rating)) return 0;
@@ -264,8 +288,9 @@ export const getAverageRating = (summary: any): number => {
   return Math.min(5, Math.max(0, rating));
 };
 
-
-export const getTotalReviews = (summary: any): number => {
+export const getTotalReviews = (
+  summary: RatingSummary | null | undefined,
+): number => {
   const total = Number(summary?.total_reviews ?? 0);
 
   if (!Number.isFinite(total)) return 0;
@@ -273,21 +298,25 @@ export const getTotalReviews = (summary: any): number => {
   return Math.max(0, total);
 };
 
-
 /* =========================================================
    VARIANT IMAGE
 ========================================================= */
 
-export const getVariantImageUrl = (variant: any): string | null => {
+export const getVariantImageUrl = (
+  variant: VariantImageFields | null | undefined,
+): string | null => {
   if (!variant) return null;
 
   if (variant.primary_image_url || variant.image_url || variant.image) {
-    return variant.primary_image_url || variant.image_url || variant.image;
+    return (
+      variant.primary_image_url || variant.image_url || variant.image || null
+    );
   }
 
   if (Array.isArray(variant.images) && variant.images.length > 0) {
     const primary =
-      variant.images.find((img: any) => img?.is_primary) || variant.images[0];
+      variant.images.find((img: ImageFields) => img?.is_primary) ||
+      variant.images[0];
 
     return primary?.image_url || primary?.image || null;
   }
@@ -295,17 +324,18 @@ export const getVariantImageUrl = (variant: any): string | null => {
   return null;
 };
 
-
 /* =========================================================
    VARIANT GALLERY
 ========================================================= */
 
-export const getVariantGalleryImages = (variant: any): string[] => {
+export const getVariantGalleryImages = (
+  variant: VariantImageFields | null | undefined,
+): string[] => {
   if (!variant) return [];
 
   const images = Array.isArray(variant.images)
     ? variant.images
-        .map((img: any) => img?.image_url || img?.image)
+        .map((img: ImageFields) => img?.image_url || img?.image)
         .filter(Boolean)
     : [];
 
@@ -316,9 +346,14 @@ export const getVariantGalleryImages = (variant: any): string[] => {
     variant.primary_image ||
     null;
 
-  return Array.from(new Set([primary, ...images].filter(Boolean)));
+  return Array.from(
+    new Set(
+      [primary, ...images].filter(
+        (url): url is string => typeof url === "string" && Boolean(url),
+      ),
+    ),
+  );
 };
-
 
 /* =========================================================
    SLUG
@@ -332,7 +367,6 @@ export const generateSlugFromName = (name: string): string => {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 };
-
 
 /* =========================================================
    COMBO HELPERS

@@ -89,6 +89,51 @@ function readFilters(params: URLSearchParams, ceiling: number): FilterState {
 /* FILTER SIDEBAR                                                             */
 /* -------------------------------------------------------------------------- */
 
+const CheckRow = ({
+  label,
+  checked,
+  count,
+  onChange,
+  disabled = false,
+  indent = false,
+}: {
+  label: string;
+  checked: boolean;
+  count?: number;
+  onChange: () => void;
+  disabled?: boolean;
+  indent?: boolean;
+}) => (
+  <label
+    className={`flex cursor-pointer items-center gap-2.5 text-[12px] ${
+      indent ? "pl-4" : ""
+    } ${disabled ? "opacity-40" : ""}`}
+  >
+    <input
+      type="checkbox"
+      checked={checked}
+      disabled={disabled}
+      onChange={onChange}
+      className="h-4 w-4 shrink-0 cursor-pointer rounded border-[#d9d6d0] accent-black"
+    />
+
+    <span
+      className={`min-w-0 flex-1 truncate ${
+        checked ? "font-semibold text-black" : "text-[#454545]"
+      }`}
+    >
+      {label}
+    </span>
+
+    {count !== undefined && (
+      <span className="text-[11px] tabular-nums text-[#929292]">
+        ({count})
+      </span>
+    )}
+  </label>
+);
+
+
 export default function FilterSidebar({
   onFilterChange,
   maxPrice,
@@ -724,50 +769,6 @@ export default function FilterSidebar({
   /* ------------------------------------------------------------------------ */
   /* CHECKBOX COMPONENT                                                       */
   /* ------------------------------------------------------------------------ */
-
-  const CheckRow = ({
-    label,
-    checked,
-    count,
-    onChange,
-    disabled = false,
-    indent = false,
-  }: {
-    label: string;
-    checked: boolean;
-    count?: number;
-    onChange: () => void;
-    disabled?: boolean;
-    indent?: boolean;
-  }) => (
-    <label
-      className={`flex cursor-pointer items-center gap-2.5 text-[12px] ${
-        indent ? "pl-4" : ""
-      } ${disabled ? "opacity-40" : ""}`}
-    >
-      <input
-        type="checkbox"
-        checked={checked}
-        disabled={disabled}
-        onChange={onChange}
-        className="h-4 w-4 shrink-0 cursor-pointer rounded border-[#d9d6d0] accent-black"
-      />
-
-      <span
-        className={`min-w-0 flex-1 truncate ${
-          checked ? "font-semibold text-black" : "text-[#454545]"
-        }`}
-      >
-        {label}
-      </span>
-
-      {count !== undefined && (
-        <span className="text-[11px] tabular-nums text-[#929292]">
-          ({count})
-        </span>
-      )}
-    </label>
-  );
 
   /* ------------------------------------------------------------------------ */
   /* RENDER                                                                   */

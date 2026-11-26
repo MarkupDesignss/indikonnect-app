@@ -1,4 +1,6 @@
 "use client";
+import { useHydrated } from "@/lib/hooks/useHydrated";
+
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -24,7 +26,7 @@ import { CvFilters } from "@/features/distributor/routes/sales-calendar/page.par
 export default function DistributorSalesCalendarPage() {
   const router = useRouter();
 
-  const [mounted, setMounted] = useState(false);
+  const mounted = useHydrated();
 
   const [authorized, setAuthorized] = useState(false);
 
@@ -38,9 +40,7 @@ export default function DistributorSalesCalendarPage() {
 
   const [initializedYear, setInitializedYear] = useState<number | null>(null);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  
 
   useEffect(() => {
     if (!mounted || redirectOnce.current) return;

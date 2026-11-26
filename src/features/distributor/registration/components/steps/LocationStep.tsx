@@ -26,6 +26,8 @@ import {
 } from "@/lib/redux/api/distributor/distributorauthApis";
 
 import authApi from "@/lib/redux/api/authApi";
+import { readCaughtMessage } from "@/lib/utils/readCaughtMessage";
+
 
 const theme = {
   font: "'Inter', 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, sans-serif",
@@ -639,11 +641,11 @@ export const LocationStep: React.FC<StepProps> = ({
           }),
         );
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Location submission error:", error);
       const errorMsg =
-        error?.data?.message ||
-        error?.message ||
+        readCaughtMessage(error, "data", "message") ||
+        readCaughtMessage(error, "message") ||
         "Location submission failed. Please try again.";
       dispatch(showToast({ message: errorMsg, type: "error" }));
     } finally {
@@ -930,7 +932,7 @@ export const LocationStep: React.FC<StepProps> = ({
                     <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0" />
                     <div>
                       <p className="text-xs sm:text-sm font-bold text-red-700 mb-1">
-                        Telangana users can't register
+                        Telangana users can&apos;t register
                       </p>
                       <p className="text-[11px] sm:text-xs text-red-600 leading-relaxed">
                         Registration from Telangana state is currently not

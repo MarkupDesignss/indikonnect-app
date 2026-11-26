@@ -7,6 +7,8 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { ModalShell, ReviewModalProps } from "@/features/distributor/routes/order-history/OrderHistory.parts/support";
+import { readCaughtMessage } from "@/lib/utils/readCaughtMessage";
+
 
 
 export const ReviewModal = ({
@@ -146,9 +148,9 @@ export const ReviewModal = ({
       setIsSuccess(true);
 
       setTimeout(() => onClose(), 2000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(
-        err?.data?.message || err?.message || "Failed to submit review.",
+        readCaughtMessage(err, "data", "message") || readCaughtMessage(err, "message") || "Failed to submit review.",
       );
 
       setIsSubmitting(false);

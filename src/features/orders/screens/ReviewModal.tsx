@@ -16,6 +16,8 @@ import {
   Check,
   Package,
 } from "lucide-react";
+import { readCaughtMessage } from "@/lib/utils/readCaughtMessage";
+
 
 interface ReviewModalProps {
   isOpen: boolean;
@@ -205,10 +207,10 @@ const ReviewModal = ({
       setTimeout(() => {
         onClose();
       }, 2000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(
-        err?.data?.message ||
-          err?.message ||
+        readCaughtMessage(err, "data", "message") ||
+          readCaughtMessage(err, "message") ||
           "Failed to submit review. Please try again.",
       );
       setIsSubmitting(false);
@@ -466,7 +468,7 @@ const ReviewModal = ({
 
                   {charCount >= minChars && charCount < 20 && (
                     <p className="mt-1 text-[10px] text-[#3F765A]">
-                      ✓ Good start! Add more details if you'd
+                      ✓ Good start! Add more details if you&apos;d
                       like.
                     </p>
                   )}

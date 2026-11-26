@@ -12,6 +12,8 @@ export interface DistributorFormData {
   email_verified: boolean;
   mobile_verified: boolean;
   aadhaar_number: string;
+  aadhaar_name_as_per_pan?: string;
+  aadhaar_date_of_birth?: string;
   aadhaar_consent: boolean;
   aadhaar_verified: boolean;
   pan_number: string;
@@ -23,6 +25,12 @@ export interface DistributorFormData {
   bank_name: string;
   bank_branch: string;
   bank_account_type: "current" | "savings";
+  bank_verified: boolean;
+  bank_title: string;
+  bank_entity_type: string;
+  bank_gst_in?: string;
+  bank_company_name?: string;
+  location_verified: boolean;
   location_consent: boolean;
   latitude?: number;
   longitude?: number;

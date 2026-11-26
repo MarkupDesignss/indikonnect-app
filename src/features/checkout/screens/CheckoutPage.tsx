@@ -78,11 +78,6 @@ export interface AddressFormData {
   type?: string;
 }
 
-declare global {
-  interface Window {
-    Razorpay: any;
-  }
-}
 
 const AXISPG_ENVIRONMENT =
   String(process.env.NEXT_PUBLIC_AXISPG_ENV || "sandbox").trim().toLowerCase() ===
@@ -555,10 +550,11 @@ export default function CheckoutPage() {
   // Checkout summary
   // ───────────────────────────────────────────────────────────────────────────
 
+  const selectedDeliveryAddressId = selectedDeliveryAddress?.id;
   const checkoutSummaryParams = useMemo(
     () => ({
-      ...(selectedDeliveryAddress?.id
-        ? { address_id: selectedDeliveryAddress.id }
+      ...(selectedDeliveryAddressId
+        ? { address_id: selectedDeliveryAddressId }
         : {}),
 
       ...(isDirectCheckout
@@ -570,7 +566,7 @@ export default function CheckoutPage() {
         : {}),
     }),
     [
-      selectedDeliveryAddress?.id,
+      selectedDeliveryAddressId,
       isDirectCheckout,
       productId,
       quantity,

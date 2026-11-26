@@ -1,11 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import {
-    Activity, AlertCircle, ArrowDownLeft, ArrowUpRight, CalendarDays,
-    CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Coins,
-    Filter, History, Inbox, Loader2, RefreshCw, Search, Wallet, X,
-} from "lucide-react";
+import { Activity, AlertCircle, ArrowDownLeft, ArrowUpRight, CalendarDays, ChevronDown, ChevronLeft, ChevronRight, Coins, Filter, History, Inbox, Loader2, RefreshCw, Search, Wallet, X } from "lucide-react";
 import { useGetCommissionsHistoryQuery } from "@/lib/redux/api/distributor/commissionsHistoryApi";
 import type { CommissionHistoryItem } from "@/lib/redux/api/distributor/commissionsHistoryApi";
 

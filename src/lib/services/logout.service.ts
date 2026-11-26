@@ -15,7 +15,7 @@ export interface LogoutOptions {
   clearReduxState?: boolean;
   clearPersistedState?: boolean;
   onSuccess?: () => void;
-  onError?: (error: any) => void;
+  onError?: (error: unknown) => void;
 }
 
 /**

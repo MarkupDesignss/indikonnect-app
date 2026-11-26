@@ -95,9 +95,7 @@ function BannerCard({
   imageSrc,
   imageAlt,
   slug,
-  productsCount,
   index,
-  categoryTitle,
 }: BannerCardProps) {
   const router = useRouter();
 

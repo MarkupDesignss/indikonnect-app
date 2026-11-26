@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Lock, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { useChangePasswordMutation } from "@/lib/redux/api/Profile/userApi";
 import { modalVariants, overlayVariants, staggerContainer, staggerItem } from "@/features/profile/components/AccountSettings.parts/support";
+import { readCaughtMessage } from "@/lib/utils/readCaughtMessage";
+
 
 
 export const PasswordChange = ({
@@ -94,12 +96,12 @@ export const PasswordChange = ({
       });
 
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Change password error:", error);
 
       const apiMessage =
-        error?.data?.message ||
-        error?.message ||
+        readCaughtMessage(error, "data", "message") ||
+        readCaughtMessage(error, "message") ||
         "Unable to change password. Please try again.";
 
       setErrors((prev) => ({

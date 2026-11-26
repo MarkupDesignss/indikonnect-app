@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import DOMPurify from "dompurify";
+import "dompurify";
 
 import {
   motion,

@@ -694,7 +694,7 @@ export const DistributorLogin: React.FC = () => {
 
                 <div className="text-center pt-2">
                   <p className="text-sm text-gray-500 font-medium">
-                    Don't have an account?{" "}
+                    Don&apos;t have an account?{" "}
                     <Link
                       href={ROUTES.auth.distributor.register}
                       className="text-[var(--gold-deep)] hover:text-[var(--gold-dark)] font-semibold hover:underline transition-colors duration-200"

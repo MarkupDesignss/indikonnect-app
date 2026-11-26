@@ -1,17 +1,8 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import {
-  X,
-  ShoppingCart,
-  Package,
-  RefreshCw,
-  ChevronRight,
-  Home,
-  Loader2,
-  Heart,
-} from "lucide-react";
+import { X, ShoppingCart, RefreshCw, ChevronRight, Home, Loader2, Heart } from "lucide-react";
 import Header from "@/components/common/Header";
 import Footer from "@/components/Footer/Footer";
 import Loader from "@/components/ui/Spinner/Loader";
@@ -24,6 +15,8 @@ import { useCheckProductStockMutation } from "@/lib/redux/api/productApi";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { showToast } from "@/lib/slices/toastSlice";
 import { useGetUserProfileQuery } from "@/lib/redux/api/authApi";
+import { readCaughtMessage } from "@/lib/utils/readCaughtMessage";
+
 
 interface WishlistProductImage {
   id: number;
@@ -187,7 +180,9 @@ export default function WishlistPage() {
   ).toLowerCase();
   const isDistributor = accountType === "distributor";
 
-  useEffect(() => {
+  const [previousWishlist, setPreviousWishlist] = useState<{ data: typeof wishlistData; distributor: boolean } | null>(null);
+  if (previousWishlist?.data !== wishlistData || previousWishlist?.distributor !== isDistributor) {
+    setPreviousWishlist({ data: wishlistData, distributor: isDistributor });
     if (wishlistData && Array.isArray(wishlistData?.data)) {
       const transformed = wishlistData.data.map((item: WishlistItem) =>
         transformWishlistItem(item, isDistributor),
@@ -195,7 +190,7 @@ export default function WishlistPage() {
       setWishlistItems(transformed);
       setIsInitialLoad(false);
     }
-  }, [wishlistData, isDistributor]);
+  }
   const totalItems = wishlistItems.length;
   const handleRemove = async (item: WishlistCardData) => {
     if (removingId === item.productId) {
@@ -218,11 +213,11 @@ export default function WishlistPage() {
         }),
       );
       await refetchWishlist();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Wishlist remove error:", error);
       dispatch(
         showToast({
-          message: error?.data?.message || "Failed to remove item",
+          message: readCaughtMessage(error, "data", "message") || "Failed to remove item",
           type: "error",
         }),
       );
@@ -297,12 +292,12 @@ export default function WishlistPage() {
           type: "success",
         }),
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       dispatch(
         showToast({
           message:
-            error?.data?.message ||
-            error?.message ||
+            readCaughtMessage(error, "data", "message") ||
+            readCaughtMessage(error, "message") ||
             "Unable to add product to cart",
           type: "error",
         }),
@@ -333,7 +328,7 @@ export default function WishlistPage() {
               <Heart className="h-5 w-5 text-[#55504A]" />
             </div>
             <h2 className="text-[16px] font-semibold text-[#181818]">
-              We couldn't load your wishlist
+              We couldn&apos;t load your wishlist
             </h2>
             <p className="mx-auto mt-2 max-w-[300px] text-[12px] leading-5 text-[#888888]">
               Something went wrong while loading your saved products.
@@ -404,7 +399,7 @@ export default function WishlistPage() {
               Nothing saved yet
             </h3>
             <p className="mx-auto mt-2 max-w-[340px] text-[12px] leading-5 text-[#888888]">
-              When something catches your eye, save it here and it'll wait for
+              When something catches your eye, save it here and it&apos;ll wait for
               you.
             </p>
             <Link

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useHydrated } from "@/lib/hooks/useHydrated";
 import { useRouter } from "next/navigation";
 import { useTokenCheck } from "@/hooks/useTokenCheck";
 import Indie from "@/features/storefront/components/Home";
@@ -9,11 +10,7 @@ export default function HomePage() {
     const { hasToken } = useTokenCheck();
     const router = useRouter();
 
-    const [isClient, setIsClient] = useState(false);
-
-    useEffect(() => {
-        setIsClient(true);
-    }, []);
+    const isClient = useHydrated();
 
     // ✅ Token nahi hai to landing pe wapas
     useEffect(() => {

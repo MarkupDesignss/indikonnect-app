@@ -19,7 +19,7 @@ export interface BeneficiaryResponse {
     full_name?: string;
     relationship?: string;
     age?: number;
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }
 

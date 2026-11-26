@@ -1,4 +1,6 @@
 "use client";
+
+import { useHydrated } from "@/lib/hooks/useHydrated";
 import React, {
     useCallback,
     useEffect,
@@ -73,12 +75,12 @@ interface Reel {
     products?: ReelProduct[];
     is_published?: boolean;
     sort_order?: number;
-    [key: string]: any;
+    [key: string]: unknown;
 }
 interface ShopReelsProps {
-    reelsData?: any;
+    reelsData?: unknown;
     isLoading?: boolean;
-    reelsError?: any;
+    reelsError?: unknown;
     onModalOpen?: () => void;
     onModalClose?: () => void;
 }
@@ -90,14 +92,13 @@ const MODAL_Z_INDEX = 2147483647;
 const FOLLOWER_STORAGE_KEY = "indiekonnect_reel_followers";
 
 // HELPERS
-function normalizeReelsResponse(input: any): Reel[] {
-    if (!input) return [];
-    if (Array.isArray(input)) return input;
-    if (Array.isArray(input?.data)) return input.data;
-    if (Array.isArray(input?.data?.data)) return input.data.data;
-    if (Array.isArray(input?.reels)) return input.reels;
-    if (Array.isArray(input?.data?.reels)) return input.data.reels;
-    if (Array.isArray(input?.results)) return input.results;
+function normalizeReelsResponse(input: unknown): Reel[] {
+    if (Array.isArray(input)) return input as Reel[];
+    const root = typeof input === "object" && input !== null ? input as Record<string, unknown> : {};
+    const nested = typeof root.data === "object" && root.data !== null ? root.data as Record<string, unknown> : {};
+    for (const candidate of [root.data, nested.data, root.reels, nested.reels, root.results]) {
+        if (Array.isArray(candidate)) return candidate as Reel[];
+    }
     return [];
 }
 function normalizeAssetUrl(value?: string | null): string {
@@ -237,7 +238,7 @@ function ShopReelsRow({
 }: {
     reels: Reel[];
     isLoading?: boolean;
-    error?: any;
+    error?: unknown;
     openReel: (index: number) => void;
     accountType?: string | null;
 }) {
@@ -250,6 +251,7 @@ function ShopReelsRow({
         setCanScrollLeft(el.scrollLeft > 8);
         setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 8);
     }, []);
+    const firstReelId = reels[0]?.id;
     useEffect(() => {
         const container = scrollRef.current;
         if (container) {
@@ -257,7 +259,7 @@ function ShopReelsRow({
             container.scrollTo({ left: 0, behavior: "instant" });
         }
         updateScrollState();
-    }, [reels[0]?.id, updateScrollState]);
+    }, [firstReelId, updateScrollState]);
 
     useEffect(() => {
         window.addEventListener("resize", updateScrollState);
@@ -497,7 +499,7 @@ export default function ShopReels({
     const [isPlaying, setIsPlaying] = useState(true);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [isTransitioning, setIsTransitioning] = useState(false);
-    const [mounted, setMounted] = useState(false);
+    const mounted = useHydrated();
     const [progress, setProgress] = useState(0);
     const videoRef = useRef<HTMLVideoElement | null>(null);
     const stageRef = useRef<HTMLDivElement | null>(null);
@@ -511,12 +513,7 @@ export default function ShopReels({
     // FETCH USER PROFILE TO DETERMINE ACCOUNT TYPE
     const { data: userProfile } = useGetUserProfileQuery(undefined);
     const accountType = userProfile?.user?.account_type ?? null;
-    const isDistributor = accountType === "distributor";
 
-    useEffect(() => {
-        setMounted(true);
-        return () => setMounted(false);
-    }, []);
     const rawReelsData = shouldUseHook ? hookReelsData : reelsData;
     const isLoading = shouldUseHook ? hookLoading : Boolean(parentLoading);
     const error = shouldUseHook ? hookError : parentError;
@@ -526,17 +523,9 @@ export default function ShopReels({
     );
     const selectedReel =
         selectedIndex !== null ? reels[selectedIndex] ?? null : null;
-    useEffect(() => {
-        if (!reels.length) {
-            setSelectedIndex(null);
-            return;
-        }
-        setSelectedIndex((current) => {
-            if (current === null) return null;
-            if (current >= reels.length) return reels.length - 1;
-            return current;
-        });
-    }, [reels.length]);
+    if (selectedIndex !== null && selectedIndex >= reels.length) {
+        setSelectedIndex(reels.length ? reels.length - 1 : null);
+    }
     const openReel = useCallback(
         (index: number) => {
             setSelectedIndex(index);

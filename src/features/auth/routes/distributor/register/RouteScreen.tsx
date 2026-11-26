@@ -2,7 +2,7 @@
 
 'use client';
 
-import React from 'react';
+import 'react';
 import DistributorRegistration from "@/features/distributor/registration/DistributorRegistrationForm";
 
 export default function Page() {

@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useGetContentsQuery } from "@/lib/redux/api/Home/contentApi";
 
 interface BannerImage {
@@ -19,7 +18,6 @@ interface BannerBlock {
   description?: string | null;
   sort_order: number;
   images?: BannerImage[];
-  videos?: any[];
 }
 
 interface ContentItem {
@@ -47,17 +45,14 @@ export default function HeroBannerCarousel() {
   // Normalize API Response
   // =========================================================
   const contents: ContentItem[] = useMemo(() => {
-    if (Array.isArray(data)) {
-      return data as ContentItem[];
-    }
+    const response = data as ContentItem[] | {
+      data?: ContentItem[];
+      contents?: ContentItem[];
+    } | undefined;
 
-    if (Array.isArray((data as any)?.data)) {
-      return (data as any).data;
-    }
-
-    if (Array.isArray((data as any)?.contents)) {
-      return (data as any).contents;
-    }
+    if (Array.isArray(response)) return response;
+    if (Array.isArray(response?.data)) return response.data;
+    if (Array.isArray(response?.contents)) return response.contents;
 
     return [];
   }, [data]);
@@ -136,14 +131,9 @@ export default function HeroBannerCarousel() {
   // =========================================================
   // Reset Index When Banners Change
   // =========================================================
-  useEffect(() => {
-    if (
-      activeIndex >= banners.length &&
-      banners.length > 0
-    ) {
-      setActiveIndex(0);
-    }
-  }, [activeIndex, banners.length]);
+  if (activeIndex >= banners.length && banners.length > 0) {
+    setActiveIndex(0);
+  }
 
   // =========================================================
   // Auto Slide

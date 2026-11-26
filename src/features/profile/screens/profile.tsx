@@ -1,15 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useDispatch } from "react-redux";
 
-import { ChevronRight, Coins, Home, Package, ShoppingCart, ShoppingBag, HeartHandshake, ShoppingBasket, Award, Menu } from "lucide-react";
+import { ChevronRight, Coins, Home, Package, ShoppingCart, ShoppingBag, HeartHandshake, ShoppingBasket, Award } from "lucide-react";
 
-import Header from "@/components/common/Header";
 import Footer from "@/components/Footer/Footer";
 
 import { useLogout } from "@/lib/hooks/useLogout";
@@ -28,7 +27,7 @@ import AddressComponent from "@/features/profile/components/AddressComponent";
 import AccountSettings from "@/features/profile/components/AccountSettings";
 import DistributorStatsPage from "@/features/profile/components/DistributorStatsPage";
 import { ALLOWED_TABS, CARD, LABEL, SOFT_CARD, TAB_LABELS, TabType, formatCurrency, getFirstName, getInitials } from "@/features/profile/screens/profile.parts/support";
-import { DashboardSidebar } from "@/features/profile/screens/profile.parts/DashboardSidebar";
+import { ProfileShell } from "@/features/profile/screens/profile.parts/ProfileShell";
 import { StatsCard } from "@/features/profile/screens/profile.parts/StatsCard";
 import { LatestOrderCard } from "@/features/profile/screens/profile.parts/LatestOrderCard";
 import { RecentActivity } from "@/features/profile/screens/profile.parts/RecentActivity";
@@ -45,8 +44,11 @@ export default function Profile() {
 
   const { logout } = useLogout();
 
-  const [activeTab, setActiveTab] =
-    useState<TabType>("overview");
+  const searchParams = useSearchParams();
+  const requestedTab = searchParams.get("tab") as TabType | null;
+  const activeTab: TabType = requestedTab && ALLOWED_TABS.includes(requestedTab)
+    ? requestedTab
+    : "overview";
 
   const [activityFilter, setActivityFilter] =
     useState("all");
@@ -61,23 +63,7 @@ export default function Profile() {
   /* INITIAL TAB                                                               */
   /* ========================================================================= */
 
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
 
-    const params = new URLSearchParams(
-      window.location.search,
-    );
-
-    const tab = params.get("tab") as
-      | TabType
-      | null;
-
-    if (tab && ALLOWED_TABS.includes(tab)) {
-      setActiveTab(tab);
-    }
-  }, []);
 
   /* ========================================================================= */
   /* TAB ROUTING                                                               */
@@ -95,8 +81,6 @@ export default function Profile() {
       );
       return;
     }
-
-    setActiveTab(tab);
 
     if (typeof window === "undefined") {
       return;
@@ -314,94 +298,13 @@ export default function Profile() {
   /* SHELL                                                                     */
   /* ========================================================================= */
 
-  const Shell = ({
-    children,
-  }: {
-    children: React.ReactNode;
-  }) => (
-    <div className="flex h-screen overflow-hidden bg-[#F4F5F1] font-sans text-[#171717]">
-      {/* SIDEBAR */}
-      <DashboardSidebar
-        userData={userData}
-        stats={stats}
-        accountType={accountType}
-        activeTab={activeTab}
-        onTabChange={handleTabChange}
-        onLogout={handleLogout}
-        isLoggingOut={isLoggingOut}
-        isMobileOpen={isSidebarOpen}
-        onMobileToggle={() =>
-          setIsSidebarOpen((prev) => !prev)
-        }
-      />
-
-      {/* RIGHT SIDE: HEADER + MAIN */}
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        {/* HEADER */}
-        <div
-          className="
-            relative z-[100] shrink-0
-            bg-white
-            shadow-[0_2px_12px_-10px_rgba(0,0,0,0.3)]
-            [&_header]:!static
-            [&_header]:!inset-auto
-            [&_header]:!w-full
-            [&_header]:!max-w-full
-            [&_.premium-header-spacer]:!hidden
-            [&_.premium-mobile-menu]:!hidden
-          "
-        >
-          {/* MOBILE MENU BUTTON */}
-          <button
-            type="button"
-            aria-label="Open account menu"
-            aria-expanded={isSidebarOpen}
-            onClick={() =>
-              setIsSidebarOpen((prev) => !prev)
-            }
-            className="
-              absolute
-              left-16
-              top-1/2
-              z-[130]
-              flex
-              h-9
-              w-9
-              -translate-y-1/2
-              items-center
-              justify-center
-              rounded-full
-              border
-              border-[#E3E4DE]
-              bg-white
-              text-[#1B1B1B]
-              shadow-[0_6px_18px_-12px_rgba(0,0,0,0.35)]
-              transition-all
-              active:scale-95
-              lg:hidden
-            "
-          >
-            <Menu className="h-[19px] w-[19px]" />
-          </button>
-
-          <Header
-            hideAnnouncement={true}
-            cartItems={[]}
-            cartCount={stats?.cart_items || 0}
-            cartSubtotal={0}
-            wishlistCount={stats?.wishlist || 0}
-            hideMenu={true}
-            showSidebarMenu={false}
-          />
-        </div>
-
-        {/* ONLY MAIN CONTENT SCROLLS */}
-        <main className="min-h-0 flex-1 overflow-y-auto bg-[#F4F5F1]">
-          {children}
-        </main>
-      </div>
-    </div>
-  );
+  const shellProps = {
+    userData, stats, accountType, activeTab,
+    onTabChange: handleTabChange,
+    onLogout: handleLogout,
+    isLoggingOut, isSidebarOpen,
+    onMobileToggle: () => setIsSidebarOpen((prev) => !prev),
+  };
 
   /* ========================================================================= */
   /* LOADING                                                                   */
@@ -413,7 +316,7 @@ export default function Profile() {
     isUserProfileLoading
   ) {
     return (
-      <Shell>
+      <ProfileShell {...shellProps}>
         <div className="mx-auto w-full max-w-[1320px] px-5 py-7 md:px-8 xl:px-10">
           <div className="animate-pulse">
             <div className="h-3 w-24 rounded-full bg-[#DFE1DA]" />
@@ -449,7 +352,7 @@ export default function Profile() {
         </div>
 
         <Footer />
-      </Shell>
+      </ProfileShell>
     );
   }
 
@@ -459,7 +362,7 @@ export default function Profile() {
 
   if (isDashboardError) {
     return (
-      <Shell>
+      <ProfileShell {...shellProps}>
         <div className="flex min-h-full items-center justify-center px-5 py-10">
           <div className="w-full max-w-lg rounded-[20px] border border-[#E6E6E1] bg-white p-8 text-center shadow-[0_20px_50px_-30px_rgba(0,0,0,0.3)]">
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-[15px] bg-[#FFF4F4]">
@@ -490,7 +393,7 @@ export default function Profile() {
         </div>
 
         <Footer />
-      </Shell>
+      </ProfileShell>
     );
   }
 
@@ -867,7 +770,7 @@ export default function Profile() {
   /* ========================================================================= */
 
   return (
-    <Shell>
+    <ProfileShell {...shellProps}>
       <div className="mx-auto w-full max-w-[1320px] px-5 py-7 md:px-8 xl:px-10">
         {/* BREADCRUMB */}
         <div className="mb-6 hidden items-center gap-2 lg:flex">
@@ -953,6 +856,6 @@ export default function Profile() {
 
         {renderContent()}
       </div>
-    </Shell>
+    </ProfileShell>
   );
 }

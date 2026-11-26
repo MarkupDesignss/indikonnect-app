@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import "react";
 import { motion } from "framer-motion";
 import { Cookie, ArrowRight } from "lucide-react";
 

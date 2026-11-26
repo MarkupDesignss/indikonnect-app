@@ -204,10 +204,13 @@ export default function ReviewCarousel() {
   /* Reset index when API data changes                                */
   /* ---------------------------------------------------------------- */
 
-  useEffect(() => {
+  const [previousReviewCount, setPreviousReviewCount] = useState(reviews.length);
+  if (previousReviewCount !== reviews.length) {
+    setPreviousReviewCount(reviews.length);
     setIndex(0);
     setMobileActiveIndex(0);
-
+  }
+  useEffect(() => {
     mobileScrollRef.current?.scrollTo({ left: 0 });
   }, [reviews.length]);
 

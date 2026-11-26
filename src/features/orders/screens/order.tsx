@@ -33,6 +33,8 @@ import { ActionMenu } from "@/features/orders/screens/order.parts/ActionMenu";
 import { ReviewDisplay } from "@/features/orders/screens/order.parts/ReviewDisplay";
 import { RefundCreditDisplay } from "@/features/orders/screens/order.parts/RefundCreditDisplay";
 import dynamic from "next/dynamic";
+import { readCaughtMessage } from "@/lib/utils/readCaughtMessage";
+
 
 const TrackModal = dynamic(() => import("@/features/orders/screens/order.parts/TrackModal").then((m) => m.TrackModal));
 
@@ -388,12 +390,12 @@ export default function OrdersPage() {
       setSelectedOrderForWithdraw(null);
 
       await refetch();
-    } catch (error: any) {
+    } catch (error: unknown) {
       dispatch(
         showToast({
           message:
-            error?.data?.message ||
-            error?.message ||
+            readCaughtMessage(error, "data", "message") ||
+            readCaughtMessage(error, "message") ||
             "Failed to withdraw cancellation request. Please try again.",
           type: "error",
         }),
@@ -442,12 +444,12 @@ export default function OrdersPage() {
       setSelectedOrderForWithdrawReturn(null);
 
       await refetch();
-    } catch (error: any) {
+    } catch (error: unknown) {
       dispatch(
         showToast({
           message:
-            error?.data?.message ||
-            error?.message ||
+            readCaughtMessage(error, "data", "message") ||
+            readCaughtMessage(error, "message") ||
             "Failed to withdraw return request. Please try again.",
           type: "error",
         }),
@@ -491,12 +493,12 @@ export default function OrdersPage() {
       setSelectedOrderForAction(null);
 
       await refetch();
-    } catch (error: any) {
+    } catch (error: unknown) {
       dispatch(
         showToast({
           message:
-            error?.data?.message ||
-            error?.message ||
+            readCaughtMessage(error, "data", "message") ||
+            readCaughtMessage(error, "message") ||
             "Failed to cancel order. Please try again.",
           type: "error",
         }),
@@ -658,12 +660,12 @@ export default function OrdersPage() {
       await refetch();
 
       return response;
-    } catch (error: any) {
+    } catch (error: unknown) {
       dispatch(
         showToast({
           message:
-            error?.data?.message ||
-            error?.message ||
+            readCaughtMessage(error, "data", "message") ||
+            readCaughtMessage(error, "message") ||
             "Failed to submit review. Please try again.",
           type: "error",
         }),
@@ -717,14 +719,14 @@ export default function OrdersPage() {
           }),
         );
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Invoice error:", error);
 
       dispatch(
         showToast({
           message:
-            error?.data?.message ||
-            error?.message ||
+            readCaughtMessage(error, "data", "message") ||
+            readCaughtMessage(error, "message") ||
             "Failed to fetch invoice. Please try again.",
           type: "error",
         }),

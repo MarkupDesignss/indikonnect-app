@@ -77,7 +77,7 @@ export const DISTRIBUTOR_TAGS = {
 // =====================================================
 
 const stepChainTags = (startStep: number) => {
-  const tags: { type: string; id: string }[] = [];
+  const tags: { type: typeof DISTRIBUTOR_TAGS.STEP_DATA; id: string }[] = [];
   for (let i = startStep; i <= 7; i++) {
     tags.push({ type: DISTRIBUTOR_TAGS.STEP_DATA, id: String(i) });
   }
@@ -168,15 +168,15 @@ export const distributorAuthApi = baseApi.injectEndpoints({
         if (!isDistributorApp()) return response;
 
         const accessToken =
-          (response as any)?.access_token || (response as any)?.token;
-        const refreshToken = (response as any)?.refresh_token || "";
+          response?.access_token || response?.token;
+        const refreshToken = response?.refresh_token || "";
 
         if (accessToken) {
           TokenManager.setTokens(accessToken, refreshToken, "distributor");
         }
 
         const userData =
-          (response as any)?.user_data || (response as any)?.user;
+          response?.user_data || response?.user;
         if (userData) {
           TokenManager.setUserData(userData);
         }
@@ -286,7 +286,7 @@ export const distributorAuthApi = baseApi.injectEndpoints({
           .toUpperCase()
           .replace(/\s+/g, "");
 
-        const body: Record<string, any> = {
+        const body: Record<string, unknown> = {
           email: data.email,
           full_name: data.full_name,
           phone: data.phone,
@@ -331,7 +331,7 @@ export const distributorAuthApi = baseApi.injectEndpoints({
 
     step3Aadhaar: builder.mutation<Step3AadhaarResponse, Step3AadhaarRequest>({
       query: (data) => {
-        const body: Record<string, any> = {
+        const body: Record<string, unknown> = {
           phone: data.phone,
           encrypted_aadhaar: data.encrypted_aadhaar,
           aadhaar_consent: data.aadhaar_consent,
@@ -366,7 +366,7 @@ export const distributorAuthApi = baseApi.injectEndpoints({
         const cleanName = String(data.name_as_per_pan || "").trim();
         const cleanDOB = String(data.date_of_birth || "").trim();
 
-        const body: Record<string, any> = {
+        const body: Record<string, unknown> = {
           phone: cleanPhone,
           encrypted_pan: cleanPan,
           name_as_per_pan: cleanName,

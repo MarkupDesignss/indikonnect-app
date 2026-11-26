@@ -6,6 +6,8 @@ import { X, RotateCcw, AlertCircle, Loader2, Truck, Clock, Camera, Home, Info } 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ModalShell, OrderLinesPreview, ReturnMethod, ReturnModalProps, formatDate, isReturnWindowOpen, parseDate } from "@/features/distributor/routes/order-history/OrderHistory.parts/support";
+import { readCaughtMessage } from "@/lib/utils/readCaughtMessage";
+
 
 
 export const ReturnModal = ({
@@ -143,10 +145,10 @@ export const ReturnModal = ({
       });
 
       onClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(
-        err?.data?.message ||
-        err?.message ||
+        readCaughtMessage(err, "data", "message") ||
+        readCaughtMessage(err, "message") ||
         "Failed to submit return request.",
       );
 

@@ -521,7 +521,7 @@ export const ViewDetailsModal = ({
             ) && (
               <div className="mt-3 rounded-[8px] border border-[#EDF0F3] p-3">
                 <p className="mb-2 text-[11px] font-bold">
-                  Selected Item's Tax Rates
+                  Selected Item&apos;s Tax Rates
                 </p>
                 {taxLines
                   .filter(
@@ -799,7 +799,7 @@ export const ViewDetailsModal = ({
                       <p className="mt-2 text-[10.5px] leading-4 text-[#A9711F]">
                         This note references a different order/invoice. Verify
                         its association in the backend before using it as proof
-                        of this line's refund.
+                        of this line&apos;s refund.
                       </p>
                     )}
                   </div>

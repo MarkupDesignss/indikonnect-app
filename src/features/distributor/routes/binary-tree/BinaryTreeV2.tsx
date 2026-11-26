@@ -1,12 +1,6 @@
 "use client";
 
-import {
-    Maximize2,
-    Minimize2,
-    Scan,
-    ChevronDown,
-    ChevronUp,
-} from "lucide-react";
+import { Maximize2, Minimize2, Scan, ChevronDown } from "lucide-react";
 import { useState } from "react";
 
 const NAVY = "#0E1B3D";

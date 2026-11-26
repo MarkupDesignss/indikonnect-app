@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Bell, BellRing, Mail, Shield, AlertCircle } from "lucide-react";
 import { useGetUserNotificationsQuery, useToggleNotificationMutation } from "@/lib/redux/api/Profile/userApi";
 import { modalVariants, overlayVariants, staggerContainer, staggerItem } from "@/features/profile/components/AccountSettings.parts/support";
+import { readCaughtMessage } from "@/lib/utils/readCaughtMessage";
+
 
 
 export const Notifications = ({
@@ -145,15 +147,15 @@ export const Notifications = ({
 
       onSave?.();
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(
         "Notification toggle error:",
         error
       );
 
       const apiMessage =
-        error?.data?.message ||
-        error?.message ||
+        readCaughtMessage(error, "data", "message") ||
+        readCaughtMessage(error, "message") ||
         "Unable to update notification preferences.";
 
       setError(apiMessage);

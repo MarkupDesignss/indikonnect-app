@@ -3,6 +3,8 @@
 import { X, AlertCircle, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { CancelModalProps, ModalShell, OrderLinesPreview } from "@/features/distributor/routes/order-history/OrderHistory.parts/support";
+import { readCaughtMessage } from "@/lib/utils/readCaughtMessage";
+
 
 
 export const CancelModal = ({
@@ -38,8 +40,8 @@ export const CancelModal = ({
       await onSubmit(reason.trim());
 
       onClose();
-    } catch (err: any) {
-      setError(err?.data?.message || err?.message || "Failed to cancel order.");
+    } catch (err: unknown) {
+      setError(readCaughtMessage(err, "data", "message") || readCaughtMessage(err, "message") || "Failed to cancel order.");
 
       setIsSubmitting(false);
     }

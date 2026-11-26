@@ -52,10 +52,10 @@ export default function SignupBenefitsBanner() {
   // =========================================================
   // FETCH EXPLORE NOW CONTENT
   // =========================================================
-  const { data: contentsData } = useGetContentsQuery({});
+  const { data: contentsData } = useGetContentsQuery();
 
   const exploreNowContent = contentsData?.data?.find(
-    (item: any) => item.slug === "explore-now"
+    (item) => item.slug === "explore-now"
   );
 
   const exploreNowBannerImage =

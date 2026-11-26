@@ -71,9 +71,7 @@ export interface MoveToCartRequest {
 }
 
 // Move All to Cart Request
-export interface MoveAllToCartRequest {
-  // No parameters needed
-}
+export type MoveAllToCartRequest = Record<string, never>;
 
 // ============ RESPONSE TYPES ============
 

@@ -1,5 +1,7 @@
 "use client";
 
+import { useHydrated } from "@/lib/hooks/useHydrated";
+
 import {
   useCallback,
   useEffect,
@@ -11,15 +13,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 
-import {
-  ChevronLeft,
-  ChevronRight,
-  Eye,
-  Maximize,
-  Volume2,
-  VolumeX,
-  X,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, Volume2, VolumeX, X } from "lucide-react";
 
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -94,14 +88,7 @@ function getTestimonialVideo(t: Testimonial): string {
   return normalizeAssetUrl(t?.video_path || "");
 }
 
-function formatNumber(value?: number | string | null): string {
-  if (!value) return "0";
-  const num = Number(value);
-  if (isNaN(num)) return "0";
-  if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
-  if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
-  return num.toString();
-}
+
 
 function safelyPlayVideo(video: HTMLVideoElement | null, muted: boolean) {
   if (!video) return;
@@ -180,9 +167,7 @@ function CarouselVideoCard({
       loop
       // Center card → full preload, side cards → metadata for fast paint
       preload={isCenter ? "auto" : "metadata"}
-      // iOS autoplay support
-      // @ts-ignore
-      webkit-playsinline="true"
+      {...{"webkit-playsinline": "true"}}
       onLoadedData={(e) => safelyPlayVideo(e.currentTarget, true)}
       onCanPlay={(e) => safelyPlayVideo(e.currentTarget, true)}
       style={{
@@ -223,7 +208,6 @@ function MobileTestimonialCard({
     };
   }, [videoUrl]);
 
-  const viewCount = item.view_counts ?? 0;
 
   return (
     <div
@@ -367,10 +351,16 @@ export default function CustomerTestimonials() {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [direction, setDirection] = useState<1 | -1>(1);
   const [isMuted, setIsMuted] = useState(true);
-  const [isPlaying, setIsPlaying] = useState(true);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const transitionTimer = useRef<number | null>(null);
+  const clearTransitionTimer = useCallback(() => {
+    if (transitionTimer.current !== null) {
+      window.clearTimeout(transitionTimer.current);
+      transitionTimer.current = null;
+    }
+  }, []);
+  useEffect(() => clearTransitionTimer, [clearTransitionTimer]);
+  const mounted = useHydrated();
 
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
@@ -382,22 +372,10 @@ export default function CustomerTestimonials() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
-    setMounted(true);
-    return () => setMounted(false);
-  }, []);
 
-  useEffect(() => {
-    if (testimonials.length === 0) {
-      setActiveIndex(0);
-      setMobileActiveIndex(0);
-      return;
-    }
-    setActiveIndex((p) => (p >= testimonials.length ? testimonials.length - 1 : p));
-    setMobileActiveIndex((p) =>
-      p >= testimonials.length ? testimonials.length - 1 : p
-    );
-  }, [testimonials.length]);
+  const lastIndex = Math.max(0, testimonials.length - 1);
+  if (activeIndex > lastIndex) setActiveIndex(lastIndex);
+  if (mobileActiveIndex > lastIndex) setMobileActiveIndex(lastIndex);
 
   const scrollToMobileIndex = useCallback(
     (index: number, behavior: ScrollBehavior = "smooth") => {
@@ -563,21 +541,22 @@ export default function CustomerTestimonials() {
       }
       setDirection(1);
       setIsMuted(true);
-      setIsPlaying(true);
+
       setIsTransitioning(false);
     },
     [testimonials, scrollToMobileIndex]
   );
 
   const closeModal = useCallback(() => {
+    clearTransitionTimer();
     setSelectedIndex(null);
     setIsTransitioning(false);
     if (videoRef.current) videoRef.current.pause();
     if (typeof document !== "undefined" && document.fullscreenElement) {
       document.exitFullscreen?.().catch(() => {});
     }
-    setIsFullscreen(false);
-  }, []);
+
+  }, [clearTransitionTimer]);
 
   const handleNext = useCallback(
     (event?: MouseEvent | PointerEvent) => {
@@ -587,15 +566,19 @@ export default function CustomerTestimonials() {
       const nextIndex = (selectedIndex + 1) % testimonials.length;
       setDirection(1);
       setIsTransitioning(true);
-      setIsPlaying(true);
+
       setSelectedIndex(nextIndex);
       setActiveIndex(nextIndex);
       setMobileActiveIndex(nextIndex);
       scrollToMobileIndex(nextIndex, "auto");
       notifyTestimonialChange(testimonials[nextIndex].id, "video");
-      window.setTimeout(() => setIsTransitioning(false), 400);
+      clearTransitionTimer();
+      transitionTimer.current = window.setTimeout(() => {
+        transitionTimer.current = null;
+        setIsTransitioning(false);
+      }, 400);
     },
-    [testimonials, selectedIndex, isTransitioning, scrollToMobileIndex]
+    [testimonials, selectedIndex, isTransitioning, scrollToMobileIndex, clearTransitionTimer]
   );
 
   const handlePrevious = useCallback(
@@ -607,15 +590,19 @@ export default function CustomerTestimonials() {
         (selectedIndex - 1 + testimonials.length) % testimonials.length;
       setDirection(-1);
       setIsTransitioning(true);
-      setIsPlaying(true);
+
       setSelectedIndex(previousIndex);
       setActiveIndex(previousIndex);
       setMobileActiveIndex(previousIndex);
       scrollToMobileIndex(previousIndex, "auto");
       notifyTestimonialChange(testimonials[previousIndex].id, "video");
-      window.setTimeout(() => setIsTransitioning(false), 400);
+      clearTransitionTimer();
+      transitionTimer.current = window.setTimeout(() => {
+        transitionTimer.current = null;
+        setIsTransitioning(false);
+      }, 400);
     },
-    [testimonials, selectedIndex, isTransitioning, scrollToMobileIndex]
+    [testimonials, selectedIndex, isTransitioning, scrollToMobileIndex, clearTransitionTimer]
   );
 
   const togglePlay = useCallback((event: MouseEvent) => {
@@ -623,10 +610,10 @@ export default function CustomerTestimonials() {
     const video = videoRef.current;
     if (!video) return;
     if (video.paused) {
-      video.play().then(() => setIsPlaying(true)).catch(() => {});
+      video.play().catch(() => {});
     } else {
       video.pause();
-      setIsPlaying(false);
+
     }
   }, []);
 
@@ -639,31 +626,11 @@ export default function CustomerTestimonials() {
       video.muted = nextMuted;
       setIsMuted(nextMuted);
       if (!nextMuted && video.paused) {
-        video.play().then(() => setIsPlaying(true)).catch(() => {});
+        video.play().catch(() => {});
       }
     },
     [isMuted]
   );
-
-  const toggleFullscreen = useCallback((event: MouseEvent) => {
-    event.stopPropagation();
-    const stage = stageRef.current;
-    if (!stage) return;
-    if (!document.fullscreenElement) {
-      stage.requestFullscreen?.().then(() => setIsFullscreen(true)).catch(() => {});
-    } else {
-      document.exitFullscreen?.().then(() => setIsFullscreen(false)).catch(() => {});
-    }
-  }, []);
-
-  useEffect(() => {
-    const handleFullscreen = () => {
-      setIsFullscreen(Boolean(document.fullscreenElement));
-    };
-    document.addEventListener("fullscreenchange", handleFullscreen);
-    return () =>
-      document.removeEventListener("fullscreenchange", handleFullscreen);
-  }, []);
 
   useEffect(() => {
     if (selectedIndex === null) {
@@ -700,10 +667,10 @@ export default function CustomerTestimonials() {
         const video = videoRef.current;
         if (!video) return;
         if (video.paused) {
-          video.play().then(() => setIsPlaying(true)).catch(() => {});
+          video.play().catch(() => {});
         } else {
           video.pause();
-          setIsPlaying(false);
+
         }
       }
     };
@@ -721,7 +688,7 @@ export default function CustomerTestimonials() {
       } catch {}
       video.muted = isMuted;
       safelyPlayVideo(video, isMuted);
-      video.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
+      video.play().catch(() => {});
     }, 180);
     return () => window.clearTimeout(timer);
   }, [selectedIndex, testimonials, isMuted]);
@@ -881,8 +848,8 @@ export default function CustomerTestimonials() {
                       onCanPlay={(e) =>
                         safelyPlayVideo(e.currentTarget, isMuted)
                       }
-                      onPlay={() => setIsPlaying(true)}
-                      onPause={() => setIsPlaying(false)}
+
+
                       className="absolute inset-0 h-full w-full cursor-pointer bg-black object-cover"
                     />
                   ) : (
@@ -1080,7 +1047,6 @@ export default function CustomerTestimonials() {
               const config = cardConfig[offset.toString() as keyof typeof cardConfig];
               if (!config) return null;
 
-              const viewCount = item.view_counts ?? 0;
 
               return (
                 <div

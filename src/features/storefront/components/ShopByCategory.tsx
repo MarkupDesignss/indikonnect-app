@@ -193,9 +193,11 @@ function CategoryCard({
   const primaryText = displayTexts[0] || "Category";
   const secondaryText = displayTexts[1] || "Shop now";
 
-  useEffect(() => {
+  const [previousImageUrl, setPreviousImageUrl] = useState(imageUrl);
+  if (previousImageUrl !== imageUrl) {
+    setPreviousImageUrl(imageUrl);
     setImageError(false);
-  }, [imageUrl]);
+  }
 
   // ========================================
   // HOVER
