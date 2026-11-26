@@ -154,9 +154,8 @@ function ProductRail({
 
   return (
     <div
-      className={`mx-auto flex w-full max-w-[min(100%,1400px)] flex-wrap items-stretch ${railGapClass} ${
-        isFewProducts ? "justify-center" : "justify-start"
-      }`}
+      className={`mx-auto flex w-full max-w-[min(100%,1400px)] flex-wrap items-stretch ${railGapClass} ${isFewProducts ? "justify-center" : "justify-start"
+        }`}
     >
       {visibleProducts.map((product: any, index: number) => {
         const images = Array.isArray(product?.images) ? product.images : [];
@@ -188,6 +187,11 @@ function ProductRail({
               onDotClick={handleDotClick}
               label={label}
               showCartButtons={showCartButtons}
+              mrpOverride={
+                labelMode === "trending"
+                  ? product?.retail_price ?? product?.retail_mrp
+                  : undefined
+              }
             />
           </div>
         );
@@ -453,15 +457,15 @@ export default function IndieKonnectHome() {
     setPreviousWishlistData(wishlistData);
     if (wishlistData?.data) {
 
-    const state: Record<string | number, boolean> = {};
+      const state: Record<string | number, boolean> = {};
 
-    wishlistData.data.forEach((item) => {
-      if (item?.product_id) {
-        state[item.product_id] = true;
-      }
-    });
+      wishlistData.data.forEach((item) => {
+        if (item?.product_id) {
+          state[item.product_id] = true;
+        }
+      });
 
-    setWish(state);
+      setWish(state);
     }
   }
 
@@ -543,9 +547,8 @@ export default function IndieKonnectHome() {
         </div>
 
         <div style="flex:1;min-width:0;">
-          ${
-            productName
-              ? `
+          ${productName
+        ? `
               <div style="
                 font-size:13px;
                 font-weight:600;
@@ -554,8 +557,8 @@ export default function IndieKonnectHome() {
                 ${productName}
               </div>
             `
-              : ""
-          }
+        : ""
+      }
 
           <div style="
             font-size:12px;
@@ -711,9 +714,9 @@ export default function IndieKonnectHome() {
             return prev.map((item) =>
               item.product_id === productId
                 ? {
-                    ...item,
-                    quantity: item.quantity + 1,
-                  }
+                  ...item,
+                  quantity: item.quantity + 1,
+                }
                 : item,
             );
           }
@@ -881,9 +884,9 @@ export default function IndieKonnectHome() {
         prev.map((item) =>
           item.product_id === productId
             ? {
-                ...item,
-                quantity: item.quantity + change,
-              }
+              ...item,
+              quantity: item.quantity + change,
+            }
             : item,
         ),
       );
@@ -1267,9 +1270,9 @@ export default function IndieKonnectHome() {
           }
         />
 
-        
 
-   
+
+
 
         {/* =================================================
             BEST SELLERS
@@ -1303,10 +1306,9 @@ export default function IndieKonnectHome() {
                 flex
                 w-full
                 flex-col
-                ${
-                  bestSellers?.length <= 2
-                    ? "items-center text-center"
-                    : "items-start text-left"
+                ${bestSellers?.length <= 2
+                  ? "items-center text-center"
+                  : "items-start text-left"
                 }
               `}
             >
@@ -1461,11 +1463,10 @@ export default function IndieKonnectHome() {
                     type="button"
                     aria-label={`Go to slide ${index + 1}`}
                     onClick={() => scrollToIndex(index)}
-                    className={`h-2 rounded-full transition-all duration-300 ${
-                      activeIndex === index
+                    className={`h-2 rounded-full transition-all duration-300 ${activeIndex === index
                         ? "w-6 bg-gray-800"
                         : "w-2 bg-gray-300"
-                    }`}
+                      }`}
                   />
                 ))}
               </div>
@@ -1519,10 +1520,9 @@ export default function IndieKonnectHome() {
                 flex
                 w-full
                 flex-col
-                ${
-                  bestOffers?.length <= 2
-                    ? "items-center text-center"
-                    : "items-start text-left"
+                ${bestOffers?.length <= 2
+                  ? "items-center text-center"
+                  : "items-start text-left"
                 }
               `}
             >
@@ -1569,7 +1569,7 @@ export default function IndieKonnectHome() {
           <ReviewCarousel />
         </div>
 
-  
+
 
         <div className="relative isolate flow-root w-full">
           <PurchaseTrustBar />

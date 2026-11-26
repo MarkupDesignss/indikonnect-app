@@ -174,7 +174,7 @@ export default function ProductPurchasePanel({
         </div>
       )}
       <p className="mt-0.5 text-[11px] text-[#777]">
-        inclusive of all taxes
+        Include all taxes with shipping charges
       </p>
 
       {/* DISTRIBUTOR-ONLY COMMISSION (product detail API) */}
@@ -589,7 +589,7 @@ export default function ProductPurchasePanel({
           <div className="text-[12px] text-[#666]">
             Country Of Origin:{" "}
             <span className="font-semibold text-[#222]">
-              {manufacturingInfo.country}
+            {manufacturingInfo?.country || "India"}
             </span>
           </div>
 

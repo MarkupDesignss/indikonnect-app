@@ -155,24 +155,57 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
       </div>
     );
   }
-  const specification = parseJsonObject(product.specification);
+  // Parse the original API specification.
+  const specification = parseJsonObject(
+    apiProduct?.specification ?? product.specification
+  ) as Record<string, unknown>;
 
+  // Read specification values without case sensitivity.
+  const getSpecificationValue = (label: string): string => {
+    const entry = Object.entries(specification).find(
+      ([key]) => key.trim().toLowerCase() === label.toLowerCase()
+    );
+
+    const value = entry?.[1];
+
+    return value === null || value === undefined
+      ? ""
+      : String(value).trim();
+  };
+
+  // Complete manufacturing information.
+  const manufacturingInfoForDisplay = {
+    country:
+      manufacturingInfo?.country ||
+      getSpecificationValue("Country of Manufacture"),
+
+    manufacturedBy:
+      manufacturingInfo?.manufacturedBy ||
+      getSpecificationValue("Manufactured By"),
+
+    manufacturerAddress:
+      getSpecificationValue("Manufacturer Address"),
+
+    marketedBy:
+      manufacturingInfo?.marketedBy ||
+      getSpecificationValue("Marketed By"),
+  };
   const specRows =
     Object.keys(specification).length > 0
       ? Object.entries(specification).map(([key, value]) => [
-          key.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase()),
-          String(value),
-        ])
+        key.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase()),
+        String(value),
+      ])
       : [
-          ["Product Type", product.category],
-          ["Product Code", product.productCode || "N/A"],
-          ["Availability", product.inStock ? "In Stock" : "Out of Stock"],
-          ["Stock Quantity", product.stockQuantity],
-          ["UOM", apiProduct?.uom || "NOS"],
-          ["HSN Code", apiProduct?.hsn_code || "N/A"],
-          ["Warranty", "1 Year"],
-          ["Return Policy", "7 Days"],
-        ];
+        ["Product Type", product.category],
+        ["Product Code", product.productCode || "N/A"],
+        ["Availability", product.inStock ? "In Stock" : "Out of Stock"],
+        ["Stock Quantity", product.stockQuantity],
+        ["UOM", apiProduct?.uom || "NOS"],
+        ["HSN Code", apiProduct?.hsn_code || "N/A"],
+        ["Warranty", "1 Year"],
+        ["Return Policy", "7 Days"],
+      ];
 
   const contentTabs: [string, string][] = [
     ["details", "Details"],
@@ -245,7 +278,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
             isWishlisted={isWishlisted}
             activeProductSlug={activeProductSlug}
             apiProduct={apiProduct}
-            manufacturingInfo={manufacturingInfo}
+            manufacturingInfo={manufacturingInfoForDisplay}
             setShowManufacturingInfo={setShowManufacturingInfo}
           />
         </div>
@@ -333,7 +366,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
       <ManufacturingInfoModal
         showManufacturingInfo={showManufacturingInfo}
         setShowManufacturingInfo={setShowManufacturingInfo}
-        manufacturingInfo={manufacturingInfo}
+        manufacturingInfo={manufacturingInfoForDisplay}
       />
 
       {/* SEE ALL THUMBNAILS MODAL */}
