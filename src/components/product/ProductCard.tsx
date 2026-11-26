@@ -130,7 +130,6 @@ export interface Product {
   stock_quantity?: string | number | null;
   stockQuantity?: string | number | null;
 
-  /** API flag: 1 allows purchase regardless of stock. */
   allowed_purchsed?: boolean | number | string | null;
 
   low_stock_threshold?: string | number | null;
@@ -354,12 +353,44 @@ const getVariantImage = (v: any): string =>
   );
 
 /* -------------------------------------------------------------------------- */
-/* BRAND / CATEGORY HELPERS                                                   */
+/* RETAIL MRP HELPER                                                          */
 /* -------------------------------------------------------------------------- */
 
 /**
- * Brand can be a string or an object.
+ * Distributor cards must always show the actual retail price as the
+ * crossed-out reference price.
+ *
+ * Priority:
+ * 1. retail_mrp
+ * 2. retail_price
+ * 3. originalPrice
+ *
+ * effective_mrp is intentionally not used here because it can contain
+ * a distributor-specific effective price.
  */
+const getRetailMrp = (
+  item: any,
+  fallback: number = 0,
+): number => {
+  const candidates = [
+    item?.retail_mrp,
+    item?.retail_price,
+    item?.originalPrice,
+  ];
+
+  for (const candidate of candidates) {
+    const value = num(candidate);
+
+    if (value > 0) return value;
+  }
+
+  return fallback;
+};
+
+/* -------------------------------------------------------------------------- */
+/* BRAND / CATEGORY HELPERS                                                   */
+/* -------------------------------------------------------------------------- */
+
 const getBrandName = (product: Product): string => {
   const rawBrand =
     product?.brand_name ??
@@ -373,18 +404,6 @@ const getBrandName = (product: Product): string => {
   ).trim();
 };
 
-/**
- * IMPORTANT:
- * ProductsPage can send category as a plain string:
- *
- * category: "Women's Watch"
- *
- * Another API can send category as an object:
- *
- * category: { id: 1, name: "Women's Watch" }
- *
- * Both formats are supported here.
- */
 const getCategoryName = (product: Product): string => {
   const rawCategory = product?.category;
 
@@ -630,7 +649,9 @@ function ProductCardInner({
     return `/product/${encodeURIComponent(productSlug)}`;
   }, [productSlug]);
 
-  /* -------------------------------- PRICE -------------------------------- */
+  /* ---------------------------------------------------------------------- */
+  /* MAIN PRODUCT PRICE                                                      */
+  /* ---------------------------------------------------------------------- */
 
   const retailPrice = num(
     product?.retail_price ??
@@ -640,23 +661,20 @@ function ProductCardInner({
 
   const distributorPrice = num(product?.distributor_price);
 
+  // Selling price: distributor uses distributor_price.
   const price =
     isDistributor && distributorPrice > 0
       ? distributorOfferPrice(product, distributorPrice)
       : retailPrice;
 
-  const retailMrp = num(
-    product?.retail_mrp ??
-      product?.effective_mrp ??
-      product?.originalPrice,
-  );
+  /**
+   * IMPORTANT:
+   * For distributors, crossed-out MRP must come from RETAIL price fields.
+   * Never use distributor_mrp for this display.
+   */
+  const retailMrp = getRetailMrp(product, retailPrice);
 
-  const distributorMrp = num(product?.distributor_mrp);
-
-  const mrp =
-    isDistributor && distributorMrp > 0
-      ? distributorMrp
-      : retailMrp;
+  const mrp = retailMrp > 0 ? retailMrp : retailPrice;
 
   /* -------------------------------- STOCK -------------------------------- */
 
@@ -994,10 +1012,11 @@ function ProductCardInner({
           value?.retail_price ??
           value?.effective_price ??
           value?.price,
-        mrp:
-          value?.retail_mrp ??
-          value?.effective_mrp ??
-          value?.originalPrice,
+
+        // Retail MRP for the variant.
+        // distributor_mrp intentionally excluded.
+        mrp: getRetailMrp(value, 0),
+
         distributorPrice: value?.distributor_price,
         distributorMrp: value?.distributor_mrp,
         offerSource: value,
@@ -1115,17 +1134,17 @@ function ProductCardInner({
     ? `/product/${encodeURIComponent(selectedVariant.slug)}`
     : productUrl;
 
-  /* -------------------------------- VARIANT PRICES ----------------------- */
+  /* ---------------------------------------------------------------------- */
+  /* SELECTED VARIANT PRICE                                                  */
+  /* ---------------------------------------------------------------------- */
 
   const selectedRetailPrice = num(selectedVariant?.price);
+
   const selectedDistributorPrice = num(
     selectedVariant?.distributorPrice,
   );
 
   const selectedRetailMrp = num(selectedVariant?.mrp);
-  const selectedDistributorMrp = num(
-    selectedVariant?.distributorMrp,
-  );
 
   const displayedPrice =
     selectedVariant && !selectedVariant.isCurrent
@@ -1137,11 +1156,18 @@ function ProductCardInner({
         : selectedRetailPrice
       : price;
 
+  /**
+   * Always show the retail MRP as the crossed price.
+   * Never show distributor_mrp here.
+   */
   const displayedMrp =
     selectedVariant && !selectedVariant.isCurrent
-      ? isDistributor && selectedDistributorMrp > 0
-        ? selectedDistributorMrp
-        : selectedRetailMrp
+      ? getRetailMrp(
+          selectedVariant?.offerSource,
+          selectedRetailMrp > 0
+            ? selectedRetailMrp
+            : selectedRetailPrice,
+        )
       : mrp;
 
   const displayedDiscount =
@@ -1237,18 +1263,13 @@ function ProductCardInner({
             ? distributorOfferPrice(full ?? variant, distributor)
             : retail;
 
-        const retailMrp = num(
-          full?.retail_mrp ?? variant.mrp,
+        // FIX: Crossed-out price is always retail MRP.
+        const originalPrice = getRetailMrp(
+          full ?? variant,
+          num(variant.mrp) > 0
+            ? num(variant.mrp)
+            : retail,
         );
-
-        const distributorMrpValue = num(
-          full?.distributor_mrp,
-        );
-
-        const originalPrice =
-          isDistributor && distributorMrpValue > 0
-            ? distributorMrpValue
-            : retailMrp;
 
         const galleryImage = Array.isArray(full?.images)
           ? full.images
@@ -1416,20 +1437,16 @@ function ProductCardInner({
             ? distributorOfferPrice(candidate, distributor)
             : retail;
 
-        const retailMrpValue = num(
-          candidate.retail_mrp ??
-            candidate.effective_mrp ??
-            candidate.originalPrice,
+        // FIX: Retail MRP, not distributor_mrp/effective_mrp.
+        const originalPrice = getRetailMrp(
+          candidate,
+          retail,
         );
 
-        const distributorMrpValue = num(
-          candidate.distributor_mrp,
-        );
-
-        const originalPrice =
-          isDistributor && distributorMrpValue > 0
-            ? distributorMrpValue
-            : retailMrpValue;
+        const rawBrand =
+          candidate.brand_name ??
+          candidate.brandName ??
+          candidate.brand;
 
         const galleryImage = Array.isArray(candidate.images)
           ? candidate.images
@@ -1442,11 +1459,6 @@ function ProductCardInner({
               )
               .find(Boolean)
           : "";
-
-        const rawBrand =
-          candidate.brand_name ??
-          candidate.brandName ??
-          candidate.brand;
 
         const stockStatus = String(
           candidate.stock_status ??
@@ -2044,6 +2056,8 @@ function ProductCardInner({
               </div>
             )}
 
+            {/* SIMILAR PRODUCT PRICE */}
+
             {isDistributor ? (
               <div className="flex flex-wrap gap-x-3 gap-y-1 pt-1 text-[11px]">
                 <span>
@@ -2053,7 +2067,7 @@ function ProductCardInner({
 
                 {item.originalPrice > 0 && (
                   <span className="text-[#767D85]">
-                    MRP{" "}
+                    Retail Price{" "}
                     <strong className="font-medium line-through decoration-[#9AA1A9] decoration-[1.5px]">
                       ₹{money(item.originalPrice)}
                     </strong>
@@ -2312,9 +2326,7 @@ function ProductCardInner({
             </span>
           )}
 
-          {/* -------------------------------------------------------------- */}
-          {/* BRAND | CATEGORY                                               */}
-          {/* -------------------------------------------------------------- */}
+          {/* BRAND | CATEGORY */}
 
           {(brandName || categoryName) && (
             <div
@@ -2343,9 +2355,7 @@ function ProductCardInner({
             </div>
           )}
 
-          {/* -------------------------------------------------------------- */}
-          {/* PRODUCT NAME                                                   */}
-          {/* -------------------------------------------------------------- */}
+          {/* PRODUCT NAME */}
 
           <p
             className="mt-[3px] block w-full min-w-0 truncate text-[12px] font-normal leading-[17px] text-[#5e6673]"
@@ -2418,8 +2428,6 @@ function ProductCardInner({
                   );
                 })}
               </div>
-
-             
             </div>
           )}
 
@@ -2442,7 +2450,7 @@ function ProductCardInner({
 
               {displayedMrp > 0 && (
                 <span className="text-[12px] text-[#7B838B]">
-                  MRP{" "}
+                  Retail Price{" "}
                   <strong className="text-[13px] font-medium text-[#7B838B] line-through decoration-[#9AA1A9] decoration-[1.5px]">
                     ₹{money(displayedMrp)}
                   </strong>

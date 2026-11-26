@@ -89,6 +89,12 @@ const distributorOfferPrice = (item: any, base: number): number => {
   return Math.round(base * (1 - percent / 100) * 100) / 100;
 };
 
+/* Distributor view: the struck-through reference price is the RETAIL price
+ * (not the distributor MRP). Falls back to retail_mrp if retail_price is missing.
+ */
+const distributorRetailReference = (item: any): number =>
+  Number(item?.retail_price || item?.retail_mrp || 0);
+
 /** API spelling is intentionally `allowed_purchsed` (not allowed_purchased). */
 const isPurchaseAllowedWithoutStock = (item: any): boolean =>
   item?.allowed_purchsed === true ||
@@ -740,8 +746,9 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
           )
         : Number(c?.retail_price || 0);
 
+      // Distributor: struck-through reference price = RETAIL price.
       const mrp = isDistributorUser
-        ? Number(c?.distributor_mrp || c?.retail_mrp || 0)
+        ? distributorRetailReference(c)
         : Number(c?.retail_mrp || 0);
 
       const commission =
@@ -864,22 +871,21 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
               )
             : Number(apiProduct.retail_price || 0),
 
+        // Distributor: struck-through price = RETAIL price.
         mrp:
           userAccountType === "distributor"
-            ? Number(apiProduct.distributor_mrp || apiProduct.retail_mrp || 0)
+            ? distributorRetailReference(apiProduct)
             : Number(apiProduct.retail_mrp || 0),
 
         originalPrice:
           userAccountType === "distributor"
-            ? Number(apiProduct.distributor_mrp || apiProduct.retail_mrp || 0)
+            ? distributorRetailReference(apiProduct)
             : Number(apiProduct.retail_mrp || 0),
 
         discount:
           userAccountType === "distributor"
             ? (() => {
-                const mrp = Number(
-                  apiProduct.distributor_mrp || apiProduct.retail_mrp || 0,
-                );
+                const mrp = distributorRetailReference(apiProduct);
 
                 const price = distributorOfferPrice(
                   apiProduct,
@@ -936,8 +942,8 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
 
   /* =========================================================
      PRODUCT GALLERY
-     Combo: combo's own images + every image of each product
-     inside the combo (all shown as thumbnails).
+     Only the MAIN product's own images are shown as thumbnails.
+     Images of products inside a combo are NOT added here.
   ========================================================= */
 
   const productGallery = useMemo(() => {
@@ -949,14 +955,10 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
           .filter(Boolean)
       : [];
 
-    const comboImages: string[] = isCombo
-      ? comboItems.flatMap((item) => item.images)
-      : [];
-
     return Array.from(
-      new Set([product.image, ...images, ...comboImages].filter(Boolean)),
+      new Set([product.image, ...images].filter(Boolean)),
     ) as string[];
-  }, [product, isCombo, comboItems]);
+  }, [product]);
 
   /* =========================================================
      COMBO TOTALS (individual price sum vs combo price)
@@ -1576,6 +1578,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
 
   /* =========================================================
      SHOW COMBO IMAGE IN MAIN VIEWER
+     (only works if the image is part of the main gallery)
   ========================================================= */
 
   const handleSelectComboImage = (imageUrl: string) => {
@@ -2055,8 +2058,9 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
           )
         : Number(p.retail_price || 0);
 
+      // Distributor: struck-through reference price = RETAIL price.
       const mrp = distributor
-        ? Number(p.distributor_mrp || p.retail_mrp || 0)
+        ? distributorRetailReference(p)
         : Number(p.retail_mrp || 0);
 
       /*
@@ -2391,7 +2395,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
                 {item.originalPrice > 0 && (
                   <div className="min-w-0 text-right">
                     <p className="text-[10px] font-medium uppercase tracking-wide text-[#78828A]">
-                      MRP
+                      Retail Price
                     </p>
                     <p className="mt-1 text-[14px] font-medium leading-none text-[#89939B] line-through decoration-[#89939B] decoration-[1.5px]">
                       ₹
@@ -2873,7 +2877,7 @@ export default function ProductDetail({ productSlug }: ProductDetailProps) {
               </div>
             )}
 
-            {/* PRICE: BA Price and MRP only on distributor portal */}
+            {/* PRICE: BA Price and Retail Price only on distributor portal */}
             {isDistributorApp && userAccountType === "distributor" ? (
               <div className="mt-4 overflow-hidden rounded-2xl border border-[#DCE9E0] bg-gradient-to-br from-[#F3FAF5] via-white to-[#F8FBF9] shadow-[0_4px_20px_rgba(22,101,52,0.055)]">
                 <div className="flex flex-wrap items-stretch gap-0">
