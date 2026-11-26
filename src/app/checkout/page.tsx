@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import CheckoutPage from "@/Screens/CheckoutPage/CheckoutPage";
+import CheckoutPage from "@/features/checkout/screens/CheckoutPage";
 import Loding from "@/components/common/Loding";
 
 export default function Page() {

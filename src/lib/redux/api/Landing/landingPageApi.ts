@@ -1,7 +1,7 @@
-import { baseApi } from "../baseApi";
+import { baseApi } from "@/lib/redux/api/baseApi";
 import {
   LandingPageResponse,
-} from "./landingPageTypes";
+} from "@/lib/redux/api/Landing/landingPageTypes";
 
 export const landingPageApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({

@@ -1,9 +1,9 @@
 
-import { baseApi } from "./baseApi";
+import { baseApi } from "@/lib/redux/api/baseApi";
 
 import {
   TestimonialResponse,
-} from "./testimonialTypes";
+} from "@/lib/redux/api/testimonialTypes";
 
 export const testimonialApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({

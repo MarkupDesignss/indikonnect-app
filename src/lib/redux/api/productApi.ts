@@ -1,12 +1,12 @@
 // src/lib/redux/api/productApi.ts
-import { baseApi } from "./baseApi";
+import { baseApi } from "@/lib/redux/api/baseApi";
 import type {
   ProductsResponse,
   GetProductsParams,
   Product,
   SingleProductResponse,
   CategoryProductsResponse,
-} from "./productTypes";
+} from "@/lib/redux/api/productTypes";
 
 export interface CheckStockParams {
   product_id: number;

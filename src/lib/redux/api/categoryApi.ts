@@ -1,9 +1,9 @@
 
-import { baseApi } from "./baseApi";
+import { baseApi } from "@/lib/redux/api/baseApi";
 import {
   CategoryResponse,
   Category,
-} from "./categoryTypes";
+} from "@/lib/redux/api/categoryTypes";
 
 export const categoryApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({

@@ -1,0 +1,20 @@
+Missing asset: src/components/Footer.tsx: ../../public/indiekonnect-web/images/logo.png
+Missing asset: src/components/Header.tsx: ../../public/indiekonnect-web/images/logo.png
+Missing asset: src/components/common/Header.parts/HeaderInner.tsx: ../../../../public/indiekonnect-web/images/logo.png
+Missing asset: src/components/common/Header.parts/HeaderInner.tsx: ../../../../public/indiekonnect-web/images/placeholder.jpg
+Missing asset: src/components/common/WatchTestimonialSection.tsx: ../../../public/indiekonnect-web/images/w1.png
+Missing asset: src/components/common/WatchTestimonialSection.tsx: ../../../public/indiekonnect-web/images/w2.jpg
+Missing asset: src/components/common/WatchTestimonialSection.tsx: ../../../public/indiekonnect-web/images/w3.webp
+Missing asset: src/data/products.ts: ../../public/indiekonnect-web/images/Dinner.jpeg
+Missing asset: src/features/distributor/auth/DistributorLogin.tsx: ../../../../public/indiekonnect-web/images/logo.png
+Missing asset: src/features/distributor/routes/profile/DistributorPVCSection.tsx: ../../../../../public/indiekonnect-web/images/logo.png
+Missing asset: src/features/distributor/shell/Sidebar.tsx: ../../../../public/indiekonnect-web/images/logo.png
+Missing asset: src/features/orders/screens/invoiceGenerator.ts: ../../../../public/indiekonnect-web/images/logo.png
+Missing asset: src/features/products/components/ProductCard.tsx: ../../../../public/indiekonnect-web/images/test.jpg
+Missing asset: src/features/storefront/components/SignupBenefitsBanner.tsx: ../../../../public/indiekonnect-web/images/made_in_india_homepage_m.webp
+{
+  "sourceFiles": 485,
+  "localImportReferences": 965,
+  "errors": 0,
+  "missingAssets": 14
+}

@@ -1,4 +1,4 @@
-import { baseApi } from "../baseApi";
+import { baseApi } from "@/lib/redux/api/baseApi";
 
 export interface IgniteCVWeek {
   year: number;

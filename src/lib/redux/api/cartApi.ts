@@ -1,5 +1,5 @@
 // src/lib/redux/api/cartApi.ts
-import { baseApi } from "./baseApi";
+import { baseApi } from "@/lib/redux/api/baseApi";
 import {
   CartResponse,
   AddToCartRequest,
@@ -8,17 +8,9 @@ import {
   AddToCartResponse,
   ApiResponse,
   MergeCartResponse,
-} from "./cartTypes";
+  CouponsResponse,
+} from "@/lib/redux/api/cartTypes";
 
-interface CouponsResponse {
-  success: boolean;
-  data: {
-    current_page: number;
-    data: Coupon[];
-    total: number;
-    per_page: number;
-  };
-}
 
 /* =========================================================
    CART LIVE STOCK TYPES

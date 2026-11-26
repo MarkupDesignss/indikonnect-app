@@ -19,36 +19,52 @@ concurrency:
 
 jobs:
   deploy:
-    name: Build and Deploy Both Panels
+    name: Validate, Build and Deploy Both Panels
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
+
+    env:
+      CI: "true"
+
     steps:
+      # ==========================================
+      # CHECKOUT
+      # ==========================================
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.inputs.release_ref || github.sha }}
+          ref: ${{ github.event_name == 'workflow_dispatch' && (inputs.release_ref || 'refs/heads/main') || github.sha }}
           persist-credentials: false
+
+      # ==========================================
+      # RELEASE METADATA
+      # ==========================================
 
       - name: Set release metadata
         shell: bash
-        env:
-          RUN_NUMBER: ${{ github.run_number }}
-          RUN_ID: ${{ github.run_id }}
-          REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
+
           SHA="$(git rev-parse HEAD)"
           SHORT_SHA="$(git rev-parse --short=7 HEAD)"
-          RELEASE="v1.0.${RUN_NUMBER}"
+          RELEASE="v1.0.${GITHUB_RUN_NUMBER}"
           DEPLOYED_AT="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+
           echo "RELEASE=$RELEASE" >> "$GITHUB_ENV"
           echo "SHORT_SHA=$SHORT_SHA" >> "$GITHUB_ENV"
           echo "DEPLOYED_AT=$DEPLOYED_AT" >> "$GITHUB_ENV"
           echo "SOURCE_SHA=$SHA" >> "$GITHUB_ENV"
+
           echo "NEXT_PUBLIC_RELEASE_VERSION=$RELEASE" >> "$GITHUB_ENV"
           echo "NEXT_PUBLIC_RELEASE_COMMIT=$SHORT_SHA" >> "$GITHUB_ENV"
           echo "NEXT_PUBLIC_RELEASE_DATE=$DEPLOYED_AT" >> "$GITHUB_ENV"
+
           echo "Release: $RELEASE ($SHA)"
+
+      # ==========================================
+      # NODE AND DEPENDENCIES
+      # ==========================================
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -59,6 +75,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # ==========================================
+      # ENVIRONMENT VALIDATION
+      # ==========================================
+
       - name: Check environment variables
         shell: bash
         env:
@@ -66,6 +86,8 @@ jobs:
           CUSTOMER_URL: ${{ secrets.CUSTOMER_APP_URL }}
           DISTRIBUTOR_URL: ${{ secrets.DISTRIBUTOR_APP_URL }}
         run: |
+          set -euo pipefail
+
           for key in API_URL CUSTOMER_URL DISTRIBUTOR_URL; do
             if [ -z "${!key}" ]; then
               echo "::error::$key missing"
@@ -73,21 +95,53 @@ jobs:
             fi
           done
 
+      # ==========================================
+      # STRICT QUALITY GATE
+      # BUILD NOT ALLOWED UNTIL ALL CHECKS PASS
+      # ==========================================
+
+      - name: Architecture and Import Verification
+        run: npm run verify
+
+      - name: Strict ESLint Validation
+        run: npm exec -- eslint src --max-warnings 0
+
+      - name: TypeScript Validation
+        run: npm run typecheck
+
+      - name: Quality Gate Passed
+        run: |
+          echo "All mandatory quality checks passed."
+          echo "Architecture verification passed."
+          echo "ESLint: Zero errors and warnings."
+          echo "TypeScript: Zero errors."
+          echo "Production build is now allowed."
+
+      # ==========================================
+      # CUSTOMER BUILD
+      # ==========================================
+
       - name: Build Customer Panel
         env:
           NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
           NEXT_PUBLIC_APP_URL: ${{ secrets.CUSTOMER_APP_URL }}
           NEXT_PUBLIC_APP_BASE_PATH: /indiekonnect-web
-          CI: "true"
         run: npm run build:customer
+
+      # ==========================================
+      # DISTRIBUTOR BUILD
+      # ==========================================
 
       - name: Build Distributor Panel
         env:
           NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
           NEXT_PUBLIC_APP_URL: ${{ secrets.DISTRIBUTOR_APP_URL }}
           NEXT_PUBLIC_APP_BASE_PATH: /indiekonnect-distributor
-          CI: "true"
         run: npm run build:distributor
+
+      # ==========================================
+      # VERIFY BUILD OUTPUTS
+      # ==========================================
 
       - name: Verify outputs and write release manifests
         shell: bash
@@ -96,12 +150,16 @@ jobs:
           REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
+
           test -f out-customer/index.html
           test -f out-distributor/index.html
+
           for panel in customer distributor; do
             PANEL="$panel" node - <<'NODE'
           const fs = require('node:fs');
+
           const panel = process.env.PANEL;
+
           const data = {
             version: process.env.RELEASE,
             commit: process.env.SOURCE_SHA,
@@ -110,10 +168,19 @@ jobs:
             repository: process.env.REPOSITORY,
             panel
           };
-          fs.writeFileSync(`out-${panel}/release.json`, JSON.stringify(data, null, 2) + '\n');
+
+          fs.writeFileSync(
+            `out-${panel}/release.json`,
+            JSON.stringify(data, null, 2) + '\n'
+          );
           NODE
           done
+
           du -sh out-customer out-distributor
+
+      # ==========================================
+      # BACKUP BUILD ARTIFACTS
+      # ==========================================
 
       - name: Archive built panels for rollback
         uses: actions/upload-artifact@v4
@@ -125,6 +192,10 @@ jobs:
           retention-days: 90
           if-no-files-found: error
 
+      # ==========================================
+      # FTP CREDENTIAL VALIDATION
+      # ==========================================
+
       - name: Validate FTP credentials
         shell: bash
         env:
@@ -134,12 +205,18 @@ jobs:
           FTP_DISTRIBUTOR_USERNAME: ${{ secrets.FTP_DISTRIBUTOR_USERNAME }}
           FTP_DISTRIBUTOR_PASSWORD: ${{ secrets.FTP_DISTRIBUTOR_PASSWORD }}
         run: |
+          set -euo pipefail
+
           for key in FTP_HOST FTP_CUSTOMER_USERNAME FTP_CUSTOMER_PASSWORD FTP_DISTRIBUTOR_USERNAME FTP_DISTRIBUTOR_PASSWORD; do
             if [ -z "${!key}" ]; then
               echo "::error::$key missing"
               exit 1
             fi
           done
+
+      # ==========================================
+      # DEPLOY CUSTOMER
+      # ==========================================
 
       - name: Deploy Customer to cPanel
         uses: SamKirkland/FTP-Deploy-Action@v4.4.0
@@ -158,6 +235,10 @@ jobs:
           dangerous-clean-slate: false
           dry-run: false
 
+      # ==========================================
+      # DEPLOY DISTRIBUTOR
+      # ==========================================
+
       - name: Deploy Distributor to cPanel
         uses: SamKirkland/FTP-Deploy-Action@v4.4.0
         with:
@@ -175,15 +256,41 @@ jobs:
           dangerous-clean-slate: false
           dry-run: false
 
-      - name: Deployment checks completed
+      # ==========================================
+      # SUCCESS SUMMARY
+      # ==========================================
+
+      - name: Deployment Success Summary
+        if: ${{ success() }}
         env:
           RUN_ID: ${{ github.run_id }}
           REPOSITORY: ${{ github.repository }}
         run: |
-          echo "## Deployment completed" >> "$GITHUB_STEP_SUMMARY"
+          echo "## Deployment completed successfully" >> "$GITHUB_STEP_SUMMARY"
           echo "- Release: **$RELEASE**" >> "$GITHUB_STEP_SUMMARY"
           echo "- Commit: \`$SOURCE_SHA\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- UTC build time: $DEPLOYED_AT" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Customer: FTPS upload completed" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Distributor: FTPS upload completed" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Architecture: Passed" >> "$GITHUB_STEP_SUMMARY"
+          echo "- ESLint: Zero errors and warnings" >> "$GITHUB_STEP_SUMMARY"
+          echo "- TypeScript: Passed" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Customer build: Passed" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Distributor build: Passed" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Customer FTPS deployment: Completed" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Distributor FTPS deployment: Completed" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Run: https://github.com/$REPOSITORY/actions/runs/$RUN_ID" >> "$GITHUB_STEP_SUMMARY"
+
+      # ==========================================
+      # FAILURE SUMMARY
+      # ==========================================
+
+      - name: Workflow Failure Summary
+        if: ${{ failure() }}
+        env:
+          RUN_ID: ${{ github.run_id }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          echo "## Workflow failed" >> "$GITHUB_STEP_SUMMARY"
+          echo "- One or more mandatory steps failed." >> "$GITHUB_STEP_SUMMARY"
+          echo "- Remaining build or deployment steps were blocked." >> "$GITHUB_STEP_SUMMARY"
+          echo "- Check the failed step in GitHub Actions." >> "$GITHUB_STEP_SUMMARY"
           echo "- Run: https://github.com/$REPOSITORY/actions/runs/$RUN_ID" >> "$GITHUB_STEP_SUMMARY"

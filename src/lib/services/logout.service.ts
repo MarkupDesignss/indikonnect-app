@@ -2,13 +2,12 @@
 
 "use client";
 
-import { baseApi } from "../redux/api/baseApi";
-import { persistor } from "../redux/store";
+import { baseApi } from "@/lib/redux/api/baseApi";
 
 import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import { Store } from "@reduxjs/toolkit";
 
-import { getAppType, type AppType } from "../appConfig";
+import { getAppType, type AppType } from "@/lib/appConfig";
 
 export interface LogoutOptions {
   redirectTo?: string;
@@ -401,7 +400,6 @@ export const performLogout = async (
     redirectTo = defaultRedirect,
     callApi = true,
     clearReduxState = true,
-    clearPersistedState = true,
     onSuccess,
     onError,
   } = options;
@@ -465,19 +463,7 @@ export const performLogout = async (
      * CLEAR REDUX PERSIST
      * -----------------------------------------------------
      */
-    if (clearPersistedState && persistor) {
-      try {
-        if (typeof persistor.flush === "function") {
-          await persistor.flush();
-        }
-
-        if (typeof persistor.purge === "function") {
-          await persistor.purge();
-        }
-      } catch {
-        // Ignore persistence cleanup failures.
-      }
-    }
+    // Redux persistence is not configured in this application.
 
     /**
      * -----------------------------------------------------

@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
-import "./global.css";
+import "@/app/global.css";
 
 import { ReduxProvider } from "@/lib/providers/ReduxProvider";
 import { Toast } from "@/components/ui/Toast";
 import ScrollToTop from "@/components/common/ScrollToTop";
-import GetStartedDrawer from "@/Screens/GetStartedDrawer";
 
 export const metadata: Metadata = {
   title: "IndieKonnect",
@@ -27,8 +26,6 @@ export default function RootLayout({
 
       <body className="min-h-screen w-full antialiased">
         <ReduxProvider>
-          {/* <GetStartedDrawer /> */}
-
           {/* Route scroll reset + scroll-progress back-to-top button */}
           <ScrollToTop />
 

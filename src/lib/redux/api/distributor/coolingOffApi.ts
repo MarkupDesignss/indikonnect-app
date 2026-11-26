@@ -1,5 +1,5 @@
 // src/lib/redux/api/order/coolingOffApi.ts
-import { baseApi } from "../baseApi";
+import { baseApi } from "@/lib/redux/api/baseApi";
 
 export interface CoolingOffEligibilityResponse {
   success: boolean;

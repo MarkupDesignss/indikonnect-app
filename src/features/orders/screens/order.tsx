@@ -1,0 +1,1908 @@
+"use client";
+
+import { useState, useMemo, useRef, useEffect } from "react";
+
+import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
+import { useSearchParams, useRouter } from "next/navigation";
+
+import { Package, FileText, Truck, Search, ChevronDown, Filter, Star, X, Check, RotateCcw, Ban, ShoppingBag, MessageCircle, MapPin, Coins, Undo2 } from "lucide-react";
+
+import {
+  useGetMyOrdersQuery,
+  useGetOrderStatusesQuery,
+  useCancelOrderMutation,
+  useInitiateReturnMutation,
+  useLazyGetInvoiceByOrderIdQuery,
+  useAddRatingReviewMutation,
+  useWithdrawCancelOrderMutation,
+  useCancelReturnMutation,
+} from "@/lib/redux/api/order/orderApi";
+
+
+import ReviewModal from "@/features/orders/screens/ReviewModal";
+import OrderCancelModal, { CancelOrderData } from "@/features/orders/screens/OrderCancelModal";
+import { showToast } from "@/lib/slices/toastSlice";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { LuReceiptIndianRupee } from "react-icons/lu";
+import Loding from "@/components/common/Loding";
+import { useLazyGetIndiaPostOrderTrackingQuery } from "@/lib/redux/api/indiaPostTrackingApi";
+import { ALLOWED_FILTER_STATUSES, MenuAction, OrderGroup, RefundBadge, formatDate, formatPrice, getStatusColor, getStatusDisplayName, getStatusIcon, normalizeOrders, normalizeStatus, statusColors, toDate } from "@/features/orders/screens/order.parts/support";
+import { WithdrawConfirmModal } from "@/features/orders/screens/order.parts/WithdrawConfirmModal";
+import { ActionMenu } from "@/features/orders/screens/order.parts/ActionMenu";
+import { ReviewDisplay } from "@/features/orders/screens/order.parts/ReviewDisplay";
+import { RefundCreditDisplay } from "@/features/orders/screens/order.parts/RefundCreditDisplay";
+import dynamic from "next/dynamic";
+
+const TrackModal = dynamic(() => import("@/features/orders/screens/order.parts/TrackModal").then((m) => m.TrackModal));
+
+
+/* ============================================================
+   ORDERS PAGE
+============================================================ */
+
+export default function OrdersPage() {
+  const dispatch = useAppDispatch();
+  const router = useRouter();
+
+  const [filter, setFilter] = useState("all");
+
+  const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
+
+  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
+
+  const searchParams = useSearchParams();
+
+  const orderReferenceFromUrl = searchParams.get("order") || "";
+
+  const [searchTerm, setSearchTerm] = useState(orderReferenceFromUrl);
+
+  const [selectedOrderForReview, setSelectedOrderForReview] =
+    useState<any>(null);
+
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+
+  const [showCancelModal, setShowCancelModal] = useState(false);
+
+  const [breakupOrder, setBreakupOrder] = useState<OrderGroup | null>(null);
+
+  const [showTrackModal, setShowTrackModal] = useState(false);
+
+  const [selectedOrderForAction, setSelectedOrderForAction] =
+    useState<any>(null);
+
+  const [selectedOrderForTracking, setSelectedOrderForTracking] =
+    useState<any>(null);
+
+  const [selectedOrderForWithdraw, setSelectedOrderForWithdraw] =
+    useState<any>(null);
+
+  const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
+
+  const [selectedOrderForWithdrawReturn, setSelectedOrderForWithdrawReturn] =
+    useState<any>(null);
+
+  const [isWithdrawReturnModalOpen, setIsWithdrawReturnModalOpen] =
+    useState(false);
+
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const [modalType, setModalType] = useState<"cancel" | "return">("cancel");
+
+  // Invoice loading is tracked per order line (invoice is line-level now)
+  const [invoiceLoadingLines, setInvoiceLoadingLines] = useState<
+    Record<number, boolean>
+  >({});
+
+  const filterRef = useRef<HTMLDivElement>(null);
+
+  /* ============================================================
+     OUTSIDE CLICK (filter dropdown)
+  ============================================================ */
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        filterRef.current &&
+        !filterRef.current.contains(event.target as Node)
+      ) {
+        setIsFilterDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  /* ============================================================
+     API
+  ============================================================ */
+
+  const {
+    data: ordersData,
+    isLoading: ordersLoading,
+    refetch,
+  } = useGetMyOrdersQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+  });
+
+  const { data: statusesData, isLoading: statusesLoading } =
+    useGetOrderStatusesQuery();
+
+  const [cancelOrder, { isLoading: isCancelling }] = useCancelOrderMutation();
+
+  const [initiateReturn, { isLoading: isReturning }] =
+    useInitiateReturnMutation();
+
+  const [addRatingReview, { isLoading: isSubmittingReview }] =
+    useAddRatingReviewMutation();
+
+  // Line-level withdraw cancel: /orders/{ref}/withdrawCancel/{lineId}
+  const [withdrawCancelOrder, { isLoading: isWithdrawingCancelRequest }] =
+    useWithdrawCancelOrderMutation();
+
+  const [withdrawReturnRequest, { isLoading: isWithdrawingReturnRequest }] =
+    useCancelReturnMutation();
+
+  const [getInvoice] = useLazyGetInvoiceByOrderIdQuery();
+
+  // DoP credentials stay server-side. Only request tracking when the popup opens.
+  const [
+    loadIndiaPostTracking,
+    {
+      data: indiaPostTrackingResponse,
+      isFetching: isIndiaPostTracking,
+      isError: isIndiaPostTrackingError,
+    },
+  ] = useLazyGetIndiaPostOrderTrackingQuery();
+
+  /* ============================================================
+     STATUS LIST (buyback statuses removed, partial_delivered ensured)
+  ============================================================ */
+
+  const statusList = useMemo(() => {
+    const all = statusesData?.data || [];
+
+    const list: string[] = all.filter((status: string) =>
+      ALLOWED_FILTER_STATUSES.includes(normalizeStatus(status)),
+    );
+
+    if (!list.some((s) => normalizeStatus(s) === "partial_delivered")) {
+      list.push("partial_delivered");
+    }
+
+    return list;
+  }, [statusesData]);
+
+  /* ============================================================
+     ORDER GROUPS
+  ============================================================ */
+
+  const orderGroups = useMemo(() => {
+    const records = Array.isArray((ordersData as any)?.data)
+      ? (ordersData as any).data
+      : Array.isArray((ordersData as any)?.data?.data)
+        ? (ordersData as any).data.data
+        : [];
+
+    return normalizeOrders(records);
+  }, [ordersData]);
+
+  /* Auto-expand the order opened via ?order=REF */
+  useEffect(() => {
+    if (!orderReferenceFromUrl || orderGroups.length === 0) return;
+
+    const match = orderGroups.find(
+      (g) => g.order_reference === orderReferenceFromUrl,
+    );
+
+    if (match) {
+      setExpandedOrder(match.key);
+    }
+  }, [orderReferenceFromUrl, orderGroups]);
+
+  /* ============================================================
+     FILTER
+  ============================================================ */
+
+  const filteredGroups = useMemo(() => {
+    const searchValue = searchTerm.trim().toLowerCase();
+    const selectedFilter = normalizeStatus(filter);
+
+    return orderGroups.filter((group) => {
+      const matchesFilter =
+        filter === "all" ||
+        normalizeStatus(group.order_status) === selectedFilter ||
+        group.lines.some(
+          (line) => normalizeStatus(line.delivery_status) === selectedFilter,
+        );
+
+      if (!matchesFilter) return false;
+      if (!searchValue) return true;
+
+      return (
+        group.order_reference?.toLowerCase().includes(searchValue) ||
+        group.lines.some((line) =>
+          line.product_name?.toLowerCase().includes(searchValue),
+        )
+      );
+    });
+  }, [orderGroups, filter, searchTerm]);
+
+  /* ============================================================
+     ELIGIBILITY HELPERS (per product line)
+  ============================================================ */
+
+  const isAllowedByApi = (order: any) =>
+    Number(order.is_cancel_return_allowed) === 1 ||
+    order.is_cancel_return_allowed === true;
+
+  const canCancelOrder = (order: any) => {
+    if (!isAllowedByApi(order)) return false;
+    if (order.is_line_cancelled) return false;
+
+    const status = normalizeStatus(order.delivery_status);
+
+    return (
+      status === "pending" || status === "confirmed" || status === "processing"
+    );
+  };
+
+  const canWithdrawCancelRequest = (order: any) => {
+    if (!order || order.is_line_cancelled) return false;
+
+    return (
+      normalizeStatus(order.delivery_status) === "cancel_pending" &&
+      !!order.order_reference &&
+      !!order.line_id
+    );
+  };
+
+  const canWithdrawReturnRequest = (order: any) => {
+    if (!order || order.is_returned) return false;
+
+    return (
+      normalizeStatus(order.delivery_status) === "return_pending" &&
+      !!order.order_reference
+    );
+  };
+
+  const canReturnOrder = (order: any) => {
+    const status = normalizeStatus(order.delivery_status);
+
+    const quantity = Number(order.quantity) || 0;
+    const returnedQuantity = Number(order.returned_quantity) || 0;
+    const availableForReturn = Number(order.available_for_return) || 0;
+
+    const isReturnable =
+      Number(order.is_returnable) === 1 || order.is_returnable === true;
+
+    const returnTill = toDate(order.timeline?.return_applicable_till);
+    const windowOpen = !!returnTill && returnTill.getTime() > Date.now();
+
+    // In partial_delivered orders the API flag can be 0 even though the
+    // delivered item is still inside its return window.
+    const allowed = isAllowedByApi(order) || windowOpen;
+
+    return (
+      allowed &&
+      status === "delivered" &&
+      !order.is_returned &&
+      isReturnable &&
+      availableForReturn > 0 &&
+      returnedQuantity < quantity
+    );
+  };
+
+  const canReviewOrder = (order: any) => {
+    const status = normalizeStatus(order.delivery_status);
+
+    const hasExistingReview =
+      order.product_reviews && order.product_reviews.length > 0;
+
+    return status === "delivered" && !order.is_reviewed && !hasExistingReview;
+  };
+
+  // Invoice is line-level: the API tells us per item via `invoice_available`.
+  // Falls back to the old status check only if the flag is missing.
+  const canShowInvoice = (line: any) => {
+    if (!line?.line_id || !line?.order_id) return false;
+
+    if (typeof line.invoice_available === "boolean") {
+      return line.invoice_available;
+    }
+
+    const status = normalizeStatus(line?.delivery_status);
+
+    return (
+      [
+        "dispatched",
+        "shipped",
+        "in_transit",
+        "out_for_delivery",
+        "delivered",
+        "return_initiated",
+        "return_pending",
+        "return_approved",
+        "return_rejected",
+        "returned",
+        "refunded",
+      ].includes(status) && !!line?.invoice?.invoice_number
+    );
+  };
+
+  /* ============================================================
+     WITHDRAW HANDLERS
+  ============================================================ */
+
+  const openWithdrawModal = (order: any) => {
+    if (!canWithdrawCancelRequest(order)) return;
+
+    setSelectedOrderForWithdraw(order);
+    setIsWithdrawModalOpen(true);
+  };
+
+  const closeWithdrawModal = () => {
+    if (isWithdrawingCancelRequest) return;
+
+    setIsWithdrawModalOpen(false);
+    setSelectedOrderForWithdraw(null);
+  };
+
+  const openWithdrawReturnModal = (order: any) => {
+    if (!canWithdrawReturnRequest(order)) return;
+
+    setSelectedOrderForWithdrawReturn(order);
+    setIsWithdrawReturnModalOpen(true);
+  };
+
+  const closeWithdrawReturnModal = () => {
+    if (isWithdrawingReturnRequest) return;
+
+    setIsWithdrawReturnModalOpen(false);
+    setSelectedOrderForWithdrawReturn(null);
+  };
+
+  const handleWithdrawCancelRequest = async () => {
+    const order = selectedOrderForWithdraw;
+
+    if (!canWithdrawCancelRequest(order)) return;
+
+    try {
+      await withdrawCancelOrder({
+        orderReference: order.order_reference,
+        orderLineId: order.line_id,
+      }).unwrap();
+
+      dispatch(
+        showToast({
+          message: "Cancellation request withdrawn successfully!",
+          type: "success",
+        }),
+      );
+
+      setIsWithdrawModalOpen(false);
+      setSelectedOrderForWithdraw(null);
+
+      await refetch();
+    } catch (error: any) {
+      dispatch(
+        showToast({
+          message:
+            error?.data?.message ||
+            error?.message ||
+            "Failed to withdraw cancellation request. Please try again.",
+          type: "error",
+        }),
+      );
+    }
+  };
+
+  const handleWithdrawReturnRequest = async () => {
+    const order = selectedOrderForWithdrawReturn;
+
+    if (!canWithdrawReturnRequest(order)) return;
+
+    const pendingReturn = order?.returns?.find(
+      (r: any) =>
+        r.status === "pending" &&
+        r.type === "return" &&
+        r.items?.some((item: any) => item.order_line_id === order.line_id),
+    );
+
+    const returnRequest =
+      pendingReturn || order?.returns?.find((r: any) => r.status === "pending");
+
+    if (!returnRequest?.id) {
+      dispatch(
+        showToast({
+          message: "Return request ID not found. Please refresh and try again.",
+          type: "error",
+        }),
+      );
+      return;
+    }
+
+    try {
+      await withdrawReturnRequest({
+        returnId: returnRequest.id,
+      }).unwrap();
+
+      dispatch(
+        showToast({
+          message: "Return request withdrawn successfully!",
+          type: "success",
+        }),
+      );
+
+      setIsWithdrawReturnModalOpen(false);
+      setSelectedOrderForWithdrawReturn(null);
+
+      await refetch();
+    } catch (error: any) {
+      dispatch(
+        showToast({
+          message:
+            error?.data?.message ||
+            error?.message ||
+            "Failed to withdraw return request. Please try again.",
+          type: "error",
+        }),
+      );
+    }
+  };
+
+  /* ============================================================
+     CANCEL
+  ============================================================ */
+
+  const handleCancelOrder = async (data: CancelOrderData) => {
+    setIsProcessing(true);
+
+    try {
+      const orderReference = selectedOrderForAction?.order_reference;
+      const orderLineId = selectedOrderForAction?.line_id;
+
+      if (!orderReference) {
+        throw new Error("Order reference is missing.");
+      }
+
+      if (!orderLineId) {
+        throw new Error("Order line ID is missing.");
+      }
+
+      await cancelOrder({
+        orderReference,
+        orderLineId,
+        reason: data.reason,
+      }).unwrap();
+
+      dispatch(
+        showToast({
+          message: "Order cancellation request submitted successfully!",
+          type: "success",
+        }),
+      );
+
+      setShowCancelModal(false);
+      setSelectedOrderForAction(null);
+
+      await refetch();
+    } catch (error: any) {
+      dispatch(
+        showToast({
+          message:
+            error?.data?.message ||
+            error?.message ||
+            "Failed to cancel order. Please try again.",
+          type: "error",
+        }),
+      );
+
+      throw error;
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  /* ============================================================
+     RETURN
+  ============================================================ */
+
+  const handleReturnOrder = async (data: CancelOrderData) => {
+    setIsProcessing(true);
+
+    try {
+      const selectedQuantity =
+        Number(data.quantity) ||
+        Number(selectedOrderForAction?.available_for_return) ||
+        Number(selectedOrderForAction?.quantity) ||
+        1;
+
+      const maxQuantity =
+        Number(selectedOrderForAction?.available_for_return) ||
+        Number(selectedOrderForAction?.quantity) ||
+        1;
+
+      if (selectedQuantity < 1) {
+        throw new Error("Return quantity must be at least 1.");
+      }
+
+      if (selectedQuantity > maxQuantity) {
+        throw new Error(`Return quantity cannot be more than ${maxQuantity}.`);
+      }
+
+      const returnMethod =
+        data.return_method === "courier" ? "courier" : "doorstep";
+
+      const courier =
+        returnMethod === "courier" ? (data.courier || "").trim() : undefined;
+
+      if (returnMethod === "courier" && !courier) {
+        throw new Error("Please enter the courier name.");
+      }
+
+      const returnItems = [
+        {
+          order_line_id: selectedOrderForAction?.line_id,
+          quantity: selectedQuantity,
+          reason: data.reason,
+          images: data.images || [],
+        },
+      ];
+
+      const response = await initiateReturn({
+        order_reference: selectedOrderForAction?.order_reference,
+        return_method: returnMethod,
+        courier,
+        items: returnItems,
+      }).unwrap();
+
+      dispatch(
+        showToast({
+          message:
+            response?.message || "Return request submitted successfully!",
+          type: "success",
+        }),
+      );
+
+      setShowCancelModal(false);
+      setSelectedOrderForAction(null);
+
+      await refetch();
+
+      return response;
+    } catch (error: any) {
+      let errorMessage = "Failed to submit return request. Please try again.";
+
+      if (error?.data?.message) {
+        errorMessage = error.data.message;
+      } else if (error?.data?.errors) {
+        const errorMessages = Object.values(error.data.errors).flat();
+        errorMessage = errorMessages.join(" ");
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+
+      dispatch(
+        showToast({
+          message: errorMessage,
+          type: "error",
+        }),
+      );
+
+      throw error;
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  /* ============================================================
+     REVIEW
+  ============================================================ */
+
+  const handleReviewSubmit = async (reviewData: any) => {
+    try {
+      const files: File[] = Array.isArray(reviewData?.images)
+        ? reviewData.images.filter(
+            (img: any): img is File => img instanceof File,
+          )
+        : [];
+
+      const rating = Number(reviewData?.rating);
+
+      const reviewText =
+        reviewData?.review_text ??
+        reviewData?.reviewText ??
+        reviewData?.review ??
+        "";
+
+      if (!rating || rating < 1 || rating > 5) {
+        throw new Error("Please select a valid rating.");
+      }
+
+      if (!reviewText.trim()) {
+        throw new Error("Please enter your review.");
+      }
+
+      if (!selectedOrderForReview?.line_id) {
+        throw new Error("Order line ID is missing.");
+      }
+
+      if (!selectedOrderForReview?.product_id) {
+        throw new Error("Product ID is missing.");
+      }
+
+      const response = await addRatingReview({
+        rating,
+        review_text: reviewText.trim(),
+        order_id: selectedOrderForReview.order_id,
+        order_line_id: selectedOrderForReview.line_id,
+        product_id: selectedOrderForReview.product_id,
+        images: files,
+      }).unwrap();
+
+      dispatch(
+        showToast({
+          message: response?.message || "Review submitted successfully!",
+          type: "success",
+        }),
+      );
+
+      setIsReviewModalOpen(false);
+      setSelectedOrderForReview(null);
+
+      await refetch();
+
+      return response;
+    } catch (error: any) {
+      dispatch(
+        showToast({
+          message:
+            error?.data?.message ||
+            error?.message ||
+            "Failed to submit review. Please try again.",
+          type: "error",
+        }),
+      );
+
+      throw error;
+    }
+  };
+
+  /* ============================================================
+     INVOICE (line level: /invoice/order/{orderId}/{lineId})
+  ============================================================ */
+
+  const handleInvoiceDownload = async (
+    orderId: number | string,
+    lineId: number,
+  ) => {
+    if (!orderId || !lineId) {
+      dispatch(
+        showToast({
+          message: "Invoice details are missing for this item.",
+          type: "error",
+        }),
+      );
+      return;
+    }
+
+    setInvoiceLoadingLines((prev) => ({
+      ...prev,
+      [lineId]: true,
+    }));
+
+    try {
+      const result = await getInvoice({ orderId, lineId }).unwrap();
+
+      if (result?.data) {
+        const { generateInvoicePDF } = await import("@/features/orders/screens/invoiceGenerator");
+        await generateInvoicePDF(result.data);
+
+        dispatch(
+          showToast({
+            message: "Invoice downloaded successfully!",
+            type: "success",
+          }),
+        );
+      } else {
+        dispatch(
+          showToast({
+            message: "Invoice not available for this item",
+            type: "error",
+          }),
+        );
+      }
+    } catch (error: any) {
+      console.error("Invoice error:", error);
+
+      dispatch(
+        showToast({
+          message:
+            error?.data?.message ||
+            error?.message ||
+            "Failed to fetch invoice. Please try again.",
+          type: "error",
+        }),
+      );
+    } finally {
+      setInvoiceLoadingLines((prev) => ({
+        ...prev,
+        [lineId]: false,
+      }));
+    }
+  };
+
+  /* ============================================================
+     MODAL OPENERS
+  ============================================================ */
+
+  const openReviewModal = (order: any) => {
+    setSelectedOrderForReview(order);
+    setIsReviewModalOpen(true);
+  };
+
+  const openCancelModal = (order: any) => {
+    setSelectedOrderForAction(order);
+    setModalType("cancel");
+    setShowCancelModal(true);
+  };
+
+  const openReturnModal = (order: any) => {
+    setSelectedOrderForAction(order);
+    setModalType("return");
+    setShowCancelModal(true);
+  };
+
+  const navigateToProduct = (line: any) => {
+    if (!line?.product_slug) {
+      dispatch(
+        showToast({
+          message: "Product link not available.",
+          type: "error",
+        }),
+      );
+      return;
+    }
+
+    router.push(`/product/${encodeURIComponent(line.product_slug)}`);
+  };
+
+  // Reference + internal order ID come from authenticated My Orders data.
+  const getTrackingIdentifier = (order: any) => {
+    const reference =
+      typeof order?.order_reference === "string"
+        ? order.order_reference.trim()
+        : "";
+    const id = Number(order?.order_id);
+    const validId = Number.isSafeInteger(id) && id > 0;
+
+    if (reference && validId) {
+      return { orderReference: reference, orderId: id };
+    }
+    if (reference) return reference;
+    return validId ? id : null;
+  };
+
+  const openTrackModal = (group: OrderGroup) => {
+    const trackingOrder = {
+      ...group.representative,
+      delivery_status: group.order_status,
+      order_status: group.order_status,
+      product_name:
+        group.lines.length > 1
+          ? `${group.lines.length} products`
+          : group.representative.product_name,
+    };
+
+    setSelectedOrderForTracking(trackingOrder);
+    setShowTrackModal(true);
+
+    const identifier = getTrackingIdentifier(trackingOrder);
+    if (identifier !== null) {
+      void loadIndiaPostTracking(identifier, false);
+    }
+  };
+
+  const refreshIndiaPostTracking = async () => {
+    const identifier = getTrackingIdentifier(selectedOrderForTracking);
+    if (identifier !== null) {
+      await loadIndiaPostTracking(identifier, false);
+    }
+    // Fetch authoritative invoice and order status after checking tracking.
+    await refetch();
+  };
+
+  /* ============================================================
+     ANIMATION
+  ============================================================ */
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.06,
+        delayChildren: 0.05,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 14 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        type: "spring",
+        stiffness: 300,
+        damping: 25,
+      },
+    },
+  };
+
+  /* ============================================================
+     STATS (calculated from loaded orders)
+  ============================================================ */
+
+  const stats = useMemo(
+    () => [
+      {
+        label: "Total orders",
+        value: orderGroups.length,
+        icon: Package,
+        color: "text-[#234E9A]",
+        bg: "bg-[#EDF3FF]",
+      },
+      {
+        label: "Delivered",
+        value: orderGroups.filter((g) =>
+          ["delivered", "partial_delivered"].includes(
+            normalizeStatus(g.order_status),
+          ),
+        ).length,
+        icon: Check,
+        color: "text-emerald-700",
+        bg: "bg-emerald-50",
+      },
+      {
+        label: "In transit",
+        value: orderGroups.filter((g) =>
+          g.lines.some((l) =>
+            ["dispatched", "shipped", "out_for_delivery"].includes(
+              normalizeStatus(l.delivery_status),
+            ),
+          ),
+        ).length,
+        icon: Truck,
+        color: "text-violet-700",
+        bg: "bg-violet-50",
+      },
+      {
+        label: "Returns / Refunds",
+        value: orderGroups.filter((g) =>
+          g.lines.some((l) =>
+            [
+              "return_pending",
+              "return_approved",
+              "returned",
+              "refunded",
+            ].includes(normalizeStatus(l.delivery_status)),
+          ),
+        ).length,
+        icon: RotateCcw,
+        color: "text-amber-700",
+        bg: "bg-amber-50",
+      },
+    ],
+    [orderGroups],
+  );
+
+  // stats is kept for future summary cards
+  void stats;
+
+  /* ============================================================
+     LOADING
+  ============================================================ */
+
+  if (ordersLoading || statusesLoading) {
+    return (
+      <div className="flex min-h-[500px] items-center justify-center bg-white font-sans">
+        <div className="text-center">
+          <Loding />
+        </div>
+      </div>
+    );
+  }
+
+  /* ============================================================
+     UI
+  ============================================================ */
+
+  return (
+    <>
+      <div
+        id="toast-portal"
+        className="fixed right-4 top-4 z-[9999] w-auto max-w-md"
+      />
+
+      <div className="min-h-screen font-sans">
+        {/* REVIEW MODAL */}
+        <ReviewModal
+          isOpen={isReviewModalOpen}
+          onClose={() => {
+            setIsReviewModalOpen(false);
+            setSelectedOrderForReview(null);
+          }}
+          order={selectedOrderForReview}
+          onSubmit={handleReviewSubmit}
+          isLoading={isSubmittingReview}
+        />
+
+        {/* CANCEL / RETURN MODAL */}
+        <OrderCancelModal
+          isOpen={showCancelModal}
+          onClose={() => {
+            setShowCancelModal(false);
+            setSelectedOrderForAction(null);
+          }}
+          orderReference={selectedOrderForAction?.order_reference || ""}
+          onCancel={
+            modalType === "cancel" ? handleCancelOrder : handleReturnOrder
+          }
+          isLoading={isProcessing || isCancelling || isReturning}
+          maxImages={5}
+          maxFileSize={5}
+          minReasonLength={10}
+          modalType={modalType}
+          order={selectedOrderForAction}
+        />
+
+        {/* WITHDRAW CANCEL */}
+        <WithdrawConfirmModal
+          isOpen={isWithdrawModalOpen}
+          order={selectedOrderForWithdraw}
+          isLoading={isWithdrawingCancelRequest}
+          title="Withdraw Cancel Request?"
+          description="You are about to withdraw your cancellation request for this item."
+          badgeLabel="Cancel Pending"
+          note="After withdrawing, this item will no longer be in the cancellation-request state. You can place a new cancellation request later only if it is still eligible."
+          confirmLabel="Withdraw Request"
+          onClose={closeWithdrawModal}
+          onConfirm={handleWithdrawCancelRequest}
+        />
+
+        {/* WITHDRAW RETURN */}
+        <WithdrawConfirmModal
+          isOpen={isWithdrawReturnModalOpen}
+          order={selectedOrderForWithdrawReturn}
+          isLoading={isWithdrawingReturnRequest}
+          title="Withdraw Return Request?"
+          description="You are about to withdraw your return request for this item."
+          badgeLabel="Return Pending"
+          note="After withdrawing, this item will no longer be in the return-request state. You can place a new return request later only if it is still eligible."
+          confirmLabel="Withdraw Return Request"
+          onClose={closeWithdrawReturnModal}
+          onConfirm={handleWithdrawReturnRequest}
+        />
+
+        <div className="container mx-auto">
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="space-y-5"
+          >
+            <motion.div
+              variants={itemVariants}
+              className="flex flex-col items-stretch justify-between gap-3 rounded-[14px] border border-[#E4EAF4] bg-white p-3.5 sm:p-4 md:flex-row md:items-center"
+            >
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="text-[12px] font-medium text-[#171717]">
+                  Filter:
+                </span>
+
+                <div className="relative" ref={filterRef}>
+                  <button
+                    onClick={() =>
+                      setIsFilterDropdownOpen(!isFilterDropdownOpen)
+                    }
+                    className="flex h-[40px] items-center gap-2 rounded-[10px] border border-[#E3EAF5] bg-[#F8FAFD] px-3.5 text-[12px] font-medium text-[#171717] transition hover:border-[#BDBDBA]"
+                  >
+                    <Filter className="h-3.5 w-3.5 text-[#888888]" />
+
+                    <span>
+                      {filter === "all"
+                        ? "All Statuses"
+                        : getStatusDisplayName(filter)}
+                    </span>
+
+                    <ChevronDown
+                      className={`h-3.5 w-3.5 text-[#888888] transition-transform ${
+                        isFilterDropdownOpen ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+
+                  {isFilterDropdownOpen && (
+                    <div className="absolute left-0 top-full z-50 mt-2 max-h-[320px] w-52 overflow-y-auto rounded-[10px] border border-[#E4E4E2] bg-white py-1.5 shadow-[0_12px_40px_-12px_rgba(0,0,0,0.15)]">
+                      <button
+                        onClick={() => {
+                          setFilter("all");
+                          setIsFilterDropdownOpen(false);
+                        }}
+                        className={`w-full px-4 py-2 text-left text-[12px] transition-colors hover:bg-[#FAFAF9] ${
+                          filter === "all"
+                            ? "bg-[#FAFAF9] font-medium text-[#171717]"
+                            : "text-[#666666]"
+                        }`}
+                      >
+                        All Statuses
+                      </button>
+
+                      {statusList.map((status: string) => {
+                        const statusKey = normalizeStatus(status);
+
+                        return (
+                          <button
+                            key={status}
+                            onClick={() => {
+                              setFilter(statusKey);
+                              setIsFilterDropdownOpen(false);
+                            }}
+                            className={`flex w-full items-center gap-2 px-4 py-2 text-left text-[12px] transition-colors hover:bg-[#FAFAF9] ${
+                              normalizeStatus(filter) === statusKey
+                                ? "bg-[#FAFAF9] font-medium text-[#171717]"
+                                : "text-[#666666]"
+                            }`}
+                          >
+                            <span
+                              className={`h-1.5 w-1.5 rounded-full ${
+                                statusColors[statusKey]
+                                  ?.split(" ")[0]
+                                  ?.replace("text-", "bg-") || "bg-gray-400"
+                              }`}
+                            />
+
+                            {getStatusDisplayName(status)}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="relative w-full md:w-72">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#b0b6c3]" />
+
+                <input
+                  type="text"
+                  placeholder="Search by order reference or product"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="h-[40px] w-full rounded-[10px] border border-[#E3EAF5] bg-[#F8FAFD] py-2 pl-10 pr-3 text-[12px] text-[#171717] outline-none transition placeholder:text-[#b0b6c3] focus:border-[#0E1B3D] focus:bg-white"
+                />
+              </div>
+            </motion.div>
+
+            {/* ==================================================
+                ORDERS (GROUPED BY ORDER)
+            ================================================== */}
+
+            {filteredGroups.length === 0 ? (
+              <motion.div
+                variants={itemVariants}
+                className="rounded-[14px] border border-dashed border-[#DCE4F0] bg-[#FAFCFF] p-10 text-center sm:p-12"
+              >
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#F1F1F0]">
+                  <Package className="h-7 w-7 text-[#999999]" />
+                </div>
+
+                <h3 className="mt-4 text-[17px] font-semibold text-[#171717]">
+                  No orders found
+                </h3>
+
+                <p className="mt-1.5 text-[12px] text-[#888888]">
+                  {searchTerm || filter !== "all"
+                    ? "Try adjusting your search or filter."
+                    : "You haven't placed any orders yet."}
+                </p>
+
+                {(searchTerm || filter !== "all") && (
+                  <button
+                    onClick={() => {
+                      setSearchTerm("");
+                      setFilter("all");
+                    }}
+                    className="mt-4 rounded-[8px] bg-[#111111] px-5 py-2.5 text-[11px] font-semibold text-white transition hover:bg-[#292929]"
+                  >
+                    Clear Filters
+                  </button>
+                )}
+              </motion.div>
+            ) : (
+              <motion.div variants={containerVariants} className="space-y-4">
+                {filteredGroups.map((group) => {
+                  const { key, lines, representative } = group;
+
+                  const isExpanded = expandedOrder === key;
+
+                  const orderStatus = normalizeStatus(group.order_status);
+
+                  const StatusIcon = getStatusIcon(group.order_status);
+
+                  const statusColor = getStatusColor(group.order_status);
+
+                  /* unique credit notes across all products of this order */
+                  const creditNotes = Array.from(
+                    new Map(
+                      lines
+                        .flatMap((l) => l.credit_notes || [])
+                        .map((c: any) => [c.id, c]),
+                    ).values(),
+                  );
+
+                  const linesWithReviews = lines.filter(
+                    (l) => l.product_reviews && l.product_reviews.length > 0,
+                  );
+
+                  /* order level menu */
+                  const orderActions: MenuAction[] = [
+                    {
+                      key: "track",
+                      label: "Track Order",
+                      icon: <Truck className="h-4 w-4 text-[#1f9d6b]" />,
+                      onClick: () => openTrackModal(group),
+                    },
+                    {
+                      key: "breakup",
+                      label: "View Breakup",
+                      icon: (
+                        <LuReceiptIndianRupee className="h-4 w-4 text-[#3955A6]" />
+                      ),
+                      onClick: () => setBreakupOrder(group),
+                    },
+                  ];
+
+                  const orderMenu = (
+                    <ActionMenu actions={orderActions} title="Order actions" />
+                  );
+
+                  return (
+                    <motion.article
+                      key={key}
+                      variants={itemVariants}
+                      className={`overflow-visible rounded-[16px] border bg-white shadow-[0_5px_22px_rgba(20,35,65,0.045)] ${
+                        orderStatus === "cancelled"
+                          ? "border-[#F0CFCF]"
+                          : orderStatus === "refunded" || creditNotes.length > 0
+                            ? "border-[#CFE0D4]"
+                            : "border-[#E4EAF4]"
+                      }`}
+                    >
+                      {/* ORDER HEADER */}
+                      <div className="border-b border-[#EDF1F7] p-3.5 sm:p-5">
+                        <div className="flex items-start gap-3">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setExpandedOrder(isExpanded ? null : key)
+                            }
+                            aria-label={
+                              isExpanded
+                                ? "Collapse order details"
+                                : "Expand order details"
+                            }
+                            className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#E2E8F2] bg-[#F8FAFD] text-[#36527B] transition hover:bg-[#EEF3FA]"
+                          >
+                            <ChevronDown
+                              size={17}
+                              className={`transition-transform duration-300 ease-in-out ${
+                                isExpanded ? "rotate-180" : ""
+                              }`}
+                            />
+                          </button>
+
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h4 className="break-all text-[13px] font-extrabold tracking-[-0.01em] text-[#122449] sm:text-[14px]">
+                                Order #{group.order_reference}
+                              </h4>
+
+                              <span
+                                className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold ${statusColor}`}
+                              >
+                                <StatusIcon className="h-3 w-3" />
+                                {getStatusDisplayName(group.order_status)}
+                              </span>
+
+                              {creditNotes.length > 0 && (
+                                <RefundBadge creditNotes={creditNotes} />
+                              )}
+                            </div>
+
+                            <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10.5px] text-[#8592A7] sm:text-[11px]">
+                              <span>Placed {formatDate(group.order_date)}</span>
+                              <span>
+                                {lines.length}{" "}
+                                {lines.length === 1 ? "product" : "products"}
+                              </span>
+                              <span>
+                                {group.quantity}{" "}
+                                {group.quantity === 1 ? "item" : "items"}
+                              </span>
+                              <span className="capitalize">
+                                Payment:{" "}
+                                {getStatusDisplayName(
+                                  representative.payment_status,
+                                )}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Desktop: total + menu */}
+                          <div className="hidden shrink-0 items-start gap-4 sm:flex">
+                            <div className="flex flex-col items-end gap-1">
+                              <span className="text-[9px] font-semibold uppercase tracking-[0.08em] text-[#8A96A9]">
+                                Order total
+                              </span>
+                              <span className="text-[17px] font-extrabold tabular-nums text-[#172A4D]">
+                                {formatPrice(group.total)}
+                              </span>
+                            </div>
+                            {orderMenu}
+                          </div>
+
+                          {/* Mobile: menu only */}
+                          <div className="shrink-0 sm:hidden">{orderMenu}</div>
+                        </div>
+
+                        {/* Mobile: total row */}
+                        <div className="mt-3 flex items-center justify-between gap-3 rounded-xl bg-[#F6F8FC] px-3.5 py-2.5 sm:hidden">
+                          <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8A96A9]">
+                            Order total
+                          </span>
+                          <span className="text-[16px] font-extrabold tabular-nums text-[#172A4D]">
+                            {formatPrice(group.total)}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* PRODUCTS IN THIS ORDER */}
+                      <div className="divide-y divide-[#EEF2F7]">
+                        {lines.map((line) => {
+                          const lineStatus = normalizeStatus(
+                            line.delivery_status,
+                          );
+
+                          const LineIcon = getStatusIcon(line.delivery_status);
+
+                          const lineCancelled = line.is_line_cancelled;
+
+                          const hasReviews =
+                            line.product_reviews &&
+                            line.product_reviews.length > 0;
+
+                          const returnTill = toDate(
+                            line.timeline?.return_applicable_till,
+                          );
+
+                          const returnOpen =
+                            !!returnTill && returnTill.getTime() > Date.now();
+
+                          const lineActions: MenuAction[] = [];
+
+                          if (line.product_slug) {
+                            lineActions.push({
+                              key: "view-product",
+                              label: "View Product",
+                              icon: (
+                                <ShoppingBag className="h-4 w-4 text-[#3955A6]" />
+                              ),
+                              onClick: () => navigateToProduct(line),
+                            });
+                          }
+
+                          if (canShowInvoice(line)) {
+                            lineActions.push({
+                              key: "invoice",
+                              label: invoiceLoadingLines[line.line_id]
+                                ? "Loading Invoice..."
+                                : "Download Invoice",
+                              icon: (
+                                <FileText className="h-4 w-4 text-[#344054]" />
+                              ),
+                              onClick: () =>
+                                handleInvoiceDownload(
+                                  line.order_id,
+                                  line.line_id,
+                                ),
+                            });
+                          }
+
+                          if (canReviewOrder(line) && !lineCancelled) {
+                            lineActions.push({
+                              key: "review",
+                              label: "Write Review",
+                              icon: <Star className="h-4 w-4 text-[#B8935A]" />,
+                              onClick: () => openReviewModal(line),
+                            });
+                          }
+
+                          if (canReturnOrder(line) && !lineCancelled) {
+                            lineActions.push({
+                              key: "return",
+                              label: "Return Item",
+                              icon: (
+                                <RotateCcw className="h-4 w-4 text-[#EA580C]" />
+                              ),
+                              onClick: () => openReturnModal(line),
+                            });
+                          }
+
+                          if (canWithdrawReturnRequest(line)) {
+                            lineActions.push({
+                              key: "withdraw-return",
+                              label: "Withdraw Return Request",
+                              icon: <Undo2 className="h-4 w-4" />,
+                              onClick: () => openWithdrawReturnModal(line),
+                              danger: true,
+                            });
+                          }
+
+                          if (canCancelOrder(line)) {
+                            lineActions.push({
+                              key: "cancel",
+                              label: "Cancel Item",
+                              icon: <Ban className="h-4 w-4" />,
+                              onClick: () => openCancelModal(line),
+                              danger: true,
+                            });
+                          }
+
+                          if (canWithdrawCancelRequest(line)) {
+                            lineActions.push({
+                              key: "withdraw-cancel",
+                              label: "Withdraw Cancel Request",
+                              icon: <Undo2 className="h-4 w-4" />,
+                              onClick: () => openWithdrawModal(line),
+                              danger: true,
+                            });
+                          }
+
+                          return (
+                            <div
+                              key={line.display_id}
+                              className="flex flex-col gap-3 p-3.5 sm:flex-row sm:items-center sm:gap-4 sm:p-4"
+                            >
+                              {/* Image + name */}
+                              <div className="flex min-w-0 flex-1 items-start gap-3">
+                                <button
+                                  type="button"
+                                  onClick={() => navigateToProduct(line)}
+                                  title={`View ${line.product_name}`}
+                                  className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-[#E5EAF1] bg-[#FAFBFD] transition hover:border-[#B8C8DE] sm:h-[76px] sm:w-[76px]"
+                                >
+                                  {line.primary_image ? (
+                                    <Image
+                                      src={line.primary_image}
+                                      alt={line.product_name || "Product"}
+                                      fill
+                                      sizes="76px"
+                                      className="object-contain p-1.5"
+                                    />
+                                  ) : (
+                                    <span className="flex h-full w-full items-center justify-center">
+                                      <Package className="h-6 w-6 text-[#A6B1C0]" />
+                                    </span>
+                                  )}
+                                </button>
+
+                                <div className="min-w-0 flex-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => navigateToProduct(line)}
+                                    className="line-clamp-2 max-w-full text-left text-[12.5px] font-bold leading-snug text-[#1B2B45] transition hover:text-[#315B87] sm:text-[13px]"
+                                  >
+                                    {line.product_name || "Product"}
+                                  </button>
+
+                                  <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[10.5px] text-[#8290A5]">
+                                    <span>
+                                      Qty:{" "}
+                                      <strong className="text-[#485A73]">
+                                        {line.quantity}
+                                      </strong>
+                                    </span>
+
+                                    {line.product_code ? (
+                                      <span>Code: {line.product_code}</span>
+                                    ) : null}
+
+                                    <span
+                                      className={`flex items-center gap-1 rounded-full border px-2 py-0.5 font-semibold ${getStatusColor(
+                                        line.delivery_status,
+                                      )}`}
+                                    >
+                                      <LineIcon className="h-3 w-3" />
+                                      {getStatusDisplayName(
+                                        line.delivery_status,
+                                      )}
+                                    </span>
+
+                                    {hasReviews && (
+                                      <span className="flex items-center gap-1 rounded-full border border-[#CFE0D4] bg-[#F1F7F3] px-2 py-0.5 font-semibold text-[#3F765A]">
+                                        <MessageCircle className="h-3 w-3" />
+                                        Reviewed
+                                      </span>
+                                    )}
+
+                                    {line.is_reviewed && !hasReviews && (
+                                      <span className="flex items-center gap-1 rounded-full border border-[#CFE0D4] bg-[#F1F7F3] px-2 py-0.5 font-semibold text-[#3F765A]">
+                                        <Check className="h-3 w-3" />
+                                        Review submitted
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {lineStatus === "delivered" && returnTill && (
+                                    <p
+                                      className={`mt-1.5 text-[10px] font-medium ${
+                                        returnOpen
+                                          ? "text-[#26805E]"
+                                          : "text-[#B45B4B]"
+                                      }`}
+                                    >
+                                      {returnOpen
+                                        ? "Return window closes on"
+                                        : "Return window closed on"}{" "}
+                                      {formatDate(
+                                        line.timeline.return_applicable_till,
+                                      )}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Price + menu */}
+                              <div className="flex items-center justify-between gap-3 border-t border-dashed border-[#EEF2F7] pt-3 sm:min-w-[170px] sm:justify-end sm:border-0 sm:pt-0">
+                                <div className="sm:text-right">
+                                  <p className="text-[9px] font-semibold uppercase tracking-[0.08em] text-[#91A0B4]">
+                                    Item total
+                                  </p>
+                                  <p
+                                    className={`mt-0.5 text-[14px] font-extrabold tabular-nums ${
+                                      lineCancelled
+                                        ? "text-[#B24C4C] line-through"
+                                        : "text-[#1B2B45]"
+                                    }`}
+                                  >
+                                    {formatPrice(line.final_amount)}
+                                  </p>
+                                  <p className="mt-0.5 text-[10px] text-[#8B98AA]">
+                                    {formatPrice(Number(line.unit_price) || 0)}{" "}
+                                    each
+                                  </p>
+                                </div>
+
+                                <ActionMenu
+                                  actions={lineActions}
+                                  title="Item actions"
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* EXPAND FOOTER */}
+                      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#EDF1F7] bg-[#FBFCFE] px-4 py-3 sm:px-5">
+                        <p className="text-[10.5px] text-[#8996A9]">
+                          {lines.length}{" "}
+                          {lines.length === 1 ? "product" : "products"} in this
+                          order
+                        </p>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setExpandedOrder(isExpanded ? null : key)
+                          }
+                          aria-expanded={isExpanded}
+                          className="inline-flex items-center gap-2 rounded-lg border border-[#DCE5F1] bg-white px-3.5 py-2 text-[10.5px] font-bold text-[#31527B] transition hover:border-[#B8C9E0] hover:bg-[#F6F9FD]"
+                        >
+                          {isExpanded
+                            ? "Hide Order Details"
+                            : "View Order Details"}
+                          <ChevronDown
+                            size={14}
+                            className={`transition-transform duration-300 ease-in-out ${
+                              isExpanded ? "rotate-180" : ""
+                            }`}
+                          />
+                        </button>
+                      </div>
+
+                      {/* EXPANDED DETAILS */}
+                      <AnimatePresence initial={false}>
+                        {isExpanded && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{
+                              duration: 0.3,
+                              ease: [0.22, 1, 0.36, 1],
+                            }}
+                            className="overflow-hidden rounded-b-[16px] border-t border-[#E6E6E4] bg-[#FAFBFC]"
+                          >
+                            <div className="space-y-4 p-4 sm:p-5">
+                              <div className="overflow-hidden rounded-[12px] border border-[#E1E5EB] bg-white">
+                                <div className="grid grid-cols-1 gap-x-8 gap-y-4 p-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-3">
+                                  <div>
+                                    <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#8A92A6]">
+                                      Order Reference
+                                    </p>
+                                    <p className="mt-1 break-all text-[12px] font-medium text-[#171717]">
+                                      {group.order_reference || "N/A"}
+                                    </p>
+                                  </div>
+
+                                  <div>
+                                    <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#8A92A6]">
+                                      Payment Status
+                                    </p>
+                                    <p className="mt-1">
+                                      <span
+                                        className={`rounded-full px-2.5 py-0.5 text-[10px] font-medium capitalize ${
+                                          representative.payment_status ===
+                                          "paid"
+                                            ? "bg-[#F1F7F3] text-[#3F765A]"
+                                            : representative.payment_status ===
+                                                "failed"
+                                              ? "bg-[#FDF2F2] text-[#B24C4C]"
+                                              : "bg-[#FBF3E4] text-[#A9711F]"
+                                        }`}
+                                      >
+                                        {representative.payment_status || "N/A"}
+                                      </span>
+                                    </p>
+                                  </div>
+
+                                  <div>
+                                    <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#8A92A6]">
+                                      Payment Method
+                                    </p>
+                                    <p className="mt-1 text-[12px] uppercase text-[#171717]">
+                                      {representative.payment_gateway || "N/A"}
+                                    </p>
+                                  </div>
+
+                                  <div>
+                                    <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#8A92A6]">
+                                      Transaction ID
+                                    </p>
+                                    <p className="mt-1 break-all text-[12px] text-[#171717]">
+                                      {representative.gateway_transaction_id ||
+                                        "N/A"}
+                                    </p>
+                                  </div>
+
+                                  <div>
+                                    <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#8A92A6]">
+                                      Total Payable
+                                    </p>
+                                    <p className="mt-1 text-[16px] font-bold text-[#101828]">
+                                      {formatPrice(group.total)}
+                                    </p>
+                                  </div>
+
+                                  <div>
+                                    <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#8A92A6]">
+                                      Coins Redeemed
+                                    </p>
+                                    <p className="mt-1 inline-flex items-center gap-1 text-[13px] font-semibold text-[#1F7A56]">
+                                      <Coins size={13} />
+                                      {representative.coin_redeemed || 0}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                {representative.delivery_address && (
+                                  <div className="border-t border-[#EDF0F3] px-4 py-4 sm:px-5">
+                                    <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#8A92A6]">
+                                      Shipping Address
+                                    </p>
+                                    <div className="mt-1.5 flex items-start gap-2 text-[12.5px] leading-5 text-[#344054]">
+                                      <MapPin
+                                        size={14}
+                                        className="mt-0.5 shrink-0 text-[#98a2b3]"
+                                      />
+                                      <span className="break-words">
+                                        {representative.delivery_address
+                                          ?.full_address || "N/A"}
+                                      </span>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* REVIEWS */}
+                              {linesWithReviews.length > 0 && (
+                                <div className="space-y-3">
+                                  <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#888888]">
+                                    Product Reviews
+                                  </p>
+
+                                  {linesWithReviews.map((l) => (
+                                    <div key={l.display_id}>
+                                      {lines.length > 1 && (
+                                        <p className="mb-1.5 text-[11px] font-semibold text-[#344054]">
+                                          {l.product_name}
+                                        </p>
+                                      )}
+                                      <ReviewDisplay
+                                        reviews={l.product_reviews}
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
+                              {/* REFUND / CREDIT NOTES */}
+                              {creditNotes.length > 0 && (
+                                <RefundCreditDisplay
+                                  creditNotes={creditNotes}
+                                />
+                              )}
+
+                              {/* FOOTER ACTIONS */}
+                              <div className="flex flex-wrap items-center justify-between gap-2.5 border-t border-[#E6E6E4] pt-4">
+                                <button
+                                  type="button"
+                                  onClick={() => openTrackModal(group)}
+                                  className="inline-flex items-center gap-1.5 rounded-[8px] border border-[#CBD5F0] bg-[#EEF1FB] px-3.5 py-2 text-[11px] font-semibold text-[#3E5AA8] transition hover:bg-[#3E5AA8] hover:text-white"
+                                >
+                                  <Truck className="h-3.5 w-3.5" />
+                                  Track Order
+                                </button>
+
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => setBreakupOrder(group)}
+                                    className="inline-flex items-center gap-1.5 rounded-[8px] border border-[#C9D5F7] bg-[#F4F6FC] px-3.5 py-2 text-[11px] font-semibold text-[#3955A6] transition hover:bg-[#ECEFFC]"
+                                  >
+                                    <LuReceiptIndianRupee size={14} />
+                                    View Breakup
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </motion.article>
+                  );
+                })}
+              </motion.div>
+            )}
+          </motion.div>
+        </div>
+
+        {/* ========================================================
+            BREAKUP MODAL
+        ======================================================== */}
+
+        <AnimatePresence>
+          {breakupOrder && (
+            <motion.div
+              className="fixed inset-0 z-[100] flex items-center justify-center bg-black/35 p-3 font-sans backdrop-blur-[2px] sm:p-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setBreakupOrder(null)}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.98, y: 12 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.98, y: 12 }}
+                transition={{ duration: 0.2 }}
+                onClick={(e) => e.stopPropagation()}
+                className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-[16px] border border-[#E4E4E2] bg-white shadow-[0_18px_60px_rgba(0,0,0,0.14)]"
+              >
+                <div className="flex shrink-0 items-center justify-between border-b border-[#E6E6E4] px-4 py-4 sm:px-5">
+                  <div className="min-w-0">
+                    <h3 className="text-[16px] font-semibold text-[#171717]">
+                      Order Price Breakup
+                    </h3>
+
+                    <p className="mt-0.5 break-all text-[10px] text-[#888888]">
+                      {breakupOrder.order_reference}
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => setBreakupOrder(null)}
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] border border-[#D7D7D5] bg-white text-[#777777] transition hover:border-[#BDBDBA] hover:text-[#111111]"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
+                  <div className="space-y-2.5">
+                    {breakupOrder.lines.map((item: any) => {
+                      const isCancelled =
+                        normalizeStatus(item.delivery_status) === "cancelled";
+
+                      return (
+                        <div
+                          key={item.line_id}
+                          className={`flex items-center justify-between gap-3 rounded-[10px] border p-3 sm:p-3.5 ${
+                            isCancelled
+                              ? "border-[#F0CFCF] bg-[#FDF2F2]"
+                              : "border-[#E4E4E2] bg-[#FAFAF9]"
+                          }`}
+                        >
+                          <div className="flex min-w-0 items-center gap-3">
+                            <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-[8px] border border-[#E4E4E2] bg-white">
+                              {item.primary_image ? (
+                                <Image
+                                  src={item.primary_image}
+                                  alt={item.product_name || "Product"}
+                                  fill
+                                  sizes="48px"
+                                  className="object-contain p-1"
+                                />
+                              ) : (
+                                <div className="flex h-full items-center justify-center">
+                                  <Package className="h-4 w-4 text-[#999999]" />
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="min-w-0">
+                              <p className="truncate text-[12px] font-medium text-[#171717]">
+                                {item.product_name}
+                                {isCancelled && (
+                                  <span className="ml-2 text-[10px] font-medium text-[#B24C4C]">
+                                    (Cancelled)
+                                  </span>
+                                )}
+                              </p>
+
+                              <p className="mt-0.5 text-[10px] text-[#888888]">
+                                Qty: {item.quantity}
+                                {Number(item.gst_amount) > 0
+                                  ? ` • GST: ${item.gst_rate}%`
+                                  : ""}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="shrink-0 text-right">
+                            <p
+                              className={`text-[14px] font-semibold ${
+                                isCancelled
+                                  ? "text-[#B24C4C]"
+                                  : "text-[#111111]"
+                              }`}
+                            >
+                              {formatPrice(Number(item.final_amount) || 0)}
+                            </p>
+
+                            <p className="mt-0.5 text-[10px] text-[#888888]">
+                              {formatPrice(Number(item.unit_price) || 0)} ×{" "}
+                              {item.quantity}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="mt-4 border-t border-[#E6E6E4] pt-4">
+                    <div className="flex justify-between py-1.5 text-[12px]">
+                      <span className="text-[#888888]">Subtotal</span>
+
+                      <span className="font-medium text-[#171717]">
+                        {formatPrice(
+                          Number(breakupOrder.representative.subtotal) || 0,
+                        )}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between py-1.5 text-[12px]">
+                      <span className="text-[#888888]">GST</span>
+
+                      <span className="font-medium text-[#171717]">
+                        {formatPrice(
+                          Number(breakupOrder.representative.total_gst) || 0,
+                        )}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between py-1.5 text-[12px]">
+                      <span className="text-[#888888]">Shipping</span>
+
+                      <span className="font-medium text-[#171717]">
+                        {formatPrice(
+                          Number(breakupOrder.representative.shipping_charge) ||
+                            0,
+                        )}
+                      </span>
+                    </div>
+
+                    {Number(breakupOrder.representative.coin_redeemed_amount) >
+                      0 && (
+                      <div className="flex justify-between py-1.5 text-[12px]">
+                        <span className="text-[#888888]">Coins Redeemed</span>
+
+                        <span className="font-medium text-[#3F765A]">
+                          -
+                          {formatPrice(
+                            Number(
+                              breakupOrder.representative.coin_redeemed_amount,
+                            ) || 0,
+                          )}
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="mt-2 flex justify-between border-t border-[#E6E6E4] pt-3">
+                      <span className="text-[13px] font-semibold text-[#171717]">
+                        Final Amount
+                      </span>
+
+                      <span className="text-[17px] font-semibold text-[#111111]">
+                        {formatPrice(breakupOrder.total)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ========================================================
+            TRACK MODAL
+        ======================================================== */}
+
+        <AnimatePresence>
+          {showTrackModal && (
+            <TrackModal
+              isOpen={showTrackModal}
+              onClose={() => {
+                setShowTrackModal(false);
+                setSelectedOrderForTracking(null);
+              }}
+              order={selectedOrderForTracking}
+              tracking={
+                indiaPostTrackingResponse?.data &&
+                // Never show previous order's cached tracking in a new modal.
+                Number(indiaPostTrackingResponse.data.order_id) ===
+                  Number(selectedOrderForTracking?.order_id) &&
+                // Reference must also match whenever Laravel sends it.
+                (!indiaPostTrackingResponse.data.order_reference ||
+                  indiaPostTrackingResponse.data.order_reference ===
+                    selectedOrderForTracking?.order_reference)
+                  ? indiaPostTrackingResponse.data
+                  : null
+              }
+              loading={isIndiaPostTracking}
+              loadFailed={isIndiaPostTrackingError}
+              onRefresh={refreshIndiaPostTracking}
+            />
+          )}
+        </AnimatePresence>
+      </div>
+    </>
+  );
+}

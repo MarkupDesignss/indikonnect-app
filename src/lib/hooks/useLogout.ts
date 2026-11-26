@@ -9,12 +9,14 @@ import {
   performLogout,
   forceLogout,
   LogoutOptions,
-} from "../services/logout.service";
+} from "@/lib/services/logout.service.ts";
 
-import { store } from "../redux/store";
+import { useStore } from "react-redux";
+import type { AppStore } from "@/lib/redux/store";
 
 export const useLogout = () => {
   const router = useRouter();
+  const store = useStore() as AppStore;
 
   /**
    * Normal logout
@@ -39,7 +41,7 @@ export const useLogout = () => {
         redirectTo,
       });
     },
-    [router],
+    [router, store],
   );
 
   /**
@@ -51,7 +53,7 @@ export const useLogout = () => {
     (redirectTo = "/") => {
       forceLogout(store, router, redirectTo);
     },
-    [router],
+    [router, store],
   );
 
   return {

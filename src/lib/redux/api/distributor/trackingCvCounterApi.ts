@@ -1,4 +1,4 @@
-import { baseApi } from "../baseApi";
+import { baseApi } from "@/lib/redux/api/baseApi";
 
 export interface TrackingCvCounterParams {
   ba_id: string;

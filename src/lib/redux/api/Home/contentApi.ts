@@ -1,4 +1,4 @@
-import { baseApi } from "../baseApi";
+import { baseApi } from "@/lib/redux/api/baseApi";
 
 import type {
   ContentResponse,
@@ -9,7 +9,7 @@ import type {
   StatsResponse,
   GrowthStepsResponse,
   ProductSectionsResponse,
-} from "./contentTypes";
+} from "@/lib/redux/api/Home/contentTypes";
 
 export const contentApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({

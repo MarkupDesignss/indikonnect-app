@@ -1,0 +1,283 @@
+"use client";
+
+import Image from "next/image";
+import { useMemo, useRef } from "react";
+
+import {
+  easeIn,
+  motion,
+  useReducedMotion,
+  useScroll,
+  useSpring,
+  useTransform,
+} from "framer-motion";
+
+import {
+  Accent,
+  Display,
+  Eyebrow,
+  Section,
+} from "@/features/landing/components/design-system/index";
+
+import DOMPurify from "dompurify";
+
+import { scrub } from "@/features/landing/components/design-system/motion";
+import styles from "@/features/landing/components/components/sections/Craft.module.css";
+
+import { useGetLandingPageQuery } from "@/lib/redux/api/Landing/landingPageApi";
+
+/* =========================================================
+   HELPERS
+========================================================= */
+
+/**
+ * HTML tags + entities strip karke plain text nikalta hai.
+ * heading / short_description ke liye.
+ */
+function stripHtml(input?: string | null): string {
+  if (!input) return "";
+  return input
+    .replace(/<[^>]*>/g, "")       // remove tags
+    .replace(/&nbsp;/gi, " ")      // non-breaking spaces
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/\s+/g, " ")          // collapse whitespace
+    .trim();
+}
+
+/** HTML entity decoder (SSR fallback ke liye) */
+function decodeHtml(text: string): string {
+  if (!text) return "";
+  if (typeof window !== "undefined" && typeof document !== "undefined") {
+    const txt = document.createElement("textarea");
+    txt.innerHTML = text;
+    return txt.value;
+  }
+  return text
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+}
+
+/**
+ * Description HTML sanitize (XSS-safe) + &nbsp; → " "
+ */
+function sanitizeHtml(html?: string | null): string {
+  if (!html) return "";
+
+  // SSR fallback → tags strip
+  if (typeof window === "undefined") {
+    return decodeHtml(html.replace(/<[^>]*>/g, "")).trim();
+  }
+
+  const cleaned = DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: ["p", "br", "strong", "b", "em", "i", "a", "ul", "ol", "li"],
+    ALLOWED_ATTR: ["href", "target", "rel"],
+  });
+
+  return cleaned
+    .replace(/&nbsp;/g, " ")
+    .replace(/\u00A0/g, " ")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+export function Craft() {
+  const reduced = useReducedMotion();
+  const ref = useRef<HTMLElement>(null);
+
+  const { data: landingData } = useGetLandingPageQuery();
+
+  /* =========================================================
+     DATA — Chapter Four
+  ========================================================= */
+
+  const chapterFourPage = landingData?.data?.find(
+    (item: any) => item?.slug === "chapter-four"
+  );
+
+  const chapterFourBlock = chapterFourPage?.blocks?.find(
+    (block: any) => block?.sort_order === 0
+  );
+
+  /* Plain text fields — HTML strip */
+
+  // Heading na ho to null — fallback mat do (taaki eyebrow hide ho jaye)
+  const chapterHeading =
+    stripHtml(chapterFourBlock?.heading) || null;
+
+  const chapterShortDescription =
+    stripHtml(chapterFourBlock?.short_description) ||
+    "Made to be kept";
+
+  /* Rich HTML field — sanitized */
+  const chapterDescriptionHtml =
+    sanitizeHtml(chapterFourBlock?.description) ||
+    sanitizeHtml(
+      "<p>Watches drawn from heritage horology. Jewellery that reflects individuality. Skincare built on performance, not promises. Dining pieces that bring elegance to the modern Indian home. Four categories, one standard.</p>"
+    );
+
+  /* =========================================================
+     DYNAMIC IMAGE
+  ========================================================= */
+
+  const chapterImage = useMemo(() => {
+    const images = chapterFourBlock?.images || [];
+
+    const primaryImage = images.find(
+      (image: any) => image?.is_primary === true && image?.url
+    );
+
+    return (
+      primaryImage?.url ||
+      images.find((image: any) => image?.url)?.url ||
+      "/indiekonnect-web/images/chapter-bg-4.jpg"
+    );
+  }, [chapterFourBlock]);
+
+  const chapterImageAlt =
+    chapterFourBlock?.images?.find(
+      (image: any) => image?.is_primary === true
+    )?.alt_text || chapterHeading || "Our standard of craft";
+
+  /* =========================================================
+     SCROLL ANIMATION
+  ========================================================= */
+
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start start", "end end"],
+  });
+
+  const p = useSpring(scrollYProgress, scrub.s08);
+
+  /*
+   * power1.in on the zoom,
+   * so the frame accelerates
+   * into full bleed.
+   */
+  const scale = useTransform(p, [0, 1], [1, 9.5], {
+    ease: easeIn,
+  });
+
+  const radius = useTransform(p, [0, 1], [6, 0]);
+  const imgScale = useTransform(p, [0, 1], [1.25, 1]);
+  const scrimOpacity = useTransform(p, [0.5, 0.85], [0, 1]);
+  const copyOpacity = useTransform(p, [0.55, 0.95], [0, 1]);
+  const copyY = useTransform(p, [0.55, 0.95], [46, 0]);
+  const copyScale = useTransform(p, [0.55, 0.95], [0.96, 1]);
+
+  /* =========================================================
+     RENDER
+  ========================================================= */
+
+  return (
+    <Section
+      id="lifestyle"
+      label="Our standard of craft"
+      className={styles.craft}
+      ref={ref}
+      style={
+        reduced
+          ? { height: "auto", paddingBlock: "var(--space-7)" }
+          : undefined
+      }
+    >
+      <div
+        className={styles.pin}
+        style={
+          reduced
+            ? { position: "static", height: "auto" }
+            : undefined
+        }
+      >
+        {/* =====================================================
+            IMAGE FRAME
+        ====================================================== */}
+
+        <motion.figure
+          className={styles.frame}
+          style={
+            reduced
+              ? { borderRadius: 6 }
+              : { scale, borderRadius: radius }
+          }
+        >
+          <motion.div
+            className={styles.frameInner}
+            style={reduced ? undefined : { scale: imgScale }}
+          >
+            <Image
+              src={chapterImage}
+              alt={chapterImageAlt}
+              fill
+              sizes="100vw"
+            />
+          </motion.div>
+        </motion.figure>
+
+        {/* =====================================================
+            SCRIM
+        ====================================================== */}
+
+        <motion.div
+          className={styles.scrim}
+          style={{ opacity: reduced ? 1 : scrimOpacity }}
+        />
+
+        {/* =====================================================
+            DYNAMIC CONTENT
+        ====================================================== */}
+
+        <motion.div
+          className={styles.copy}
+          style={
+            reduced
+              ? { opacity: 1 }
+              : {
+                  opacity: copyOpacity,
+                  y: copyY,
+                  scale: copyScale,
+                }
+          }
+        >
+          {/* Dynamic Chapter Heading — sirf tab jab heading ho */}
+          {chapterHeading && (
+            <Eyebrow center>{chapterHeading}</Eyebrow>
+          )}
+
+          {/* Dynamic Short Description — last word Accent */}
+          <Display
+            size="xl"
+            style={{ marginTop: chapterHeading ? 20 : 0 }}
+          >
+            {chapterShortDescription
+              .split(/\s+/)
+              .map((word: string, index: number, words: string[]) => {
+                const isLast = index === words.length - 1;
+
+                return (
+                  <span key={`${word}-${index}`}>
+                    {isLast ? <Accent>{word}</Accent> : word}
+                    {!isLast ? " " : ""}
+                  </span>
+                );
+              })}
+          </Display>
+
+          {/* ✅ Dynamic Description — HTML render (sanitized) */}
+          <div
+            className={styles.description}
+            dangerouslySetInnerHTML={{ __html: chapterDescriptionHtml }}
+          />
+        </motion.div>
+      </div>
+    </Section>
+  );
+}

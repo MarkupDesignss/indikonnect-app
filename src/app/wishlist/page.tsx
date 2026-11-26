@@ -1,4 +1,4 @@
-import Wishlist from '../../Screens/Inner/wishlist/wishlist'
+import Wishlist from "@/features/wishlist/screens/wishlist"
 export default function Page() {
   return <Wishlist/>;
 }

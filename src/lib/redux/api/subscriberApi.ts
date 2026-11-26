@@ -1,8 +1,9 @@
 // api/subscriberApi.ts
-import { baseApi } from "./baseApi";
+import { baseApi } from "@/lib/redux/api/baseApi";
 import { 
-  SubscriberRequest, 
-} from "./subscriberTypes";
+  SubscriberRequest,
+  SubscriberResponse, 
+} from "@/lib/redux/api/subscriberTypes";
 
 export const subscriberApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({

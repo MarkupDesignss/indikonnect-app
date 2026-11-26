@@ -1,6 +1,6 @@
 // lib/redux/api/distributor/userDashboardApi.ts
 
-import { baseApi } from "../baseApi";
+import { baseApi } from "@/lib/redux/api/baseApi";
 
 // =====================================================
 // DASHBOARD USER

@@ -1,5 +1,5 @@
-import { baseApi } from "./baseApi";
-import { HeaderResponse } from "./headerTypes";
+import { baseApi } from "@/lib/redux/api/baseApi";
+import { HeaderResponse } from "@/lib/redux/api/headerTypes";
 
 export const headerApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({

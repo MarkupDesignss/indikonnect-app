@@ -2,7 +2,7 @@
 
 "use client";
 
-import { baseApi, TokenManager, getRedirectUrl } from "./baseApi";
+import { baseApi, TokenManager, getRedirectUrl } from "@/lib/redux/api/baseApi";
 
 import { getAppType, getAppBasePath } from "@/lib/appConfig";
 
@@ -18,7 +18,7 @@ import {
   LogoutResponse,
   UserProfileResponse,
   DashboardResponse,
-} from "./authtype";
+} from "@/lib/redux/api/authtype";
 
 // =====================================================
 // CUSTOMER APP CHECK

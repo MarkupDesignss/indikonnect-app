@@ -1,5 +1,5 @@
-import { baseApi } from "./baseApi";
-import { ContactRequest, ContactResponse } from "./contactTypes";
+import { baseApi } from "@/lib/redux/api/baseApi";
+import { ContactRequest, ContactResponse } from "@/lib/redux/api/contactTypes";
 
 export interface ContactContentBlock {
   id: number;

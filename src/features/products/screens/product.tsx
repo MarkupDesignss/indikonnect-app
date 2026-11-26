@@ -1,0 +1,1442 @@
+"use client";
+
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { useSearchParams, useRouter } from "next/navigation";
+import { ArrowRight, ChevronRight, Search, SlidersHorizontal, Truck } from "lucide-react";
+
+import { useTokenCheck } from "@/hooks/useTokenCheck";
+import ProductCard from "@/features/products/components/ProductCard";
+import FilterSidebar from "@/features/products/components/FilterSidebar";
+import Footer from "@/components/Footer/Footer";
+import Header from "@/components/common/Header";
+import { useGetProductsQuery } from "@/lib/redux/api/productApi";
+import { useGetCategoriesQuery } from "@/lib/redux/api/categoryApi";
+import { useGetUserProfileQuery } from "@/lib/redux/api/authApi";
+
+import CustomerFavourites from "@/features/products/screens/CustomerFavourites";
+
+import { Category, FilterState, LOGO_SRC, MAX_PRICE_LIMIT, PLACEHOLDER_IMAGE, PRODUCTS_PER_PAGE, RecommendationSection, SECTION_AFTER_ROWS, SKELETON_COUNT, SortOption, extractImageUrl, getAccountType, getDiscountPercentage, getProductMrp, getProductPrice, isPrimaryProduct, readAvailabilityFromParams } from "@/features/products/screens/product.parts/support";
+import { SortDropdown } from "@/features/products/screens/product.parts/SortDropdown";
+
+
+/* -------------------------------------------------------------------------- */
+/* Products Page                                                              */
+/* -------------------------------------------------------------------------- */
+
+export default function ProductsPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  /* -------------------------------- Refs ---------------------------------- */
+
+  const endSentinelRef = useRef<HTMLDivElement | null>(null);
+  const hasTriggeredRef = useRef(false);
+
+  /* -------------------------------- Auth ---------------------------------- */
+
+  const { hasToken, userType: storedUserType } = useTokenCheck();
+
+  const { data: userProfile } = useGetUserProfileQuery(
+    {},
+    { skip: hasToken !== true },
+  );
+
+  const userType = useMemo(() => {
+    if (hasToken !== true) return "retail";
+
+    if (userProfile) {
+      return getAccountType(userProfile);
+    }
+
+    return storedUserType === "distributor" ? "distributor" : "retail";
+  }, [hasToken, userProfile, storedUserType]);
+
+  /* ------------------------------ URL values ----------------------------- */
+
+  const isNewArrivals = searchParams.get("new-arrivals") === "true";
+
+  const getInitialBrands = (): string[] => {
+    const value = searchParams.get("brand_ids");
+
+    return value
+      ? value.split(",").map((item) => item.trim()).filter(Boolean)
+      : [];
+  };
+
+  const getInitialCategories = (): string[] => {
+    const value = searchParams.get("category");
+
+    if (!value) return [];
+
+    return value
+      .split(",")
+      .map((item) => {
+        try {
+          return decodeURIComponent(item).trim();
+        } catch {
+          return item.trim();
+        }
+      })
+      .filter(Boolean);
+  };
+
+  const getInitialSubCategories = (): string[] => {
+    const value = searchParams.get("subcategory_ids");
+
+    return value
+      ? value.split(",").map((item) => item.trim()).filter(Boolean)
+      : [];
+  };
+
+  const getInitialColors = (): string[] => {
+    const value = searchParams.get("color") || "";
+    return value.split(",").map((item) => item.trim()).filter(Boolean);
+  };
+
+  const getInitialPriceRange = (): [number, number] => {
+    const min = Number(searchParams.get("min_price") || 0);
+    const max = Number(searchParams.get("max_price") || MAX_PRICE_LIMIT);
+
+    return [
+      Number.isFinite(min) && min >= 0 ? min : 0,
+      Number.isFinite(max) && max > 0 ? max : MAX_PRICE_LIMIT,
+    ];
+  };
+
+  /* -------------------------------------------------------------------- */
+  /* AVAILABILITY (supports MULTIPLE selected at once via stock_status[]) */
+  /* -------------------------------------------------------------------- */
+
+  const getInitialAvailability = () =>
+    readAvailabilityFromParams(searchParams);
+
+  const getInitialPage = (): number => {
+    const page = Number(searchParams.get("page") || 1);
+
+    return Number.isFinite(page) && page >= 1 ? page : 1;
+  };
+
+  /* ------------------------------ State ----------------------------------- */
+
+  const [filters, setFilters] = useState<FilterState>(() => ({
+    brands: getInitialBrands(),
+    categories: getInitialCategories(),
+    subCategories: getInitialSubCategories(),
+    colors: getInitialColors(),
+    priceRange: getInitialPriceRange(),
+    availability: getInitialAvailability(),
+  }));
+
+  const [currentPage, setCurrentPage] = useState<number>(getInitialPage);
+
+  const [sortBy, setSortBy] = useState<SortOption>(() => {
+    const sort = searchParams.get("sort");
+
+    if (sort === "price-low" || sort === "price-high" || sort === "newest") {
+      return sort;
+    }
+
+    return "recommended";
+  });
+
+  const [searchQuery, setSearchQuery] = useState(
+    () => searchParams.get("search") || "",
+  );
+
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+  const [allProducts, setAllProducts] = useState<any[]>([]);
+  const [showEndMessage, setShowEndMessage] = useState(false);
+
+  const [gridColumns, setGridColumns] = useState(2);
+  const [activeBanner, setActiveBanner] = useState(0);
+
+  const filtersRef = useRef(filters);
+  const currentPageRef = useRef(currentPage);
+  const sortByRef = useRef(sortBy);
+  const searchQueryRef = useRef(searchQuery);
+
+  filtersRef.current = filters;
+  currentPageRef.current = currentPage;
+  sortByRef.current = sortBy;
+  searchQueryRef.current = searchQuery;
+
+  /* -------------------------- Responsive columns ------------------------- */
+
+  useEffect(() => {
+    const updateGridColumns = () => {
+      if (window.innerWidth >= 1280) {
+        setGridColumns(4);
+      } else if (window.innerWidth >= 768) {
+        setGridColumns(3);
+      } else {
+        setGridColumns(2);
+      }
+    };
+
+    updateGridColumns();
+
+    window.addEventListener("resize", updateGridColumns);
+
+    return () => {
+      window.removeEventListener("resize", updateGridColumns);
+    };
+  }, []);
+
+  /* ------------------------- Mobile filter handling ---------------------- */
+
+  useEffect(() => {
+    if (!isMobileFilterOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+
+    document.body.style.overflow = "hidden";
+
+    const handleKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsMobileFilterOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isMobileFilterOpen]);
+
+  /* -------------------------- Categories API ----------------------------- */
+
+  const { data: categoriesData, isLoading: isCategoriesLoading } =
+    useGetCategoriesQuery({});
+
+  /* ---------------------------- Category ID map --------------------------- */
+
+  const categoryIdMap = useMemo(() => {
+    const map = new Map<string, number>();
+
+    categoriesData?.data?.forEach((category: Category) => {
+      const title = category.title || category.name;
+
+      if (title && category.id != null) {
+        map.set(title, Number(category.id));
+      }
+    });
+
+    return map;
+  }, [categoriesData]);
+
+  /* ------------------------------ Brand ID map --------------------------- */
+
+  const brandIdMap = useMemo(() => {
+    const map = new Map<string, number>();
+
+    categoriesData?.brands?.forEach((brand: any) => {
+      if (brand?.id != null) {
+        map.set(String(brand.id), Number(brand.id));
+      }
+    });
+
+    return map;
+  }, [categoriesData]);
+
+  /* ---------------------------- URL sync --------------------------------- */
+
+  const searchParamsString = searchParams.toString();
+
+  useEffect(() => {
+    const brandParam = searchParams.get("brand_ids");
+
+    const urlBrands = brandParam
+      ? brandParam.split(",").map((item) => item.trim()).filter(Boolean)
+      : [];
+
+    const validBrands = categoriesData?.brands?.length
+      ? urlBrands.filter((id) =>
+          categoriesData.brands.some((brand: any) => String(brand.id) === id),
+        )
+      : urlBrands;
+
+    const categoryParam = searchParams.get("category");
+
+    const urlCategories = categoryParam
+      ? categoryParam
+          .split(",")
+          .map((item) => {
+            try {
+              return decodeURIComponent(item).trim();
+            } catch {
+              return item.trim();
+            }
+          })
+          .filter(Boolean)
+      : [];
+
+    const validCategories = categoriesData?.data?.length
+      ? urlCategories.filter((title) =>
+          categoriesData.data.some(
+            (category: Category) => (category.title || category.name) === title,
+          ),
+        )
+      : urlCategories;
+
+    const subCategoryParam = searchParams.get("subcategory_ids");
+
+    const urlSubCategoryIds = subCategoryParam
+      ? subCategoryParam.split(",").map((item) => item.trim()).filter(Boolean)
+      : [];
+
+    const validSubCategoryIds = categoriesData?.data?.length
+      ? urlSubCategoryIds.filter((id) =>
+          categoriesData.data.some((category: Category) =>
+            (category.subcategories || []).some(
+              (subCategory) =>
+                String(subCategory.id) === id && subCategory.status === true,
+            ),
+          ),
+        )
+      : urlSubCategoryIds;
+
+    const colorParam = searchParams.get("color") || "";
+    const urlColors = colorParam
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+    const minPrice = Number(searchParams.get("min_price") || 0);
+    const maxPrice = Number(searchParams.get("max_price") || MAX_PRICE_LIMIT);
+
+    const page = Number(searchParams.get("page") || 1);
+    const safePage = Number.isFinite(page) && page >= 1 ? page : 1;
+
+    const urlSort = searchParams.get("sort");
+    const nextSort: SortOption =
+      urlSort === "price-low" ||
+      urlSort === "price-high" ||
+      urlSort === "newest"
+        ? urlSort
+        : "recommended";
+
+    const nextSearch = searchParams.get("search") || "";
+
+    /* -------------------------------------------------------------------- */
+    /* AVAILABILITY (multi-select aware, supports stock_status[])          */
+    /* -------------------------------------------------------------------- */
+
+    const availability = readAvailabilityFromParams(searchParams);
+
+    const nextFilters: FilterState = {
+      brands: validBrands,
+      categories: validCategories,
+      subCategories: validSubCategoryIds,
+      colors: urlColors,
+      priceRange: [
+        Number.isFinite(minPrice) && minPrice >= 0 ? minPrice : 0,
+        Number.isFinite(maxPrice) && maxPrice > 0 ? maxPrice : MAX_PRICE_LIMIT,
+      ],
+      availability,
+    };
+
+    setFilters((previous) =>
+      JSON.stringify(previous) === JSON.stringify(nextFilters)
+        ? previous
+        : nextFilters,
+    );
+
+    setCurrentPage((previous) => (previous === safePage ? previous : safePage));
+
+    setSortBy((previous) => (previous === nextSort ? previous : nextSort));
+
+    setSearchQuery((previous) => (previous === nextSearch ? previous : nextSearch));
+  }, [searchParamsString, categoriesData, searchParams]);
+
+  /* --------------------------- URL updater ------------------------------- */
+
+  // ProductsPage is the single owner of the listing URL. FilterSidebar only
+  // emits selections; it never races this updater with a second router.replace.
+  const updateBrowserUrl = useCallback(
+    ({
+      nextFilters = filtersRef.current,
+      nextPage = currentPageRef.current,
+      nextSort = sortByRef.current,
+      nextSearch = searchQueryRef.current,
+    }: {
+      nextFilters?: FilterState;
+      nextPage?: number;
+      nextSort?: SortOption;
+      nextSearch?: string;
+    } = {}) => {
+      const params = new URLSearchParams(searchParamsString);
+
+      // Remove the parameters owned by this page, then write one canonical
+      // representation. Unrelated query parameters remain untouched.
+      [
+        "new-arrivals",
+        "brand_ids",
+        "category",
+        "subcategory_ids",
+        "color",
+        "min_price",
+        "max_price",
+        "stock_status[]",
+        "stock_status",
+        "in_stock",
+        "out_of_stock",
+        "low_stock",
+        "search",
+        "q",
+        "query",
+        "search_query",
+        "keyword",
+        "sort",
+        "page",
+      ].forEach((key) => params.delete(key));
+
+      if (isNewArrivals) params.set("new-arrivals", "true");
+
+      const setCsv = (key: string, values: string[]) => {
+        const clean = [...new Set((values || []).map((v) => String(v).trim()).filter(Boolean))];
+        if (clean.length) params.set(key, clean.join(","));
+      };
+
+      setCsv("brand_ids", nextFilters.brands);
+      setCsv("category", nextFilters.categories);
+      setCsv("subcategory_ids", nextFilters.subCategories);
+      setCsv("color", nextFilters.colors || []);
+
+      if (nextFilters.priceRange[0] > 0) {
+        params.set("min_price", String(nextFilters.priceRange[0]));
+      }
+      if (nextFilters.priceRange[1] < MAX_PRICE_LIMIT) {
+        params.set("max_price", String(nextFilters.priceRange[1]));
+      }
+
+      const selectedStatuses: string[] = [];
+      if (nextFilters.availability.inStock) selectedStatuses.push("in_stock");
+      if (nextFilters.availability.outOfStock) selectedStatuses.push("out_of_stock");
+      if (nextFilters.availability.lowStock) selectedStatuses.push("low_stock");
+      selectedStatuses.forEach((status) => params.append("stock_status[]", status));
+
+      if (nextSearch.trim()) params.set("search", nextSearch.trim());
+      if (nextSort !== "recommended") params.set("sort", nextSort);
+      if (nextPage > 1) params.set("page", String(nextPage));
+
+      const queryString = params.toString();
+      const newUrl = queryString ? `/products/?${queryString}` : "/products/";
+      router.replace(newUrl, { scroll: false });
+    },
+    [isNewArrivals, router, searchParamsString],
+  );
+
+  /* --------------------------- Query parameters --------------------------- */
+
+  const queryParams = useMemo(() => {
+    const params: Record<string, any> = {
+      page: currentPage,
+      per_page: PRODUCTS_PER_PAGE,
+      is_published: 1,
+    };
+
+    if (isNewArrivals) {
+      params.new_arrivals = true;
+    }
+
+    if (filters.brands.length) {
+      const ids = filters.brands
+        .map((id) => brandIdMap.get(String(id)))
+        .filter((id): id is number => id !== undefined)
+        .join(",");
+
+      if (ids) {
+        params.brand_ids = ids;
+      }
+    }
+
+    if (filters.categories.length) {
+      const ids = filters.categories
+        .map((title) => categoryIdMap.get(title))
+        .filter((id): id is number => id !== undefined)
+        .join(",");
+
+      if (ids) {
+        params.category_ids = ids;
+      }
+    }
+
+    if (filters.subCategories.length) {
+      const ids = filters.subCategories
+        .map(Number)
+        .filter((id) => Number.isFinite(id) && id > 0)
+        .join(",");
+
+      if (ids) {
+        params.subcategory_ids = ids;
+      }
+    }
+
+    if (filters.colors.length) {
+      params.color = filters.colors.join(",");
+    }
+
+    if (filters.priceRange[0] > 0) {
+      params.min_price = filters.priceRange[0];
+    }
+
+    if (filters.priceRange[1] < MAX_PRICE_LIMIT) {
+      params.max_price = filters.priceRange[1];
+    }
+
+    /* -------------------------------------------------------------------- */
+    /* AVAILABILITY: send ALL selected statuses as an array               */
+    /* productApi.ts converts to `stock_status[]=a&stock_status[]=b`      */
+    /* -------------------------------------------------------------------- */
+
+    const { inStock, outOfStock, lowStock } = filters.availability;
+
+    const selectedStatuses: string[] = [];
+    if (inStock) selectedStatuses.push("in_stock");
+    if (outOfStock) selectedStatuses.push("out_of_stock");
+    if (lowStock) selectedStatuses.push("low_stock");
+
+    if (selectedStatuses.length) {
+      params.stock_status = selectedStatuses;
+    }
+
+    if (searchQuery.trim()) {
+      params.search = searchQuery.trim();
+    }
+
+    if (sortBy === "price-low") {
+      params.sort = "price-low";
+    } else if (sortBy === "price-high") {
+      params.sort = "price-high";
+    } else if (sortBy === "newest") {
+      params.sort = "newest";
+    }
+
+    return params;
+  }, [
+    currentPage,
+    filters,
+    searchQuery,
+    sortBy,
+    categoryIdMap,
+    brandIdMap,
+    isNewArrivals,
+  ]);
+
+  /* ----------------------- Wait for filter maps -------------------------- */
+
+  const shouldDeferProductQuery = useMemo(() => {
+    if (
+      filters.categories.length > 0 &&
+      categoryIdMap.size === 0 &&
+      isCategoriesLoading
+    ) {
+      return true;
+    }
+
+    if (
+      filters.brands.length > 0 &&
+      brandIdMap.size === 0 &&
+      isCategoriesLoading
+    ) {
+      return true;
+    }
+
+    return false;
+  }, [
+    filters.categories.length,
+    filters.brands.length,
+    categoryIdMap.size,
+    brandIdMap.size,
+    isCategoriesLoading,
+  ]);
+
+  /* ----------------------------- Products API ---------------------------- */
+
+  const {
+    currentData: productsData,
+    isLoading,
+    isFetching,
+    error,
+    refetch,
+  } = useGetProductsQuery(queryParams, {
+    skip: shouldDeferProductQuery,
+    refetchOnMountOrArgChange: true,
+  });
+
+  const pagination = productsData?.pagination;
+  const meta = productsData?.meta;
+
+  const lastPage = Math.max(
+    1,
+    Number(pagination?.last_page ?? meta?.last_page ?? 1),
+  );
+
+  /* ----------------------- Transform product data ------------------------ */
+
+  const transformedProducts = useMemo(() => {
+    if (!Array.isArray(productsData?.data)) return [];
+
+    return productsData.data
+      .filter((product: any) => Boolean(product))
+      .map((product: any) => {
+        const price = getProductPrice(product, userType);
+        const mrp = getProductMrp(product, userType);
+        const discount = getDiscountPercentage(product, userType);
+
+        const stockQuantity = Number(
+          product?.stock_quantity ?? product?.stock ?? 0,
+        );
+
+        const stockStatus = String(
+          product?.stock_status ?? product?.status ?? "",
+        ).toLowerCase();
+
+        const active = product?.is_active ?? product?.active ?? true;
+
+        const inStock =
+          stockQuantity > 0 &&
+          active !== false &&
+          stockStatus !== "inactive" &&
+          stockStatus !== "out_of_stock";
+
+        let finalImages: string[] = [];
+
+        if (Array.isArray(product?.images) && product.images.length > 0) {
+          const sortedImages = [...product.images].sort((a: any, b: any) => {
+            if (a?.is_primary && !b?.is_primary) return -1;
+            if (!a?.is_primary && b?.is_primary) return 1;
+
+            return Number(a?.sort_order ?? 0) - Number(b?.sort_order ?? 0);
+          });
+
+          finalImages = sortedImages
+            .map((image: any) => extractImageUrl(image))
+            .filter(Boolean);
+        }
+
+        if (!finalImages.length) {
+          const primaryImage = extractImageUrl(product?.primary_image_url);
+
+          if (primaryImage) finalImages.push(primaryImage);
+        }
+
+        if (!finalImages.length) {
+          const image = extractImageUrl(product?.image);
+
+          if (image) finalImages.push(image);
+        }
+
+        if (!finalImages.length) {
+          const imageUrl = extractImageUrl(product?.image_url);
+
+          if (imageUrl) finalImages.push(imageUrl);
+        }
+
+        if (!finalImages.length) finalImages = [PLACEHOLDER_IMAGE];
+
+        const rawRating = Number(
+          product?.reviews_summary?.average_rating ??
+            product?.average_rating ??
+            product?.rating ??
+            0,
+        );
+
+        const hasRating = Number.isFinite(rawRating) && rawRating > 0;
+        const averageRating = hasRating ? rawRating : null;
+
+        const reviewCount = Number(
+          product?.reviews_summary?.total_reviews ??
+            product?.review_count ??
+            product?.reviews_count ??
+            0,
+        );
+
+        return {
+          ...product,
+
+          id: product.id,
+          name: product.name,
+          slug: product.slug,
+
+          description: product?.description ?? product?.short_description ?? "",
+
+          category:
+            product?.category?.name ||
+            product?.category?.title ||
+            "Uncategorized",
+
+          category_id: product?.category_id ?? product?.category?.id ?? null,
+          categoryId: product?.category_id ?? product?.category?.id ?? null,
+
+          price,
+          originalPrice: mrp > price ? mrp : null,
+          discount: discount > 0 ? discount : null,
+
+          image: finalImages[0],
+          images: finalImages,
+
+          rating: averageRating,
+          average_rating: averageRating,
+
+          reviews: hasRating ? reviewCount : 0,
+          review_count: hasRating ? reviewCount : 0,
+          reviews_count: hasRating ? reviewCount : 0,
+
+          reviews_summary: {
+            ...(product?.reviews_summary || {}),
+            average_rating: averageRating,
+            total_reviews: hasRating ? reviewCount : 0,
+          },
+
+          hideRating: !hasRating,
+
+          inStock,
+          stockQuantity,
+          stockQuantityRaw: stockQuantity,
+          stock_quantity: stockQuantity,
+          stockStatus,
+          stock_status: product?.stock_status ?? "",
+
+          lowStockThreshold: Number(product?.low_stock_threshold ?? 0),
+          low_stock_threshold: Number(product?.low_stock_threshold ?? 0),
+
+          userType,
+
+          brandId: product?.brand_id,
+
+          brandName: product?.brand_name || product?.brand?.name || "",
+
+          brandBanner:
+            product?.brand_banner || product?.brand?.brand_banner || "",
+        };
+      });
+  }, [productsData, userType]);
+
+  /* ------------------------ Accumulate loaded pages ---------------------- */
+
+  useEffect(() => {
+    if (isLoading || isFetching || shouldDeferProductQuery) return;
+
+    if (!productsData) {
+      if (error) {
+        hasTriggeredRef.current = false;
+      }
+      return;
+    }
+
+    if (currentPage === 1) {
+      setAllProducts(transformedProducts);
+      hasTriggeredRef.current = false;
+      return;
+    }
+
+    setAllProducts((previousProducts) => {
+      const existingIds = new Set(previousProducts.map((product) => product.id));
+
+      const newProducts = transformedProducts.filter(
+        (product: any) => !existingIds.has(product.id),
+      );
+
+      return newProducts.length
+        ? [...previousProducts, ...newProducts]
+        : previousProducts;
+    });
+
+    hasTriggeredRef.current = false;
+  }, [
+    transformedProducts,
+    productsData,
+    currentPage,
+    isLoading,
+    isFetching,
+    shouldDeferProductQuery,
+    error,
+  ]);
+
+  /* --------------------------- Validate page ----------------------------- */
+
+  useEffect(() => {
+    if (isLoading || isFetching || shouldDeferProductQuery || !productsData) {
+      return;
+    }
+
+    if (currentPage > lastPage) {
+      setCurrentPage(lastPage);
+      updateBrowserUrl({ nextPage: lastPage });
+    }
+  }, [
+    isLoading,
+    isFetching,
+    shouldDeferProductQuery,
+    productsData,
+    currentPage,
+    lastPage,
+    updateBrowserUrl,
+  ]);
+
+  /* ----------------------------- Brand banners --------------------------- */
+
+  const brandBanners = useMemo(() => {
+    if (!Array.isArray(productsData?.data)) return [];
+
+    const bannerMap = new Map<string, { url: string; brandName: string }>();
+
+    productsData.data.filter(isPrimaryProduct).forEach((product: any) => {
+      const banner = String(
+        product?.brand_banner ?? product?.brand?.brand_banner ?? "",
+      ).trim();
+
+      const brandName =
+        product?.brand_name ?? product?.brand?.name ?? "Brand";
+
+      if (banner && !bannerMap.has(banner)) {
+        bannerMap.set(banner, { url: banner, brandName });
+      }
+    });
+
+    return Array.from(bannerMap.values());
+  }, [productsData]);
+
+  useEffect(() => {
+    setActiveBanner(0);
+
+    if (brandBanners.length <= 1) return;
+
+    const timer = window.setInterval(() => {
+      setActiveBanner((previous) => (previous + 1) % brandBanners.length);
+    }, 5000);
+
+    return () => window.clearInterval(timer);
+  }, [currentPage, brandBanners.length]);
+
+  /* --------------------------- Infinite scroll --------------------------- */
+
+  const allProductRecords = currentPage === 1 ? transformedProducts : allProducts;
+  const products = allProductRecords.filter(isPrimaryProduct);
+
+  const hasMore = currentPage < lastPage;
+
+  const isQueryPending =
+    isLoading ||
+    isFetching ||
+    shouldDeferProductQuery ||
+    (!productsData && !error);
+
+  const showSkeletons = products.length === 0 && isQueryPending && !error;
+
+  const isAppending = currentPage > 1 && isFetching && allProducts.length > 0;
+
+  useEffect(() => {
+    const node = endSentinelRef.current;
+
+    if (!node) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+
+        if (!entry?.isIntersecting) return;
+
+        if (isLoading || isFetching || shouldDeferProductQuery || error) {
+          return;
+        }
+
+        if (hasMore) {
+          if (hasTriggeredRef.current) return;
+
+          hasTriggeredRef.current = true;
+          setShowEndMessage(false);
+
+          setCurrentPage((previousPage) =>
+            previousPage < lastPage ? previousPage + 1 : previousPage,
+          );
+
+          return;
+        }
+
+        if (products.length > 0) {
+          setShowEndMessage(true);
+        }
+      },
+      {
+        root: null,
+        rootMargin: "0px 0px 350px 0px",
+        threshold: 0.01,
+      },
+    );
+
+    observer.observe(node);
+
+    return () => observer.disconnect();
+  }, [
+    isLoading,
+    isFetching,
+    shouldDeferProductQuery,
+    error,
+    hasMore,
+    currentPage,
+    lastPage,
+    products.length,
+  ]);
+
+  /* ------------------------ Recommendation positions --------------------- */
+
+  const sectionInsertions = useMemo(() => {
+    const insertionMap = new Map<number, RecommendationSection>();
+
+    if (!products.length || gridColumns <= 0) return insertionMap;
+
+    let sectionIndex = 0;
+
+    for (let position = 1; position <= products.length; position++) {
+      if (position % gridColumns !== 0) continue;
+
+      const completedRows = position / gridColumns;
+
+      if (
+        completedRows % SECTION_AFTER_ROWS === 0 &&
+        position < products.length
+      ) {
+        insertionMap.set(
+          position,
+          sectionIndex % 2 === 0 ? "best_offers" : "best_sellers",
+        );
+
+        sectionIndex++;
+      }
+    }
+
+    return insertionMap;
+  }, [products.length, gridColumns]);
+
+  /* ------------------------------------------------------------------------ */
+  /* FILTER CHANGE: INDEPENDENT MULTI-SELECT                                  */
+  /* ------------------------------------------------------------------------ */
+
+  const handleFilterChange = useCallback(
+    (newFilters: FilterState) => {
+      const nextFilters: FilterState = {
+        brands: [...new Set(newFilters.brands || [])],
+        categories: [...new Set(newFilters.categories || [])],
+        subCategories: [...new Set(newFilters.subCategories || [])],
+        colors: [...new Set(newFilters.colors || [])],
+        priceRange: [...newFilters.priceRange] as [number, number],
+        availability: {
+          inStock: Boolean(newFilters.availability?.inStock),
+          outOfStock: Boolean(newFilters.availability?.outOfStock),
+          lowStock: Boolean(newFilters.availability?.lowStock),
+        },
+      };
+
+      // Update refs immediately to retain rapid successive checkbox selections.
+      filtersRef.current = nextFilters;
+      currentPageRef.current = 1;
+
+      setFilters(nextFilters);
+      setCurrentPage(1);
+      setAllProducts([]);
+      hasTriggeredRef.current = false;
+      setShowEndMessage(false);
+
+      updateBrowserUrl({ nextFilters, nextPage: 1 });
+    },
+    [updateBrowserUrl],
+  );
+
+  /* -------------------------------- Search -------------------------------- */
+
+  const handleSearch = useCallback(
+    (query: string) => {
+      setSearchQuery(query);
+      setCurrentPage(1);
+      hasTriggeredRef.current = false;
+      setShowEndMessage(false);
+
+      updateBrowserUrl({ nextSearch: query, nextPage: 1 });
+    },
+    [updateBrowserUrl],
+  );
+
+  /* -------------------------------- Sorting ------------------------------- */
+
+  const handleSortChange = useCallback(
+    (sort: SortOption) => {
+      setSortBy(sort);
+      setCurrentPage(1);
+      hasTriggeredRef.current = false;
+      setShowEndMessage(false);
+
+      updateBrowserUrl({ nextSort: sort, nextPage: 1 });
+    },
+    [updateBrowserUrl],
+  );
+
+  /* ----------------------------- Clear filters --------------------------- */
+
+  const handleClearFilters = useCallback(() => {
+    hasTriggeredRef.current = false;
+    setShowEndMessage(false);
+
+    router.push(isNewArrivals ? "/products/?new-arrivals=true" : "/products/");
+  }, [isNewArrivals, router]);
+
+  /* ---------------------------- Initial skeleton ------------------------- */
+
+  const renderSkeletons = () => (
+    <div className="grid grid-cols-2 gap-x-3 gap-y-6 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 lg:gap-x-5 lg:gap-y-8">
+      {Array.from({ length: SKELETON_COUNT }).map((_, index) => (
+        <div key={index} className="overflow-hidden rounded-[10px] bg-white">
+          <div className="aspect-square w-full animate-pulse rounded-[10px] bg-[#f3f3f3]" />
+
+          <div className="space-y-2 pt-3">
+            <div className="h-3 w-14 animate-pulse rounded-full bg-[#ededed]" />
+            <div className="h-3.5 w-3/4 animate-pulse rounded bg-[#ededed]" />
+            <div className="h-3 w-1/2 animate-pulse rounded bg-[#ededed]" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
+  /* ------------------------------ Error state ---------------------------- */
+
+  const renderError = () => (
+    <div className="py-16 text-center">
+      <div className="mb-4 text-4xl">⚠️</div>
+
+      <h3 className="mb-2 text-lg font-semibold text-[#111111]">
+        Failed to load products
+      </h3>
+
+      <p className="mb-4 text-sm text-[#8b918f]">
+        Please try refreshing the page.
+      </p>
+
+      <button
+        type="button"
+        onClick={() => refetch()}
+        className="rounded-full bg-[#111111] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-black/80"
+      >
+        Retry
+      </button>
+    </div>
+  );
+
+  /* ------------------------------- Empty state --------------------------- */
+
+  const renderEmptyState = () => (
+    <div className="py-16 text-center">
+      <div className="mb-4 text-5xl">🔍</div>
+
+      <p className="text-base text-[#8b918f]">
+        No products found matching your criteria.
+      </p>
+
+      <button
+        type="button"
+        onClick={handleClearFilters}
+        className="mt-4 rounded-full px-4 py-2 text-sm font-medium text-[#111111] underline underline-offset-4"
+      >
+        Clear all filters
+      </button>
+    </div>
+  );
+
+  /* ----------------------------- Custom loader --------------------------- */
+
+  const renderBrandLoader = () => (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25 }}
+      className="flex items-center justify-center py-8 sm:py-10"
+      role="status"
+      aria-live="polite"
+    >
+      <div className="flex items-center gap-3 rounded-full border border-[#ece9e2] bg-white px-5 py-3 shadow-[0_10px_30px_-12px_rgba(0,0,0,0.12)]">
+        <div className="relative flex h-8 w-8 shrink-0 items-center justify-center">
+          <motion.span
+            className="absolute inset-0 rounded-full border-2 border-transparent border-r-[#111111] border-t-[#111111]"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 0.9, repeat: Infinity, ease: "linear" }}
+          />
+
+          <span className="relative flex h-6 w-6 items-center justify-center overflow-hidden rounded-full bg-white">
+            <img
+              src={LOGO_SRC}
+              alt="IndieKonnect"
+              className="h-full w-full object-contain"
+              onError={(event) => {
+                event.currentTarget.style.display = "none";
+              }}
+            />
+          </span>
+        </div>
+
+        <div>
+          <p className="text-[12px] font-semibold tracking-wide text-[#111111]">
+            IndieKonnect
+          </p>
+
+          <p className="text-[11px] text-[#858585]">Loading more products...</p>
+        </div>
+      </div>
+    </motion.div>
+  );
+
+  /* -------------------------- Derived page values ------------------------ */
+
+  const activeFilterCount =
+    filters.brands.length +
+    filters.categories.length +
+    filters.subCategories.length +
+    filters.colors.length +
+    Object.values(filters.availability).filter(Boolean).length +
+    Number(filters.priceRange[0] > 0 || filters.priceRange[1] < MAX_PRICE_LIMIT);
+
+  const pageTitle = isNewArrivals ? "New Arrivals" : "Collection";
+
+  /* -------------------------------- Render ------------------------------- */
+
+  return (
+    <div
+      className="min-h-screen bg-white"
+      style={{ fontFamily: "Poppins, Lato, sans-serif" }}
+    >
+      <Header />
+
+      <div className="mx-auto w-full max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-[250px_minmax(0,1fr)] lg:grid-cols-[264px_minmax(0,1fr)] lg:gap-8">
+          {/* DESKTOP SIDEBAR */}
+
+          <aside className="hidden md:block">
+            <div className="sticky top-24 flex h-[calc(100vh-120px)] flex-col">
+              <div className="relative z-20 mb-4 shrink-0 bg-white pr-2">
+                <div className="mb-5 flex items-center gap-2 text-[14px]">
+                  <span className="text-[#8a8f98]">Home</span>
+
+                  <ChevronRight className="h-3.5 w-3.5 text-[#adb4be]" />
+
+                  <span className="font-medium text-[#111111]">{pageTitle}</span>
+                </div>
+
+                <SortDropdown value={sortBy} onChange={handleSortChange} />
+              </div>
+
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-auto pr-2 [-webkit-overflow-scrolling:touch] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#d4d4d4] [&::-webkit-scrollbar-track]:bg-transparent">
+                <div className="h-auto pb-10">
+                  <FilterSidebar
+                    onFilterChange={handleFilterChange}
+                    maxPrice={MAX_PRICE_LIMIT}
+                    products={allProducts}
+                    facetProducts={allProductRecords}
+                    productsComplete={currentPage >= lastPage && !isFetching}
+                  />
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          {/* PRODUCT CONTENT */}
+
+          <main className="min-w-0 scroll-mt-[90px]">
+            {/* SEARCH AND DESCRIPTION */}
+
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0 text-[14px] text-[#6b7078]">
+                {showSkeletons ? (
+                  <div className="h-4 w-56 animate-pulse rounded bg-[#e9e9e9]" />
+                ) : (
+                  <>
+                    <span className="mx-1.5 text-[#c5c8cd]">|</span>
+                    <span>Curated selections for you</span>
+                  </>
+                )}
+              </div>
+
+              <div className="relative w-full sm:w-64">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8f949a]" />
+
+                <input
+                  type="text"
+                  placeholder="Search products..."
+                  value={searchQuery}
+                  onChange={(event) => handleSearch(event.target.value)}
+                  className="w-full rounded-full border border-[#e2e4e7] bg-white py-2 pl-9 pr-4 text-[13px] text-[#111111] outline-none transition-all placeholder:text-[#9a9da2] focus:border-[#111111]"
+                  aria-label="Search products"
+                />
+              </div>
+            </div>
+
+            {/* MOBILE SORT */}
+
+            <div className="mb-4 md:hidden">
+              <SortDropdown value={sortBy} onChange={handleSortChange} />
+            </div>
+
+            {/* BRAND BANNER */}
+
+            {!showSkeletons && brandBanners.length > 0 && (
+              <div className="mb-3">
+                <div className="relative overflow-hidden rounded-[8px] bg-[#f8f8f8]">
+                  <div className="relative aspect-[4/1] min-h-[85px] w-full overflow-hidden sm:aspect-[6.5/1] sm:min-h-[80px] md:aspect-[8/1] md:min-h-[75px] lg:aspect-[9.5/1] lg:min-h-[70px] xl:min-h-[65px]">
+                    <AnimatePresence  initial={false} mode="wait">
+                      <motion.img
+                        key={brandBanners[activeBanner]?.url}
+                        src={brandBanners[activeBanner]?.url}
+                        alt={
+                          brandBanners[activeBanner]?.brandName ||
+                          "Brand banner"
+                        }
+                        className="absolute inset-0 h-full w-full object-cover object-center"
+                        initial={{ opacity: 0, x: 12 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -12 }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
+                      />
+                    </AnimatePresence>
+
+                    {brandBanners.length > 1 && (
+                      <div className="absolute bottom-2 right-3 flex items-center gap-1 rounded-full bg-white/80 px-2 py-1 backdrop-blur-sm">
+                        {brandBanners.map((_, index) => (
+                          <button
+                            key={index}
+                            type="button"
+                            onClick={() => setActiveBanner(index)}
+                            className={`h-1.5 w-1.5 rounded-full transition-all duration-200 ${
+                              activeBanner === index
+                                ? "scale-110 bg-[#111111]"
+                                : "bg-[#a9a9a9] hover:bg-[#555555]"
+                            }`}
+                            aria-label={`Go to banner ${index + 1}`}
+                            aria-current={
+                              activeBanner === index ? "true" : undefined
+                            }
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* SHIPPING */}
+
+            <div className="mb-3 flex flex-col gap-2 rounded-[9px] border border-[#f0eee9] bg-gradient-to-r from-[#fff0d4] via-[#fff7ea] to-[#fffdf8] px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 items-center gap-2.5">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#f5a623]/10">
+                  <Truck className="h-3.5 w-3.5 text-[#f08a00]" />
+                </div>
+
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1">
+                    <h3 className="text-[12px] font-semibold text-[#171717]">
+                      Fast Shipping
+                    </h3>
+
+                    <ArrowRight className="h-3 w-3 text-[#222222]" />
+                  </div>
+
+                  <p className="text-[9px] text-[#5e5e5e] sm:text-[10px]">
+                    Quick dispatch on all orders, delivered securely to your
+                    doorstep.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 self-end sm:self-auto">
+                <span className="rounded-full border border-[#eadfcf] bg-white/70 px-2.5 py-1 text-[9px] font-medium text-[#6b5a43]">
+                  Safe &amp; Secure Delivery
+                </span>
+              </div>
+            </div>
+
+            {/* PRODUCT GRID */}
+
+            {showSkeletons ? (
+              renderSkeletons()
+            ) : error && products.length === 0 ? (
+              renderError()
+            ) : products.length > 0 ? (
+              <>
+                <div
+                  className={`grid grid-cols-2 gap-x-3 gap-y-5 transition-opacity duration-200 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 xl:gap-x-4 xl:gap-y-6 ${
+                    isFetching && !isAppending ? "opacity-60" : "opacity-100"
+                  }`}
+                >
+                  {products.map((product: any, index: number) => {
+                    const productPosition = index + 1;
+
+                    const isCompleteRow = productPosition % gridColumns === 0;
+
+                    const sectionToInsert =
+                      sectionInsertions.get(productPosition);
+
+                    const shouldShowSection =
+                      isCompleteRow &&
+                      Boolean(sectionToInsert) &&
+                      productPosition < products.length;
+
+                    return (
+                      <React.Fragment key={product.id}>
+                        <div className="min-w-0 rounded-[10px] transition-shadow duration-300 ease-out hover:shadow-[0_8px_24px_-6px_rgba(0,0,0,0.18),0_2px_8px_-2px_rgba(0,0,0,0.10)]">
+                          <ProductCard
+                            product={product}
+                            hasToken={hasToken === true}
+                            allProducts={allProductRecords}
+                          />
+                        </div>
+
+                        {shouldShowSection &&
+                          sectionToInsert === "best_sellers" && (
+                            <div className="col-span-2 min-w-0 max-w-full self-start overflow-hidden rounded-2xl border border-[#eeeae4] bg-[#faf9f7] p-3 shadow-sm sm:p-4 md:col-span-2 xl:col-span-2 [&_*]:max-w-full [&_img]:h-full [&_img]:w-full [&_img]:object-cover">
+                              <CustomerFavourites
+                                section="best_sellers"
+                                title="Customer Favourites"
+                              />
+                            </div>
+                          )}
+
+                        {shouldShowSection &&
+                          sectionToInsert === "best_offers" && (
+                            <div className="col-span-full w-full min-w-0">
+                              <CustomerFavourites
+                                section="best_offers"
+                                title="Recommended For You"
+                              />
+                            </div>
+                          )}
+                      </React.Fragment>
+                    );
+                  })}
+                </div>
+
+                <div
+                  ref={endSentinelRef}
+                  className="h-4 w-full"
+                  aria-hidden="true"
+                />
+
+                {isAppending && renderBrandLoader()}
+
+                {error && products.length > 0 && (
+                  <div className="flex flex-col items-center justify-center gap-3 py-6 text-center">
+                    <p className="text-sm text-[#777777]">
+                      Could not load more products.
+                    </p>
+
+                    <button
+                      type="button"
+                      onClick={() => refetch()}
+                      className="rounded-full border border-[#dedede] px-4 py-2 text-xs font-semibold text-[#111111] transition hover:bg-[#f7f7f7]"
+                    >
+                      Retry loading
+                    </button>
+                  </div>
+                )}
+
+                {showEndMessage && !hasMore && products.length > 0 && (
+                  <div className="py-8 text-center text-[12px] text-[#999999]">
+                    You&apos;ve reached the end of the products.
+                  </div>
+                )}
+              </>
+            ) : (
+              renderEmptyState()
+            )}
+          </main>
+        </div>
+      </div>
+
+      {/* MOBILE FILTER BUTTON */}
+
+      <AnimatePresence>
+        {!isMobileFilterOpen && (
+          <motion.button
+            type="button"
+            onClick={() => setIsMobileFilterOpen(true)}
+            initial={{ opacity: 0, y: 20, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            whileTap={{ scale: 0.96 }}
+            className="fixed bottom-5 right-4 z-40 flex items-center gap-2 rounded-full bg-[#101827] px-4 py-3 text-white shadow-[0_10px_30px_rgba(0,0,0,0.22)] md:hidden"
+            aria-label="Open product filters"
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+
+            <span className="text-[12px] font-semibold uppercase tracking-wide">
+              Filter
+            </span>
+
+            {activeFilterCount > 0 && (
+              <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-white px-1.5 text-[10px] font-bold text-[#101827]">
+                {activeFilterCount}
+              </span>
+            )}
+          </motion.button>
+        )}
+      </AnimatePresence>
+
+      {/* MOBILE FILTER DRAWER */}
+
+      <AnimatePresence>
+        {isMobileFilterOpen && (
+          <>
+            <motion.div
+              className="fixed inset-0 z-[9998] bg-black/45 backdrop-blur-[2px] md:hidden"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={() => setIsMobileFilterOpen(false)}
+            />
+
+            <motion.div
+              className="fixed inset-x-0 bottom-0 z-[9999] md:hidden"
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{
+                type: "spring",
+                stiffness: 340,
+                damping: 34,
+                mass: 0.85,
+              }}
+            >
+              <div className="mx-auto max-w-2xl">
+                <div className="max-h-[85dvh] overflow-y-auto overscroll-contain touch-pan-y rounded-t-2xl bg-white [-webkit-overflow-scrolling:touch] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#d4d4d4] [&::-webkit-scrollbar-track]:bg-transparent">
+                  <FilterSidebar
+                    mobile
+                    onMobileClose={() => setIsMobileFilterOpen(false)}
+                    onFilterChange={handleFilterChange}
+                    maxPrice={MAX_PRICE_LIMIT}
+                    products={allProducts}
+                    facetProducts={allProductRecords}
+                    productsComplete={currentPage >= lastPage && !isFetching}
+                  />
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      <Footer />
+
+      <div className="h-20 md:hidden" />
+
+      {/* <StyleFinder /> */}
+    </div>
+  );
+}

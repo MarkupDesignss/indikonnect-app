@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { hideToast } from "../../lib/slices/toastSlice";
+import { hideToast } from "@/lib/slices/toastSlice";
 
 export function Toast() {
     const dispatch = useAppDispatch();

@@ -1,4 +1,4 @@
-import { baseApi } from "./baseApi";
+import { baseApi } from "@/lib/redux/api/baseApi";
 
 // =========================================================
 // CHECKOUT SUMMARY ITEM

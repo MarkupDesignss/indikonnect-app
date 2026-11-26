@@ -1,5 +1,5 @@
 // lib/redux/api/distributor/pairingsApi.ts
-import { baseApi } from "../baseApi";
+import { baseApi } from "@/lib/redux/api/baseApi";
 
 export interface PairingWeek {
   year: number;

@@ -1,9 +1,9 @@
-import { baseApi } from "../baseApi";
+import { baseApi } from "@/lib/redux/api/baseApi";
 
 import {
   ChangePasswordRequest,
   ChangePasswordResponse,
-} from "./userTypes";
+} from "@/lib/redux/api/Profile/userTypes";
 
 export interface UserNotification {
   id: number;

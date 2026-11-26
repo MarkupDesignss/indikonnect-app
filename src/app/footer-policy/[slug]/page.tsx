@@ -1,5 +1,5 @@
 
-import FooterPolicyClient from './FooterPolicyClient'
+import FooterPolicyClient from "@/features/policies/routes/[slug]/FooterPolicyClient"
 
 export function generateStaticParams() {
   return [

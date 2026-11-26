@@ -101,7 +101,18 @@ export interface MergeCartResponse {
   user_type: string;
 }
 
-interface CouponsResponse {
+export interface Coupon {
+  id?: number | string;
+  code: string;
+  title?: string;
+  description?: string;
+  type?: string;
+  value?: number | string;
+  is_active?: boolean | number | string;
+  [key: string]: unknown;
+}
+
+export interface CouponsResponse {
   success: boolean;
   data: {
     current_page: number;

@@ -1,6 +1,6 @@
 // app/auth/customer/verify-otp/page.tsx
 
-import CustomerOTPVerification from '@/components/customer/Login/CustomerOTPVerification';
+import CustomerOTPVerification from "@/features/auth/components/Login/CustomerOTPVerification";
 
 export const metadata = {
     title: 'Verify OTP - IndieKonnect',

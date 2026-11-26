@@ -1,7 +1,7 @@
 // app/order-confirmation/page.tsx
 
 import { Suspense } from "react";
-import OrderConfirmationPage from "@/Screens/order-confirmation/OrderConfirmationPage";
+import OrderConfirmationPage from "@/features/orders/confirmation/OrderConfirmationPage";
 
 // Loading fallback component
 function LoadingFallback() {

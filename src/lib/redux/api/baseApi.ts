@@ -341,7 +341,7 @@ const baseQuery = fetchBaseQuery({
       headers.set("Authorization", `Bearer ${token}`);
     }
 
-    headers.set("Content-Type", "application/json");
+    headers.set("Accept", "application/json");
 
     return headers;
   },
@@ -383,10 +383,17 @@ const baseQueryWithReauth: BaseQueryFn<
   unknown,
   FetchBaseQueryError
 > = async (args, api, extraOptions) => {
+  const appTypeAtRequest = getAppType();
+  const tokenAtRequest = TokenManager.getAccessToken();
   const result = await baseQuery(args, api, extraOptions);
 
   // Any API returning HTTP 401 → Login redirect
-  if (result.error?.status === 401) {
+  if (
+    result.error?.status === 401 &&
+    !api.signal.aborted &&
+    getAppType() === appTypeAtRequest &&
+    TokenManager.getAccessToken() === tokenAtRequest
+  ) {
     redirectAuthenticatedUserToLanding();
   }
 

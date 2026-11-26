@@ -2,7 +2,7 @@
 
 "use client";
 
-import { baseApi, TokenManager } from "../baseApi";
+import { baseApi, TokenManager } from "@/lib/redux/api/baseApi";
 import { getAppType } from "@/lib/appConfig";
 
 import {
@@ -41,7 +41,7 @@ import {
   CheckDistributorResponse,
   CorrectionRequest,
   CorrectionResponse,
-} from "./authtype";
+} from "@/lib/redux/api/distributor/authtype";
 
 // =====================================================
 // DISTRIBUTOR APP CHECK

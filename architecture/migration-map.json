@@ -1,0 +1,1032 @@
+[
+  {
+    "from": "src/Screens/Auth/customer/login/page.tsx",
+    "to": "src/features/auth/screens/customer/login/page.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/Screens/CheckoutPage/AddressFormModal.tsx",
+    "to": "src/features/checkout/screens/AddressFormModal.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/Screens/CheckoutPage/CheckoutPage.tsx",
+    "to": "src/features/checkout/screens/CheckoutPage.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/Screens/CheckoutPage/LoadingSkeleton.tsx",
+    "to": "src/features/checkout/screens/LoadingSkeleton.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/Screens/CheckoutPage/page.tsx",
+    "to": "src/features/checkout/screens/page.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/Screens/Footer/Footerprivacy.tsx",
+    "to": "src/features/policies/screens/Footerprivacy.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/Screens/GetStartedDrawer.tsx",
+    "to": "src/features/auth/components/GetStartedDrawer.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/Screens/Inner/cart/cart.tsx",
+    "to": "src/features/cart/screens/cart.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/Screens/Inner/cart/page.jsx",
+    "to": "src/features/cart/screens/page.jsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/Screens/Inner/product/CustomerFavourites.tsx",
+    "to": "src/features/products/screens/CustomerFavourites.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/Screens/Inner/product/StyleFinder.tsx",
+    "to": "src/features/products/screens/StyleFinder.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/Screens/Inner/product/page.tsx",
+    "to": "src/features/products/screens/page.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/Screens/Inner/product/product.tsx",
+    "to": "src/features/products/screens/product.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/Screens/Inner/profile/page.tsx",
+    "to": "src/features/profile/screens/page.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/Screens/Inner/profile/profile.tsx",
+    "to": "src/features/profile/screens/profile.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/Screens/Inner/wishlist/page.tsx",
+    "to": "src/features/wishlist/screens/page.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/Screens/Inner/wishlist/wishlist.tsx",
+    "to": "src/features/wishlist/screens/wishlist.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/Screens/Landing/Landing.tsx",
+    "to": "src/features/landing/screens/Landing.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/Screens/Landing/page.tsx",
+    "to": "src/features/landing/screens/page.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/Screens/Promotion/DiveInFirst.tsx",
+    "to": "src/features/promotion/screens/DiveInFirst.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/Screens/Promotion/ExploreCollection.tsx",
+    "to": "src/features/promotion/screens/ExploreCollection.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/Screens/Promotion/FAQSection.tsx",
+    "to": "src/features/promotion/screens/FAQSection.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/Screens/Promotion/IndieKonnectDiverSections.tsx",
+    "to": "src/features/promotion/screens/IndieKonnectDiverSections.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/Screens/Promotion/IndieKonnectRecordBanner.tsx",
+    "to": "src/features/promotion/screens/IndieKonnectRecordBanner.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/Screens/Promotion/Promotionmain.tsx",
+    "to": "src/features/promotion/screens/Promotionmain.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/Screens/Promotion/page.tsx",
+    "to": "src/features/promotion/screens/page.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/Screens/contact/page.tsx",
+    "to": "src/features/contact/screens/page.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/Screens/index.ts",
+    "to": "src/features/landing/index.ts",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/Screens/order/OrderCancelModal.tsx",
+    "to": "src/features/orders/screens/OrderCancelModal.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/Screens/order/OrderJourneyTimeline.tsx",
+    "to": "src/features/orders/screens/OrderJourneyTimeline.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/Screens/order/ReviewModal.tsx",
+    "to": "src/features/orders/screens/ReviewModal.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/Screens/order/invoiceGenerator.ts",
+    "to": "src/features/orders/screens/invoiceGenerator.ts",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/Screens/order/order.tsx",
+    "to": "src/features/orders/screens/order.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/Screens/order/page.tsx",
+    "to": "src/features/orders/screens/page.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/Screens/order-confirmation/OrderConfirmationPage.tsx",
+    "to": "src/features/orders/confirmation/OrderConfirmationPage.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/Screens/order-confirmation/page.tsx",
+    "to": "src/features/orders/confirmation/page.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/Screens/types/product.ts",
+    "to": "src/features/products/types/product.ts",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/app/distributor/MyAccounts/MyAccountsPage.tsx",
+    "to": "src/features/distributor/routes/MyAccounts/MyAccountsPage.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/app/distributor/TC-Bank/TCBankPage.tsx",
+    "to": "src/features/distributor/routes/TC-Bank/TCBankPage.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/app/distributor/accounts/Account.tsx",
+    "to": "src/features/distributor/routes/accounts/Account.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/app/distributor/binary-tree/BinaryTreeV2.tsx",
+    "to": "src/features/distributor/routes/binary-tree/BinaryTreeV2.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/app/distributor/buy-back/BuyBack.tsx",
+    "to": "src/features/distributor/routes/buy-back/BuyBack.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/app/distributor/colling-off/CollingOff.tsx",
+    "to": "src/features/distributor/routes/colling-off/CollingOff.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/app/distributor/commissions/Commissions.tsx",
+    "to": "src/features/distributor/routes/commissions/Commissions.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/app/distributor/downline-cv-report/DownlineCVReport.tsx",
+    "to": "src/features/distributor/routes/downline-cv-report/DownlineCVReport.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/app/distributor/kyc/KycForm.tsx",
+    "to": "src/features/distributor/routes/kyc/KycForm.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/app/distributor/kyc/bank-details/DistributorBankDetails.tsx",
+    "to": "src/features/distributor/routes/kyc/bank-details/DistributorBankDetails.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/app/distributor/kyc/status/KycStatus.tsx",
+    "to": "src/features/distributor/routes/kyc/status/KycStatus.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/app/distributor/my-referral/Referral.tsx",
+    "to": "src/features/distributor/routes/my-referral/Referral.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/app/distributor/order-history/OrderHistory.tsx",
+    "to": "src/features/distributor/routes/order-history/OrderHistory.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/app/distributor/pending-placements/PendingPlacements.tsx",
+    "to": "src/features/distributor/routes/pending-placements/PendingPlacements.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/app/distributor/profile/DistributorPVCSection.tsx",
+    "to": "src/features/distributor/routes/profile/DistributorPVCSection.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/app/distributor/profile/TrackingDashboard.tsx",
+    "to": "src/features/distributor/routes/profile/TrackingDashboard.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/app/distributor/profile/binary-tree/BinaryTree.tsx",
+    "to": "src/features/distributor/routes/profile/binary-tree/BinaryTree.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/app/distributor/profile/pending-cv-breakdown/Penidngcv.tsx",
+    "to": "src/features/distributor/routes/profile/pending-cv-breakdown/Penidngcv.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/app/distributor/profile/rank-information/RankInformation.tsx",
+    "to": "src/features/distributor/routes/profile/rank-information/RankInformation.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/app/distributor/profile/sponsor-tree/SponsorTree.tsx",
+    "to": "src/features/distributor/routes/profile/sponsor-tree/SponsorTree.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/app/distributor/transactions/Transactions.tsx",
+    "to": "src/features/distributor/routes/transactions/Transactions.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/app/distributor/wallet/wallet.tsx",
+    "to": "src/features/distributor/routes/wallet/wallet.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/app/footer-policy/[slug]/FooterPolicyClient.tsx",
+    "to": "src/features/policies/routes/[slug]/FooterPolicyClient.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/Distributor/Login/DistributorLogin.tsx",
+    "to": "src/features/distributor/auth/DistributorLogin.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/Distributor/Login/ForgotPasswordModal.tsx",
+    "to": "src/features/distributor/auth/ForgotPasswordModal.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/Distributor/Register/DistributorRegistrationForm.tsx",
+    "to": "src/features/distributor/registration/DistributorRegistrationForm.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/Distributor/Register/components/CalendarPopover.tsx",
+    "to": "src/features/distributor/registration/components/CalendarPopover.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/Distributor/Register/components/DatePicker.tsx",
+    "to": "src/features/distributor/registration/components/DatePicker.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/Distributor/Register/components/FormActions.tsx",
+    "to": "src/features/distributor/registration/components/FormActions.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/Distributor/Register/components/InfoBox.tsx",
+    "to": "src/features/distributor/registration/components/InfoBox.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/Distributor/Register/components/PasswordInput.tsx",
+    "to": "src/features/distributor/registration/components/PasswordInput.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/Distributor/Register/components/ProgressSteps.tsx",
+    "to": "src/features/distributor/registration/components/ProgressSteps.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/Distributor/Register/components/steps/AadhaarStep.tsx",
+    "to": "src/features/distributor/registration/components/steps/AadhaarStep.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/Distributor/Register/components/steps/BankStep.tsx",
+    "to": "src/features/distributor/registration/components/steps/BankStep.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/Distributor/Register/components/steps/IdentityStep.tsx",
+    "to": "src/features/distributor/registration/components/steps/IdentityStep.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/Distributor/Register/components/steps/LocationStep.tsx",
+    "to": "src/features/distributor/registration/components/steps/LocationStep.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/Distributor/Register/components/steps/MobileCheckScreen.tsx",
+    "to": "src/features/distributor/registration/components/steps/MobileCheckScreen.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/Distributor/Register/components/steps/PANStep.tsx",
+    "to": "src/features/distributor/registration/components/steps/PANStep.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/Distributor/Register/components/steps/RegistrationLayout.tsx",
+    "to": "src/features/distributor/registration/components/steps/RegistrationLayout.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/Distributor/Register/components/steps/ReviewStep.tsx",
+    "to": "src/features/distributor/registration/components/steps/ReviewStep.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/Distributor/Register/components/steps/SponsorStep.tsx",
+    "to": "src/features/distributor/registration/components/steps/SponsorStep.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/Distributor/Register/types/index.ts",
+    "to": "src/features/distributor/registration/types/index.ts",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/Distributor/distributor/DashboardHeader.tsx",
+    "to": "src/features/distributor/shell/DashboardHeader.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/Distributor/distributor/LegalModal.tsx",
+    "to": "src/features/distributor/shell/LegalModal.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/Distributor/distributor/Sidebar.tsx",
+    "to": "src/features/distributor/shell/Sidebar.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/Distributor/distributor/StatsCards.tsx",
+    "to": "src/features/distributor/shell/StatsCards.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/Distributor/distributor/layout.tsx",
+    "to": "src/features/distributor/shell/layout.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/Distributor/distributor/legalContent.tsx",
+    "to": "src/features/distributor/shell/legalContent.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/Distributor/home/page.tsx",
+    "to": "src/features/distributor/home/page.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/common/IndieKonnectHome/CursorFX.tsx",
+    "to": "src/features/storefront/components/CursorFX.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/common/IndieKonnectHome/GrowthLadderScroll.tsx",
+    "to": "src/features/storefront/components/GrowthLadderScroll.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/common/IndieKonnectHome/HeroBannerCarousel.tsx",
+    "to": "src/features/storefront/components/HeroBannerCarousel.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/common/IndieKonnectHome/Home.tsx",
+    "to": "src/features/storefront/components/Home.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/common/IndieKonnectHome/IndieKonnectHome.module.css",
+    "to": "src/features/storefront/components/IndieKonnectHome.module.css",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/common/IndieKonnectHome/MostFollowedReel.tsx",
+    "to": "src/features/storefront/components/MostFollowedReel.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/common/IndieKonnectHome/NewArrivalsSection.tsx",
+    "to": "src/features/storefront/components/NewArrivalsSection.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/common/IndieKonnectHome/PATCH.md",
+    "to": "src/features/storefront/components/PATCH.md",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/common/IndieKonnectHome/PurchaseTrustBar.tsx",
+    "to": "src/features/storefront/components/PurchaseTrustBar.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/common/IndieKonnectHome/ReviewCarousel.tsx",
+    "to": "src/features/storefront/components/ReviewCarousel.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/common/IndieKonnectHome/ShopByCategory.tsx",
+    "to": "src/features/storefront/components/ShopByCategory.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/common/IndieKonnectHome/ShopReel.tsx",
+    "to": "src/features/storefront/components/ShopReel.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/common/IndieKonnectHome/SignupBenefitsBanner.tsx",
+    "to": "src/features/storefront/components/SignupBenefitsBanner.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/common/IndieKonnectHome/StyleTestimonials.tsx",
+    "to": "src/features/storefront/components/StyleTestimonials.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/common/IndieKonnectHome/Testimonialssection.tsx",
+    "to": "src/features/storefront/components/Testimonialssection.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/common/IndieKonnectHome/TrendingProductsSection.tsx",
+    "to": "src/features/storefront/components/TrendingProductsSection.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/common/IndieKonnectHome/Voices.module.css",
+    "to": "src/features/storefront/components/Voices.module.css",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/common/IndieKonnectHome/WatchesBanner.tsx",
+    "to": "src/features/storefront/components/WatchesBanner.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/common/IndieKonnectHome/interactions.ts",
+    "to": "src/features/storefront/components/interactions.ts",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/common/IndieKonnectHome/motion.module.css",
+    "to": "src/features/storefront/components/motion.module.css",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/common/IndieKonnectHome/useHeroScrollZoom.ts",
+    "to": "src/features/storefront/components/useHeroScrollZoom.ts",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/common/IndieKonnectHome/useMagnetic.ts",
+    "to": "src/features/storefront/components/useMagnetic.ts",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/common/IndieKonnectHome/useParallax.ts",
+    "to": "src/features/storefront/components/useParallax.ts",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/common/IndieKonnectHome/useReveal.ts",
+    "to": "src/features/storefront/components/useReveal.ts",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/contact/ContactForm.tsx",
+    "to": "src/features/contact/components/ContactForm.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/contact/ContactInfoCard.tsx",
+    "to": "src/features/contact/components/ContactInfoCard.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/customer/Login/CustomerLoginForm.tsx",
+    "to": "src/features/auth/components/Login/CustomerLoginForm.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/customer/Login/CustomerOTPVerification.tsx",
+    "to": "src/features/auth/components/Login/CustomerOTPVerification.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/customer/Registration/CustomerRegistrationForm.tsx",
+    "to": "src/features/auth/components/Registration/CustomerRegistrationForm.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/dashboard/StatsCard/StatsCard.tsx",
+    "to": "src/features/distributor/dashboard/components/StatsCard/StatsCard.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/home/components/Footer.module.css",
+    "to": "src/features/landing/components/components/Footer.module.css",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/home/components/Footer.tsx",
+    "to": "src/features/landing/components/components/Footer.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/home/components/Nav.module.css",
+    "to": "src/features/landing/components/components/Nav.module.css",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/home/components/Nav.tsx",
+    "to": "src/features/landing/components/components/Nav.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/home/components/Preloader.module.css",
+    "to": "src/features/landing/components/components/Preloader.module.css",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/home/components/Preloader.tsx",
+    "to": "src/features/landing/components/components/Preloader.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/home/components/ScrollRail.module.css",
+    "to": "src/features/landing/components/components/ScrollRail.module.css",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/home/components/ScrollRail.tsx",
+    "to": "src/features/landing/components/components/ScrollRail.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/home/components/SmoothScroll.tsx",
+    "to": "src/features/landing/components/components/SmoothScroll.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/home/components/sections/Collections.module.css",
+    "to": "src/features/landing/components/components/sections/Collections.module.css",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/home/components/sections/Collections.tsx",
+    "to": "src/features/landing/components/components/sections/Collections.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/home/components/sections/Craft.module.css",
+    "to": "src/features/landing/components/components/sections/Craft.module.css",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/home/components/sections/Craft.tsx",
+    "to": "src/features/landing/components/components/sections/Craft.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/home/components/sections/Finale.module.css",
+    "to": "src/features/landing/components/components/sections/Finale.module.css",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/home/components/sections/Finale.tsx",
+    "to": "src/features/landing/components/components/sections/Finale.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/home/components/sections/Hero.module.css",
+    "to": "src/features/landing/components/components/sections/Hero.module.css",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/home/components/sections/Hero.tsx",
+    "to": "src/features/landing/components/components/sections/Hero.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/home/components/sections/Ladder.module.css",
+    "to": "src/features/landing/components/components/sections/Ladder.module.css",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/home/components/sections/Ladder.tsx",
+    "to": "src/features/landing/components/components/sections/Ladder.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/home/components/sections/Nation.module.css",
+    "to": "src/features/landing/components/components/sections/Nation.module.css",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/home/components/sections/Nation.tsx",
+    "to": "src/features/landing/components/components/sections/Nation.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/home/components/sections/Newsletter.module.css",
+    "to": "src/features/landing/components/components/sections/Newsletter.module.css",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/home/components/sections/Newsletter.tsx",
+    "to": "src/features/landing/components/components/sections/Newsletter.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/home/components/sections/TheName.module.css",
+    "to": "src/features/landing/components/components/sections/TheName.module.css",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/home/components/sections/TheName.tsx",
+    "to": "src/features/landing/components/components/sections/TheName.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/home/components/sections/Values.module.css",
+    "to": "src/features/landing/components/components/sections/Values.module.css",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/home/components/sections/Values.tsx",
+    "to": "src/features/landing/components/components/sections/Values.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/home/components/sections/Voices.module.css",
+    "to": "src/features/landing/components/components/sections/Voices.module.css",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/home/components/sections/Voices.tsx",
+    "to": "src/features/landing/components/components/sections/Voices.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/home/design-system/index.ts",
+    "to": "src/features/landing/components/design-system/index.ts",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/home/design-system/motion.ts",
+    "to": "src/features/landing/components/design-system/motion.ts",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/home/design-system/primitives/ArrowIcon.tsx",
+    "to": "src/features/landing/components/design-system/primitives/ArrowIcon.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/home/design-system/primitives/Button.module.css",
+    "to": "src/features/landing/components/design-system/primitives/Button.module.css",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/home/design-system/primitives/Button.tsx",
+    "to": "src/features/landing/components/design-system/primitives/Button.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/home/design-system/primitives/Display.module.css",
+    "to": "src/features/landing/components/design-system/primitives/Display.module.css",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/home/design-system/primitives/Display.tsx",
+    "to": "src/features/landing/components/design-system/primitives/Display.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/home/design-system/primitives/Eyebrow.module.css",
+    "to": "src/features/landing/components/design-system/primitives/Eyebrow.module.css",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/home/design-system/primitives/Eyebrow.tsx",
+    "to": "src/features/landing/components/design-system/primitives/Eyebrow.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/home/design-system/primitives/Lede.module.css",
+    "to": "src/features/landing/components/design-system/primitives/Lede.module.css",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/home/design-system/primitives/Lede.tsx",
+    "to": "src/features/landing/components/design-system/primitives/Lede.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/home/design-system/primitives/Logo.tsx",
+    "to": "src/features/landing/components/design-system/primitives/Logo.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/home/design-system/primitives/Reveal.tsx",
+    "to": "src/features/landing/components/design-system/primitives/Reveal.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/home/design-system/primitives/Section.module.css",
+    "to": "src/features/landing/components/design-system/primitives/Section.module.css",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/home/design-system/primitives/Section.tsx",
+    "to": "src/features/landing/components/design-system/primitives/Section.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/home/design-system/primitives/cx.ts",
+    "to": "src/features/landing/components/design-system/primitives/cx.ts",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/product/FilterSidebar.tsx",
+    "to": "src/features/products/components/FilterSidebar.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/product/IndiaPostDeliveryChecker.tsx",
+    "to": "src/features/products/components/IndiaPostDeliveryChecker.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/product/Newsletter.tsx",
+    "to": "src/features/products/components/Newsletter.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/product/ProductCard.tsx",
+    "to": "src/features/products/components/ProductCard.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/product/ProductCardSkeleton.tsx",
+    "to": "src/features/products/components/ProductCardSkeleton.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/product/ProductGrid.tsx",
+    "to": "src/features/products/components/ProductGrid.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/product/productDetail.tsx",
+    "to": "src/features/products/components/productDetail.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/profile/AccountSettings.tsx",
+    "to": "src/features/profile/components/AccountSettings.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/profile/AddressComponent.tsx",
+    "to": "src/features/profile/components/AddressComponent.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/profile/DistributorStatsPage.tsx",
+    "to": "src/features/profile/components/DistributorStatsPage.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/profile/ProfileSidebar.tsx",
+    "to": "src/features/profile/components/ProfileSidebar.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/profile/StatsCard.tsx",
+    "to": "src/features/profile/components/StatsCard.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/components/profile/WishlistComponent.tsx",
+    "to": "src/features/profile/components/WishlistComponent.tsx",
+    "route_wrapper_retained": false
+  },
+  {
+    "from": "src/app/page.tsx",
+    "to": "src/features/landing/routes/RootScreen.tsx",
+    "route_wrapper_retained": true
+  },
+  {
+    "from": "src/app/home/page.tsx",
+    "to": "src/features/storefront/routes/HomeScreen.tsx",
+    "route_wrapper_retained": true
+  },
+  {
+    "from": "src/app/auth/distributor/register/page.tsx",
+    "to": "src/features/auth/routes/distributor/register/RouteScreen.tsx",
+    "route_wrapper_retained": true
+  },
+  {
+    "from": "src/app/auth/customer/register/page.tsx",
+    "to": "src/features/auth/routes/customer/register/RouteScreen.tsx",
+    "route_wrapper_retained": true
+  },
+  {
+    "from": "src/app/distributor/sales-calendar/page.tsx",
+    "to": "src/features/distributor/routes/sales-calendar/RouteScreen.tsx",
+    "route_wrapper_retained": true
+  },
+  {
+    "from": "src/app/distributor/binary-tree/page.tsx",
+    "to": "src/features/distributor/routes/binary-tree/RouteScreen.tsx",
+    "route_wrapper_retained": true
+  },
+  {
+    "from": "src/app/distributor/my-referral/page.tsx",
+    "to": "src/features/distributor/routes/my-referral/RouteScreen.tsx",
+    "route_wrapper_retained": true
+  },
+  {
+    "from": "src/app/distributor/wallet/page.tsx",
+    "to": "src/features/distributor/routes/wallet/RouteScreen.tsx",
+    "route_wrapper_retained": true
+  },
+  {
+    "from": "src/app/distributor/colling-off/page.tsx",
+    "to": "src/features/distributor/routes/colling-off/RouteScreen.tsx",
+    "route_wrapper_retained": true
+  },
+  {
+    "from": "src/app/distributor/commissions/page.tsx",
+    "to": "src/features/distributor/routes/commissions/RouteScreen.tsx",
+    "route_wrapper_retained": true
+  },
+  {
+    "from": "src/app/distributor/MyAccounts/page.tsx",
+    "to": "src/features/distributor/routes/MyAccounts/RouteScreen.tsx",
+    "route_wrapper_retained": true
+  },
+  {
+    "from": "src/app/distributor/pending-placements/page.tsx",
+    "to": "src/features/distributor/routes/pending-placements/RouteScreen.tsx",
+    "route_wrapper_retained": true
+  },
+  {
+    "from": "src/app/distributor/downline-cv-report/page.tsx",
+    "to": "src/features/distributor/routes/downline-cv-report/RouteScreen.tsx",
+    "route_wrapper_retained": true
+  },
+  {
+    "from": "src/app/distributor/order-history/page.tsx",
+    "to": "src/features/distributor/routes/order-history/RouteScreen.tsx",
+    "route_wrapper_retained": true
+  },
+  {
+    "from": "src/app/distributor/accounts/page.tsx",
+    "to": "src/features/distributor/routes/accounts/RouteScreen.tsx",
+    "route_wrapper_retained": true
+  },
+  {
+    "from": "src/app/distributor/dashboard/page.tsx",
+    "to": "src/features/distributor/routes/dashboard/RouteScreen.tsx",
+    "route_wrapper_retained": true
+  },
+  {
+    "from": "src/app/distributor/profile/page.tsx",
+    "to": "src/features/distributor/routes/profile/RouteScreen.tsx",
+    "route_wrapper_retained": true
+  },
+  {
+    "from": "src/app/distributor/transactions/page.tsx",
+    "to": "src/features/distributor/routes/transactions/RouteScreen.tsx",
+    "route_wrapper_retained": true
+  },
+  {
+    "from": "src/app/distributor/buy-back/page.tsx",
+    "to": "src/features/distributor/routes/buy-back/RouteScreen.tsx",
+    "route_wrapper_retained": true
+  },
+  {
+    "from": "src/app/distributor/TC-Bank/page.tsx",
+    "to": "src/features/distributor/routes/TC-Bank/RouteScreen.tsx",
+    "route_wrapper_retained": true
+  },
+  {
+    "from": "src/app/distributor/profile/rank-information/page.tsx",
+    "to": "src/features/distributor/routes/profile/rank-information/RouteScreen.tsx",
+    "route_wrapper_retained": true
+  },
+  {
+    "from": "src/app/distributor/profile/sponsor-tree/page.tsx",
+    "to": "src/features/distributor/routes/profile/sponsor-tree/RouteScreen.tsx",
+    "route_wrapper_retained": true
+  },
+  {
+    "from": "src/app/distributor/profile/binary-tree/page.tsx",
+    "to": "src/features/distributor/routes/profile/binary-tree/RouteScreen.tsx",
+    "route_wrapper_retained": true
+  },
+  {
+    "from": "src/app/distributor/profile/weekly-commission/page.tsx",
+    "to": "src/features/distributor/routes/profile/weekly-commission/RouteScreen.tsx",
+    "route_wrapper_retained": true
+  },
+  {
+    "from": "src/app/distributor/profile/pending-cv-breakdown/page.tsx",
+    "to": "src/features/distributor/routes/profile/pending-cv-breakdown/RouteScreen.tsx",
+    "route_wrapper_retained": true
+  },
+  {
+    "from": "src/app/distributor/profile/dashboard/page.tsx",
+    "to": "src/features/distributor/routes/profile/dashboard/RouteScreen.tsx",
+    "route_wrapper_retained": true
+  },
+  {
+    "from": "src/app/distributor/profile/weekly-cv-date/page.tsx",
+    "to": "src/features/distributor/routes/profile/weekly-cv-date/RouteScreen.tsx",
+    "route_wrapper_retained": true
+  },
+  {
+    "from": "src/app/distributor/profile/ba-board/page.tsx",
+    "to": "src/features/distributor/routes/profile/ba-board/RouteScreen.tsx",
+    "route_wrapper_retained": true
+  },
+  {
+    "from": "src/app/distributor/kyc/status/page.tsx",
+    "to": "src/features/distributor/routes/kyc/status/RouteScreen.tsx",
+    "route_wrapper_retained": true
+  },
+  {
+    "from": "src/app/distributor/kyc/bank-details/page.tsx",
+    "to": "src/features/distributor/routes/kyc/bank-details/RouteScreen.tsx",
+    "route_wrapper_retained": true
+  },
+  {
+    "from": "src/app/distributor/kyc/document-upload/page.tsx",
+    "to": "src/features/distributor/routes/kyc/document-upload/RouteScreen.tsx",
+    "route_wrapper_retained": true
+  },
+  {
+    "from": "src/app/product/fallback/page.tsx",
+    "to": "src/features/products/routes/fallback/RouteScreen.tsx",
+    "route_wrapper_retained": true
+  }
+]

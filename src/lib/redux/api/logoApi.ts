@@ -1,5 +1,5 @@
 
-import { baseApi } from "./baseApi";
+import { baseApi } from "@/lib/redux/api/baseApi";
 
 // Types
 export interface GetLogoResponse {

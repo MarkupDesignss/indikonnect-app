@@ -4,8 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { FaFacebookF, FaInstagram, FaYoutube } from "react-icons/fa";
 import { RiTwitterXLine } from "react-icons/ri";
-import { getColor } from "../lib/constants/colors";
-import { getFont, FONT_WEIGHT } from "../lib/constants/font-family";
+import { getColor } from "@/lib/constants/colors";
+import { getFont, FONT_WEIGHT } from "@/lib/constants/font-family";
 import Logo from "../../public/indiekonnect-web/images/logo.png";
 import { useState, useEffect } from "react";
 

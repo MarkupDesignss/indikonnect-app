@@ -1,25 +1,5 @@
-"use client";
+import RouteScreen from "@/features/distributor/routes/profile/pending-cv-breakdown/RouteScreen";
 
-import DashboardHeader from "@/components/Distributor/distributor/DashboardHeader";
-import Sidebar from "@/components/Distributor/distributor/Sidebar";
-import Penidngcv from "./Penidngcv";
-
-export default function PendingCVPage() {
-  return (
-    <div className="min-h-screen w-full bg-white">
-      <div className="w-full h-full">
-        <div className="w-full bg-white">
-          <DashboardHeader distributorId="AIA603525" />
-
-          <div className="flex min-h-[calc(100vh-72px)] relative">
-            <Sidebar />
-
-            <div className="min-w-0 flex-1 bg-[#fafcff] px-4 pt-5 pb-8">
-              <Penidngcv />
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+export default function Page() {
+  return <RouteScreen />;
 }

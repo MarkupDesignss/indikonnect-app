@@ -1,4 +1,5 @@
 import Cookies from 'js-cookie';
+import type { UserProfile as User } from '@/lib/redux/api/authtype';
 
 const TOKEN_KEY = 'auth_token';
 const REFRESH_TOKEN_KEY = 'refresh_token';

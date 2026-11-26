@@ -1,6 +1,6 @@
 // src/lib/redux/api/wishlistApi.ts
 
-import { baseApi } from "../baseApi";
+import { baseApi } from "@/lib/redux/api/baseApi";
 import {
   AddToWishlistRequest,
   AddToWishlistResponse,
@@ -10,7 +10,7 @@ import {
   MoveToCartRequest,
   MoveToCartResponse,
   MoveAllToCartResponse,
-} from "./wishlistTypes";
+} from "@/lib/redux/api/Wishlist/wishlistTypes";
 
 export const wishlistApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({

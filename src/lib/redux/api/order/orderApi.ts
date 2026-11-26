@@ -1,4 +1,4 @@
-import { baseApi } from "../baseApi";
+import { baseApi } from "@/lib/redux/api/baseApi";
 
 import {
   MyOrdersResponse,
@@ -11,7 +11,7 @@ import {
   AddRatingReviewResponse,
   CancelReturnRequest,
   CancelReturnResponse,
-} from "./orderTypes";
+} from "@/lib/redux/api/order/orderTypes";
 
 // =====================================================
 // RETRY PAYMENT TYPES

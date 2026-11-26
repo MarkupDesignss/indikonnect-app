@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import Myorder from "../../Screens/order/page";
+import Myorder from "@/features/orders/screens/page";
 
 export default function Page() {
   return (

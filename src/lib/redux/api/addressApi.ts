@@ -1,6 +1,6 @@
 // src/lib/redux/api/addressApi.ts
 
-import { baseApi } from "./baseApi";
+import { baseApi } from "@/lib/redux/api/baseApi";
 import {
   AddressResponse,
   AddressSingleResponse,
@@ -11,7 +11,7 @@ import {
   NormalizedAddress,
   normalizeAddress,
   denormalizeAddress,
-} from "./addressTypes";
+} from "@/lib/redux/api/addressTypes";
 
 export const addressApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({

@@ -1,5 +1,5 @@
-import { baseApi } from "./baseApi";
-import { GetBrandsResponse } from "./brandsTypes";
+import { baseApi } from "@/lib/redux/api/baseApi";
+import { GetBrandsResponse } from "@/lib/redux/api/brandsTypes";
 
 export const brandsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({

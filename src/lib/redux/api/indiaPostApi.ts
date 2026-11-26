@@ -1,4 +1,4 @@
-import { baseApi } from "./baseApi";
+import { baseApi } from "@/lib/redux/api/baseApi";
 
 /**
  * Browser only talks to Laravel /api/shipping/indiapost/*.

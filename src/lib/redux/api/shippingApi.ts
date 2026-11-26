@@ -1,7 +1,7 @@
 // src/lib/redux/api/shippingApi.ts
 
-import { baseApi } from "./baseApi";
-import { ShippingMethodsResponse } from "./shippingTypes";
+import { baseApi } from "@/lib/redux/api/baseApi";
+import { ShippingMethodsResponse } from "@/lib/redux/api/shippingTypes";
 
 export const shippingApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({

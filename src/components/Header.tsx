@@ -10,7 +10,7 @@ import { FiArrowRight, FiUser, FiUsers, FiChevronDown } from "react-icons/fi";
 
 import { getFont, FONT_WEIGHT } from "@/lib/constants/font-family";
 import { ROUTES } from "@/lib/constants/routes";
-import Logo from "@/public/indiekonnect-web/images/logo.png";
+import Logo from "../../public/indiekonnect-web/images/logo.png";
 
 const CUSTOMER_APP_PATH = "/indiekonnect-web";
 const DISTRIBUTOR_APP_PATH = "/indiekonnect-distributor";
