@@ -11,25 +11,59 @@ import {
   useLazyGetInvoiceByOrderIdQuery,
 } from "@/lib/redux/api/order/orderApi";
 
-import { ChevronDown, ChevronLeft, ChevronRight, Search, X, Package, ShoppingBag, RotateCcw, Check, Loader2, Truck } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Search,
+  X,
+  Package,
+  ShoppingBag,
+  RotateCcw,
+  Check,
+  Loader2,
+  Truck,
+} from "lucide-react";
 
 import { useState, useMemo, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useDebouncedState } from "@/lib/hooks/useDebounce";
-
 
 import { useRouter } from "next/navigation";
 
 import { showToast } from "@/lib/slices/toastSlice";
 import { useAppDispatch } from "@/lib/redux/hooks";
 
-
 // India Post tracking: authenticated Laravel customer/distributor-owned order endpoint.
 
-import { useGetIndiaPostLineTrackingQuery, matchesIndiaPostLine } from "@/lib/redux/api/indiaPostTrackingApi";
-import { ApiStatusOption, NAVY, OrderGroup, OrderLineItem, ReturnMethod, STATUS_STYLES, canShowInvoice, extractStatusOptionsFromApi, findCancellableReturn, flattenOrderItems, formatStatusLabel, getActiveReturnIds, getCancellableLines, getOrderStatusValue, getReturnableLines, getWithdrawCancelLines, groupByOrder, isPaymentFailed, loadRazorpayCheckout, normalizeStatus, retryRemainingMs } from "@/features/distributor/routes/order-history/OrderHistory.parts/support";
+import {
+  useGetIndiaPostLineTrackingQuery,
+  matchesIndiaPostLine,
+} from "@/lib/redux/api/indiaPostTrackingApi";
+import {
+  ApiStatusOption,
+  NAVY,
+  OrderGroup,
+  OrderLineItem,
+  ReturnMethod,
+  STATUS_STYLES,
+  canShowInvoice,
+  extractStatusOptionsFromApi,
+  findCancellableReturn,
+  flattenOrderItems,
+  formatStatusLabel,
+  getActiveReturnIds,
+  getCancellableLines,
+  getOrderStatusValue,
+  getReturnableLines,
+  getWithdrawCancelLines,
+  groupByOrder,
+  isPaymentFailed,
+  loadRazorpayCheckout,
+  normalizeStatus,
+  retryRemainingMs,
+} from "@/features/distributor/routes/order-history/OrderHistory.parts/support";
 import { OrderGroupCard } from "@/features/distributor/routes/order-history/OrderHistory.parts/OrderGroupCard";
-
 
 import { ReviewModal } from "@/features/distributor/routes/order-history/OrderHistory.parts/ReviewModal";
 
@@ -38,15 +72,30 @@ import { CancelModal } from "@/features/distributor/routes/order-history/OrderHi
 import { CancelReturnModal } from "@/features/distributor/routes/order-history/OrderHistory.parts/CancelReturnModal";
 import { WithdrawModal } from "@/features/distributor/routes/order-history/OrderHistory.parts/WithdrawModal";
 
-
 /* ========================================================================== */
 /* MAIN COMPONENT                                                             */
 /* ========================================================================== */
 
-const TrackingModal = dynamic(() => import("@/features/distributor/routes/order-history/OrderHistory.parts/TrackingModal").then((m) => m.TrackingModal));
-const OrderBreakupModal = dynamic(() => import("@/features/distributor/routes/order-history/OrderHistory.parts/OrderBreakupModal").then((m) => m.OrderBreakupModal));
-const ViewReviewModal = dynamic(() => import("@/features/distributor/routes/order-history/OrderHistory.parts/ViewReviewModal").then((m) => m.ViewReviewModal));
-const OrderImageGallery = dynamic(() => import("@/features/distributor/routes/order-history/OrderHistory.parts/OrderImageGallery").then((m) => m.OrderImageGallery));
+const TrackingModal = dynamic(() =>
+  import("@/features/distributor/routes/order-history/OrderHistory.parts/TrackingModal").then(
+    (m) => m.TrackingModal,
+  ),
+);
+const OrderBreakupModal = dynamic(() =>
+  import("@/features/distributor/routes/order-history/OrderHistory.parts/OrderBreakupModal").then(
+    (m) => m.OrderBreakupModal,
+  ),
+);
+const ViewReviewModal = dynamic(() =>
+  import("@/features/distributor/routes/order-history/OrderHistory.parts/ViewReviewModal").then(
+    (m) => m.ViewReviewModal,
+  ),
+);
+const OrderImageGallery = dynamic(() =>
+  import("@/features/distributor/routes/order-history/OrderHistory.parts/OrderImageGallery").then(
+    (m) => m.OrderImageGallery,
+  ),
+);
 
 export default function OrderHistory() {
   const dispatch = useAppDispatch();
@@ -63,7 +112,10 @@ export default function OrderHistory() {
 
   const [searchQuery, setSearchQuery] = useState("");
   // debounced value that is actually sent to the API
-  const [debouncedSearch, setDebouncedSearch] = useDebouncedState(searchQuery.trim(), 500);
+  const [debouncedSearch, setDebouncedSearch] = useDebouncedState(
+    searchQuery.trim(),
+    500,
+  );
   const [statusFilter, setStatusFilter] = useState("");
   const [page, setPage] = useState(1);
   const [perPage] = useState(10);
@@ -102,10 +154,12 @@ export default function OrderHistory() {
     ...(debouncedSearch ? { search: debouncedSearch } : {}),
   };
 
-  const { data, isLoading, isFetching, isError, refetch } =
-    useGetMyOrdersQuery(orderQueryArgs as any, {
+  const { data, isLoading, isFetching, isError, refetch } = useGetMyOrdersQuery(
+    orderQueryArgs as any,
+    {
       refetchOnMountOrArgChange: true,
-    });
+    },
+  );
 
   const [cancelOrder, { isLoading: isCancelling }] = useCancelOrderMutation();
   const [initiateReturn, { isLoading: isReturning }] =
@@ -125,9 +179,12 @@ export default function OrderHistory() {
     orderId: Number(selectedOrder?.order_id ?? 0),
     orderLineId: Number(selectedOrder?.line_id ?? 0),
   };
-  const trackingLookupValid = !!trackingLookup.orderReference &&
-    Number.isSafeInteger(trackingLookup.orderId) && trackingLookup.orderId > 0 &&
-    Number.isSafeInteger(trackingLookup.orderLineId) && trackingLookup.orderLineId > 0;
+  const trackingLookupValid =
+    !!trackingLookup.orderReference &&
+    Number.isSafeInteger(trackingLookup.orderId) &&
+    trackingLookup.orderId > 0 &&
+    Number.isSafeInteger(trackingLookup.orderLineId) &&
+    trackingLookup.orderLineId > 0;
   const {
     currentData: indiaPostTrackingResponse,
     isFetching: isIndiaPostTracking,
@@ -139,21 +196,28 @@ export default function OrderHistory() {
     skip: !trackingModalOpen || !trackingLookupValid,
     refetchOnMountOrArgChange: true,
   });
-  const verifiedTracking = !isIndiaPostTrackingError &&
+  const verifiedTracking =
+    !isIndiaPostTrackingError &&
     matchesIndiaPostLine(indiaPostTrackingResponse?.data, trackingLookup)
-    ? indiaPostTrackingResponse!.data
-    : null;
+      ? indiaPostTrackingResponse!.data
+      : null;
 
   const trackingErrorMessage = (() => {
     if (!indiaPostTrackingError) return null;
     if ("status" in indiaPostTrackingError) {
       if (indiaPostTrackingError.status === 404)
         return "Tracking is not available for this item right now.";
-      if (indiaPostTrackingError.status === 401 || indiaPostTrackingError.status === 403)
+      if (
+        indiaPostTrackingError.status === 401 ||
+        indiaPostTrackingError.status === 403
+      )
         return "Please log in again or contact support to access tracking.";
       if (indiaPostTrackingError.status === 429)
         return "Too many tracking requests. Please wait before refreshing.";
-      if (indiaPostTrackingError.status === "CUSTOM_ERROR" && "error" in indiaPostTrackingError)
+      if (
+        indiaPostTrackingError.status === "CUSTOM_ERROR" &&
+        "error" in indiaPostTrackingError
+      )
         return String(indiaPostTrackingError.error);
     }
     return "Unable to load India Post tracking right now. Please retry.";
@@ -353,9 +417,12 @@ export default function OrderHistory() {
     [filteredOrders],
   );
 
-  const serverTotal = (data as any)?.meta?.total ??
-    (data as any)?.data?.total ?? (data as any)?.total;
-  const serverPaginated = serverTotal != null && Number.isFinite(Number(serverTotal));
+  const serverTotal =
+    (data as any)?.meta?.total ??
+    (data as any)?.data?.total ??
+    (data as any)?.total;
+  const serverPaginated =
+    serverTotal != null && Number.isFinite(Number(serverTotal));
   // ✅ Pagination now counts ORDERS (parent), not product lines
   const totalRecords = serverPaginated ? Number(serverTotal) : allGroups.length;
   const totalPages = Math.max(1, Math.ceil(totalRecords / perPage));
@@ -397,8 +464,8 @@ export default function OrderHistory() {
     try {
       const files: File[] = Array.isArray(reviewData?.images)
         ? reviewData.images.filter(
-          (img: any): img is File => img instanceof File,
-        )
+            (img: any): img is File => img instanceof File,
+          )
         : [];
 
       const rating = Number(reviewData?.rating);
@@ -713,7 +780,8 @@ export default function OrderHistory() {
       const result = await getInvoice({ orderId, lineId }).unwrap();
 
       if (result?.data) {
-        const { generateInvoicePDF } = await import("@/features/orders/screens/invoiceGenerator");
+        const { generateInvoicePDF } =
+          await import("@/features/orders/screens/invoiceGenerator");
         await generateInvoicePDF(result.data);
 
         dispatch(
@@ -831,12 +899,20 @@ export default function OrderHistory() {
     const orderReference = String(order?.order_reference ?? "").trim();
     const orderId = Number(order?.order_id);
     const lineId = Number(order?.line_id);
-    if (!orderReference || !Number.isSafeInteger(orderId) || orderId < 1 ||
-      !Number.isSafeInteger(lineId) || lineId < 1) {
-      dispatch(showToast({
-        message: "Product tracking is unavailable: missing order or item identity.",
-        type: "error",
-      }));
+    if (
+      !orderReference ||
+      !Number.isSafeInteger(orderId) ||
+      orderId < 1 ||
+      !Number.isSafeInteger(lineId) ||
+      lineId < 1
+    ) {
+      dispatch(
+        showToast({
+          message:
+            "Product tracking is unavailable: missing order or item identity.",
+          type: "error",
+        }),
+      );
       return;
     }
     setSelectedOrder(order);
@@ -1015,8 +1091,8 @@ export default function OrderHistory() {
                 Order history
               </h2>
               <p className="mt-1 text-[11px] text-[#8090A7]">
-                Use the ⋮ menu on an order to return or cancel it. Open an
-                order and use the ⋮ menu on a product for tracking, invoice and
+                Use the ⋮ menu on an order to return or cancel it. Open an order
+                and use the ⋮ menu on a product for tracking, invoice and
                 review.
               </p>
             </div>
@@ -1047,8 +1123,8 @@ export default function OrderHistory() {
               />
 
               {/* Loader while debounce/API is in progress, clear button otherwise */}
-              {(isFetching ||
-                searchQuery.trim() !== debouncedSearch) && searchQuery ? (
+              {(isFetching || searchQuery.trim() !== debouncedSearch) &&
+              searchQuery ? (
                 <Loader2
                   size={15}
                   className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-[#8a92a6]"
@@ -1169,15 +1245,16 @@ export default function OrderHistory() {
                 <button
                   key={p}
                   onClick={() => goToPage(p)}
-                  className={`flex h-7 w-7 items-center justify-center rounded-[6px] text-[12px] font-semibold ${currentPage === p
-                    ? "text-white"
-                    : "text-[#667085] hover:bg-[#f2f4f7] hover:text-[#0E1B3D]"
-                    }`}
+                  className={`flex h-7 w-7 items-center justify-center rounded-[6px] text-[12px] font-semibold ${
+                    currentPage === p
+                      ? "text-white"
+                      : "text-[#667085] hover:bg-[#f2f4f7] hover:text-[#0E1B3D]"
+                  }`}
                   style={
                     currentPage === p
                       ? {
-                        backgroundColor: NAVY,
-                      }
+                          backgroundColor: NAVY,
+                        }
                       : undefined
                   }
                 >
@@ -1201,32 +1278,32 @@ export default function OrderHistory() {
 
       {imageGalleryOpen && (
         <OrderImageGallery
-        isOpen={imageGalleryOpen}
-        onClose={closeAllModals}
-        order={selectedOrder}
-      />
+          isOpen={imageGalleryOpen}
+          onClose={closeAllModals}
+          order={selectedOrder}
+        />
       )}
 
       {trackingModalOpen && (
         <TrackingModal
-        isOpen={trackingModalOpen}
-        onClose={closeAllModals}
-        order={selectedOrder}
-        tracking={verifiedTracking}
-        loading={isIndiaPostTracking || isIndiaPostTrackingLoading}
-        loadFailed={isIndiaPostTrackingError}
-        loadErrorMessage={trackingErrorMessage}
-        onRefresh={refreshIndiaPostTracking}
-      />
+          isOpen={trackingModalOpen}
+          onClose={closeAllModals}
+          order={selectedOrder}
+          tracking={verifiedTracking}
+          loading={isIndiaPostTracking || isIndiaPostTrackingLoading}
+          loadFailed={isIndiaPostTrackingError}
+          loadErrorMessage={trackingErrorMessage}
+          onRefresh={refreshIndiaPostTracking}
+        />
       )}
 
       {breakupModalOpen && (
         <OrderBreakupModal
-        isOpen={breakupModalOpen}
-        onClose={closeAllModals}
-        order={selectedOrder}
-        allOrders={orders}
-      />
+          isOpen={breakupModalOpen}
+          onClose={closeAllModals}
+          order={selectedOrder}
+          allOrders={orders}
+        />
       )}
 
       <ReviewModal
@@ -1239,10 +1316,10 @@ export default function OrderHistory() {
 
       {viewReviewModalOpen && (
         <ViewReviewModal
-        isOpen={viewReviewModalOpen}
-        onClose={closeAllModals}
-        order={selectedOrder}
-      />
+          isOpen={viewReviewModalOpen}
+          onClose={closeAllModals}
+          order={selectedOrder}
+        />
       )}
 
       <ReturnModal
