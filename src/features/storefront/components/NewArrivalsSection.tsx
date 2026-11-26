@@ -42,7 +42,7 @@ interface NewArrivalsProps {
 }
 
 // ========================================
-// ANIMATIONS  (SLOWED DOWN)
+// ANIMATIONS
 // ========================================
 
 const staggerContainer: Variants = {
@@ -70,7 +70,6 @@ const fadeInUp: Variants = {
   },
 };
 
-// Cards side se halka sa aakar settle hongi (subtle, no big zoom)
 const dealIn: Variants = {
   hidden: {
     opacity: 0,
@@ -95,11 +94,13 @@ const dealIn: Variants = {
 };
 
 // ========================================
-// HELPERS  (subtle dock wave, no big zoom)
+// HELPERS
 // ========================================
 
 const getLift = (index: number, hovered: number | null) => {
-  if (hovered === null) return { y: 0, scale: 1, z: 0 };
+  if (hovered === null) {
+    return { y: 0, scale: 1, z: 0 };
+  }
 
   const d = Math.abs(index - hovered);
 
@@ -134,6 +135,7 @@ function BrandCard({
   const logoUrl = brand.logo?.trim() || "";
 
   const [previousImageUrl, setPreviousImageUrl] = useState(logoUrl);
+
   if (previousImageUrl !== logoUrl) {
     setPreviousImageUrl(logoUrl);
     setImageError(false);
@@ -145,7 +147,7 @@ function BrandCard({
     ? { y: 0, scale: 1, z: 0 }
     : getLift(index, hoveredIndex);
 
-  // ---------- 3D TILT (very subtle) ----------
+  // ---------- 3D TILT ----------
   const mx = useMotionValue(0.5);
   const my = useMotionValue(0.5);
 
@@ -378,10 +380,7 @@ export default function NewArrivalsSection({
   const scrollRef = useRef<HTMLDivElement>(null);
   const sectionRef = useRef<HTMLElement | null>(null);
 
-  // Section viewport mein aate hi animation start hogi.
-  // Scroll direction (upar se neeche ya neeche se upar) kuch bhi ho,
-  // jab bhi section viewport mein aayega tab animation play hogi.
-  // Ek baar visible hone ke baad entrance animation repeat nahi hogi.
+  // Section viewport mein aane par animation start hogi.
   const isInView = useInView(sectionRef, {
     once: true,
     amount: 0.05,
@@ -392,7 +391,31 @@ export default function NewArrivalsSection({
   const [canScrollRight, setCanScrollRight] = useState(false);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
-  const brands = brandsData?.data || [];
+  // ========================================
+  // FILTER BRANDS
+  // ========================================
+
+  /**
+   * Hide all combined brands whose title contains "+".
+   *
+   * Examples hidden:
+   * - Carat Street + KINTSUGI
+   * - KINTSUGI + FABIUS
+   *
+   * Single brands remain visible:
+   * - The Collections
+   * - OptiPrism
+   * - Carat Street
+   * - KINTSUGI
+   * - FABIUS
+   */
+
+  const brands = (brandsData?.data ?? []).filter((brand) => {
+    return (
+      brand.title &&
+      !brand.title.includes("+")
+    );
+  });
 
   // ========================================
   // SCROLL STATE
@@ -693,7 +716,7 @@ export default function NewArrivalsSection({
               >
                 {brands.map((brand, index) => (
                   <div
-                    key={brand.id ?? index}
+                    key={brand.id}
                     data-brand-item
                     className="shrink-0 snap-start"
                     style={{ transformStyle: "preserve-3d" }}

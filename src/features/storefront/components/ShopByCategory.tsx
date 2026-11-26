@@ -29,6 +29,12 @@ import { useRouter } from "next/navigation";
 // TYPES
 // ========================================
 
+export type CategoryBrand = {
+  id?: number | string;
+  title?: string | null;
+  name?: string | null;
+};
+
 export type Category = {
   id: number | string;
   name?: string | null;
@@ -38,8 +44,9 @@ export type Category = {
   image_url?: string | null;
   logo?: string | null;
   banner?: string | null;
-  status?: number | boolean;
+  status?: number | boolean | string;
   categoryData?: string[];
+  brands?: CategoryBrand[] | null;
 };
 
 type CategoriesResponse = {
@@ -53,6 +60,22 @@ export interface ShopByCategoryProps {
   isCategoriesError?: boolean;
   className?: string;
 }
+
+// ========================================
+// COMBINED BRAND FILTER
+// ========================================
+
+// Jis category ke brand ke naam mein "+" ho
+// (jaise "KINTSUGI + FABIUS", "Carat Street + KINTSUGI")
+// usse hide karna hai. Sirf single brand wali categories dikhengi.
+
+const hasCombinedBrand = (category: Category) => {
+  const brandHasPlus = (category.brands ?? []).some((brand) =>
+    `${brand?.title ?? brand?.name ?? ""}`.includes("+")
+  );
+
+  return brandHasPlus;
+};
 
 // ========================================
 // ANIMATIONS
@@ -601,27 +624,28 @@ export default function ShopByCategory({
   // ========================================
 
   const items = useMemo(() => {
-    if (categories) return categories;
+    let list: Category[] = [];
 
-    if (Array.isArray(categoriesData)) {
-      return categoriesData;
+    if (categories) {
+      list = categories;
+    } else if (Array.isArray(categoriesData)) {
+      list = categoriesData;
+    } else {
+      const data = categoriesData?.data;
+
+      if (Array.isArray(data)) {
+        list = data;
+      } else if (
+        data &&
+        !Array.isArray(data) &&
+        Array.isArray(data.data)
+      ) {
+        list = data.data;
+      }
     }
 
-    const data = categoriesData?.data;
-
-    if (Array.isArray(data)) {
-      return data;
-    }
-
-    if (
-      data &&
-      !Array.isArray(data) &&
-      Array.isArray(data.data)
-    ) {
-      return data.data;
-    }
-
-    return [];
+    // "+" wale combined brand categories hide, single brand wali dikhengi
+    return list.filter((category) => !hasCombinedBrand(category));
   }, [categories, categoriesData]);
 
   // ========================================
