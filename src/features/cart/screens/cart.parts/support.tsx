@@ -2,19 +2,19 @@
 
 import { useRouter } from "next/navigation";
 import { ArrowRight, ChevronRight, Home, ShoppingBag } from "lucide-react";
-
+import CheckoutProgress from "./CheckoutProgress";
 
 export const isPurchaseWithoutStockAllowed = (value: unknown): boolean =>
-  value === true || value === 1 || String(value ?? "").trim().toLowerCase() === "1" ||
+  value === true ||
+  value === 1 ||
+  String(value ?? "").trim().toLowerCase() === "1" ||
   String(value ?? "").trim().toLowerCase() === "true";
-
 
 export const PAGE_BG = "#FFFFFF";
 
 export const PLACEHOLDER_IMAGE = "/indiekonnect-web/images/placeholder.jpg";
 
 export const MAX_CART_QUANTITY = 10;
-
 
 export interface ProductTaxonomy {
   id?: number;
@@ -23,7 +23,6 @@ export interface ProductTaxonomy {
   slug?: string | null;
   category_id?: number;
 }
-
 
 export interface VariantData {
   id: number;
@@ -34,7 +33,6 @@ export interface VariantData {
   distributor_price?: string | null;
   stock_quantity?: number | null;
 }
-
 
 export interface CartProduct {
   id: number;
@@ -54,7 +52,6 @@ export interface CartProduct {
   brand?: ProductTaxonomy | null;
 }
 
-
 export interface CartItemApi {
   id: number;
   product_id: number;
@@ -70,7 +67,6 @@ export interface CartItemApi {
   image_url?: string | null;
   current_price_type?: string | null;
 }
-
 
 export interface CartItemView {
   id: number;
@@ -96,7 +92,6 @@ export interface CartItemView {
   commissionPoints: number;
 }
 
-
 export interface TaxCategory {
   category: string;
   rate: string;
@@ -110,7 +105,6 @@ export interface TaxCategory {
   total_shipping_charge?: number;
 }
 
-
 export interface CheckoutSummaryData {
   subtotal: number;
   coupon_discount: number;
@@ -123,8 +117,8 @@ export interface CheckoutSummaryData {
   } | null;
   subtotal_after_discount: number;
   total_tax: number;
-  shipping_cost?: number;         // ✅ Shipping charge (separate)
-  service_charge?: number;        // ✅ Service charge (separate)
+  shipping_cost?: number;
+  service_charge?: number;
   subtotal_after_discount_and_tax: number;
   max_coins_redeemable: number;
   coins_used: number;
@@ -137,7 +131,6 @@ export interface CheckoutSummaryData {
   product_tax_breakdown?: Record<string, any>;
 }
 
-
 export interface CouponListItem {
   id?: number;
   code: string;
@@ -147,7 +140,6 @@ export interface CouponListItem {
   value?: string | number;
   is_active?: boolean | number | string;
 }
-
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -166,7 +158,6 @@ export const getImageUrl = (url?: string | null): string => {
   return `https://www.markupdesigns.net/indikonnect/${value.replace(/^\/+/, "")}`;
 };
 
-
 export const getRecommendedImage = (product: any): string => {
   const images = Array.isArray(product?.images) ? product.images : [];
 
@@ -176,7 +167,6 @@ export const getRecommendedImage = (product: any): string => {
 
   const readImage = (value: any): string => {
     if (typeof value === "string") return value;
-
     return value?.image_url || value?.url || value?.image || "";
   };
 
@@ -193,13 +183,10 @@ export const getRecommendedImage = (product: any): string => {
   return getImageUrl(url);
 };
 
-
 export const parsePrice = (value?: string | number | null): number => {
   const parsed = Number(value ?? 0);
-
   return Number.isFinite(parsed) ? parsed : 0;
 };
-
 
 export const formatPrice = (value: number): string =>
   `₹${Number(value || 0).toLocaleString("en-IN", {
@@ -207,21 +194,17 @@ export const formatPrice = (value: number): string =>
     minimumFractionDigits: 0,
   })}`;
 
-
 export const formatPoints = (value: number): string =>
   `${Number(value || 0).toLocaleString("en-IN", {
     maximumFractionDigits: 2,
     minimumFractionDigits: 0,
   })} pts`;
 
-
 export const formatAttributeName = (value: string): string =>
   value.replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 
-
 export const getTaxonomyName = (value?: ProductTaxonomy | null): string =>
   String(value?.title || value?.name || "").trim();
-
 
 export const getVariantLabel = (
   variant?: VariantData | null,
@@ -238,7 +221,6 @@ export const getVariantLabel = (
     .join(" • ");
 };
 
-
 export const getOriginalPrice = (item: CartItemApi, currentPrice: number) => {
   const isDistributor =
     String(item.current_price_type || "").toLowerCase() === "distributor";
@@ -249,8 +231,8 @@ export const getOriginalPrice = (item: CartItemApi, currentPrice: number) => {
 
   const productPrice = isDistributor
     ? parsePrice(
-      item.product?.distributor_mrp ?? item.product?.distributor_price,
-    )
+        item.product?.distributor_mrp ?? item.product?.distributor_price,
+      )
     : parsePrice(item.product?.retail_mrp ?? item.product?.retail_price);
 
   const candidate =
@@ -258,7 +240,6 @@ export const getOriginalPrice = (item: CartItemApi, currentPrice: number) => {
 
   return candidate > currentPrice ? candidate : undefined;
 };
-
 
 export const getCouponValueLabel = (coupon: CouponListItem): string => {
   const type = String(coupon.type || "").toLowerCase();
@@ -275,7 +256,6 @@ export const getCouponValueLabel = (coupon: CouponListItem): string => {
   return "Discount";
 };
 
-
 export const getErrorMessage = (error: any, fallback: string): string =>
   error?.data?.message ||
   error?.error?.data?.message ||
@@ -283,35 +263,44 @@ export const getErrorMessage = (error: any, fallback: string): string =>
   error?.message ||
   fallback;
 
-
 // ─────────────────────────────────────────────────────────────────────────────
-// Breadcrumb
+// Breadcrumb + checkout progress
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const Breadcrumb = ({ currentPage = "Cart" }: { currentPage?: string }) => {
+export const Breadcrumb = ({
+  currentPage = "Cart",
+}: {
+  currentPage?: string;
+}) => {
   const router = useRouter();
 
   return (
-    <nav
-      aria-label="Breadcrumb"
-      className="mb-4 flex items-center gap-1.5 overflow-x-auto whitespace-nowrap py-1 text-[11px] font-medium sm:mb-5"
-    >
-      <button
-        type="button"
-        onClick={() => router.push("/")}
-        className="flex items-center gap-1 text-[#777] transition hover:text-black"
+    <div className="mb-4 flex w-full flex-col gap-3 sm:mb-5 sm:flex-row sm:items-center sm:justify-between sm:gap-5">
+      <nav
+        aria-label="Breadcrumb"
+        className="flex min-w-0 items-center gap-1.5 overflow-x-auto whitespace-nowrap py-1 text-[11px] font-medium"
       >
-        <Home className="h-3.5 w-3.5" />
-        Home
-      </button>
+        <button
+          type="button"
+          onClick={() => router.push("/")}
+          className="flex shrink-0 items-center gap-1 text-[#777] transition hover:text-black"
+        >
+          <Home className="h-3.5 w-3.5" />
+          Home
+        </button>
 
-      <ChevronRight className="h-3 w-3 shrink-0 text-[#B0B0AD]" />
+        <ChevronRight className="h-3 w-3 shrink-0 text-[#B0B0AD]" />
 
-      <span className="text-[#111]">{currentPage}</span>
-    </nav>
+        <span className="shrink-0 text-[#111]">{currentPage}</span>
+      </nav>
+
+      <CheckoutProgress
+        currentStep={0}
+        className="sm:ml-auto sm:w-[min(100%,420px)] sm:shrink-0"
+      />
+    </div>
   );
 };
-
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Empty cart

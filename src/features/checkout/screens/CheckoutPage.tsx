@@ -37,6 +37,7 @@ import { AXISPG_ENDPOINTS, AxisPgPaymentTarget, CheckoutSkeleton, CheckoutSummar
 import { CartSummary } from "@/features/checkout/screens/CheckoutPage.parts/CartSummary";
 import { PlaceOrderButton } from "@/features/checkout/screens/CheckoutPage.parts/PlaceOrderButton";
 import { DeleteConfirmModal } from "@/features/checkout/screens/CheckoutPage.parts/DeleteConfirmModal";
+import CheckoutProgress from "@/features/cart/screens/cart.parts/CheckoutProgress";
 
 
 export interface Address {
@@ -81,7 +82,7 @@ export interface AddressFormData {
 
 const AXISPG_ENVIRONMENT =
   String(process.env.NEXT_PUBLIC_AXISPG_ENV || "sandbox").trim().toLowerCase() ===
-  "production"
+    "production"
     ? "production"
     : "sandbox";
 
@@ -187,8 +188,8 @@ function AddressSelectorModal({
                 key={address.id}
                 onClick={() => !isDeleting && onSelect(address)}
                 className={`relative rounded-xl border p-4 transition-all duration-200 ${isDeleting
-                    ? "pointer-events-none opacity-50"
-                    : "cursor-pointer"
+                  ? "pointer-events-none opacity-50"
+                  : "cursor-pointer"
                   } ${isSelected
                     ? "border-[#16845B] bg-[#F5FBF6] shadow-sm ring-1 ring-[#16845B]"
                     : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
@@ -197,8 +198,8 @@ function AddressSelectorModal({
                 <div className="flex items-start gap-3">
                   <div
                     className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${isSelected
-                        ? "border-[#16845B] bg-[#16845B]"
-                        : "border-gray-300"
+                      ? "border-[#16845B] bg-[#16845B]"
+                      : "border-gray-300"
                       }`}
                   >
                     {isSelected && <Check className="h-3.5 w-3.5 text-white" />}
@@ -1458,26 +1459,26 @@ export default function CheckoutPage() {
           ? normalizeSummaryItems(latestSummary, cartLines)
           : [];
 
-          const orderPayload: any = {
-            checkout_type: verifiedType,
-            address_id: selectedDeliveryAddress.id,
-            grand_total: grandTotal,
-            payment_gateway: selectedGateway.paymentGateway,
-    
-            summary_data: {
-              subtotal: latestSummary.subtotal,
-              coupon_discount: latestSummary.coupon_discount || 0,
-    
-              shipping_charge: latestSummary.shipping_cost || 0,
-              service_charge: latestSummary.service_charge || 0,  // ✅ NEW
-              total_tax: latestSummary.total_tax,
-              net_subtotal: latestSummary.subtotal_after_discount,
-    
-              tax_breakdown: latestSummary.tax_breakdown || [],
-    
-              ...(verifiedType === "buy_now" ? { items: buyNowItems } : {}),
-            },
-          };
+      const orderPayload: any = {
+        checkout_type: verifiedType,
+        address_id: selectedDeliveryAddress.id,
+        grand_total: grandTotal,
+        payment_gateway: selectedGateway.paymentGateway,
+
+        summary_data: {
+          subtotal: latestSummary.subtotal,
+          coupon_discount: latestSummary.coupon_discount || 0,
+
+          shipping_charge: latestSummary.shipping_cost || 0,
+          service_charge: latestSummary.service_charge || 0,  // ✅ NEW
+          total_tax: latestSummary.total_tax,
+          net_subtotal: latestSummary.subtotal_after_discount,
+
+          tax_breakdown: latestSummary.tax_breakdown || [],
+
+          ...(verifiedType === "buy_now" ? { items: buyNowItems } : {}),
+        },
+      };
 
       if (verifiedType === "buy_now") {
         orderPayload.product_id = productId;
@@ -1749,33 +1750,52 @@ export default function CheckoutPage() {
         className={`${poppins.className} min-h-screen bg-[#F7FAF8] px-4 pb-4 pt-2 text-[#17231A] sm:px-6 sm:pt-3 lg:pb-12`}
       >
         <div className="mx-auto w-full max-w-[1160px]">
-          <nav className="mb-1.5 flex items-center gap-2 text-[10px] font-medium text-[#87918A]">
-            <button
-              type="button"
-              onClick={() => router.push("/")}
-              className="transition hover:text-[#173E2B]"
+
+          {/* Breadcrumb + Checkout Progress */}
+          <div className="mb-4 flex w-full flex-col gap-3 sm:mb-5 sm:flex-row sm:items-center sm:justify-between sm:gap-5">
+
+            {/* Left: Breadcrumb */}
+            <nav
+              aria-label="Breadcrumb"
+              className="flex min-w-0 items-center gap-1.5 overflow-x-auto whitespace-nowrap py-1 text-[11px] font-medium"
             >
-              Home
-            </button>
+              <button
+                type="button"
+                onClick={() => router.push("/")}
+                className="flex shrink-0 items-center gap-1 text-[#777] transition hover:text-black"
+              >
+                Home
+              </button>
 
-            <ChevronRight className="h-3 w-3" />
+              <ChevronRight className="h-3 w-3 shrink-0 text-[#B0B0AD]" />
 
-            <button
-              type="button"
-              onClick={() =>
-                displayCheckoutType === "buy_now" && productId > 0
-                  ? router.back()
-                  : router.push("/cart")
-              }
-              className="transition hover:text-[#173E2B]"
-            >
-              cart
-            </button>
+              <button
+                type="button"
+                onClick={() =>
+                  displayCheckoutType === "buy_now" && productId > 0
+                    ? router.back()
+                    : router.push("/cart")
+                }
+                className="shrink-0 text-[#777] transition hover:text-black"
+              >
+                Cart
+              </button>
 
-            <ChevronRight className="h-3 w-3" />
+              <ChevronRight className="h-3 w-3 shrink-0 text-[#B0B0AD]" />
 
-            <span className="font-semibold text-[#173E2B]">Checkout</span>
-          </nav>
+              <span className="shrink-0 font-semibold text-[#173E2B]">
+                Checkout
+              </span>
+            </nav>
+
+            {/* Right: Same Checkout Progress UI as Cart */}
+            <CheckoutProgress
+              currentStep={2}
+              className="sm:ml-auto sm:w-[min(100%,420px)] sm:shrink-0"
+            />
+
+          </div>
+
 
           {checkoutNotice && (
             <div
@@ -1824,29 +1844,29 @@ export default function CheckoutPage() {
                         {/* ✅ new — post office details */}
                         {(selectedDeliveryAddress?.post_office ||
                           selectedDeliveryAddress?.billing_post_office) && (
-                          <p className="mt-0.5 text-[11px] text-[#87918A]">
-                            {selectedDeliveryAddress?.post_office && (
-                              <>
-                                Post Office:{" "}
-                                <span className="font-medium text-[#526258]">
-                                  {selectedDeliveryAddress.post_office}
-                                </span>
-                              </>
-                            )}
-                            {selectedDeliveryAddress?.post_office &&
-                              selectedDeliveryAddress?.billing_post_office && (
-                                <span className="mx-1">·</span>
+                            <p className="mt-0.5 text-[11px] text-[#87918A]">
+                              {selectedDeliveryAddress?.post_office && (
+                                <>
+                                  Post Office:{" "}
+                                  <span className="font-medium text-[#526258]">
+                                    {selectedDeliveryAddress.post_office}
+                                  </span>
+                                </>
                               )}
-                            {selectedDeliveryAddress?.billing_post_office && (
-                              <>
-                                Billing Post Office:{" "}
-                                <span className="font-medium text-[#526258]">
-                                  {selectedDeliveryAddress.billing_post_office}
-                                </span>
-                              </>
-                            )}
-                          </p>
-                        )}
+                              {selectedDeliveryAddress?.post_office &&
+                                selectedDeliveryAddress?.billing_post_office && (
+                                  <span className="mx-1">·</span>
+                                )}
+                              {selectedDeliveryAddress?.billing_post_office && (
+                                <>
+                                  Billing Post Office:{" "}
+                                  <span className="font-medium text-[#526258]">
+                                    {selectedDeliveryAddress.billing_post_office}
+                                  </span>
+                                </>
+                              )}
+                            </p>
+                          )}
                       </div>
 
                       <div className="flex w-full shrink-0 items-center gap-2 sm:w-auto">
@@ -1953,8 +1973,8 @@ export default function CheckoutPage() {
                           setHasManuallySelectedGateway(true);
                         }}
                         className={`group flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left transition-all duration-200 sm:gap-4 sm:px-4 ${isSelected
-                            ? "border-[#7CA2E8] bg-[#F8FBFF] shadow-[0_0_0_2px_rgba(59,112,207,0.10),0_6px_18px_-15px_rgba(20,76,160,0.45)]"
-                            : "border-[#E5ECF6] bg-white hover:border-[#B9CDED] hover:bg-[#FBFDFF]"
+                          ? "border-[#7CA2E8] bg-[#F8FBFF] shadow-[0_0_0_2px_rgba(59,112,207,0.10),0_6px_18px_-15px_rgba(20,76,160,0.45)]"
+                          : "border-[#E5ECF6] bg-white hover:border-[#B9CDED] hover:bg-[#FBFDFF]"
                           }`}
                       >
                         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#E8EEF8] bg-[#F0F5FD] sm:h-10 sm:w-10">
@@ -1976,8 +1996,8 @@ export default function CheckoutPage() {
 
                         <span
                           className={`flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full border transition-colors sm:h-[24px] sm:w-[24px] ${isSelected
-                              ? "border-[#1557AD] bg-[#1557AD] text-white"
-                              : "border-[#D6E0EF] bg-white text-transparent group-hover:border-[#9CB7E1]"
+                            ? "border-[#1557AD] bg-[#1557AD] text-white"
+                            : "border-[#D6E0EF] bg-white text-transparent group-hover:border-[#9CB7E1]"
                             }`}
                         >
                           {isSelected ? (

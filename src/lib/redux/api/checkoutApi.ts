@@ -128,7 +128,7 @@ export interface CheckoutSummaryParams {
   address_id?: number;
   coupon_code?: string;
   coins?: number;
-  redemption_id?: number | string;   // <-- ADD
+  redemption_id?: number | string;
 
   // Buy Now
   product_id?: number;
@@ -156,6 +156,46 @@ export interface ApplyCoinsResponse {
     redemption_id?: number | string;
     coins?: number;
     amount_redeemed?: number;
+    [key: string]: unknown;
+  };
+}
+
+// =========================================================
+// UPDATE CV ALLOCATION REQUEST
+// =========================================================
+export interface UpdateCVAllocationItem {
+  target: string; // e.g. "extra_tc:0"
+  cv: string;     // e.g. "600.0000"
+}
+
+export interface UpdateCVAllocationExtraTc {
+  placement_member_id?: number;
+  placement_ba_id?: string;
+  side?: number;
+  index?: number;
+  extra_tc?: number;
+  tc_number?: string | number;
+  tc?: string | number;
+  name?: string;
+}
+
+export interface UpdateCVAllocationRequest {
+  allocations: UpdateCVAllocationItem[];
+  extra_tcs?: UpdateCVAllocationExtraTc[];
+}
+
+// =========================================================
+// UPDATE CV ALLOCATION RESPONSE
+// =========================================================
+export interface UpdateCVAllocationResponse {
+  success?: boolean;
+  message?: string;
+  data?: {
+    allocations?: UpdateCVAllocationItem[];
+    extra_tcs?: UpdateCVAllocationExtraTc[];
+    total_cv?: number | string;
+    allocated_cv?: number | string;
+    remaining_cv?: number | string;
     [key: string]: unknown;
   };
 }
@@ -654,6 +694,39 @@ export const checkoutApi = baseApi.injectEndpoints({
     }),
 
     // =====================================================
+    // UPDATE CV ALLOCATION
+    // POST: /checkout/update-cv-allocation
+    // =====================================================
+    updateCVAllocation: builder.mutation<
+      UpdateCVAllocationResponse,
+      UpdateCVAllocationRequest
+    >({
+      query: (data) => {
+        if (!Array.isArray(data?.allocations)) {
+          throw new Error("allocations array is required");
+        }
+
+        const body: Record<string, unknown> = {
+          allocations: data.allocations.map((item) => ({
+            target: item.target,
+            cv: item.cv,
+          })),
+        };
+
+        if (Array.isArray(data.extra_tcs) && data.extra_tcs.length > 0) {
+          body.extra_tcs = data.extra_tcs;
+        }
+
+        return {
+          url: "/checkout/update-cv-allocation",
+          method: "POST",
+          body,
+        };
+      },
+      invalidatesTags: ["Cart"],
+    }),
+
+    // =====================================================
     // PLACE ORDER
     // =====================================================
     placeOrder: builder.mutation<PlaceOrderResponse, PlaceOrderRequest>({
@@ -747,6 +820,7 @@ export const {
   useGetCheckoutSummaryQuery,
   useGetMandatoryProductsQuery,
   useApplyCoinsMutation,
+  useUpdateCVAllocationMutation,
   usePlaceOrderMutation,
   useGetConfirmedOrderQuery,
   useInitiateHdfcPaymentMutation,
