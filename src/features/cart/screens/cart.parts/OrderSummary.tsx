@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useRouter } from "next/navigation";
@@ -21,31 +20,7 @@ import {
 
 import { TaxBreakdownPopup } from "@/features/cart/screens/cart.parts/TaxBreakdownPopup";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// OrderSummary — WITH CACHE CLEARING + SERVICE/SHIPPING CHARGE DISPLAY
-// ─────────────────────────────────────────────────────────────────────────────
-
-export function OrderSummary({
-  summaryData,
-  fallbackSubtotal,
-  fallbackSavings,
-  itemCount,
-  isCheckingStock,
-  unavailableCount,
-  onCheckout,
-  couponInput,
-  setCouponInput,
-  appliedCoupon,
-  onApplyCoupon,
-  onRemoveCoupon,
-  isApplyingCoupon,
-  coupons,
-  isLoadingCoupons,
-  showCouponList,
-  setShowCouponList,
-  isDistributor,
-  totalCommission,
-}: {
+interface OrderSummaryProps {
   summaryData?: CheckoutSummaryData;
   fallbackSubtotal: number;
   fallbackSavings: number;
@@ -65,8 +40,56 @@ export function OrderSummary({
   setShowCouponList: (value: boolean) => void;
   isDistributor: boolean;
   totalCommission: number;
-}) {
+  /** Optional label passed by CartPage after reading ignite_cv_preview. */
+  checkoutButtonLabel?: string;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// OrderSummary — cache refresh + shipping/service charge + CV-aware CTA
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function OrderSummary(props: OrderSummaryProps) {
   const router = useRouter();
+
+  const {
+    summaryData,
+    fallbackSubtotal,
+    fallbackSavings,
+    itemCount,
+    isCheckingStock,
+    unavailableCount,
+    onCheckout,
+    isDistributor,
+    totalCommission,
+    checkoutButtonLabel,
+  } = props;
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Determine the CTA label from the checkout summary.
+  // Distributor + CV > 0: allocation popup is required.
+  // Distributor + CV = 0: skip allocation and continue to payment.
+  // Retail: preserve the normal customer checkout label.
+  // CartPage may pass checkoutButtonLabel; this calculation is the fallback.
+  // ─────────────────────────────────────────────────────────────────────────
+
+  const ignitePreview = (summaryData as any)?.ignite_cv_preview;
+  const rawPreviewCV =
+    ignitePreview?.total_cv ??
+    ignitePreview?.summary?.total_cv ??
+    ignitePreview?.base_product_cv ??
+    ignitePreview?.summary?.base_product_cv ??
+    0;
+  const previewCV = Number(rawPreviewCV);
+  const hasPositiveCV = Number.isFinite(previewCV) && previewCV > 0;
+
+  const calculatedCheckoutButtonLabel = !isDistributor
+    ? "Proceed to Checkout"
+    : hasPositiveCV
+      ? "Proceed to CV Allocation"
+      : "Proceed to Payment";
+
+  const resolvedCheckoutButtonLabel =
+    checkoutButtonLabel || calculatedCheckoutButtonLabel;
 
   // ─────────────────────────────────────────────────────────────────────────
   // CLEAR CACHE BEFORE CHECKOUT
@@ -76,24 +99,19 @@ export function OrderSummary({
     if (isCheckingStock || unavailableCount > 0) return;
 
     try {
-      // Clear browser Cache Storage
-      if ("caches" in window) {
+      // Clear browser Cache Storage when supported.
+      if (typeof window !== "undefined" && "caches" in window) {
         const cacheKeys = await window.caches.keys();
-
         await Promise.all(
-          cacheKeys.map((cacheName) =>
-            window.caches.delete(cacheName)
-          )
+          cacheKeys.map((cacheName) => window.caches.delete(cacheName)),
         );
       }
     } catch (error) {
       console.error("Cache clearing error:", error);
     }
 
-    // Refresh Next.js router data
+    // Refresh Next.js router data, then continue even if cache clearing fails.
     router.refresh();
-
-    // Continue checkout even if cache clearing fails
     onCheckout();
   };
 
@@ -103,7 +121,6 @@ export function OrderSummary({
 
   const subtotal = Number(summaryData?.subtotal ?? fallbackSubtotal);
   const couponDiscount = Number(summaryData?.coupon_discount ?? 0);
-
   const rawSummary = summaryData as any;
 
   const shippingCharge = Number(
@@ -111,30 +128,25 @@ export function OrderSummary({
       rawSummary?.shipping_charge ??
       rawSummary?.delivery_charge ??
       rawSummary?.shipping ??
-      0
+      0,
   );
 
   const serviceCharge = Number(
     rawSummary?.service_charge ??
       rawSummary?.serviceCharge ??
       rawSummary?.service_fee ??
-      0
+      0,
   );
 
   const totalTax = Number(summaryData?.total_tax ?? 0);
   const grandTotal = Number(summaryData?.grand_total ?? fallbackSubtotal);
 
   const hasCommission = isDistributor && totalCommission > 0;
-
-  const hasShipping =
-    Number.isFinite(shippingCharge) && shippingCharge > 0;
-
-  const hasService =
-    Number.isFinite(serviceCharge) && serviceCharge > 0;
+  const hasShipping = Number.isFinite(shippingCharge) && shippingCharge > 0;
+  const hasService = Number.isFinite(serviceCharge) && serviceCharge > 0;
 
   return (
     <section className="rounded-xl border border-[#E5E5E5] bg-white p-4 sm:p-5">
-
       {/* HEADER */}
       <div className="mb-4 flex items-center justify-between gap-3">
         <h2 className="text-[17px] font-semibold text-[#171717]">
@@ -146,18 +158,19 @@ export function OrderSummary({
         </span>
       </div>
 
-      {/* COUPON SECTION */}
+      {/* COUPON SECTION
+          Keep your existing coupon UI here. The coupon props remain part of
+          this component's public interface, so existing CartPage usage stays
+          compatible. */}
       <div className="mb-3">
-        {/* Keep your existing coupon UI here. */}
+        {/* Existing coupon component/UI can remain here unchanged. */}
       </div>
 
       {/* PRICE BREAKDOWN */}
       <div className="space-y-2 text-[12px]">
-
         {/* SUBTOTAL */}
         <div className="flex items-center justify-between gap-4">
           <span className="text-[#777]">Subtotal</span>
-
           <span className="font-medium text-[#282828]">
             {formatPrice(subtotal)}
           </span>
@@ -172,7 +185,6 @@ export function OrderSummary({
                 ? ` (${summaryData.coupon.code})`
                 : ""}
             </span>
-
             <span className="font-semibold text-[#28815C]">
               −{formatPrice(couponDiscount)}
             </span>
@@ -185,7 +197,6 @@ export function OrderSummary({
             <Truck className="h-3 w-3" />
             Shipping Charge
           </span>
-
           <span
             className={`font-medium ${
               hasShipping ? "text-[#282828]" : "text-[#28815C]"
@@ -201,7 +212,6 @@ export function OrderSummary({
             <ShieldCheck className="h-3 w-3" />
             Service Charge
           </span>
-
           <span
             className={`font-medium ${
               hasService ? "text-[#282828]" : "text-[#28815C]"
@@ -215,11 +225,8 @@ export function OrderSummary({
         <div className="flex items-center justify-between gap-4">
           <span className="flex items-center gap-1 text-[#777]">
             Taxes
-            {summaryData && (
-              <TaxBreakdownPopup summaryData={summaryData} />
-            )}
+            {summaryData && <TaxBreakdownPopup summaryData={summaryData} />}
           </span>
-
           <span className="font-medium text-[#282828]">
             {formatPrice(totalTax)}
           </span>
@@ -229,7 +236,6 @@ export function OrderSummary({
         {fallbackSavings > 0 && couponDiscount === 0 && (
           <div className="flex items-center justify-between gap-4">
             <span className="text-[#777]">Your savings</span>
-
             <span className="font-semibold text-[#28815C]">
               −{formatPrice(fallbackSavings)}
             </span>
@@ -244,7 +250,6 @@ export function OrderSummary({
             <BadgePercent className="h-3 w-3" />
             Total Commission Value
           </span>
-
           <span className="text-[12px] font-bold text-[#16845B]">
             {formatPoints(totalCommission)}
           </span>
@@ -256,15 +261,11 @@ export function OrderSummary({
       {/* TOTAL PAYABLE */}
       <div className="mb-4 flex items-end justify-between gap-3">
         <div>
-          <p className="text-[13px] font-semibold text-[#222]">
-            Total payable
-          </p>
-
+          <p className="text-[13px] font-semibold text-[#222]">Total payable</p>
           <p className="mt-1 text-[10px] text-[#999]">
             Including taxes, shipping &amp; service
           </p>
         </div>
-
         <p className="text-[22px] font-semibold tracking-[-0.04em] text-[#111]">
           {formatPrice(grandTotal)}
         </p>
@@ -274,16 +275,10 @@ export function OrderSummary({
       {unavailableCount > 0 && (
         <div className="mb-4 flex items-start gap-2 rounded-lg border border-[#F1C8C4] bg-[#FFF2F1] p-3">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[#B64339]" />
-
           <div>
             <p className="text-[11px] font-semibold text-[#B64339]">
-              {unavailableCount}{" "}
-              {unavailableCount === 1
-                ? "item is"
-                : "items are"}{" "}
-              out of stock
+              {unavailableCount} {unavailableCount === 1 ? "item is" : "items are"} out of stock
             </p>
-
             <p className="mt-0.5 text-[10px] leading-4 text-[#8A4A44]">
               Remove unavailable items to continue checkout.
             </p>
@@ -297,6 +292,7 @@ export function OrderSummary({
         onClick={handleProceedCheckout}
         disabled={isCheckingStock || unavailableCount > 0}
         aria-busy={isCheckingStock}
+        aria-label={resolvedCheckoutButtonLabel}
         className="flex h-[46px] w-full items-center justify-center gap-2 rounded-md bg-[#171717] px-4 text-[12px] font-semibold text-white transition hover:bg-[#373737] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
       >
         {isCheckingStock ? (
@@ -306,10 +302,7 @@ export function OrderSummary({
           </>
         ) : (
           <>
-            {isDistributor
-              ? "Proceed to CV Allocation"
-              : "Proceed to Checkout"}
-
+            {resolvedCheckoutButtonLabel}
             <ArrowRight className="h-4 w-4" />
           </>
         )}
@@ -326,7 +319,7 @@ export function OrderSummary({
       </button>
 
       {/* SECURE CHECKOUT */}
-      <div className="mt-5 flex items-center justify-center gap-2 border-t border-[#EFEF#EF] pt-4 text-[10px] text-[#8B8B8B]">
+      <div className="mt-5 flex items-center justify-center gap-2 border-t border-[#EFEFEF] pt-4 text-[10px] text-[#8B8B8B]">
         <ShieldCheck className="h-4 w-4" strokeWidth={1.7} />
         Secure checkout
       </div>

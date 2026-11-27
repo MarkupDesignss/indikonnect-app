@@ -9,6 +9,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import CheckoutProgress from "@/features/cart/screens/cart.parts/CheckoutProgress";
+import { useUpdateCVAllocationMutation } from "@/lib/redux/api/checkoutApi";
 import {
   AlertTriangle,
   ArrowRight,
@@ -19,7 +20,6 @@ import {
   Plus,
   X,
 } from "lucide-react";
-import { useUpdateCVAllocationMutation } from "@/lib/redux/api/checkoutApi";
 
 export interface IgniteCVPreview {
   main_ba_id?: string;
@@ -101,7 +101,7 @@ const toNumber = (value: unknown): number => {
   return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
 };
 
-const formatCV = (value: number): string =>
+const formatBV = (value: number): string =>
   value.toLocaleString("en-IN", { maximumFractionDigits: 4 });
 
 const getTcLabel = (
@@ -224,10 +224,9 @@ export default function BVAllocationModal({
 }: BVAllocationModalProps) {
   const [rows, setRows] = useState<AllocationRow[]>([]);
   const [submitError, setSubmitError] = useState<string | null>(null);
-
-  // API mutation for updating CV allocation before checkout
   const [updateCVAllocation, { isLoading: isUpdatingCV }] =
     useUpdateCVAllocationMutation();
+  const busy = isSubmitting || isUpdatingCV;
 
   const totalCV = useMemo(
     () =>
@@ -255,7 +254,7 @@ export default function BVAllocationModal({
     document.body.style.overflow = "hidden";
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !isSubmitting && !isUpdatingCV) onClose();
+      if (event.key === "Escape" && !busy) onClose();
     };
 
     window.addEventListener("keydown", handleKeyDown);
@@ -263,7 +262,7 @@ export default function BVAllocationModal({
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isOpen, isSubmitting, isUpdatingCV, onClose]);
+  }, [isOpen, busy, onClose]);
 
   const allocatedCV = useMemo(
     () => rows.reduce((sum, row) => sum + toNumber(row.amount), 0),
@@ -272,7 +271,6 @@ export default function BVAllocationModal({
   const remainingCV = Math.max(0, totalCV - allocatedCV);
   const hasExceededLimit = allocatedCV > totalCV + 0.0001;
   const hasEligibleTargets = rows.length > 0;
-  const busy = isSubmitting || isUpdatingCV;
 
   const getRowMaximum = (target: string): number => {
     const allocatedElsewhere = rows.reduce(
@@ -322,13 +320,7 @@ export default function BVAllocationModal({
   };
 
   const handleContinue = async () => {
-    if (
-      busy ||
-      hasExceededLimit ||
-      (totalCV > 0 && !hasEligibleTargets)
-    ) {
-      return;
-    }
+    if (busy || hasExceededLimit || !hasEligibleTargets) return;
 
     const result: BVAllocationSelection[] = rows.map((row) => ({
       target: row.target,
@@ -342,7 +334,6 @@ export default function BVAllocationModal({
       ...(row.side !== undefined ? { side: row.side } : {}),
     }));
 
-    // Build API payload
     const allocationsPayload = result.map((item) => ({
       target: item.target,
       cv: item.cv,
@@ -357,21 +348,27 @@ export default function BVAllocationModal({
 
     try {
       setSubmitError(null);
-
       await updateCVAllocation({
         allocations: allocationsPayload,
         extra_tcs: extraTcsPayload,
       }).unwrap();
-
-      // On success, hand off to the parent to proceed with checkout
       onContinue(result);
-    } catch (err: unknown) {
+    } catch (error: unknown) {
+      const apiMessage = (error as any)?.data?.message;
       const message =
-        (err as { data?: { message?: string } })?.data?.message ??
-        (err as Error)?.message ??
+        apiMessage ||
+        (error instanceof Error ? error.message : "") ||
         "Failed to update CV allocation. Please try again.";
       setSubmitError(message);
     }
+  };
+
+  // Skipping deliberately bypasses the CV update API and continues to checkout.
+  // The parent receives an empty allocation list and handles navigation.
+  const handleSkip = () => {
+    if (busy) return;
+    setSubmitError(null);
+    onContinue([]);
   };
 
   if (!isOpen || typeof document === "undefined") return null;
@@ -388,8 +385,8 @@ export default function BVAllocationModal({
       <section
         role="dialog"
         aria-modal="true"
-        aria-labelledby="cv-allocation-title"
-        className="flex max-h-[94dvh] w-full max-w-[920px] flex-col overflow-hidden rounded-2xl bg-white shadow-[0_24px_90px_rgba(0,0,0,0.35)]"
+        aria-labelledby="bv-allocation-title"
+        className="flex max-h-[94dvh] w-full max-w-[1060px] flex-col overflow-hidden rounded-2xl bg-white shadow-[0_24px_90px_rgba(0,0,0,0.35)]"
       >
         <div className="shrink-0 border-b border-[#E9EDF2] px-5 py-4 sm:px-7 sm:py-5">
           <div className="relative">
@@ -399,9 +396,12 @@ export default function BVAllocationModal({
                 <span className="rounded-full bg-[#EAF7EF] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#16845B]">
                   Distributor checkout
                 </span>
+                <span className="text-[10px] font-medium text-[#8A94A3]">
+                  Step 2 of 3
+                </span>
               </div>
               <h2
-                id="cv-allocation-title"
+                id="bv-allocation-title"
                 className="text-[20px] font-semibold tracking-[-0.03em] text-[#17211B] sm:text-[23px]"
               >
                 CV Allocation
@@ -451,11 +451,11 @@ export default function BVAllocationModal({
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto] sm:items-center">
             <div className="rounded-xl border border-[#DDEBE2] bg-[#F5FBF7] p-4">
               <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#668070]">
-                CV available to distribute
+                BV available to distribute
               </p>
               <div className="mt-1 flex items-baseline gap-2">
                 <span className="text-[28px] font-bold tracking-[-0.04em] text-[#173E2B]">
-                  {formatCV(totalCV)}
+                  {formatBV(totalCV)}
                 </span>
                 <span className="text-[11px] font-medium text-[#668070]">
                   CV
@@ -472,23 +472,23 @@ export default function BVAllocationModal({
               <div className="rounded-xl border border-[#E7EAF0] bg-white p-3">
                 <p className="text-[10px] text-[#89919D]">Allocated</p>
                 <p className="mt-1 text-[18px] font-semibold tabular-nums text-[#202B23]">
-                  {formatCV(allocatedCV)}
+                  {formatBV(allocatedCV)}
                 </p>
               </div>
               <div className="rounded-xl border border-[#E7EAF0] bg-white p-3">
                 <p className="text-[10px] text-[#89919D]">Remaining</p>
                 <p className="mt-1 text-[18px] font-semibold tabular-nums text-[#16845B]">
-                  {formatCV(remainingCV)}
+                  {formatBV(remainingCV)}
                 </p>
               </div>
             </div>
           </div>
 
           <div className="mt-5 overflow-hidden rounded-xl border border-[#E4E7EC]">
-            {/* Wider "New CV to add" column, right-aligned. */}
-            <div className="hidden grid-cols-[minmax(0,1fr)_minmax(300px,1fr)] items-center gap-4 bg-[#F5F6F7] px-4 py-3 text-[10px] font-bold uppercase tracking-[0.08em] text-[#667085] sm:grid sm:px-5">
+            <div className="hidden grid-cols-[minmax(0,1.5fr)_minmax(100px,0.8fr)_minmax(210px,1.2fr)] items-center gap-3 bg-[#F5F6F7] px-4 py-3 text-[10px] font-bold uppercase tracking-[0.08em] text-[#667085] sm:grid sm:px-5">
               <span>TC details</span>
-              <span className="text-center ml-18">New CV to add</span>
+              <span className="text-right">Current BV on TC</span>
+              <span className="text-center">New BV to add</span>
             </div>
 
             {rows.length > 0 ? (
@@ -500,7 +500,7 @@ export default function BVAllocationModal({
                   return (
                     <div
                       key={row.target}
-                      className="grid grid-cols-1 gap-3 px-4 py-4 sm:grid-cols-[minmax(0,1fr)_minmax(300px,1fr)] sm:items-center sm:gap-4 sm:px-5"
+                      className="grid grid-cols-1 gap-3 px-4 py-4 sm:grid-cols-[minmax(0,1.5fr)_minmax(100px,0.8fr)_minmax(210px,1.2fr)] sm:items-center sm:gap-3 sm:px-5"
                     >
                       <div className="min-w-0">
                         <p className="text-[13px] font-semibold text-[#202B23]">
@@ -516,12 +516,20 @@ export default function BVAllocationModal({
                         </p>
                       </div>
 
-                      {/* Right-aligned wider controls. */}
-                      <div className="justify-self-start sm:justify-self-end sm:w-[300px]">
+                      <div className="flex items-center justify-between sm:block sm:text-right">
+                        <span className="text-[10px] text-[#89919D] sm:hidden">
+                          Current BV on TC
+                        </span>
+                        <span className="text-[13px] font-medium tabular-nums text-[#475467]">
+                          {formatBV(row.currentBV)}
+                        </span>
+                      </div>
+
+                      <div>
                         <p className="mb-1 text-[10px] text-[#89919D] sm:hidden">
-                          New CV to add
+                          New BV to add
                         </p>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5">
                           <button
                             type="button"
                             onClick={() => adjustAmount(row.target, "decrease")}
@@ -542,7 +550,7 @@ export default function BVAllocationModal({
                             onChange={(event: ChangeEvent<HTMLInputElement>) =>
                               updateAmount(row.target, event.target.value)
                             }
-                            aria-label={`CV to add for ${row.label}`}
+                            aria-label={`BV to add for ${row.label}`}
                             className="h-10 min-w-0 flex-1 rounded-lg border border-[#D0D5DD] bg-white px-3 text-center text-[13px] font-semibold tabular-nums text-[#202B23] outline-none transition focus:border-[#16845B] focus:ring-2 focus:ring-[#16845B]/10 disabled:bg-[#F2F4F7]"
                           />
                           <button
@@ -560,7 +568,7 @@ export default function BVAllocationModal({
                           </button>
                         </div>
                         <p className="mt-1 text-right text-[9px] text-[#98A2B3]">
-                          Maximum for this TC: {formatCV(rowMaximum)} CV
+                          Maximum for this TC: {formatBV(rowMaximum)} CV
                         </p>
                       </div>
                     </div>
@@ -571,13 +579,8 @@ export default function BVAllocationModal({
               <div className="flex items-start gap-3 p-5">
                 <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-[#B54708]" />
                 <div>
-                  <p className="text-[12px] font-semibold text-[#344054]">
-                    No eligible TC allocation targets were returned.
-                  </p>
-                  <p className="mt-1 text-[11px] leading-5 text-[#667085]">
-                    The checkout summary must include{" "}
-                    <code>ignite_cv_preview.extra_tcs</code> or allocation
-                    targets before CV can be distributed.
+                  <p className="text-[12px] font-semibold leading-5 text-[#344054]">
+                    Your account is not yet placed in the Ignite network.
                   </p>
                 </div>
               </div>
@@ -597,14 +600,14 @@ export default function BVAllocationModal({
           {hasExceededLimit && (
             <div className="mt-3 flex items-center gap-2 rounded-lg bg-[#FFF2F0] p-3 text-[11px] text-[#B42318]">
               <AlertTriangle className="h-4 w-4 shrink-0" />
-              Total allocation cannot be greater than {formatCV(totalCV)} CV.
+              Total allocation cannot be greater than {formatBV(totalCV)} CV.
             </div>
           )}
 
           {submitError && (
-            <div className="mt-3 flex items-center gap-2 rounded-lg bg-[#FFF2F0] p-3 text-[11px] text-[#B42318]">
-              <AlertTriangle className="h-4 w-4 shrink-0" />
-              {submitError}
+            <div role="alert" className="mt-3 flex items-start gap-2 rounded-lg bg-[#FFF2F0] p-3 text-[11px] text-[#B42318]">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>{submitError}</span>
             </div>
           )}
         </div>
@@ -619,23 +622,27 @@ export default function BVAllocationModal({
             Back to cart
           </button>
 
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+            <button
+              type="button"
+              onClick={handleSkip}
+              disabled={busy}
+              className="inline-flex h-11 items-center justify-center rounded-lg border border-[#D0D5DD] bg-white px-4 text-[12px] font-semibold text-[#475467] transition hover:border-[#16845B] hover:bg-[#F5FBF7] hover:text-[#16845B] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Skip &amp; Continue to Payment
+            </button>
             <div className="text-right">
               <p className="text-[9px] uppercase tracking-[0.1em] text-[#98A2B3]">
                 Total allocation
               </p>
               <p className="text-[13px] font-bold tabular-nums text-[#202B23]">
-                {formatCV(allocatedCV)} / {formatCV(totalCV)} CV
+                {formatBV(allocatedCV)} / {formatBV(totalCV)} CV
               </p>
             </div>
             <button
               type="button"
               onClick={handleContinue}
-              disabled={
-                busy ||
-                hasExceededLimit ||
-                (totalCV > 0 && !hasEligibleTargets)
-              }
+              disabled={busy || hasExceededLimit || !hasEligibleTargets}
               className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[#173E2B] px-5 text-[12px] font-semibold text-white transition hover:bg-[#20543A] disabled:cursor-not-allowed disabled:bg-[#AAB8AF]"
             >
               {busy ? (

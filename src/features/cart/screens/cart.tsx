@@ -129,34 +129,6 @@ export interface AddressFormData {
   type?: string;
 }
 
-/**
- * Extracts ignite_cv_preview from the supported API response envelopes.
- * The checkout summary can be returned as either:
- *   { data: { ignite_cv_preview: ... } }
- * or a nested envelope such as:
- *   { data: { data: { ignite_cv_preview: ... } } }
- */
-function extractIgniteCVPreview(
-  response: unknown,
-): IgniteCVPreview | null {
-  let current: any = response;
-
-  for (let depth = 0; depth < 5; depth += 1) {
-    if (!current || typeof current !== "object") {
-      return null;
-    }
-
-    const preview = current.ignite_cv_preview;
-    if (preview && typeof preview === "object") {
-      return preview as IgniteCVPreview;
-    }
-
-    current = current.data;
-  }
-
-  return null;
-}
-
 function AddressSelectorModal({
   isOpen,
   addresses,
@@ -223,7 +195,9 @@ function AddressSelectorModal({
                 role="button"
                 tabIndex={isDeleting ? -1 : 0}
                 className={`relative rounded-xl border p-4 transition-all duration-200 ${
-                  isDeleting ? "pointer-events-none opacity-50" : "cursor-pointer"
+                  isDeleting
+                    ? "pointer-events-none opacity-50"
+                    : "cursor-pointer"
                 } ${
                   isSelected
                     ? "border-[#16845B] bg-[#F5FBF6] shadow-sm ring-1 ring-[#16845B]"
@@ -362,8 +336,6 @@ export default function CartPage() {
 
   // BV allocation is shown only for distributors, after cart/stock checks.
   const [isBVAllocationOpen, setIsBVAllocationOpen] = useState(false);
-  const [bvAllocationPreview, setBVAllocationPreview] =
-    useState<IgniteCVPreview | null>(null);
 
   const reportCheckoutIssue = (message: string) => {
     setCheckoutIssues([message]);
@@ -472,15 +444,20 @@ export default function CartPage() {
     refetch: refetchCheckoutSummary,
   } = useGetCheckoutSummaryQuery(summaryParams, {
     skip: !selectedDeliveryAddress?.id,
-    refetchOnMountOrArgChange: true,
   });
 
   const summaryData: CheckoutSummaryData | undefined = (
     checkoutSummaryResponse as any
   )?.data;
 
-  // The preview may be wrapped in one or more API data envelopes.
-  const igniteCVPreview = extractIgniteCVPreview(checkoutSummaryResponse);
+  // The preview is returned by GET checkout-summary under data. Keep a nested
+  // data fallback as some API envelopes wrap the payload twice.
+  const summaryPayload = (checkoutSummaryResponse as any)?.data;
+  const igniteCVPreview = (
+    summaryPayload?.ignite_cv_preview ??
+    summaryPayload?.data?.ignite_cv_preview ??
+    null
+  ) as IgniteCVPreview | null;
 
   const dashboardInfo = useMemo(() => {
     const response = dashboardResponse as any;
@@ -507,6 +484,22 @@ export default function CartPage() {
     profileUserRole === "distributor" ||
     String((cartData as any)?.user_type || "").trim().toLowerCase() ===
       "distributor";
+
+  // A zero-CV order does not need the BV allocation step. Keep the same
+  // value for the cart CTA label and the checkout click handler.
+  const ignitePreviewTotalCV = Number(
+    igniteCVPreview?.total_cv ??
+      igniteCVPreview?.summary?.total_cv ??
+      igniteCVPreview?.base_product_cv ??
+      igniteCVPreview?.summary?.base_product_cv ??
+      0,
+  );
+
+  const checkoutButtonLabel = !isDistributor
+    ? "Proceed to Checkout"
+    : Number.isFinite(ignitePreviewTotalCV) && ignitePreviewTotalCV === 0
+      ? "Proceed to Payment"
+      : "Proceed to CV Allocation";
 
   const cartItems = useMemo<CartItemView[]>(() => {
     const apiItems: CartItemApi[] = cartData?.data?.items || [];
@@ -538,7 +531,8 @@ export default function CartPage() {
         variantLabel: getVariantLabel(item.variant, variantAttributes),
         variantAttributes,
         quantity: Math.max(1, Number(item.quantity || 1)),
-        stockQuantity: stockQuantity === null ? null : Number(stockQuantity),
+        stockQuantity:
+          stockQuantity === null ? null : Number(stockQuantity),
         allowedPurchase: isPurchaseWithoutStockAllowed(
           item.product?.allowed_purchsed,
         ),
@@ -571,7 +565,8 @@ export default function CartPage() {
       0,
     );
     const mrpValue = cartItems.reduce(
-      (sum, item) => sum + (item.originalPrice || item.price) * item.quantity,
+      (sum, item) =>
+        sum + (item.originalPrice || item.price) * item.quantity,
       0,
     );
     const count = cartItems.reduce((sum, item) => sum + item.quantity, 0);
@@ -916,22 +911,28 @@ export default function CartPage() {
   const handleBVAllocationContinue = (
     allocations: BVAllocationSelection[],
   ) => {
-    const preview = bvAllocationPreview ?? igniteCVPreview;
+    const totalCV = Number(
+      igniteCVPreview?.total_cv ??
+        igniteCVPreview?.summary?.total_cv ??
+        igniteCVPreview?.base_product_cv ??
+        igniteCVPreview?.summary?.base_product_cv ??
+        0,
+    );
 
-    if (!preview) {
-      reportCheckoutIssue(
-        "BV allocation preview is unavailable. Please try checkout again.",
-      );
+    // Skip path: do not call the allocation persistence flow or block checkout.
+    // An empty list is sent only by the modal's "Skip & Continue to Payment" action.
+    if (allocations.length === 0) {
+      try {
+        window.sessionStorage.removeItem(BV_ALLOCATION_STORAGE_KEY);
+      } catch {
+        // Skipping CV allocation must not depend on browser storage.
+      }
+
+      setIsBVAllocationOpen(false);
+      navigateToCheckout();
       return;
     }
 
-    const totalCV = Number(
-      preview.total_cv ??
-        preview.summary?.total_cv ??
-        preview.base_product_cv ??
-        preview.summary?.base_product_cv ??
-        0,
-    );
     const allocatedCV = allocations.reduce(
       (sum, item) => sum + Math.max(0, Number(item.cv) || 0),
       0,
@@ -946,16 +947,17 @@ export default function CartPage() {
 
     if (allocatedCV > totalCV + 0.0001) {
       reportCheckoutIssue(
-        `CV allocation cannot exceed ${totalCV} CV. Please adjust the TC amounts.`,
+        `BV allocation cannot exceed ${totalCV} CV. Please adjust the TC amounts.`,
       );
       return;
     }
 
     const allocationForCheckout = {
-      main_ba_id: preview.main_ba_id ?? null,
+      main_ba_id: igniteCVPreview?.main_ba_id ?? null,
       total_cv: totalCV,
       allocated_cv: allocatedCV,
       leftover_cv: Math.max(0, totalCV - allocatedCV),
+      skipped: false,
       allocations,
     };
 
@@ -966,7 +968,7 @@ export default function CartPage() {
       );
     } catch {
       reportCheckoutIssue(
-        "Your CV allocation could not be saved in this browser session. Please allow session storage and try again.",
+        "Your BV allocation could not be saved in this browser session. Please allow session storage and try again.",
       );
       return;
     }
@@ -1090,22 +1092,18 @@ export default function CartPage() {
       );
       return;
     }
-
-    if (isFetchingCheckoutSummary) {
-      reportCheckoutIssue(
-        "Order totals are recalculating. Please try again shortly.",
-      );
-      return;
-    }
-
-    // A stale summary error should not block distributor checkout from making
-    // one explicit fresh request below. Retail still needs a valid summary.
-    if (checkoutSummaryError && !isDistributor) {
+    if (checkoutSummaryError) {
       reportCheckoutIssue(
         getErrorMessage(
           checkoutSummaryError,
           "Could not load checkout totals. Please try again.",
         ),
+      );
+      return;
+    }
+    if (isFetchingCheckoutSummary) {
+      reportCheckoutIssue(
+        "Order totals are recalculating. Please try again shortly.",
       );
       return;
     }
@@ -1147,63 +1145,33 @@ export default function CartPage() {
         return;
       }
 
-      // Distributor must review TC-wise CV allocation before entering checkout.
       if (isDistributor) {
-        let freshPreview: IgniteCVPreview | null = null;
+        const previewTotal = ignitePreviewTotalCV;
 
-        try {
-          // Explicitly refetch the summary so the modal does not rely on an
-          // incomplete preview from the initial page load or cached response.
-          const latestSummaryResult: any = await refetchCheckoutSummary();
-
-          if (latestSummaryResult?.error) {
-            reportCheckoutIssue(
-              getErrorMessage(
-                latestSummaryResult.error,
-                "Unable to refresh BV allocation details. Please try again.",
-              ),
-            );
-            return;
-          }
-
-          freshPreview = extractIgniteCVPreview(latestSummaryResult?.data);
-        } catch (error: unknown) {
-          reportCheckoutIssue(
-            getErrorMessage(
-              error,
-              "Unable to refresh BV allocation details. Please try again.",
-            ),
-          );
-          return;
-        }
-
-        if (!freshPreview) {
-          reportCheckoutIssue(
-            "BV allocation preview is not available. Please refresh your cart and try again.",
-          );
-          return;
-        }
-
-        const previewTotal = Number(
-          freshPreview.total_cv ??
-            freshPreview.summary?.total_cv ??
-            freshPreview.base_product_cv ??
-            freshPreview.summary?.base_product_cv ??
-            0,
-        );
         if (!Number.isFinite(previewTotal) || previewTotal < 0) {
           reportCheckoutIssue(
-            "The CV preview returned an invalid total. Please refresh the cart and try again.",
+            "The available CV value is invalid. Refresh the checkout summary and try again.",
           );
           return;
         }
 
-        // Always show the distributor BV/CV allocation step before checkout.
-        // An empty target list or zero CV is still shown in the modal so the
-        // customer can review the API response instead of being sent directly
-        // to payment. The modal/Continue action remains the explicit next step.
-        setBVAllocationPreview(freshPreview);
-        setCheckoutIssues([]);
+        // Zero-CV products must bypass BV Allocation completely and go
+        // straight to checkout/payment. Clear any stale allocation first.
+        if (previewTotal === 0) {
+          try {
+            window.sessionStorage.removeItem(BV_ALLOCATION_STORAGE_KEY);
+          } catch {
+            // Checkout must not depend on session storage in the zero-CV path.
+          }
+
+          setIsBVAllocationOpen(false);
+          navigateToCheckout();
+          return;
+        }
+
+        // Positive CV still opens the allocation popup, even when there are
+        // no eligible TCs. The popup displays the Ignite network message and
+        // allows the distributor to skip allocation and continue to payment.
         setIsBVAllocationOpen(true);
         return;
       }
@@ -1368,8 +1336,6 @@ export default function CartPage() {
       await refetchCart();
       if (selectedDeliveryAddress?.id) await refetchCheckoutSummary();
       setUnavailableProductIds(new Set());
-      setBVAllocationPreview(null);
-      setIsBVAllocationOpen(false);
       try {
         window.sessionStorage.removeItem(BV_ALLOCATION_STORAGE_KEY);
       } catch {
@@ -1538,7 +1504,8 @@ export default function CartPage() {
                   {selectedDeliveryAddress.address_line_2
                     ? `, ${selectedDeliveryAddress.address_line_2}`
                     : ""}
-                  , {selectedDeliveryAddress.city}, {selectedDeliveryAddress.state}
+                  , {selectedDeliveryAddress.city},{" "}
+                  {selectedDeliveryAddress.state}
                 </p>
               </div>
               <div className="flex w-full shrink-0 items-center gap-2 sm:w-auto">
@@ -1628,7 +1595,9 @@ export default function CartPage() {
                       }
                       className="rounded-lg bg-[#8F3023] px-3 py-1.5 text-[11px] font-semibold text-white"
                     >
-                      {availableAddresses.length ? "Select Address" : "Add Address"}
+                      {availableAddresses.length
+                        ? "Select Address"
+                        : "Add Address"}
                     </button>
                   )}
                   <button
@@ -1743,6 +1712,7 @@ export default function CartPage() {
                 setShowCouponList={setShowCouponList}
                 isDistributor={isDistributor}
                 totalCommission={totalCommission}
+                checkoutButtonLabel={checkoutButtonLabel}
               />
             </aside>
           </div>
@@ -1812,11 +1782,8 @@ export default function CartPage() {
       {/* Distributor-only BV step. The dialog uses a body portal and a top-level z-index. */}
       <BVAllocationModal
         isOpen={isBVAllocationOpen}
-        preview={bvAllocationPreview ?? igniteCVPreview}
-        onClose={() => {
-          setIsBVAllocationOpen(false);
-          setBVAllocationPreview(null);
-        }}
+        preview={igniteCVPreview}
+        onClose={() => setIsBVAllocationOpen(false)}
         onContinue={handleBVAllocationContinue}
       />
     </div>
